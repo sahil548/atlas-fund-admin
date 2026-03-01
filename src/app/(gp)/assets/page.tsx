@@ -1,0 +1,71 @@
+"use client";
+
+import useSWR from "swr";
+import { Badge } from "@/components/ui/badge";
+import { fmt, pct } from "@/lib/utils";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const TC: Record<string, string> = {
+  DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
+  FUND_LP_POSITION: "purple", CO_INVESTMENT: "blue", WARRANT: "pink", ROYALTY: "yellow",
+};
+const TL: Record<string, string> = {
+  DIRECT_EQUITY: "Equity", PRIVATE_CREDIT: "Credit", REAL_ESTATE_DIRECT: "Real Estate",
+  FUND_LP_POSITION: "Fund LP", CO_INVESTMENT: "Co-Invest", WARRANT: "Warrant", ROYALTY: "Royalty",
+};
+
+export default function AssetsPage() {
+  const { data: assets, isLoading } = useSWR("/api/assets", fetcher);
+  if (isLoading || !assets) return <div className="text-sm text-gray-400">Loading...</div>;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+        <h3 className="text-sm font-semibold">All Assets ({assets.length})</h3>
+        <div className="flex gap-1">
+          {Object.entries(TL).map(([k, v]) => (
+            <button key={k} className="text-[10px] px-2 py-1 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50">{v}</button>
+          ))}
+        </div>
+      </div>
+      <table className="w-full text-xs">
+        <thead className="bg-gray-50">
+          <tr>
+            {["Asset", "Type", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Income", "Status"].map((h) => (
+              <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {assets.map((a: { id: string; name: string; assetType: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
+            const ur = a.fairValue - a.costBasis;
+            return (
+              <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/assets/${a.id}`}>
+                <td className="px-3 py-2.5 font-medium text-indigo-700">{a.name}</td>
+                <td className="px-3 py-2.5"><Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge></td>
+                <td className="px-3 py-2.5 text-gray-600">{a.sector}</td>
+                <td className="px-3 py-2.5">
+                  {a.entityAllocations?.map((ea) => (
+                    <span key={ea.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{ea.entity.name}</span>
+                  ))}
+                </td>
+                <td className="px-3 py-2.5">{fmt(a.costBasis)}</td>
+                <td className="px-3 py-2.5 font-medium">{fmt(a.fairValue)}</td>
+                <td className={`px-3 py-2.5 font-medium ${ur > 0 ? "text-emerald-700" : "text-gray-500"}`}>
+                  {ur > 0 ? "+" : ""}{fmt(ur)}
+                </td>
+                <td className={`px-3 py-2.5 font-medium ${(a.moic || 0) >= 2 ? "text-emerald-600" : ""}`}>
+                  {a.moic?.toFixed(2)}x
+                </td>
+                <td className="px-3 py-2.5 text-emerald-700">{a.irr ? pct(a.irr) : "—"}</td>
+                <td className="px-3 py-2.5 text-gray-600">{a.incomeType || "—"}</td>
+                <td className="px-3 py-2.5"><Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status.toLowerCase()}</Badge></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

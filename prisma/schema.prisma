@@ -1,0 +1,1063 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum EntityType {
+  MAIN_FUND
+  SIDECAR
+  SPV
+  CO_INVEST_VEHICLE
+  GP_ENTITY
+  HOLDING_COMPANY
+}
+
+enum VehicleStructure {
+  LLC
+  LP
+  CORP
+  TRUST
+}
+
+enum EntityStatus {
+  ACTIVE
+  WINDING_DOWN
+  DISSOLVED
+}
+
+enum AssetType {
+  DIRECT_EQUITY
+  PRIVATE_CREDIT
+  REAL_ESTATE_DIRECT
+  FUND_LP_POSITION
+  CO_INVESTMENT
+  WARRANT
+  ROYALTY
+}
+
+enum AssetStatus {
+  ACTIVE
+  EXITED
+  WRITTEN_OFF
+}
+
+enum HoldingType {
+  DIRECT
+  THROUGH_OWN_VEHICLE
+  LP_IN_EXTERNAL_FUND
+  CO_INVEST_WITH_LEAD_GP
+  THROUGH_COUNTERPARTY
+}
+
+enum DealStage {
+  SOURCING
+  SCREENING
+  AI_SCREEN
+  DUE_DILIGENCE
+  IC_REVIEW
+  CLOSING
+  DEAD
+}
+
+enum AccountingProvider {
+  QBO
+  XERO
+}
+
+enum SyncStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+}
+
+enum ValuationMethod {
+  COMPARABLE_MULTIPLES
+  LAST_ROUND
+  DCF
+  APPRAISAL
+  GP_REPORTED_NAV
+  COST
+}
+
+enum ValuationStatus {
+  DRAFT
+  APPROVED
+}
+
+enum CapitalCallStatus {
+  DRAFT
+  ISSUED
+  FUNDED
+  PARTIALLY_FUNDED
+  OVERDUE
+}
+
+enum DistributionStatus {
+  DRAFT
+  APPROVED
+  PAID
+}
+
+enum CovenantType {
+  FINANCIAL
+  NEGATIVE
+  AFFIRMATIVE
+  REPORTING
+}
+
+enum CovenantStatus {
+  COMPLIANT
+  WATCH
+  CURE_PERIOD
+  BREACH
+  WAIVED
+}
+
+enum LeaseType {
+  GROSS
+  NET
+  NNN
+  MODIFIED_GROSS
+  PERCENTAGE
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  MONTH_TO_MONTH
+  TERMINATED
+}
+
+enum CreditAgreementType {
+  LOAN_AGREEMENT
+  NOTE_PURCHASE
+  PARTICIPATION
+  CREDIT_FACILITY
+  INDENTURE
+  BRIDGE_LOAN
+}
+
+enum InterestRateType {
+  FIXED
+  FLOATING
+  HYBRID
+  PIK
+}
+
+enum CreditStatus {
+  PERFORMING
+  WATCH
+  DEFAULT
+  WORKOUT
+}
+
+enum Subordination {
+  SENIOR
+  MEZZANINE
+  SUBORDINATED
+}
+
+enum PaymentFrequency {
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  ANNUAL
+}
+
+enum DayCount {
+  THIRTY_360
+  ACTUAL_360
+  ACTUAL_365
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum UserRole {
+  GP_ADMIN
+  GP_TEAM
+  SERVICE_PROVIDER
+  LP_INVESTOR
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PORTAL_ONLY
+}
+
+enum DigestPreference {
+  IMMEDIATE
+  DAILY_DIGEST
+  WEEKLY_DIGEST
+}
+
+enum MeetingSource {
+  FIREFLIES
+  MANUAL
+  ZOOM
+  TEAMS
+}
+
+enum DocumentCategory {
+  BOARD
+  FINANCIAL
+  LEGAL
+  GOVERNANCE
+  VALUATION
+  STATEMENT
+  TAX
+  REPORT
+  NOTICE
+  OTHER
+}
+
+enum IncomeType {
+  INTEREST
+  DIVIDEND
+  RENTAL
+  ROYALTY
+  FEE
+  OTHER
+}
+
+enum TransactionType {
+  CAPITAL_CALL
+  DISTRIBUTION
+  INCOME
+  EXPENSE
+  FEE
+  TRANSFER
+  INVESTMENT
+  EXIT
+}
+
+enum DDWorkstreamStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+// ============================================================
+// CORE: Firm, Entity, User, Accounting
+// ============================================================
+
+model Firm {
+  id        String   @id @default(cuid())
+  name      String
+  legalName String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entities Entity[]
+  users    User[]
+}
+
+model Entity {
+  id               String          @id @default(cuid())
+  firmId           String
+  name             String
+  legalName        String?
+  entityType       EntityType
+  parentEntityId   String?
+  vehicleStructure VehicleStructure @default(LLC)
+  ein              String?
+  stateOfFormation String?
+  formationDate    DateTime?
+  status           EntityStatus    @default(ACTIVE)
+
+  // Fund terms
+  vintageYear        Int?
+  targetSize         Float?
+  totalCommitments   Float?
+  investmentPeriodEnd DateTime?
+  fundTermYears      Int?
+  extensionOptions   String?
+  fiscalYearEnd      String?
+
+  // Regulatory
+  regulatoryFilings Json?
+  legalCounsel      String?
+  taxPreparer       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firm                 Firm                  @relation(fields: [firmId], references: [id])
+  parentEntity         Entity?               @relation("EntityParent", fields: [parentEntityId], references: [id])
+  childEntities        Entity[]              @relation("EntityParent")
+  accountingConnection AccountingConnection?
+  assetAllocations     AssetEntityAllocation[]
+  commitments          Commitment[]
+  sideLetters          SideLetter[]
+  capitalCalls         CapitalCall[]
+  distributions        DistributionEvent[]
+  navComputations      NAVComputation[]
+  waterfallTemplate    WaterfallTemplate?    @relation("EntityWaterfall", fields: [waterfallTemplateId], references: [id])
+  waterfallTemplateId  String?
+  feeCalculations      FeeCalculation[]
+  capitalAccounts      CapitalAccount[]
+  incomeEvents         IncomeEvent[]
+  transactions         Transaction[]
+  documents            Document[]
+}
+
+model AccountingConnection {
+  id                  String             @id @default(cuid())
+  entityId            String             @unique
+  provider            AccountingProvider
+  providerCompanyId   String?
+  providerCompanyName String?
+  oauthCredentials    Json?
+  syncStatus          SyncStatus         @default(DISCONNECTED)
+  lastSyncAt          DateTime?
+  syncFrequency       String             @default("15min")
+  chartOfAccountsMapped Boolean          @default(false)
+  unreconciledItems   Int                @default(0)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  entity         Entity          @relation(fields: [entityId], references: [id])
+  accountMappings AccountMapping[]
+}
+
+model AccountMapping {
+  id                String @id @default(cuid())
+  connectionId      String
+  atlasAccountType  String
+  providerAccountId String?
+  providerAccountName String?
+  createdAt         DateTime @default(now())
+
+  connection AccountingConnection @relation(fields: [connectionId], references: [id])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  firmId    String
+  email     String   @unique
+  name      String
+  role      UserRole
+  initials  String?
+  isActive  Boolean  @default(true)
+
+  // Service provider scoping
+  entityAccess    String[]  @default([])
+  accessExpiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firm             Firm              @relation(fields: [firmId], references: [id])
+  assignedTasks    Task[]
+  icVoteRecords    ICVoteRecord[]
+  investorProfile  Investor?
+}
+
+// ============================================================
+// ASSETS
+// ============================================================
+
+model Asset {
+  id          String      @id @default(cuid())
+  name        String
+  assetType   AssetType
+  sector      String?
+  status      AssetStatus @default(ACTIVE)
+  holdingType HoldingType @default(DIRECT)
+  costBasis   Float
+  fairValue   Float
+  moic        Float?
+  irr         Float?
+  incomeType  String?
+  hasBoardSeat Boolean    @default(false)
+  entryDate   DateTime?
+  nextReview  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entityAllocations  AssetEntityAllocation[]
+  equityDetails      AssetEquityDetails?
+  creditDetails      AssetCreditDetails?
+  realEstateDetails  AssetRealEstateDetails?
+  fundLPDetails      AssetFundLPDetails?
+  leases             Lease[]
+  creditAgreements   CreditAgreement[]
+  valuations         Valuation[]
+  tasks              Task[]
+  documents          Document[]
+  meetings           Meeting[]
+  incomeEvents       IncomeEvent[]
+  activityEvents     ActivityEvent[]
+
+  @@index([assetType])
+  @@index([status])
+}
+
+model AssetEntityAllocation {
+  id                String @id @default(cuid())
+  assetId           String
+  entityId          String
+  allocationPercent Float  @default(100)
+  costBasis         Float?
+  status            String @default("active")
+  createdAt         DateTime @default(now())
+
+  asset  Asset  @relation(fields: [assetId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@unique([assetId, entityId])
+}
+
+model AssetEquityDetails {
+  id         String @id @default(cuid())
+  assetId    String @unique
+  instrument String?
+  ownership  String?
+  revenue    String?
+  ebitda     String?
+  growth     String?
+  employees  Int?
+
+  asset Asset @relation(fields: [assetId], references: [id])
+}
+
+model AssetCreditDetails {
+  id              String @id @default(cuid())
+  assetId         String @unique
+  instrument      String?
+  principal       String?
+  rate            String?
+  maturity        String?
+  ltv             String?
+  dscr            String?
+  nextPaymentDate String?
+  accruedInterest String?
+
+  asset Asset @relation(fields: [assetId], references: [id])
+}
+
+model AssetRealEstateDetails {
+  id           String @id @default(cuid())
+  assetId      String @unique
+  propertyType String?
+  squareFeet   String?
+  occupancy    String?
+  noi          String?
+  capRate      String?
+  rentPerSqft  String?
+  debt         String?
+  debtDscr     String?
+
+  asset Asset @relation(fields: [assetId], references: [id])
+}
+
+model AssetFundLPDetails {
+  id             String @id @default(cuid())
+  assetId        String @unique
+  gpName         String?
+  commitment     String?
+  calledAmount   String?
+  uncalledAmount String?
+  distributions  String?
+  gpNav          String?
+  navDate        String?
+  gpIrr          String?
+  gpTvpi         String?
+  vintage        Int?
+  strategy       String?
+
+  asset Asset @relation(fields: [assetId], references: [id])
+}
+
+// ============================================================
+// CONTRACT-LEVEL: Leases, Credit Agreements, Covenants
+// ============================================================
+
+model Lease {
+  id                       String      @id @default(cuid())
+  assetId                  String
+  tenantName               String
+  tenantEntity             String?
+  unitOrSuite              String?
+  squareFootage            String?
+  leaseType                LeaseType   @default(NNN)
+  baseRentMonthly          Float?
+  baseRentAnnual           Float?
+  rentEscalation           Json?
+  camCharges               Float?
+  taxPassThrough           Float?
+  insurancePassThrough     Float?
+  leaseStartDate           DateTime?
+  leaseEndDate             DateTime?
+  renewalOptions           Json?
+  terminationOptions       Json?
+  securityDeposit          Float?
+  freeRentMonths           Int?
+  tenantImprovementAllowance Float?
+  currentStatus            LeaseStatus @default(ACTIVE)
+  rentPercentOfTotal       String?
+  notes                    String?
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+
+  asset Asset @relation(fields: [assetId], references: [id])
+}
+
+model CreditAgreement {
+  id                    String              @id @default(cuid())
+  assetId               String
+  borrowerName          String
+  borrowerEntity        String?
+  agreementType         CreditAgreementType @default(LOAN_AGREEMENT)
+  originalPrincipal     Float
+  currentPrincipal      Float
+  commitmentAmount      Float?
+  drawnAmount           Float?
+  interestRateType      InterestRateType    @default(FIXED)
+  fixedRate             Float?
+  referenceRate         String?
+  spreadBps             Int?
+  pikRate               Float?
+  floorRate             Float?
+  dayCount              DayCount            @default(ACTUAL_360)
+  paymentFrequency      PaymentFrequency    @default(MONTHLY)
+  paymentDay            Int?
+  amortization          String?
+  amortizationSchedule  Json?
+  maturityDate          DateTime?
+  prepaymentTerms       Json?
+  collateral            Json?
+  guarantors            Json?
+  subordination         Subordination       @default(SENIOR)
+  intercreditorAgreement Boolean            @default(false)
+  defaultProvisions     Json?
+  currentStatus         CreditStatus        @default(PERFORMING)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  asset     Asset      @relation(fields: [assetId], references: [id])
+  covenants Covenant[]
+  payments  CreditPayment[]
+}
+
+model Covenant {
+  id                  String         @id @default(cuid())
+  agreementId         String
+  name                String
+  covenantType        CovenantType   @default(FINANCIAL)
+  metric              String?
+  thresholdOperator   String?
+  thresholdValue      Float?
+  thresholdValueUpper Float?
+  testFrequency       String?
+  curePeriodDays      Int?
+  lastTestedDate      DateTime?
+  lastTestedValue     String?
+  currentStatus       CovenantStatus @default(COMPLIANT)
+  breachHistory       Json?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  agreement CreditAgreement @relation(fields: [agreementId], references: [id])
+}
+
+model CreditPayment {
+  id          String   @id @default(cuid())
+  agreementId String
+  date        DateTime
+  paymentType String
+  amount      Float
+  status      String   @default("Received")
+  createdAt   DateTime @default(now())
+
+  agreement CreditAgreement @relation(fields: [agreementId], references: [id])
+}
+
+// ============================================================
+// INVESTORS
+// ============================================================
+
+model Investor {
+  id               String  @id @default(cuid())
+  userId           String? @unique
+  name             String
+  investorType     String
+  kycStatus        String  @default("Pending")
+  advisoryBoard    Boolean @default(false)
+  contactPreference String @default("email")
+  totalCommitted   Float   @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user                   User?                       @relation(fields: [userId], references: [id])
+  commitments            Commitment[]
+  sideLetters            SideLetter[]
+  notificationPreference InvestorNotificationPreference?
+  capitalCallLineItems   CapitalCallLineItem[]
+  distributionLineItems  DistributionLineItem[]
+  capitalAccounts        CapitalAccount[]
+}
+
+model Commitment {
+  id          String   @id @default(cuid())
+  investorId  String
+  entityId    String
+  amount      Float
+  calledAmount Float   @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  investor Investor @relation(fields: [investorId], references: [id])
+  entity   Entity   @relation(fields: [entityId], references: [id])
+
+  @@unique([investorId, entityId])
+}
+
+model SideLetter {
+  id         String   @id @default(cuid())
+  investorId String
+  entityId   String
+  terms      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  investor Investor @relation(fields: [investorId], references: [id])
+  entity   Entity   @relation(fields: [entityId], references: [id])
+}
+
+model InvestorNotificationPreference {
+  id                String              @id @default(cuid())
+  investorId        String              @unique
+  preferredChannel  NotificationChannel @default(EMAIL)
+  emailAddress      String?
+  phoneNumber       String?
+  notificationTypes Json?
+  digestPreference  DigestPreference    @default(IMMEDIATE)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  investor Investor @relation(fields: [investorId], references: [id])
+}
+
+// ============================================================
+// TRANSACTIONS
+// ============================================================
+
+model Transaction {
+  id              String          @id @default(cuid())
+  entityId        String
+  transactionType TransactionType
+  amount          Float
+  date            DateTime
+  description     String?
+  isPrincipal     Boolean         @default(false)
+  referenceId     String?
+  referenceType   String?
+  createdAt       DateTime        @default(now())
+
+  entity Entity @relation(fields: [entityId], references: [id])
+}
+
+model CapitalCall {
+  id         String            @id @default(cuid())
+  entityId   String
+  callNumber String
+  callDate   DateTime
+  dueDate    DateTime
+  amount     Float
+  purpose    String?
+  status     CapitalCallStatus @default(DRAFT)
+  fundedPercent Float          @default(0)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  entity    Entity              @relation(fields: [entityId], references: [id])
+  lineItems CapitalCallLineItem[]
+}
+
+model CapitalCallLineItem {
+  id            String   @id @default(cuid())
+  capitalCallId String
+  investorId    String
+  amount        Float
+  status        String   @default("Pending")
+  paidDate      DateTime?
+  createdAt     DateTime @default(now())
+
+  capitalCall CapitalCall @relation(fields: [capitalCallId], references: [id])
+  investor    Investor    @relation(fields: [investorId], references: [id])
+}
+
+model DistributionEvent {
+  id                String             @id @default(cuid())
+  entityId          String
+  distributionDate  DateTime
+  grossAmount       Float
+  source            String?
+  returnOfCapital   Float              @default(0)
+  income            Float              @default(0)
+  longTermGain      Float              @default(0)
+  shortTermGain     Float              @default(0)
+  carriedInterest   Float              @default(0)
+  netToLPs          Float              @default(0)
+  status            DistributionStatus @default(APPROVED)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  entity    Entity                 @relation(fields: [entityId], references: [id])
+  lineItems DistributionLineItem[]
+}
+
+model DistributionLineItem {
+  id               String   @id @default(cuid())
+  distributionId   String
+  investorId       String
+  grossAmount      Float
+  returnOfCapital  Float    @default(0)
+  income           Float    @default(0)
+  longTermGain     Float    @default(0)
+  carriedInterest  Float    @default(0)
+  netAmount        Float
+  createdAt        DateTime @default(now())
+
+  distribution DistributionEvent @relation(fields: [distributionId], references: [id])
+  investor     Investor          @relation(fields: [investorId], references: [id])
+}
+
+model IncomeEvent {
+  id          String     @id @default(cuid())
+  assetId     String?
+  entityId    String
+  incomeType  IncomeType
+  amount      Float
+  date        DateTime
+  description String?
+  isPrincipal Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+
+  asset  Asset?  @relation(fields: [assetId], references: [id])
+  entity Entity  @relation(fields: [entityId], references: [id])
+}
+
+// ============================================================
+// VALUATIONS & NAV
+// ============================================================
+
+model Valuation {
+  id              String          @id @default(cuid())
+  assetId         String
+  valuationDate   DateTime
+  method          ValuationMethod
+  fairValue       Float
+  moic            Float?
+  notes           String?
+  status          ValuationStatus @default(DRAFT)
+  approvedBy      String?
+  approvedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  asset Asset @relation(fields: [assetId], references: [id])
+
+  @@index([assetId, valuationDate])
+}
+
+model NAVComputation {
+  id            String   @id @default(cuid())
+  entityId      String
+  periodDate    DateTime
+  costBasisNAV  Float
+  economicNAV   Float
+  unrealizedGain Float?
+  accruedCarry  Float?
+  details       Json?
+  createdAt     DateTime @default(now())
+
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@unique([entityId, periodDate])
+}
+
+// ============================================================
+// FUND MECHANICS: Waterfall, Fees, Capital Accounts
+// ============================================================
+
+model WaterfallTemplate {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tiers         WaterfallTier[]
+  entities      Entity[]        @relation("EntityWaterfall")
+  calculations  WaterfallCalculation[]
+}
+
+model WaterfallTier {
+  id                String  @id @default(cuid())
+  templateId        String
+  tierOrder         Int
+  name              String
+  description       String?
+  splitLP           Float?
+  splitGP           Float?
+  hurdleRate        Float?
+  appliesTo         String?
+  createdAt         DateTime @default(now())
+
+  template WaterfallTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([templateId, tierOrder])
+}
+
+model WaterfallCalculation {
+  id          String   @id @default(cuid())
+  templateId  String
+  periodDate  DateTime
+  results     Json
+  createdAt   DateTime @default(now())
+
+  template WaterfallTemplate @relation(fields: [templateId], references: [id])
+}
+
+model FeeCalculation {
+  id              String   @id @default(cuid())
+  entityId        String
+  periodDate      DateTime
+  managementFee   Float    @default(0)
+  fundExpenses    Float    @default(0)
+  carriedInterest Float    @default(0)
+  details         Json?
+  createdAt       DateTime @default(now())
+
+  entity Entity @relation(fields: [entityId], references: [id])
+}
+
+model CapitalAccount {
+  id               String   @id @default(cuid())
+  investorId       String
+  entityId         String
+  periodDate       DateTime
+  beginningBalance Float
+  contributions    Float    @default(0)
+  incomeAllocations Float   @default(0)
+  capitalAllocations Float  @default(0)
+  distributions    Float    @default(0)
+  fees             Float    @default(0)
+  endingBalance    Float
+  details          Json?
+  createdAt        DateTime @default(now())
+
+  investor Investor @relation(fields: [investorId], references: [id])
+  entity   Entity   @relation(fields: [entityId], references: [id])
+
+  @@unique([investorId, entityId, periodDate])
+}
+
+// ============================================================
+// DEAL DESK
+// ============================================================
+
+model Deal {
+  id          String    @id @default(cuid())
+  name        String
+  dealType    AssetType
+  sector      String?
+  stage       DealStage @default(SCREENING)
+  targetSize  String?
+  leadPartner String?
+  aiScore     Int?
+  aiFlag      String?
+  source      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  icProcess      ICProcess?
+  workstreams    DDWorkstream[]
+  screeningResult AIScreeningResult?
+  closingChecklist ClosingChecklist[]
+  documents      Document[]
+  meetings       Meeting[]
+
+  @@index([stage])
+}
+
+model ICProcess {
+  id             String   @id @default(cuid())
+  dealId         String   @unique
+  slackMessageId String?
+  slackChannel   String?
+  quorumType     String   @default("majority")
+  deadline       DateTime?
+  status         String   @default("pending")
+  finalDecision  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  deal  Deal          @relation(fields: [dealId], references: [id])
+  votes ICVoteRecord[]
+}
+
+model ICVoteRecord {
+  id          String   @id @default(cuid())
+  icProcessId String
+  userId      String
+  vote        String
+  votedAt     DateTime @default(now())
+  notes       String?
+
+  icProcess ICProcess @relation(fields: [icProcessId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model DDWorkstream {
+  id         String             @id @default(cuid())
+  dealId     String
+  name       String
+  status     DDWorkstreamStatus @default(NOT_STARTED)
+  totalTasks Int                @default(0)
+  completedTasks Int            @default(0)
+  hasAI      Boolean            @default(false)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  deal  Deal     @relation(fields: [dealId], references: [id])
+  tasks DDTask[]
+}
+
+model DDTask {
+  id           String     @id @default(cuid())
+  workstreamId String
+  title        String
+  status       TaskStatus @default(TODO)
+  assignee     String?
+  dueDate      DateTime?
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  workstream DDWorkstream @relation(fields: [workstreamId], references: [id])
+}
+
+model AIScreeningResult {
+  id             String   @id @default(cuid())
+  dealId         String   @unique
+  score          Int?
+  summary        String?
+  strengths      Json?
+  risks          Json?
+  financials     Json?
+  recommendation String?
+  processedAt    DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id])
+}
+
+model ClosingChecklist {
+  id        String     @id @default(cuid())
+  dealId    String
+  title     String
+  status    TaskStatus @default(TODO)
+  assignee  String?
+  dueDate   DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  deal Deal @relation(fields: [dealId], references: [id])
+}
+
+// ============================================================
+// TASKS & MEETINGS
+// ============================================================
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  status      TaskStatus @default(TODO)
+  assigneeId  String?
+  assigneeName String?
+  dueDate     DateTime?
+  assetId     String?
+  contextType String?
+  contextId   String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  assignee User?  @relation(fields: [assigneeId], references: [id])
+  asset    Asset?  @relation(fields: [assetId], references: [id])
+}
+
+model Meeting {
+  id            String        @id @default(cuid())
+  title         String
+  meetingDate   DateTime
+  meetingType   String?
+  source        MeetingSource @default(MANUAL)
+  hasTranscript Boolean       @default(false)
+  actionItems   Int           @default(0)
+  decisions     Json?
+  assetId       String?
+  dealId        String?
+  transcript    String?
+  summary       String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  asset Asset? @relation(fields: [assetId], references: [id])
+  deal  Deal?  @relation(fields: [dealId], references: [id])
+}
+
+model Document {
+  id          String           @id @default(cuid())
+  name        String
+  category    DocumentCategory @default(OTHER)
+  fileUrl     String?
+  fileSize    Int?
+  mimeType    String?
+  assetId     String?
+  entityId    String?
+  dealId      String?
+  investorId  String?
+  uploadDate  DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  asset  Asset?  @relation(fields: [assetId], references: [id])
+  entity Entity? @relation(fields: [entityId], references: [id])
+  deal   Deal?   @relation(fields: [dealId], references: [id])
+}
+
+model Notification {
+  id          String              @id @default(cuid())
+  investorId  String?
+  channel     NotificationChannel @default(EMAIL)
+  subject     String
+  body        String?
+  sentAt      DateTime?
+  status      String              @default("pending")
+  createdAt   DateTime            @default(now())
+}
+
+model ActivityEvent {
+  id          String   @id @default(cuid())
+  assetId     String?
+  description String
+  eventDate   DateTime
+  eventType   String
+  createdAt   DateTime @default(now())
+
+  asset Asset? @relation(fields: [assetId], references: [id])
+}
