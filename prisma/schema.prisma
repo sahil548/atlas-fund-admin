@@ -35,7 +35,7 @@ enum EntityStatus {
 enum AssetClass {
   REAL_ESTATE
   PUBLIC_SECURITIES
-  VENTURE_CAPITAL
+  OPERATING_BUSINESS
   INFRASTRUCTURE
   COMMODITIES
   DIVERSIFIED
@@ -258,6 +258,20 @@ enum DDWorkstreamStatus {
   COMPLETE
 }
 
+enum ContactType {
+  INTERNAL
+  EXTERNAL
+}
+
+enum CompanyType {
+  GP
+  LP
+  COUNTERPARTY
+  SERVICE_PROVIDER
+  OPERATING_COMPANY
+  OTHER
+}
+
 // ============================================================
 // CORE: Firm, Entity, User, Accounting
 // ============================================================
@@ -273,6 +287,8 @@ model Firm {
   users    User[]
   deals    Deal[]
   ddCategoryTemplates DDCategoryTemplate[]
+  companies  Company[]
+  contacts   Contact[]
 }
 
 model Entity {
@@ -1307,4 +1323,46 @@ model FundraisingProspect {
 
   @@index([roundId])
   @@index([status])
+}
+
+// ============================================================
+// CRM: Companies & Contacts
+// ============================================================
+
+model Company {
+  id        String      @id @default(cuid())
+  firmId    String
+  firm      Firm        @relation(fields: [firmId], references: [id])
+  name      String
+  legalName String?
+  type      CompanyType @default(OTHER)
+  website   String?
+  industry  String?
+  address   String?
+  notes     String?
+  contacts  Contact[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([firmId])
+}
+
+model Contact {
+  id        String      @id @default(cuid())
+  firmId    String
+  firm      Firm        @relation(fields: [firmId], references: [id])
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  title     String?
+  type      ContactType @default(EXTERNAL)
+  companyId String?
+  company   Company?    @relation(fields: [companyId], references: [id])
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([firmId])
+  @@index([companyId])
 }

@@ -4,25 +4,25 @@ export const INVESTOR_ID = "investor-1";
 // ── Shared Taxonomy Labels & Colors ────────────────────────
 
 export const ASSET_CLASS_LABELS: Record<string, string> = {
-  REAL_ESTATE: "Real Estate",
+  CASH_AND_EQUIVALENTS: "Cash",
   PUBLIC_SECURITIES: "Public Securities",
-  VENTURE_CAPITAL: "Venture Capital",
+  REAL_ESTATE: "Real Estate",
   INFRASTRUCTURE: "Infrastructure",
-  COMMODITIES: "Commodities",
+  OPERATING_BUSINESS: "Operating Business",
   DIVERSIFIED: "Diversified",
   NON_CORRELATED: "Non-Correlated",
-  CASH_AND_EQUIVALENTS: "Cash",
+  COMMODITIES: "Commodities",
 };
 
 export const ASSET_CLASS_COLORS: Record<string, string> = {
-  REAL_ESTATE: "green",
+  CASH_AND_EQUIVALENTS: "gray",
   PUBLIC_SECURITIES: "blue",
-  VENTURE_CAPITAL: "purple",
+  REAL_ESTATE: "green",
   INFRASTRUCTURE: "orange",
-  COMMODITIES: "yellow",
+  OPERATING_BUSINESS: "purple",
   DIVERSIFIED: "indigo",
   NON_CORRELATED: "red",
-  CASH_AND_EQUIVALENTS: "gray",
+  COMMODITIES: "yellow",
 };
 
 export const CAPITAL_INSTRUMENT_LABELS: Record<string, string> = {

@@ -14,6 +14,7 @@ import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
   CAPITAL_INSTRUMENT_LABELS,
+  PARTICIPATION_LABELS,
 } from "@/lib/constants";
 
 /* ── Pipeline stages (4 columns, no DEAD) ────────────── */
@@ -29,6 +30,7 @@ const stages = [
 export default function DealsPage() {
   const { firmId } = useFirm();
   const [showCreate, setShowCreate] = useState(false);
+  const [showDead, setShowDead] = useState(false);
   const { data, isLoading } = useSWR(`/api/deals?firmId=${firmId}`, fetcher);
   if (isLoading || !data)
     return <div className="text-sm text-gray-400">Loading...</div>;
@@ -111,9 +113,9 @@ export default function DealsPage() {
                             {CAPITAL_INSTRUMENT_LABELS[p.capitalInstrument]}
                           </Badge>
                         )}
-                        {p.sector && (
+                        {p.participationStructure && (
                           <span className="text-[10px] text-gray-500">
-                            {p.sector}
+                            {PARTICIPATION_LABELS[p.participationStructure] || p.participationStructure}
                           </span>
                         )}
                       </div>
@@ -172,6 +174,45 @@ export default function DealsPage() {
           );
         })}
       </div>
+
+      {/* Dead Deals */}
+      {(() => {
+        const deadDeals = deals.filter((d: any) => d.stage === "DEAD");
+        if (deadDeals.length === 0) return null;
+        return (
+          <div className="bg-red-50/50 rounded-xl border border-red-100">
+            <button
+              onClick={() => setShowDead(!showDead)}
+              className="w-full flex items-center justify-between p-3 text-xs font-semibold text-red-700"
+            >
+              <span>Dead Deals ({deadDeals.length})</span>
+              <span className="text-red-400">{showDead ? "▲" : "▼"}</span>
+            </button>
+            {showDead && (
+              <div className="px-3 pb-3 grid grid-cols-4 gap-2">
+                {deadDeals.map((p: any) => (
+                  <Link
+                    key={p.id}
+                    href={`/deals/${p.id}`}
+                    className="block bg-white rounded-lg p-3 shadow-sm border border-red-100 cursor-pointer hover:border-red-300 transition-colors opacity-70"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-medium truncate pr-2">{p.name}</div>
+                      <Badge color="red">Dead</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
+                        {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 text-[10px] text-gray-500">{p.targetSize || ""}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* AI Screening Engine Banner */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-5 text-white">

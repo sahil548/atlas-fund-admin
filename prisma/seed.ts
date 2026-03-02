@@ -13,6 +13,8 @@ async function main() {
   // ============================================================
   console.log("Clearing existing data...");
 
+  await prisma.contact.deleteMany();
+  await prisma.company.deleteMany();
   await prisma.activityEvent.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.document.deleteMany();
@@ -428,7 +430,7 @@ async function main() {
     data: {
       id: "asset-1",
       name: "NovaTech AI",
-      assetClass: "VENTURE_CAPITAL", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      assetClass: "OPERATING_BUSINESS", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
       sector: "Technology",
       status: "ACTIVE",
       costBasis: 45_000_000,
@@ -446,7 +448,7 @@ async function main() {
     data: {
       id: "asset-2",
       name: "Helix Therapeutics",
-      assetClass: "VENTURE_CAPITAL", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      assetClass: "OPERATING_BUSINESS", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
       sector: "Healthcare",
       status: "ACTIVE",
       costBasis: 32_000_000,
@@ -500,7 +502,7 @@ async function main() {
     data: {
       id: "asset-5",
       name: "Sequoia Capital Fund XVI",
-      assetClass: "VENTURE_CAPITAL", capitalInstrument: "EQUITY", participationStructure: "LP_STAKE_SILENT_PARTNER",
+      assetClass: "OPERATING_BUSINESS", capitalInstrument: "EQUITY", participationStructure: "LP_STAKE_SILENT_PARTNER",
       sector: "VC",
       status: "ACTIVE",
       costBasis: 10_000_000,
@@ -1929,6 +1931,48 @@ async function main() {
       { id: "ae-5", assetId: asset1.id, description: "Dividend received: $1.5M", eventDate: new Date("2024-12-15"), eventType: "income" },
     ],
   });
+
+  // ── Companies ──────────────────────────────────────────
+  const companies = [
+    { id: "company-1", firmId: "firm-1", name: "Apex Industries Inc.", type: "COUNTERPARTY" as const, industry: "Industrials", website: "https://apexindustries.com" },
+    { id: "company-2", firmId: "firm-1", name: "Beacon Healthcare Group", type: "COUNTERPARTY" as const, industry: "Healthcare", website: "https://beaconhealth.com" },
+    { id: "company-3", firmId: "firm-1", name: "Ridgeline Properties LLC", type: "COUNTERPARTY" as const, industry: "Real Estate" },
+    { id: "company-4", firmId: "firm-1", name: "Nordic Wind Capital", type: "GP" as const, industry: "Infrastructure" },
+    { id: "company-5", firmId: "firm-1", name: "UrbanNest Inc.", type: "COUNTERPARTY" as const, industry: "Real Estate / PropTech" },
+    { id: "company-6", firmId: "firm-1", name: "Blackstone", type: "GP" as const, industry: "Financial Services", website: "https://blackstone.com" },
+    { id: "company-7", firmId: "firm-1", name: "Acme Capital", type: "GP" as const, industry: "Financial Services" },
+    { id: "company-8", firmId: "firm-1", name: "KKR Credit", type: "GP" as const, industry: "Financial Services", website: "https://kkr.com" },
+    { id: "company-9", firmId: "firm-1", name: "Goldman Sachs Asset Management", type: "SERVICE_PROVIDER" as const, industry: "Financial Services" },
+    { id: "company-10", firmId: "firm-1", name: "Latham & Watkins LLP", type: "SERVICE_PROVIDER" as const, industry: "Legal" },
+  ];
+
+  for (const c of companies) {
+    await prisma.company.upsert({
+      where: { id: c.id },
+      update: c,
+      create: c,
+    });
+  }
+  console.log("✓ Companies seeded");
+
+  // ── Contacts ──────────────────────────────────────────
+  const contacts = [
+    { id: "contact-1", firmId: "firm-1", firstName: "Robert", lastName: "Chen", email: "rchen@apexindustries.com", title: "CEO", type: "EXTERNAL" as const, companyId: "company-1" },
+    { id: "contact-2", firmId: "firm-1", firstName: "Lisa", lastName: "Park", email: "lpark@beaconhealth.com", title: "CFO", type: "EXTERNAL" as const, companyId: "company-2" },
+    { id: "contact-3", firmId: "firm-1", firstName: "David", lastName: "Morse", email: "dmorse@ridgeline.com", title: "Managing Partner", type: "EXTERNAL" as const, companyId: "company-3" },
+    { id: "contact-4", firmId: "firm-1", firstName: "Erik", lastName: "Johansson", email: "erik@nordicwind.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-4" },
+    { id: "contact-5", firmId: "firm-1", firstName: "Maria", lastName: "Santos", email: "msantos@urbanest.com", title: "Founder & CEO", type: "EXTERNAL" as const, companyId: "company-5" },
+    { id: "contact-6", firmId: "firm-1", firstName: "Tom", lastName: "Bradley", email: "tbradley@latham.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-10" },
+  ];
+
+  for (const c of contacts) {
+    await prisma.contact.upsert({
+      where: { id: c.id },
+      update: c,
+      create: c,
+    });
+  }
+  console.log("✓ Contacts seeded");
 
   console.log("Seeding complete!");
 }

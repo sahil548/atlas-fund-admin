@@ -5,7 +5,7 @@ import { z } from "zod";
 export const ASSET_CLASSES = [
   "REAL_ESTATE",
   "PUBLIC_SECURITIES",
-  "VENTURE_CAPITAL",
+  "OPERATING_BUSINESS",
   "INFRASTRUCTURE",
   "COMMODITIES",
   "DIVERSIFIED",

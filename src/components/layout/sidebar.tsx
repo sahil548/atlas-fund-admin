@@ -10,6 +10,7 @@ const gpNav = [
   { key: "/assets", label: "Assets", icon: "\u25C8" },
   { key: "/deals", label: "Deal Desk", icon: "\u25C6" },
   { key: "/investors", label: "Investors", icon: "\u25C9" },
+  { key: "/crm", label: "CRM", icon: "\u25CE" },
   { key: "/documents", label: "Documents", icon: "\u25A5" },
   { key: "/accounting", label: "Accounting", icon: "\u2B21" },
   { key: "/settings", label: "Settings", icon: "\u2699" },

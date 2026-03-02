@@ -17,7 +17,7 @@ const fetcherFn = (url: string) => fetch(url).then((r) => r.json());
 const ASSET_CLASS_OPTIONS = [
   { value: "REAL_ESTATE", label: "Real Estate" },
   { value: "PUBLIC_SECURITIES", label: "Public Securities" },
-  { value: "VENTURE_CAPITAL", label: "Venture Capital" },
+  { value: "OPERATING_BUSINESS", label: "Operating Business" },
   { value: "INFRASTRUCTURE", label: "Infrastructure" },
   { value: "COMMODITIES", label: "Commodities" },
   { value: "DIVERSIFIED", label: "Diversified" },
@@ -65,6 +65,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
     revalidateKeys: ["/api/deals", `/api/deals/${deal.id}`],
   });
   const { data: users } = useSWR("/api/users?firmId=firm-1", fetcherFn);
+  const { data: companies } = useSWR("/api/companies?firmId=firm-1", fetcherFn);
   const [form, setForm] = useState({
     name: "",
     sector: "",
@@ -231,25 +232,42 @@ export function EditDealForm({ open, onClose, deal }: Props) {
                 ]}
               />
             </FormField>
-            <FormField label="GP Name">
-              <Input
+            <FormField label="GP / Sponsor">
+              <Select
                 value={form.gpName}
                 onChange={(e) => set("gpName", e.target.value)}
-                placeholder="e.g. Apex Capital Partners"
+                options={[
+                  { value: "", label: "— Select —" },
+                  ...(companies || []).filter((c: any) => c.type === "GP").map((c: any) => ({ value: c.name, label: c.name })),
+                  ...(companies || []).filter((c: any) => c.type !== "GP").map((c: any) => ({ value: c.name, label: c.name })),
+                ]}
               />
             </FormField>
             <FormField label="Source">
-              <Input
+              <Select
                 value={form.source}
                 onChange={(e) => set("source", e.target.value)}
-                placeholder="e.g. Advisor referral"
+                options={[
+                  { value: "", label: "— Select —" },
+                  { value: "Direct / Proprietary", label: "Direct / Proprietary" },
+                  { value: "Broker", label: "Broker" },
+                  { value: "Advisor referral", label: "Advisor referral" },
+                  { value: "GP relationship", label: "GP relationship" },
+                  { value: "LP co-invest", label: "LP co-invest" },
+                  { value: "Conference / Event", label: "Conference / Event" },
+                  { value: "GP direct outreach", label: "GP direct outreach" },
+                ]}
               />
             </FormField>
             <FormField label="Counterparty">
-              <Input
+              <Select
                 value={form.counterparty}
                 onChange={(e) => set("counterparty", e.target.value)}
-                placeholder="e.g. Apex Industries Inc."
+                options={[
+                  { value: "", label: "— Select —" },
+                  ...(companies || []).filter((c: any) => ["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
+                  ...(companies || []).filter((c: any) => !["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
+                ]}
               />
             </FormField>
           </div>
