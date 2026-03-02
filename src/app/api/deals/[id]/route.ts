@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateDealSchema } from "@/lib/schemas";
-import { killDeal, closeDeal } from "@/lib/deal-stage-engine";
+import { killDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
 
 export async function GET(
   _req: Request,
@@ -92,6 +92,16 @@ export async function PATCH(
   if (body.action === "KILL") {
     try {
       const deal = await killDeal(id);
+      return NextResponse.json(deal);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  }
+
+  if (body.action === "ADVANCE_TO_CLOSING") {
+    try {
+      const deal = await advanceToClosing(id);
       return NextResponse.json(deal);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";

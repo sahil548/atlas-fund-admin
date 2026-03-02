@@ -20,6 +20,7 @@ interface EntityRow {
   totalCalled: number;
   totalDistributed: number;
   status: string;
+  formationStatus?: string;
   accountingConnection?: { provider: string; syncStatus: string };
 }
 
@@ -40,7 +41,7 @@ export default function EntitiesPage() {
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Entity", "Type", "Vintage", "Committed", "Called", "Distributed", "Accounting", ""].map((h) => (
+              {["Entity", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -60,6 +61,12 @@ export default function EntitiesPage() {
                 <td className="px-3 py-2.5">{fmt(e.totalCommitments || 0)}</td>
                 <td className="px-3 py-2.5">{fmt(e.totalCalled)}</td>
                 <td className="px-3 py-2.5">{fmt(e.totalDistributed)}</td>
+                <td className="px-3 py-2.5">
+                  {e.formationStatus === "FORMING" && <Badge color="yellow">Forming</Badge>}
+                  {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
+                  {e.formationStatus === "REGISTERED" && <Badge color="blue">Registered</Badge>}
+                  {(!e.formationStatus || e.formationStatus === "NOT_STARTED") && <span className="text-gray-400">—</span>}
+                </td>
                 <td className="px-3 py-2.5">
                   <Badge color={e.accountingConnection?.syncStatus === "CONNECTED" ? "green" : e.accountingConnection?.syncStatus === "ERROR" ? "red" : "gray"}>
                     {e.accountingConnection?.syncStatus || "—"}

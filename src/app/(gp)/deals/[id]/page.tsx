@@ -109,6 +109,10 @@ export default function DealDetailPage({
   const [screeningLoading, setScreeningLoading] = useState(false);
   const [killingDeal, setKillingDeal] = useState(false);
   const [sendingToIC, setSendingToIC] = useState(false);
+  const [showAdvanceToClosing, setShowAdvanceToClosing] = useState(false);
+  const [showCloseDeal, setShowCloseDeal] = useState(false);
+  const [advancingToClosing, setAdvancingToClosing] = useState(false);
+  const [closingDeal, setClosingDeal] = useState(false);
 
   if (isLoading || !deal)
     return <div className="text-sm text-gray-400">Loading...</div>;
@@ -177,6 +181,53 @@ export default function DealDetailPage({
       toast.error("Failed to send to IC");
     } finally {
       setSendingToIC(false);
+    }
+  }
+
+  async function handleAdvanceToClosing() {
+    setAdvancingToClosing(true);
+    try {
+      const res = await fetch(`/api/deals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ADVANCE_TO_CLOSING" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to advance");
+        return;
+      }
+      toast.success("Deal advanced to Closing");
+      mutate(`/api/deals/${id}`);
+      setShowAdvanceToClosing(false);
+    } catch {
+      toast.error("Failed to advance to closing");
+    } finally {
+      setAdvancingToClosing(false);
+    }
+  }
+
+  async function handleCloseDeal() {
+    setClosingDeal(true);
+    try {
+      const res = await fetch(`/api/deals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "CLOSE" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to close deal");
+        return;
+      }
+      toast.success("Deal closed — asset created and booked");
+      mutate(`/api/deals/${id}`);
+      mutate("/api/deals");
+      setShowCloseDeal(false);
+    } catch {
+      toast.error("Failed to close deal");
+    } finally {
+      setClosingDeal(false);
     }
   }
 
@@ -258,6 +309,20 @@ export default function DealDetailPage({
               Send to IC Review
             </Button>
           )}
+          {deal.stage === "IC_REVIEW" &&
+            deal.icProcess?.finalDecision === "APPROVED" && (
+              <Button onClick={() => setShowAdvanceToClosing(true)}>
+                Advance to Closing
+              </Button>
+            )}
+          {deal.stage === "CLOSING" && (
+            <Button
+              onClick={() => setShowCloseDeal(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Close Deal
+            </Button>
+          )}
           {!isDead && !isClosed && (
             <Button
               variant="danger"
@@ -304,6 +369,21 @@ export default function DealDetailPage({
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {deal.stage === "IC_REVIEW" && !isDead && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+          <span className="font-semibold">Next step:</span>{" "}
+          {deal.icProcess?.finalDecision === "APPROVED"
+            ? 'IC has approved — click "Advance to Closing" to begin the closing process.'
+            : "Awaiting IC decision. Once approved, you can advance to Closing."}
+        </div>
+      )}
+      {deal.stage === "CLOSING" && !isClosed && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-sm text-indigo-700">
+          <span className="font-semibold">Next step:</span> Complete all items
+          in the Closing tab, then click &quot;Close Deal&quot; to finalize.
         </div>
       )}
 
@@ -392,6 +472,26 @@ export default function DealDetailPage({
         confirmLabel={sendToICWarning ? "Send Anyway" : "Send to IC"}
         variant="primary"
         loading={sendingToIC}
+      />
+      <ConfirmDialog
+        open={showAdvanceToClosing}
+        onClose={() => setShowAdvanceToClosing(false)}
+        onConfirm={handleAdvanceToClosing}
+        title="Advance to Closing"
+        message={`Advance "${deal.name}" to the Closing stage? This will begin the closing process.`}
+        confirmLabel="Advance to Closing"
+        variant="primary"
+        loading={advancingToClosing}
+      />
+      <ConfirmDialog
+        open={showCloseDeal}
+        onClose={() => setShowCloseDeal(false)}
+        onConfirm={handleCloseDeal}
+        title="Close Deal"
+        message={`Close "${deal.name}"? This will create the asset and book it to the portfolio. All closing checklist items must be complete.`}
+        confirmLabel="Close Deal"
+        variant="primary"
+        loading={closingDeal}
       />
     </div>
   );

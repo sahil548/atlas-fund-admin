@@ -20,7 +20,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type InvestorRow = { id: string; name: string; investorType: string; totalCommitted: number; commitments: { entity: { name: string } }[]; kycStatus: string; advisoryBoard: boolean; contactPreference: string };
+type InvestorRow = { id: string; name: string; investorType: string; totalCommitted: number; commitments: { entity: { name: string } }[]; kycStatus: string; advisoryBoard: boolean; contactPreference: string; contact?: { id: string; firstName: string; lastName: string; email: string } | null; company?: { id: string; name: string; type: string } | null };
 
 const COMPANY_TYPE_LABELS: Record<string, string> = {
   GP: "GP",
@@ -102,6 +102,26 @@ export default function DirectoryPage() {
     }
   }
 
+  async function addInvestorProfile(type: "contact" | "company", record: any) {
+    const name = type === "contact" ? `${record.firstName} ${record.lastName}` : record.name;
+    try {
+      await fetch("/api/investors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          investorType: type === "contact" ? "Individual" : "Institutional",
+          [type === "contact" ? "contactId" : "companyId"]: record.id,
+        }),
+      });
+      toast.success(`Investor profile created for ${name}`);
+      mutate(`/api/investors?firmId=${firmId}`);
+      mutate(`/api/${type === "contact" ? "contacts" : "companies"}?firmId=${firmId}`);
+    } catch {
+      toast.error("Failed to create investor profile");
+    }
+  }
+
   const tabs = [
     { key: "investors" as const, label: "Investors", count: investors?.length || 0 },
     { key: "companies" as const, label: "Companies", count: companies?.length || 0 },
@@ -148,7 +168,7 @@ export default function DirectoryPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Investor", "Type", "Total Committed", "Entities", "KYC", "Advisory", "Pref. Contact", ""].map((h) => (
+                {["Investor", "Type", "Total Committed", "Entities", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -165,7 +185,16 @@ export default function DirectoryPage() {
                     ))}
                   </td>
                   <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
-                  <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">—</span>}</td>
+                  <td className="px-3 py-2.5">
+                    {inv.contact ? (
+                      <span className="text-xs text-indigo-600">{inv.contact.firstName} {inv.contact.lastName}</span>
+                    ) : inv.company ? (
+                      <span className="text-xs text-indigo-600">{inv.company.name}</span>
+                    ) : (
+                      <span className="text-gray-400">\u2014</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">\u2014</span>}</td>
                   <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
                   <td className="px-3 py-2.5">
                     <button
@@ -188,7 +217,7 @@ export default function DirectoryPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Company", "Type", "Industry", "Contacts", "Website", ""].map((h) => (
+                {["Company", "Type", "Industry", "Contacts", "Investor", "Website", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -202,12 +231,26 @@ export default function DirectoryPage() {
                       {COMPANY_TYPE_LABELS[c.type] || c.type}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{c.industry || "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.industry || "\u2014"}</td>
                   <td className="px-4 py-3 text-gray-600">{c._count?.contacts || 0}</td>
+                  <td className="px-4 py-3">
+                    {c.investorProfile ? (
+                      <Link href={`/investors/${c.investorProfile.id}`}>
+                        <Badge color="green">Investor</Badge>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => addInvestorProfile("company", c)}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline"
+                      >
+                        + Add Investor Profile
+                      </button>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {c.website ? (
                       <span className="text-indigo-600 hover:underline cursor-pointer">{c.website.replace(/^https?:\/\//, "")}</span>
-                    ) : "—"}
+                    ) : "\u2014"}
                   </td>
                   <td className="px-4 py-3">
                     <Button variant="secondary" size="sm" onClick={() => {}}>View</Button>
@@ -215,7 +258,7 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!companies || companies.length === 0) && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No companies yet.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No companies yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -228,7 +271,7 @@ export default function DirectoryPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Name", "Title", "Company", "Email", "Phone", "Type", ""].map((h) => (
+                {["Name", "Title", "Company", "Email", "Phone", "Type", "Investor", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -244,14 +287,28 @@ export default function DirectoryPage() {
                       {c.firstName} {c.lastName}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{c.title || "—"}</td>
-                  <td className="px-4 py-3 text-indigo-600">{c.company?.name || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.email || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{c.phone || "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.title || "\u2014"}</td>
+                  <td className="px-4 py-3 text-indigo-600">{c.company?.name || "\u2014"}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.email || "\u2014"}</td>
+                  <td className="px-4 py-3 text-gray-600">{c.phone || "\u2014"}</td>
                   <td className="px-4 py-3">
                     <Badge color={c.type === "INTERNAL" ? "blue" : "gray"}>
                       {CONTACT_TYPE_LABELS[c.type] || c.type}
                     </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.investorProfile ? (
+                      <Link href={`/investors/${c.investorProfile.id}`}>
+                        <Badge color="green">Investor</Badge>
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={() => addInvestorProfile("contact", c)}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline"
+                      >
+                        + Add Investor Profile
+                      </button>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Button variant="secondary" size="sm" onClick={() => {}}>Edit</Button>
@@ -259,7 +316,7 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!contacts || contacts.length === 0) && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No contacts yet.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No contacts yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -299,9 +356,9 @@ export default function DirectoryPage() {
                       {u.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">—</td>
+                  <td className="px-4 py-3 text-gray-600">\u2014</td>
                   <td className="px-4 py-3 text-gray-500">
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "\u2014"}
                   </td>
                 </tr>
               ))}
@@ -320,7 +377,7 @@ export default function DirectoryPage() {
             {sideLetters?.map((sl: { id: string; investor: { name: string }; entity: { name: string }; terms: string }) => (
               <div key={sl.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
-                  <div className="text-sm font-medium">{sl.investor.name} — <span className="text-indigo-600">{sl.entity.name}</span></div>
+                  <div className="text-sm font-medium">{sl.investor.name} \u2014 <span className="text-indigo-600">{sl.entity.name}</span></div>
                   <div className="text-xs text-gray-500 mt-0.5">{sl.terms}</div>
                 </div>
                 <Badge color="purple">Side Letter</Badge>
@@ -415,7 +472,7 @@ export default function DirectoryPage() {
               value={contactForm.companyId}
               onChange={(e) => setContactForm((p) => ({ ...p, companyId: e.target.value }))}
               options={[
-                { value: "", label: "— No company —" },
+                { value: "", label: "\u2014 No company \u2014" },
                 ...(companies || []).map((c: any) => ({ value: c.id, label: c.name })),
               ]}
             />

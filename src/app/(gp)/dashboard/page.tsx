@@ -11,6 +11,7 @@ import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
 } from "@/lib/constants";
+import { AssetAllocationChart } from "@/components/features/dashboard/asset-allocation-chart";
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -68,8 +69,12 @@ export default function DashboardPage() {
         <StatCard label="TVPI" value={`${(data.performanceMetrics?.tvpi ?? 0).toFixed(2)}x`} sub="Total value / paid-in" />
       </div>
 
-      {/* Row 2: Top Assets + Entity Overview (existing) */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Row 2: Asset Allocation + Top Assets + Entity Overview */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Asset Allocation</h3>
+          <AssetAllocationChart />
+        </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-3">Top Assets by Fair Value</h3>
           {data.topAssets?.map((a: { id: string; name: string; assetClass: string; fairValue: number; moic: number }) => (

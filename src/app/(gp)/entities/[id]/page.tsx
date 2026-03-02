@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fmt } from "@/lib/utils";
@@ -13,10 +13,13 @@ import { CreateMeetingForm } from "@/components/features/meetings/create-meeting
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
+import { useToast } from "@/components/ui/toast";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const tabs = [
+const baseTabs = [
   { key: "overview", label: "Overview" },
   { key: "nav", label: "NAV" },
   { key: "capital", label: "Capital" },
@@ -41,6 +44,9 @@ export default function EntityDetailPage() {
   const [showTemplate, setShowTemplate] = useState(false);
   const [showAddTier, setShowAddTier] = useState(false);
   const [editTier, setEditTier] = useState<Tier | null>(null);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [markingFormed, setMarkingFormed] = useState(false);
+  const toast = useToast();
 
   if (isLoading || !entity) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -51,18 +57,63 @@ export default function EntityDetailPage() {
   const methodLabel: Record<string, string> = { COMPARABLE_MULTIPLES: "Multiples", LAST_ROUND: "Last round", DCF: "DCF", APPRAISAL: "Appraisal", GP_REPORTED_NAV: "GP NAV", COST: "Cost" };
   const tierColors = ["bg-emerald-50 border-emerald-200", "bg-blue-50 border-blue-200", "bg-amber-50 border-amber-200", "bg-orange-50 border-orange-200", "bg-purple-50 border-purple-200"];
 
+  // Formation tab logic
+  const showFormation = e.formationStatus === "FORMING" || e.formationStatus === "NOT_STARTED";
+  const tabs = showFormation
+    ? [{ key: "formation", label: "Formation" }, ...baseTabs]
+    : baseTabs;
+
+  const formationTasks: any[] = e.tasks || [];
+  const formationCompleted = formationTasks.filter((t: any) => t.status === "DONE").length;
+  const formationTotal = formationTasks.length;
+  const completedPct = formationTotal > 0 ? Math.round((formationCompleted / formationTotal) * 100) : 0;
+  const allFormationDone = formationTotal > 0 && formationCompleted === formationTotal;
+
+  async function updateFormationTask(taskId: string, updates: Record<string, unknown>) {
+    await fetch("/api/tasks", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: taskId, ...updates }),
+    });
+    mutate(`/api/entities/${id}`);
+  }
+
+  async function handleMarkFormed() {
+    setMarkingFormed(true);
+    try {
+      const res = await fetch(`/api/entities/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "MARK_FORMED" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || "Cannot mark as formed");
+        return;
+      }
+      toast.success("Entity marked as formed");
+      mutate(`/api/entities/${id}`);
+    } catch {
+      toast.error("Failed to mark as formed");
+    } finally {
+      setMarkingFormed(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/entities" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">← All Entities</Link>
+          <Link href="/entities" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">&larr; All Entities</Link>
           <h2 className="text-lg font-bold">{e.name}</h2>
           <div className="flex gap-2 mt-1">
             <Badge color={e.entityType === "MAIN_FUND" ? "indigo" : e.entityType === "SIDECAR" ? "purple" : "blue"}>{e.entityType?.replace(/_/g, " ")}</Badge>
             <Badge color={e.status === "ACTIVE" ? "green" : e.status === "WINDING_DOWN" ? "amber" : "gray"}>{e.status}</Badge>
             {e.vehicleStructure && <Badge color="gray">{e.vehicleStructure}</Badge>}
             {e.vintageYear && <Badge color="gray">{e.vintageYear}</Badge>}
+            {e.formationStatus === "FORMING" && <Badge color="yellow">Forming</Badge>}
+            {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
           </div>
         </div>
       </div>
@@ -76,6 +127,140 @@ export default function EntityDetailPage() {
         ))}
       </div>
 
+      {/* Formation Tab */}
+      {tab === "formation" && (
+        <div className="space-y-4">
+          {/* Progress */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 bg-gray-100 rounded-full h-2">
+              <div className="bg-emerald-500 h-2 rounded-full transition-all" style={{ width: `${completedPct}%` }} />
+            </div>
+            <span className="text-xs text-gray-500">{formationCompleted} / {formationTotal} complete</span>
+          </div>
+
+          {/* Formation status banner */}
+          {e.formationStatus === "FORMING" && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
+              Entity is currently in formation. Complete all tasks below to finalize.
+            </div>
+          )}
+
+          {/* Task list */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-50">
+            {formationTasks.map((task: any) => (
+              <div key={task.id}>
+                <div
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50"
+                  onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                >
+                  {/* Status dot */}
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                    task.status === "DONE" ? "bg-emerald-400" :
+                    task.status === "IN_PROGRESS" ? "bg-amber-400" :
+                    "bg-gray-300"
+                  }`} />
+                  {/* Order */}
+                  <span className="text-[10px] text-gray-400 font-mono w-4">{task.order}</span>
+                  {/* Title */}
+                  <span className={`flex-1 text-sm ${task.status === "DONE" ? "line-through text-gray-400" : "text-gray-900"}`}>
+                    {task.title}
+                  </span>
+                  {/* Assignee */}
+                  {task.assignee && (
+                    <span className="inline-flex items-center gap-1 text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+                      {task.assignee.initials || task.assignee.name?.split(" ").map((n: string) => n[0]).join("")}
+                    </span>
+                  )}
+                  {/* Due date */}
+                  {task.dueDate && (
+                    <span className="text-[10px] text-gray-400">
+                      {new Date(task.dueDate).toLocaleDateString()}
+                    </span>
+                  )}
+                  {/* Status badge */}
+                  <Badge color={
+                    task.status === "DONE" ? "green" :
+                    task.status === "IN_PROGRESS" ? "yellow" :
+                    "gray"
+                  }>
+                    {task.status === "DONE" ? "Done" : task.status === "IN_PROGRESS" ? "In Progress" : "To Do"}
+                  </Badge>
+                  {/* Expand chevron */}
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${expandedTask === task.id ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+
+                {/* Expanded details */}
+                {expandedTask === task.id && (
+                  <div className="px-4 pb-4 pt-1 bg-gray-50 border-t border-gray-100">
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* Status select */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-1 block">Status</label>
+                        <select
+                          value={task.status}
+                          onChange={(ev) => updateFormationTask(task.id, { status: ev.target.value })}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="TODO">To Do</option>
+                          <option value="IN_PROGRESS">In Progress</option>
+                          <option value="DONE">Done</option>
+                        </select>
+                      </div>
+                      {/* Assignee select */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-1 block">Assignee</label>
+                        <TeamUserSelect
+                          value={task.assigneeId || ""}
+                          onChange={(val) => updateFormationTask(task.id, { assigneeId: val || null })}
+                        />
+                      </div>
+                      {/* Due date */}
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-1 block">Due Date</label>
+                        <input
+                          type="date"
+                          value={task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""}
+                          onChange={(ev) => updateFormationTask(task.id, { dueDate: ev.target.value || null })}
+                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    {/* Notes */}
+                    <div className="mt-2">
+                      <label className="text-[10px] text-gray-500 mb-1 block">Notes</label>
+                      <textarea
+                        defaultValue={task.notes || ""}
+                        onBlur={(ev) => updateFormationTask(task.id, { notes: ev.target.value })}
+                        rows={2}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        placeholder="Add notes..."
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            {formationTasks.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-gray-400">No formation tasks.</div>
+            )}
+          </div>
+
+          {/* Mark as Formed button */}
+          {allFormationDone && e.formationStatus === "FORMING" && (
+            <div className="flex justify-end">
+              <Button
+                onClick={handleMarkFormed}
+                disabled={markingFormed}
+              >
+                {markingFormed ? "Marking..." : "Mark as Formed"}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Overview Tab */}
       {tab === "overview" && (
         <div className="space-y-4">
@@ -83,8 +268,8 @@ export default function EntityDetailPage() {
             {[
               { label: "Total Commitments", value: fmt(e.totalCommitments || 0) },
               { label: "Called Capital", value: fmt(totalCalled) },
-              { label: "Economic NAV", value: navData ? fmt(navData.economicNAV) : "—" },
-              { label: "Fund Term", value: e.fundTermYears ? `${e.fundTermYears} years` : "—" },
+              { label: "Economic NAV", value: navData ? fmt(navData.economicNAV) : "\u2014" },
+              { label: "Fund Term", value: e.fundTermYears ? `${e.fundTermYears} years` : "\u2014" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
@@ -120,7 +305,7 @@ export default function EntityDetailPage() {
       {tab === "nav" && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Two-Layer NAV — {e.name}</h3>
+            <h3 className="text-sm font-semibold">Two-Layer NAV \u2014 {e.name}</h3>
             {e.accountingConnection && (
               <div className="flex gap-2">
                 <Badge color={e.accountingConnection.syncStatus === "CONNECTED" ? "green" : "gray"}>{e.accountingConnection.provider} {e.accountingConnection.syncStatus === "CONNECTED" ? "Synced" : e.accountingConnection.syncStatus}</Badge>
@@ -195,7 +380,7 @@ export default function EntityDetailPage() {
                     <td className="px-3 py-2.5">{new Date(c.callDate).toLocaleDateString()}</td>
                     <td className="px-3 py-2.5">{new Date(c.dueDate).toLocaleDateString()}</td>
                     <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
-                    <td className="px-3 py-2.5">{c.purpose || "—"}</td>
+                    <td className="px-3 py-2.5">{c.purpose || "\u2014"}</td>
                     <td className="px-3 py-2.5"><Badge color={c.status === "FUNDED" ? "green" : c.status === "ISSUED" ? "amber" : "gray"}>{c.status}</Badge></td>
                     <td className="px-3 py-2.5">
                       <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${Math.min(c.fundedPercent, 100)}%` }} /></div>
@@ -220,7 +405,7 @@ export default function EntityDetailPage() {
                 {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number }) => (
                   <tr key={d.id} className="border-t border-gray-50">
                     <td className="px-3 py-2.5">{new Date(d.distributionDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2.5">{d.source || "—"}</td>
+                    <td className="px-3 py-2.5">{d.source || "\u2014"}</td>
                     <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
                     <td className="px-3 py-2.5 text-blue-600">{fmt(d.returnOfCapital)}</td>
                     <td className="px-3 py-2.5 text-emerald-600">{fmt(d.income)}</td>
@@ -282,7 +467,7 @@ export default function EntityDetailPage() {
                     <div className="text-sm font-semibold mt-1">{t.name}</div>
                     {t.description && <div className="text-xs text-gray-500 mt-0.5">{t.description}</div>}
                     <div className="mt-2 text-xs">
-                      {t.splitLP != null && t.splitGP != null && <span>LP: {t.splitLP}% · GP: {t.splitGP}%</span>}
+                      {t.splitLP != null && t.splitGP != null && <span>LP: {t.splitLP}% &middot; GP: {t.splitGP}%</span>}
                       {t.hurdleRate != null && <span className="ml-2">Hurdle: {t.hurdleRate}%</span>}
                     </div>
                   </div>
@@ -359,13 +544,13 @@ export default function EntityDetailPage() {
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center text-xs font-bold">DS</div>
                 <div>
-                  <div className="text-xs font-medium">Side Letter — CalPERS</div>
+                  <div className="text-xs font-medium">Side Letter \u2014 CalPERS</div>
                   <div className="text-[10px] text-gray-500">1 signer &bull; via DocuSign</div>
                 </div>
               </div>
               <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-full">SENT</span>
             </div>
-            <div className="text-[10px] text-gray-400 text-center py-1">E-Signature integration coming soon — will connect to DocuSign or PandaDoc.</div>
+            <div className="text-[10px] text-gray-400 text-center py-1">E-Signature integration coming soon \u2014 will connect to DocuSign or PandaDoc.</div>
           </div>
         </div>
 
@@ -493,9 +678,9 @@ export default function EntityDetailPage() {
               {/* Integration Notice */}
               <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
                 <div className="flex items-center gap-2">
-                  <div className="text-indigo-600 text-sm">💡</div>
+                  <div className="text-indigo-600 text-sm">\ud83d\udca1</div>
                   <div>
-                    <div className="text-xs font-medium text-indigo-700">Deal Closing → Vehicle Creation</div>
+                    <div className="text-xs font-medium text-indigo-700">Deal Closing \u2192 Vehicle Creation</div>
                     <div className="text-[10px] text-indigo-600">When a deal closes, prospects with hard commitments can be automatically converted to investors in the new entity. This integration is coming soon.</div>
                   </div>
                 </div>
@@ -508,14 +693,14 @@ export default function EntityDetailPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-4">Regulatory & Legal</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-xs text-gray-500">State of Formation</span><div className="font-medium">{e.stateOfFormation || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">EIN</span><div className="font-medium font-mono">{e.ein || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Legal Counsel</span><div className="font-medium">{e.legalCounsel || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Tax Preparer</span><div className="font-medium">{e.taxPreparer || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Fiscal Year End</span><div className="font-medium">{e.fiscalYearEnd || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Vehicle Structure</span><div className="font-medium">{e.vehicleStructure || "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Fund Term</span><div className="font-medium">{e.fundTermYears ? `${e.fundTermYears} years` : "—"}</div></div>
-            <div><span className="text-xs text-gray-500">Extension Options</span><div className="font-medium">{e.extensionOptions || "—"}</div></div>
+            <div><span className="text-xs text-gray-500">State of Formation</span><div className="font-medium">{e.stateOfFormation || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">EIN</span><div className="font-medium font-mono">{e.ein || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Legal Counsel</span><div className="font-medium">{e.legalCounsel || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Tax Preparer</span><div className="font-medium">{e.taxPreparer || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Fiscal Year End</span><div className="font-medium">{e.fiscalYearEnd || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Vehicle Structure</span><div className="font-medium">{e.vehicleStructure || "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Fund Term</span><div className="font-medium">{e.fundTermYears ? `${e.fundTermYears} years` : "\u2014"}</div></div>
+            <div><span className="text-xs text-gray-500">Extension Options</span><div className="font-medium">{e.extensionOptions || "\u2014"}</div></div>
           </div>
           {e.regulatoryFilings && (
             <div className="mt-4 pt-4 border-t border-gray-100">
@@ -534,5 +719,22 @@ export default function EntityDetailPage() {
       {e.waterfallTemplate && <AddTierForm open={showAddTier} onClose={() => setShowAddTier(false)} templateId={e.waterfallTemplate.id} nextOrder={(e.waterfallTemplate.tiers?.length || 0) + 1} />}
       {editTier && e.waterfallTemplate && <EditTierForm open={!!editTier} onClose={() => setEditTier(null)} templateId={e.waterfallTemplate.id} tier={editTier} />}
     </div>
+  );
+}
+
+// Helper component for team user select in formation tasks
+function TeamUserSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
+  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcher);
+  return (
+    <select
+      value={value}
+      onChange={(ev) => onChange(ev.target.value)}
+      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+    >
+      <option value="">Unassigned</option>
+      {(users || []).map((u: any) => (
+        <option key={u.id} value={u.id}>{u.name}</option>
+      ))}
+    </select>
   );
 }

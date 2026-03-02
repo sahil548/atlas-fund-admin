@@ -387,3 +387,51 @@ export async function recalcWorkstreamProgress(workstreamId: string) {
     data: { totalTasks, completedTasks, status },
   });
 }
+
+/**
+ * Manual transition: IC_REVIEW -> CLOSING
+ * Validates IC process exists with APPROVED decision before advancing.
+ */
+export async function advanceToClosing(dealId: string) {
+  const deal = await prisma.deal.findUnique({
+    where: { id: dealId },
+    include: { icProcess: true },
+  });
+
+  if (!deal) throw new Error(`Deal ${dealId} not found`);
+  if (deal.stage !== "IC_REVIEW") {
+    throw new Error(
+      `Deal must be in IC_REVIEW to advance to Closing (currently ${deal.stage})`
+    );
+  }
+  if (!deal.icProcess || deal.icProcess.finalDecision !== "APPROVED") {
+    throw new Error(
+      "IC process must exist with an APPROVED decision to advance to Closing"
+    );
+  }
+
+  const updatedDeal = await prisma.deal.update({
+    where: { id: dealId },
+    data: { stage: "CLOSING" },
+  });
+
+  await prisma.dealActivity.create({
+    data: {
+      dealId,
+      activityType: "STAGE_TRANSITION",
+      description: `Deal manually advanced from IC_REVIEW to CLOSING`,
+      metadata: {
+        fromStage: "IC_REVIEW",
+        toStage: "CLOSING",
+        decision: "APPROVED",
+      },
+    },
+  });
+
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} advanced to Closing`,
+  }).catch(() => {});
+
+  return updatedDeal;
+}

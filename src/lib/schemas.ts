@@ -242,6 +242,8 @@ export const CreateInvestorSchema = z.object({
   kycStatus: z.string().default("Pending"),
   advisoryBoard: z.boolean().default(false),
   contactPreference: z.string().default("Email"),
+  contactId: z.string().optional(),
+  companyId: z.string().optional(),
 });
 
 export const UpdateInvestorSchema = z.object({
@@ -366,6 +368,7 @@ export const CreateEntitySchema = z.object({
   ein: z.string().optional(),
   fiscalYearEnd: z.string().optional(),
   fundTermYears: z.number().int().optional(),
+  startFormation: z.boolean().optional(),
 });
 
 // ── Firms ─────────────────────────────────────────────

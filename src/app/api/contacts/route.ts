@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       company: { select: { id: true, name: true, type: true } },
+      investorProfile: { select: { id: true, name: true, investorType: true, kycStatus: true } },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });

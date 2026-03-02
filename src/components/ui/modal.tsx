@@ -7,13 +7,15 @@ const sizes: Record<string, string> = {
   sm: "max-w-sm",
   md: "max-w-lg",
   lg: "max-w-2xl",
+  xl: "max-w-5xl",
+  full: "max-w-[95vw]",
 };
 
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl" | "full";
   children: React.ReactNode;
   footer?: React.ReactNode;
 }
@@ -51,7 +53,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
             &times;
           </button>
         </div>
-        <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">{children}</div>
+        <div className="px-5 py-4 overflow-y-auto max-h-[90vh]">{children}</div>
         {footer && (
           <div className="flex justify-end gap-2 px-5 py-3 border-t border-gray-100">
             {footer}

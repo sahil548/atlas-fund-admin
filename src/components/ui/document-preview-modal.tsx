@@ -25,19 +25,19 @@ export function DocumentPreviewModal({ open, onClose, document }: Props) {
     /\.(png|jpg|jpeg|gif|webp)$/i.test(document.name);
 
   return (
-    <Modal open={open} onClose={onClose} title={document.name} size="lg">
-      <div className="min-h-[400px]">
+    <Modal open={open} onClose={onClose} title={document.name} size="full">
+      <div className="min-h-[60vh]">
         {isPdf ? (
           <iframe
             src={previewUrl}
-            className="w-full h-[500px] rounded-lg border"
+            className="w-full h-[80vh] rounded-lg border"
           />
         ) : isImage ? (
           <div className="flex justify-center">
             <img
               src={previewUrl}
               alt={document.name}
-              className="max-w-full max-h-[500px] rounded-lg"
+              className="max-w-full max-h-[80vh] rounded-lg"
             />
           </div>
         ) : (

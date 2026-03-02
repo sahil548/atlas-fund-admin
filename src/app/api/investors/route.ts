@@ -14,6 +14,8 @@ export async function GET(req: NextRequest) {
     where,
     include: {
       commitments: { include: { entity: { select: { id: true, name: true } } } },
+      contact: { select: { id: true, firstName: true, lastName: true, email: true } },
+      company: { select: { id: true, name: true, type: true } },
     },
     orderBy: { totalCommitted: "desc" },
   });

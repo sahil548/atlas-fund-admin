@@ -41,6 +41,8 @@ export async function GET(
           uploadDate: true,
         },
       },
+      contact: { select: { id: true, firstName: true, lastName: true, email: true } },
+      company: { select: { id: true, name: true, type: true } },
     },
   });
   if (!investor) return NextResponse.json({ error: "Not found" }, { status: 404 });

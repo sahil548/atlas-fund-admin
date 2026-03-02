@@ -53,6 +53,7 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
     vehicleStructure: "LLC",
   });
   const [creatingEntity, setCreatingEntity] = useState(false);
+  const [startFormation, setStartFormation] = useState(true);
   const toast = useToast();
 
   const { data: entities } = useSWR(
@@ -126,6 +127,7 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
           name: newEntityForm.name.trim(),
           entityType: newEntityForm.entityType,
           vehicleStructure: newEntityForm.vehicleStructure,
+          startFormation,
         }),
       });
       const created = await res.json();
@@ -418,6 +420,20 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
                           </select>
                         </div>
                       </div>
+                      <label className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          checked={startFormation}
+                          onChange={(e) => setStartFormation(e.target.checked)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-xs text-gray-600">Start formation workflow</span>
+                      </label>
+                      {startFormation && (
+                        <p className="text-[10px] text-gray-400 mt-1">
+                          A formation workflow will be created to track legal filings and registrations.
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 pt-1">
                         <Button
                           size="sm"

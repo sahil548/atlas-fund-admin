@@ -11,6 +11,7 @@ const gpNav = [
   { key: "/deals", label: "Deal Desk", icon: "\u25C6" },
   { key: "/directory", label: "Directory", icon: "\u25CE" },
   { key: "/documents", label: "Documents", icon: "\u25A5" },
+  { key: "/tasks", label: "Tasks", icon: "\u2611" },
   { key: "/accounting", label: "Accounting", icon: "\u2B21" },
   { key: "/settings", label: "Settings", icon: "\u2699" },
 ];

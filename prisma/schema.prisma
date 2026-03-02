@@ -32,6 +32,13 @@ enum EntityStatus {
   DISSOLVED
 }
 
+enum FormationStatus {
+  NOT_STARTED
+  FORMING
+  FORMED
+  REGISTERED
+}
+
 enum AssetClass {
   REAL_ESTATE
   PUBLIC_SECURITIES
@@ -357,9 +364,11 @@ model Entity {
   documents            Document[]
   meetings             Meeting[]
   deals                Deal[]             @relation("DealTargetEntity")
+  tasks                Task[]
   notes                Note[]
   esignaturePackages   ESignaturePackage[]
   fundraisingRounds    FundraisingRound[]
+  formationStatus      FormationStatus    @default(FORMED)
 }
 
 model AccountingConnection {
@@ -653,6 +662,8 @@ model CreditPayment {
 model Investor {
   id               String  @id @default(cuid())
   userId           String? @unique
+  contactId        String? @unique
+  companyId        String? @unique
   name             String
   investorType     String
   kycStatus        String  @default("Pending")
@@ -663,6 +674,8 @@ model Investor {
   updatedAt        DateTime @updatedAt
 
   user                   User?                       @relation(fields: [userId], references: [id])
+  contact                Contact?                    @relation(fields: [contactId], references: [id])
+  company                Company?                    @relation(fields: [companyId], references: [id])
   commitments            Commitment[]
   sideLetters            SideLetter[]
   notificationPreference InvestorNotificationPreference?
@@ -974,6 +987,7 @@ model Deal {
   notes              Note[]
   esignaturePackages ESignaturePackage[]
   activities         DealActivity[]
+  tasks              Task[]
 
   @@index([stage])
   @@index([firmId])
@@ -1163,20 +1177,33 @@ model Note {
 // ============================================================
 
 model Task {
-  id          String     @id @default(cuid())
-  title       String
-  status      TaskStatus @default(TODO)
-  assigneeId  String?
+  id           String     @id @default(cuid())
+  title        String
+  description  String?
+  status       TaskStatus @default(TODO)
+  priority     String?    @default("MEDIUM")
+  assigneeId   String?
   assigneeName String?
-  dueDate     DateTime?
-  assetId     String?
-  contextType String?
-  contextId   String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  dueDate      DateTime?
+  notes        String?
+  order        Int?
+  contextType  String?
+  contextId    String?
+  assetId      String?
+  dealId       String?
+  entityId     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  assignee User?  @relation(fields: [assigneeId], references: [id])
+  assignee User?   @relation(fields: [assigneeId], references: [id])
   asset    Asset?  @relation(fields: [assetId], references: [id])
+  deal     Deal?   @relation(fields: [dealId], references: [id])
+  entity   Entity? @relation(fields: [entityId], references: [id])
+
+  @@index([contextType, contextId])
+  @@index([dealId])
+  @@index([entityId])
+  @@index([assigneeId])
 }
 
 model Meeting {
@@ -1359,38 +1386,40 @@ model FundraisingProspect {
 // ============================================================
 
 model Company {
-  id        String      @id @default(cuid())
-  firmId    String
-  firm      Firm        @relation(fields: [firmId], references: [id])
-  name      String
-  legalName String?
-  type      CompanyType @default(OTHER)
-  website   String?
-  industry  String?
-  address   String?
-  notes     String?
-  contacts  Contact[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  firmId          String
+  firm            Firm        @relation(fields: [firmId], references: [id])
+  name            String
+  legalName       String?
+  type            CompanyType @default(OTHER)
+  website         String?
+  industry        String?
+  address         String?
+  notes           String?
+  contacts        Contact[]
+  investorProfile Investor?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([firmId])
 }
 
 model Contact {
-  id        String      @id @default(cuid())
-  firmId    String
-  firm      Firm        @relation(fields: [firmId], references: [id])
-  firstName String
-  lastName  String
-  email     String?
-  phone     String?
-  title     String?
-  type      ContactType @default(EXTERNAL)
-  companyId String?
-  company   Company?    @relation(fields: [companyId], references: [id])
-  notes     String?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  firmId          String
+  firm            Firm        @relation(fields: [firmId], references: [id])
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  title           String?
+  type            ContactType @default(EXTERNAL)
+  companyId       String?
+  company         Company?    @relation(fields: [companyId], references: [id])
+  investorProfile Investor?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([firmId])
   @@index([companyId])

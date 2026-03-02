@@ -40,6 +40,28 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const { data, error } = await parseBody(req, CreateEntitySchema);
   if (error) return error;
-  const entity = await prisma.entity.create({ data: { ...data!, firmId: "firm-1" } });
+  const { startFormation, ...entityData } = data!;
+  const entity = await prisma.entity.create({ data: { ...entityData, firmId: "firm-1" } });
+
+  if (startFormation) {
+    const { FORMATION_CHECKLIST_TEMPLATES } = await import("@/lib/formation-templates");
+    await prisma.task.createMany({
+      data: FORMATION_CHECKLIST_TEMPLATES.map((t) => ({
+        title: t.title,
+        order: t.order,
+        status: "TODO",
+        priority: "HIGH",
+        contextType: "FORMATION",
+        contextId: entity.id,
+        entityId: entity.id,
+      })),
+    });
+    // Update entity to FORMING
+    await prisma.entity.update({
+      where: { id: entity.id },
+      data: { formationStatus: "FORMING" },
+    });
+  }
+
   return NextResponse.json(entity, { status: 201 });
 }
