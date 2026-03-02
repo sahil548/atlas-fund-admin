@@ -10,14 +10,10 @@ import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const TC: Record<string, string> = {
-  DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
-  FUND_LP_POSITION: "purple", CO_INVESTMENT: "blue", WARRANT: "pink", ROYALTY: "yellow",
-};
-const TL: Record<string, string> = {
-  DIRECT_EQUITY: "Equity", PRIVATE_CREDIT: "Credit", REAL_ESTATE_DIRECT: "Real Estate",
-  FUND_LP_POSITION: "Fund LP", CO_INVESTMENT: "Co-Invest", WARRANT: "Warrant", ROYALTY: "Royalty",
-};
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+} from "@/lib/constants";
 
 export default function AssetsPage() {
   const { firmId } = useFirm();
@@ -28,14 +24,14 @@ export default function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState<any>(null);
   if (isLoading || !assets) return <div className="text-sm text-gray-400">Loading...</div>;
 
-  const filtered = filter ? assets.filter((a: { assetType: string }) => a.assetType === filter) : assets;
+  const filtered = filter ? assets.filter((a: { assetClass: string }) => a.assetClass === filter) : assets;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center">
         <h3 className="text-sm font-semibold">All Assets ({filtered.length})</h3>
         <div className="flex gap-1">
-          {Object.entries(TL).map(([k, v]) => (
+          {Object.entries(ASSET_CLASS_LABELS).map(([k, v]) => (
             <button
               key={k}
               onClick={() => setFilter(filter === k ? null : k)}
@@ -59,12 +55,12 @@ export default function AssetsPage() {
           </tr>
         </thead>
         <tbody>
-          {filtered.map((a: { id: string; name: string; assetType: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
+          {filtered.map((a: { id: string; name: string; assetClass: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
             const ur = a.fairValue - a.costBasis;
             return (
               <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/assets/${a.id}`}>
                 <td className="px-3 py-2.5 font-medium text-indigo-700">{a.name}</td>
-                <td className="px-3 py-2.5"><Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge></td>
+                <td className="px-3 py-2.5"><Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge></td>
                 <td className="px-3 py-2.5 text-gray-600">{a.sector}</td>
                 <td className="px-3 py-2.5">
                   {a.entityAllocations?.map((ea) => (

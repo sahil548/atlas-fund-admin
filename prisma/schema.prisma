@@ -32,28 +32,32 @@ enum EntityStatus {
   DISSOLVED
 }
 
-enum AssetType {
-  DIRECT_EQUITY
-  PRIVATE_CREDIT
-  REAL_ESTATE_DIRECT
-  FUND_LP_POSITION
-  CO_INVESTMENT
-  WARRANT
-  ROYALTY
+enum AssetClass {
+  REAL_ESTATE
+  PUBLIC_SECURITIES
+  VENTURE_CAPITAL
+  INFRASTRUCTURE
+  COMMODITIES
+  DIVERSIFIED
+  NON_CORRELATED
+  CASH_AND_EQUIVALENTS
+}
+
+enum CapitalInstrument {
+  DEBT
+  EQUITY
+}
+
+enum ParticipationStructure {
+  DIRECT_GP
+  CO_INVEST_JV_PARTNERSHIP
+  LP_STAKE_SILENT_PARTNER
 }
 
 enum AssetStatus {
   ACTIVE
   EXITED
   WRITTEN_OFF
-}
-
-enum HoldingType {
-  DIRECT
-  THROUGH_OWN_VEHICLE
-  LP_IN_EXTERNAL_FUND
-  CO_INVEST_WITH_LEAD_GP
-  THROUGH_COUNTERPARTY
 }
 
 enum DealStage {
@@ -64,14 +68,7 @@ enum DealStage {
   DEAD
 }
 
-enum DealCategory {
-  PRIVATE_EQUITY
-  PRIVATE_CREDIT
-  REAL_ESTATE
-  REAL_ASSETS
-  SECONDARIES
-  FUND_INVESTMENTS
-}
+// DealCategory removed — deals now use AssetClass + CapitalInstrument + ParticipationStructure
 
 enum ICQuestionStatus {
   OPEN
@@ -388,6 +385,7 @@ model User {
   icQuestions        ICQuestion[]      @relation("ICQuestionAuthor")
   icQuestionReplies  ICQuestionReply[] @relation("ICQuestionReplyAuthor")
   icDecisions        ICProcess[]       @relation("ICDecisions")
+  dealsLead          Deal[]            @relation("DealLead")
 }
 
 // ============================================================
@@ -395,13 +393,14 @@ model User {
 // ============================================================
 
 model Asset {
-  id          String      @id @default(cuid())
-  name        String
-  assetType   AssetType
-  sector      String?
-  status      AssetStatus @default(ACTIVE)
-  holdingType HoldingType @default(DIRECT)
-  costBasis   Float
+  id                     String                @id @default(cuid())
+  name                   String
+  assetClass             AssetClass
+  capitalInstrument      CapitalInstrument?
+  participationStructure ParticipationStructure?
+  sector                 String?
+  status                 AssetStatus           @default(ACTIVE)
+  costBasis              Float
   fairValue   Float
   moic        Float?
   irr         Float?
@@ -428,7 +427,7 @@ model Asset {
   activityEvents     ActivityEvent[]
   notes              Note[]
 
-  @@index([assetType])
+  @@index([assetClass])
   @@index([status])
 }
 
@@ -901,15 +900,17 @@ model CapitalAccount {
 // ============================================================
 
 model Deal {
-  id             String       @id @default(cuid())
-  firmId         String?
-  name           String
-  dealCategory   DealCategory
-  sector         String?
-  stage          DealStage    @default(SCREENING)
-  targetSize     String?
-  leadPartner    String?
-  aiScore        Int?
+  id                     String                 @id @default(cuid())
+  firmId                 String?
+  name                   String
+  assetClass             AssetClass
+  capitalInstrument      CapitalInstrument?
+  participationStructure ParticipationStructure?
+  sector                 String?
+  stage                  DealStage              @default(SCREENING)
+  targetSize             String?
+  dealLeadId             String?
+  aiScore                Int?
   aiFlag         String?
   source         String?
   counterparty   String?
@@ -926,6 +927,7 @@ model Deal {
   updatedAt           DateTime     @updatedAt
 
   firm             Firm?              @relation(fields: [firmId], references: [id])
+  dealLead         User?              @relation("DealLead", fields: [dealLeadId], references: [id])
   targetEntity     Entity?            @relation("DealTargetEntity", fields: [entityId], references: [id])
   icProcess        ICProcess?
   workstreams      DDWorkstream[]

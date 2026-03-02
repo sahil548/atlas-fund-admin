@@ -9,14 +9,28 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
+import useSWR from "swr";
 
-const DEAL_CATEGORIES = [
-  { value: "PRIVATE_EQUITY", label: "Private Equity" },
-  { value: "PRIVATE_CREDIT", label: "Private Credit" },
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+const ASSET_CLASS_OPTIONS = [
   { value: "REAL_ESTATE", label: "Real Estate" },
-  { value: "REAL_ASSETS", label: "Real Assets" },
-  { value: "SECONDARIES", label: "Secondaries" },
-  { value: "FUND_INVESTMENTS", label: "Fund Investments" },
+  { value: "PUBLIC_SECURITIES", label: "Public Securities" },
+  { value: "VENTURE_CAPITAL", label: "Venture Capital" },
+  { value: "INFRASTRUCTURE", label: "Infrastructure" },
+  { value: "COMMODITIES", label: "Commodities" },
+  { value: "DIVERSIFIED", label: "Diversified" },
+  { value: "NON_CORRELATED", label: "Non-Correlated" },
+  { value: "CASH_AND_EQUIVALENTS", label: "Cash & Equivalents" },
+];
+const CAPITAL_INSTRUMENT_OPTIONS = [
+  { value: "DEBT", label: "Debt" },
+  { value: "EQUITY", label: "Equity" },
+];
+const PARTICIPATION_OPTIONS = [
+  { value: "DIRECT_GP", label: "Direct / GP" },
+  { value: "CO_INVEST_JV_PARTNERSHIP", label: "Co-Invest / JV / Partnership" },
+  { value: "LP_STAKE_SILENT_PARTNER", label: "LP Stake / Silent Partner" },
 ];
 
 const DOC_CATEGORIES = [
@@ -44,16 +58,19 @@ export function CreateDealWizard({ open, onClose }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcher);
 
   // Step 1: Basics
   const [basics, setBasics] = useState({
     name: "",
-    dealCategory: "PRIVATE_EQUITY",
+    assetClass: "REAL_ESTATE",
+    capitalInstrument: "",
+    participationStructure: "",
     sector: "",
     targetSize: "",
     targetCheckSize: "",
     targetReturn: "",
-    leadPartner: "",
+    dealLeadId: "",
     gpName: "",
     counterparty: "",
     source: "",
@@ -78,12 +95,14 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setStep(1);
     setBasics({
       name: "",
-      dealCategory: "PRIVATE_EQUITY",
+      assetClass: "REAL_ESTATE",
+      capitalInstrument: "",
+      participationStructure: "",
       sector: "",
       targetSize: "",
       targetCheckSize: "",
       targetReturn: "",
-      leadPartner: "",
+      dealLeadId: "",
       gpName: "",
       counterparty: "",
       source: "",
@@ -241,15 +260,36 @@ export function CreateDealWizard({ open, onClose }: Props) {
             />
           </FormField>
 
-          <FormField label="Deal Category" required>
+          <FormField label="Asset Class" required>
             <Select
-              value={basics.dealCategory}
+              value={basics.assetClass}
               onChange={(e) =>
-                setBasics((p) => ({ ...p, dealCategory: e.target.value }))
+                setBasics((p) => ({ ...p, assetClass: e.target.value }))
               }
-              options={DEAL_CATEGORIES}
+              options={ASSET_CLASS_OPTIONS}
             />
           </FormField>
+
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Capital Instrument">
+              <Select
+                value={basics.capitalInstrument}
+                onChange={(e) =>
+                  setBasics((p) => ({ ...p, capitalInstrument: e.target.value }))
+                }
+                options={[{ value: "", label: "— Select —" }, ...CAPITAL_INSTRUMENT_OPTIONS]}
+              />
+            </FormField>
+            <FormField label="Participation Structure">
+              <Select
+                value={basics.participationStructure}
+                onChange={(e) =>
+                  setBasics((p) => ({ ...p, participationStructure: e.target.value }))
+                }
+                options={[{ value: "", label: "— Select —" }, ...PARTICIPATION_OPTIONS]}
+              />
+            </FormField>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Sector">
@@ -261,7 +301,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 placeholder="e.g. Healthcare"
               />
             </FormField>
-            <FormField label="Target Size / Total Raise">
+            <FormField label="Total Raise">
               <Input
                 value={basics.targetSize}
                 onChange={(e) =>
@@ -294,13 +334,16 @@ export function CreateDealWizard({ open, onClose }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Lead Partner">
-              <Input
-                value={basics.leadPartner}
+            <FormField label="Deal Lead">
+              <Select
+                value={basics.dealLeadId}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, leadPartner: e.target.value }))
+                  setBasics((p) => ({ ...p, dealLeadId: e.target.value }))
                 }
-                placeholder="e.g. JK"
+                options={[
+                  { value: "", label: "— Select —" },
+                  ...(users || []).map((u: any) => ({ value: u.id, label: u.name })),
+                ]}
               />
             </FormField>
             <FormField label="GP Name">
@@ -471,15 +514,27 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 <span className="font-medium">{basics.name}</span>
               </div>
               <div>
-                <span className="text-gray-500">Category:</span>{" "}
+                <span className="text-gray-500">Asset Class:</span>{" "}
                 <span className="font-medium">
                   {
-                    DEAL_CATEGORIES.find(
-                      (c) => c.value === basics.dealCategory,
+                    ASSET_CLASS_OPTIONS.find(
+                      (c) => c.value === basics.assetClass,
                     )?.label
                   }
                 </span>
               </div>
+              {basics.capitalInstrument && (
+                <div>
+                  <span className="text-gray-500">Instrument:</span>{" "}
+                  <span className="font-medium">
+                    {
+                      CAPITAL_INSTRUMENT_OPTIONS.find(
+                        (c) => c.value === basics.capitalInstrument,
+                      )?.label
+                    }
+                  </span>
+                </div>
+              )}
               {basics.sector && (
                 <div>
                   <span className="text-gray-500">Sector:</span>{" "}

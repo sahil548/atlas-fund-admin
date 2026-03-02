@@ -100,10 +100,10 @@ export default function EntityDetailPage() {
                 <tr>{["Asset", "Type", "Allocation %", "Cost Basis", "Fair Value"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
-                {(e.assetAllocations || []).map((a: { id: string; allocationPercent: number; costBasis: number; asset: { id: string; name: string; assetType: string; fairValue: number } }) => (
+                {(e.assetAllocations || []).map((a: { id: string; allocationPercent: number; costBasis: number; asset: { id: string; name: string; assetClass: string; fairValue: number } }) => (
                   <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50">
                     <td className="px-3 py-2.5"><Link href={`/assets/${a.asset.id}`} className="text-indigo-700 hover:underline font-medium">{a.asset.name}</Link></td>
-                    <td className="px-3 py-2.5"><Badge color="blue">{a.asset.assetType?.replace(/_/g, " ")}</Badge></td>
+                    <td className="px-3 py-2.5"><Badge color="blue">{a.asset.assetClass?.replace(/_/g, " ")}</Badge></td>
                     <td className="px-3 py-2.5">{(a.allocationPercent * 100).toFixed(1)}%</td>
                     <td className="px-3 py-2.5">{fmt(a.costBasis || 0)}</td>
                     <td className="px-3 py-2.5 font-medium">{fmt(a.asset.fairValue || 0)}</td>

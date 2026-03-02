@@ -40,7 +40,8 @@ export async function GET(
       meetings: { orderBy: { meetingDate: "desc" } },
       notes: { orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" } },
-      targetEntity: { select: { id: true, name: true } },
+      dealLead: { select: { id: true, name: true, initials: true } },
+      targetEntity: { select: { id: true, name: true, entityType: true, vehicleStructure: true, status: true } },
     },
   });
   if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -57,12 +58,14 @@ export async function PUT(
 
   const updateData: Record<string, unknown> = {};
   if (data!.name !== undefined) updateData.name = data!.name;
-  if (data!.dealCategory !== undefined) updateData.dealCategory = data!.dealCategory;
+  if (data!.assetClass !== undefined) updateData.assetClass = data!.assetClass;
+  if (data!.capitalInstrument !== undefined) updateData.capitalInstrument = data!.capitalInstrument;
+  if (data!.participationStructure !== undefined) updateData.participationStructure = data!.participationStructure;
   if (data!.sector !== undefined) updateData.sector = data!.sector;
   if (data!.targetSize !== undefined) updateData.targetSize = data!.targetSize;
   if (data!.targetCheckSize !== undefined) updateData.targetCheckSize = data!.targetCheckSize;
   if (data!.targetReturn !== undefined) updateData.targetReturn = data!.targetReturn;
-  if (data!.leadPartner !== undefined) updateData.leadPartner = data!.leadPartner;
+  if (data!.dealLeadId !== undefined) updateData.dealLeadId = data!.dealLeadId;
   if (data!.gpName !== undefined) updateData.gpName = data!.gpName;
   if (data!.source !== undefined) updateData.source = data!.source;
   if (data!.counterparty !== undefined) updateData.counterparty = data!.counterparty;

@@ -10,23 +10,11 @@ import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-/* ── Category labels & colors ────────────────────────── */
-const CC: Record<string, string> = {
-  PRIVATE_EQUITY: "indigo",
-  PRIVATE_CREDIT: "orange",
-  REAL_ESTATE: "green",
-  REAL_ASSETS: "yellow",
-  SECONDARIES: "purple",
-  FUND_INVESTMENTS: "blue",
-};
-const CL: Record<string, string> = {
-  PRIVATE_EQUITY: "PE",
-  PRIVATE_CREDIT: "Credit",
-  REAL_ESTATE: "Real Estate",
-  REAL_ASSETS: "Real Assets",
-  SECONDARIES: "Secondaries",
-  FUND_INVESTMENTS: "Fund LP",
-};
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+  CAPITAL_INSTRUMENT_LABELS,
+} from "@/lib/constants";
 
 /* ── Pipeline stages (4 columns, no DEAD) ────────────── */
 const stages = [
@@ -107,17 +95,22 @@ export default function DealsPage() {
                         <div className="text-sm font-medium truncate pr-2">
                           {p.name}
                         </div>
-                        {p.leadPartner && (
+                        {p.dealLead?.initials && (
                           <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-[9px] font-bold flex items-center justify-center flex-shrink-0">
-                            {p.leadPartner}
+                            {p.dealLead.initials}
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center gap-1 flex-wrap">
-                        <Badge color={CC[p.dealCategory] || "gray"}>
-                          {CL[p.dealCategory] || p.dealCategory}
+                        <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
+                          {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
                         </Badge>
+                        {p.capitalInstrument && (
+                          <Badge color={p.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                            {CAPITAL_INSTRUMENT_LABELS[p.capitalInstrument]}
+                          </Badge>
+                        )}
                         {p.sector && (
                           <span className="text-[10px] text-gray-500">
                             {p.sector}

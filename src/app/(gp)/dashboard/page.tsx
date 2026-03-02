@@ -7,14 +7,10 @@ import { fmt, pct } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const TC: Record<string, string> = {
-  DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
-  FUND_LP_POSITION: "purple", CO_INVESTMENT: "blue", WARRANT: "pink", ROYALTY: "yellow",
-};
-const TL: Record<string, string> = {
-  DIRECT_EQUITY: "Equity", PRIVATE_CREDIT: "Credit", REAL_ESTATE_DIRECT: "Real Estate",
-  FUND_LP_POSITION: "Fund LP", CO_INVESTMENT: "Co-Invest", WARRANT: "Warrant", ROYALTY: "Royalty",
-};
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+} from "@/lib/constants";
 
 export default function DashboardPage() {
   const { data, isLoading } = useSWR("/api/dashboard/stats", fetcher);
@@ -32,10 +28,10 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-3">Top Assets by Fair Value</h3>
-          {data.topAssets?.map((a: { id: string; name: string; assetType: string; fairValue: number; moic: number }) => (
+          {data.topAssets?.map((a: { id: string; name: string; assetClass: string; fairValue: number; moic: number }) => (
             <a key={a.id} href={`/assets/${a.id}`} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded">
               <div className="flex items-center gap-2">
-                <Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge>
+                <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
                 <span className="text-sm font-medium text-indigo-700">{a.name}</span>
               </div>
               <div className="text-right">

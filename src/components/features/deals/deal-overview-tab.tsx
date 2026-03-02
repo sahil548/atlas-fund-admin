@@ -1,13 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import useSWR, { mutate } from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { InlineEditField } from "./inline-edit-field";
 import { ScreeningConfigModal } from "./screening-config-modal";
 import Link from "next/link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const stageLabel: Record<string, string> = {
   SCREENING: "Screening",
@@ -17,12 +21,35 @@ const stageLabel: Record<string, string> = {
   DEAD: "Dead",
 };
 
+const entityTypeLabels: Record<string, string> = {
+  MAIN_FUND: "Main Fund",
+  SIDECAR: "Sidecar",
+  SPV: "SPV",
+  CO_INVEST_VEHICLE: "Co-Invest Vehicle",
+  GP_ENTITY: "GP Entity",
+  HOLDING_COMPANY: "Holding Company",
+};
+
+const vehicleStructureLabels: Record<string, string> = {
+  LLC: "LLC",
+  LP: "LP",
+  CORP: "Corp",
+  TRUST: "Trust",
+};
+
 interface DealOverviewTabProps {
   deal: any;
 }
 
 export function DealOverviewTab({ deal }: DealOverviewTabProps) {
   const [showScreeningConfig, setShowScreeningConfig] = useState(false);
+  const [showLinkEntity, setShowLinkEntity] = useState(false);
+  const [linkingEntity, setLinkingEntity] = useState(false);
+
+  const { data: entities } = useSWR(
+    showLinkEntity ? "/api/entities?firmId=firm-1" : null,
+    fetcher
+  );
 
   const aiScore = deal.screeningResult?.score ?? deal.aiScore;
   const hasScreeningResult = !!deal.screeningResult;
@@ -48,6 +75,36 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
     ? "Weak"
     : undefined;
 
+  async function handleLinkEntity(entityId: string) {
+    setLinkingEntity(true);
+    try {
+      await fetch(`/api/deals/${deal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityId }),
+      });
+      mutate(`/api/deals/${deal.id}`);
+      setShowLinkEntity(false);
+    } catch {
+      // silently fail
+    } finally {
+      setLinkingEntity(false);
+    }
+  }
+
+  async function handleUnlinkEntity() {
+    try {
+      await fetch(`/api/deals/${deal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityId: null }),
+      });
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      // silently fail
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Two-column layout */}
@@ -61,7 +118,7 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
             </h4>
             <div className="grid grid-cols-3 gap-4">
               <InlineEditField
-                label="Target Size"
+                label="Total Raise"
                 value={deal.targetSize}
                 field="targetSize"
                 dealId={deal.id}
@@ -90,13 +147,12 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
               Parties
             </h4>
             <div className="grid grid-cols-2 gap-4">
-              <InlineEditField
-                label="Lead Partner"
-                value={deal.leadPartner}
-                field="leadPartner"
-                dealId={deal.id}
-                placeholder="e.g. John Kim"
-              />
+              <div>
+                <div className="text-[11px] text-gray-500 mb-1">Deal Lead</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {deal.dealLead?.name || "Unassigned"}
+                </div>
+              </div>
               <InlineEditField
                 label="GP Name"
                 value={deal.gpName}
@@ -162,19 +218,140 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
             </div>
           </div>
 
-          {deal.targetEntity && (
-            <div>
-              <div className="text-xs font-semibold text-gray-700 mb-1">
-                Target Entity
+          {/* Investment Vehicle */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">
+              Investment Vehicle
+            </h4>
+            {deal.targetEntity ? (
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href={`/entities/${deal.targetEntity.id}`}
+                      className="text-sm text-indigo-600 hover:underline font-semibold"
+                    >
+                      {deal.targetEntity.name}
+                    </Link>
+                    <Badge color="purple">
+                      {entityTypeLabels[deal.targetEntity.entityType] || deal.targetEntity.entityType}
+                    </Badge>
+                    {deal.targetEntity.vehicleStructure && (
+                      <Badge color="blue">
+                        {vehicleStructureLabels[deal.targetEntity.vehicleStructure] || deal.targetEntity.vehicleStructure}
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowLinkEntity(true)}
+                  >
+                    Change
+                  </Button>
+                </div>
+                {showLinkEntity && (
+                  <div className="mt-3 border-t border-gray-100 pt-3">
+                    <div className="text-xs text-gray-500 mb-2">Select a different entity:</div>
+                    {entities ? (
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {(entities as any[]).map((entity: any) => (
+                          <button
+                            key={entity.id}
+                            onClick={() => handleLinkEntity(entity.id)}
+                            disabled={linkingEntity}
+                            className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-between"
+                          >
+                            <span className="font-medium">{entity.name}</span>
+                            <Badge color="gray">
+                              {entityTypeLabels[entity.entityType] || entity.entityType}
+                            </Badge>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">Loading entities...</div>
+                    )}
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowLinkEntity(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleUnlinkEntity}
+                      >
+                        Unlink Entity
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <Link
-                href={`/entities/${deal.targetEntity.id}`}
-                className="text-sm text-indigo-600 hover:underline font-medium"
-              >
-                {deal.targetEntity.name}
-              </Link>
-            </div>
-          )}
+            ) : (
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center">
+                <div className="text-sm text-gray-500 mb-3">
+                  No investment vehicle linked to this deal.
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowLinkEntity(true)}
+                  >
+                    Link Existing
+                  </Button>
+                  <Link href="/entities">
+                    <Button variant="secondary" size="sm" type="button">
+                      Create New
+                    </Button>
+                  </Link>
+                </div>
+                {showLinkEntity && (
+                  <div className="mt-4 border-t border-gray-100 pt-3 text-left">
+                    <div className="text-xs text-gray-500 mb-2">Select an entity:</div>
+                    {entities ? (
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {(entities as any[]).length === 0 ? (
+                          <div className="text-xs text-gray-400 py-2">
+                            No entities found. Create one first.
+                          </div>
+                        ) : (
+                          (entities as any[]).map((entity: any) => (
+                            <button
+                              key={entity.id}
+                              onClick={() => handleLinkEntity(entity.id)}
+                              disabled={linkingEntity}
+                              className="w-full text-left px-3 py-2 text-sm rounded-lg hover:bg-gray-50 flex items-center justify-between"
+                            >
+                              <span className="font-medium">{entity.name}</span>
+                              <Badge color="gray">
+                                {entityTypeLabels[entity.entityType] || entity.entityType}
+                              </Badge>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">Loading entities...</div>
+                    )}
+                    <div className="mt-2">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowLinkEntity(false)}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right column: Status cards */}

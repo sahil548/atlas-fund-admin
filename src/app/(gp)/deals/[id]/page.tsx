@@ -21,23 +21,11 @@ import { DealClosingTab } from "@/components/features/deals/deal-closing-tab";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-/* ── Category labels & colors ────────────────────── */
-const CC: Record<string, string> = {
-  PRIVATE_EQUITY: "indigo",
-  PRIVATE_CREDIT: "orange",
-  REAL_ESTATE: "green",
-  REAL_ASSETS: "yellow",
-  SECONDARIES: "purple",
-  FUND_INVESTMENTS: "blue",
-};
-const CL: Record<string, string> = {
-  PRIVATE_EQUITY: "Private Equity",
-  PRIVATE_CREDIT: "Private Credit",
-  REAL_ESTATE: "Real Estate",
-  REAL_ASSETS: "Real Assets",
-  SECONDARIES: "Secondaries",
-  FUND_INVESTMENTS: "Fund Investments",
-};
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+  CAPITAL_INSTRUMENT_LABELS,
+} from "@/lib/constants";
 
 const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"];
 const stageLabel: Record<string, string> = {
@@ -50,7 +38,7 @@ const stageLabel: Record<string, string> = {
 
 /* ── Stage-dependent tab visibility ──────────────── */
 const stageTabs: Record<string, string[]> = {
-  SCREENING: ["Overview", "Documents", "Notes"],
+  SCREENING: ["Overview", "Documents", "Notes", "Activity"],
   DUE_DILIGENCE: [
     "Overview",
     "Documents",
@@ -83,11 +71,10 @@ const stageTabs: Record<string, string[]> = {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 function getDeadTabs(deal: any): string[] {
-  const tabs = ["Overview", "Documents", "Notes"];
+  const tabs = ["Overview", "Documents", "Notes", "Activity"];
   if (deal.screeningResult) {
     tabs.push("AI Screening");
     tabs.push("Due Diligence");
-    tabs.push("Activity");
   }
   if (deal.icProcess) {
     tabs.push("IC Review");
@@ -220,9 +207,14 @@ export default function DealDetailPage({
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold">{deal.name}</h2>
-            <Badge color={CC[deal.dealCategory]}>
-              {CL[deal.dealCategory]}
+            <Badge color={ASSET_CLASS_COLORS[deal.assetClass]}>
+              {ASSET_CLASS_LABELS[deal.assetClass]}
             </Badge>
+            {deal.capitalInstrument && (
+              <Badge color={deal.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                {CAPITAL_INSTRUMENT_LABELS[deal.capitalInstrument]}
+              </Badge>
+            )}
             <Badge
               color={
                 isDead
@@ -237,7 +229,7 @@ export default function DealDetailPage({
           </div>
           <div className="text-xs text-gray-500 mt-1">
             {deal.sector} · Target: {deal.targetSize} · Lead:{" "}
-            {deal.leadPartner}
+            {deal.dealLead?.name || "Unassigned"}
             {deal.counterparty && ` · Counterparty: ${deal.counterparty}`}
           </div>
         </div>
@@ -338,11 +330,19 @@ export default function DealDetailPage({
           name: deal.name,
           sector: deal.sector,
           targetSize: deal.targetSize,
-          leadPartner: deal.leadPartner,
+          targetCheckSize: deal.targetCheckSize,
+          targetReturn: deal.targetReturn,
+          dealLeadId: deal.dealLeadId,
+          assetClass: deal.assetClass,
+          capitalInstrument: deal.capitalInstrument,
+          participationStructure: deal.participationStructure,
+          gpName: deal.gpName,
           source: deal.source,
           counterparty: deal.counterparty,
           description: deal.description,
           thesisNotes: deal.thesisNotes,
+          investmentRationale: deal.investmentRationale,
+          additionalContext: deal.additionalContext,
         }}
       />
       <ConfirmDialog

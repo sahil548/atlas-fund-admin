@@ -5,10 +5,34 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
 import { UpdateDealSchema } from "@/lib/schemas";
+import useSWR from "swr";
+
+const fetcherFn = (url: string) => fetch(url).then((r) => r.json());
+
+const ASSET_CLASS_OPTIONS = [
+  { value: "REAL_ESTATE", label: "Real Estate" },
+  { value: "PUBLIC_SECURITIES", label: "Public Securities" },
+  { value: "VENTURE_CAPITAL", label: "Venture Capital" },
+  { value: "INFRASTRUCTURE", label: "Infrastructure" },
+  { value: "COMMODITIES", label: "Commodities" },
+  { value: "DIVERSIFIED", label: "Diversified" },
+  { value: "NON_CORRELATED", label: "Non-Correlated" },
+  { value: "CASH_AND_EQUIVALENTS", label: "Cash & Equivalents" },
+];
+const CAPITAL_INSTRUMENT_OPTIONS = [
+  { value: "DEBT", label: "Debt" },
+  { value: "EQUITY", label: "Equity" },
+];
+const PARTICIPATION_OPTIONS = [
+  { value: "DIRECT_GP", label: "Direct / GP" },
+  { value: "CO_INVEST_JV_PARTNERSHIP", label: "Co-Invest / JV / Partnership" },
+  { value: "LP_STAKE_SILENT_PARTNER", label: "LP Stake / Silent Partner" },
+];
 
 interface Props {
   open: boolean;
@@ -20,7 +44,10 @@ interface Props {
     targetSize?: string;
     targetCheckSize?: string;
     targetReturn?: string;
-    leadPartner?: string;
+    dealLeadId?: string;
+    assetClass?: string;
+    capitalInstrument?: string;
+    participationStructure?: string;
     gpName?: string;
     source?: string;
     counterparty?: string;
@@ -37,13 +64,17 @@ export function EditDealForm({ open, onClose, deal }: Props) {
     method: "PUT",
     revalidateKeys: ["/api/deals", `/api/deals/${deal.id}`],
   });
+  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcherFn);
   const [form, setForm] = useState({
     name: "",
     sector: "",
     targetSize: "",
     targetCheckSize: "",
     targetReturn: "",
-    leadPartner: "",
+    dealLeadId: "",
+    assetClass: "",
+    capitalInstrument: "",
+    participationStructure: "",
     gpName: "",
     source: "",
     counterparty: "",
@@ -62,7 +93,10 @@ export function EditDealForm({ open, onClose, deal }: Props) {
         targetSize: deal.targetSize || "",
         targetCheckSize: deal.targetCheckSize || "",
         targetReturn: deal.targetReturn || "",
-        leadPartner: deal.leadPartner || "",
+        dealLeadId: deal.dealLeadId || "",
+        assetClass: deal.assetClass || "",
+        capitalInstrument: deal.capitalInstrument || "",
+        participationStructure: deal.participationStructure || "",
         gpName: deal.gpName || "",
         source: deal.source || "",
         counterparty: deal.counterparty || "",
@@ -121,13 +155,43 @@ export function EditDealForm({ open, onClose, deal }: Props) {
           />
         </FormField>
 
+        {/* Asset Classification */}
+        <div>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Asset Classification
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="Asset Class">
+              <Select
+                value={form.assetClass}
+                onChange={(e) => set("assetClass", e.target.value)}
+                options={[{ value: "", label: "— Select —" }, ...ASSET_CLASS_OPTIONS]}
+              />
+            </FormField>
+            <FormField label="Capital Instrument">
+              <Select
+                value={form.capitalInstrument}
+                onChange={(e) => set("capitalInstrument", e.target.value)}
+                options={[{ value: "", label: "— Select —" }, ...CAPITAL_INSTRUMENT_OPTIONS]}
+              />
+            </FormField>
+            <FormField label="Participation Structure">
+              <Select
+                value={form.participationStructure}
+                onChange={(e) => set("participationStructure", e.target.value)}
+                options={[{ value: "", label: "— Select —" }, ...PARTICIPATION_OPTIONS]}
+              />
+            </FormField>
+          </div>
+        </div>
+
         {/* Deal Size & Return */}
         <div>
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
             Deal Size & Return
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <FormField label="Target Size / Total Raise">
+            <FormField label="Total Raise">
               <Input
                 value={form.targetSize}
                 onChange={(e) => set("targetSize", e.target.value)}
@@ -157,11 +221,14 @@ export function EditDealForm({ open, onClose, deal }: Props) {
             Parties
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Lead Partner">
-              <Input
-                value={form.leadPartner}
-                onChange={(e) => set("leadPartner", e.target.value)}
-                placeholder="e.g. JK"
+            <FormField label="Deal Lead">
+              <Select
+                value={form.dealLeadId}
+                onChange={(e) => set("dealLeadId", e.target.value)}
+                options={[
+                  { value: "", label: "— Select —" },
+                  ...(users || []).map((u: any) => ({ value: u.id, label: u.name })),
+                ]}
               />
             </FormField>
             <FormField label="GP Name">

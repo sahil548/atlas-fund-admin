@@ -3,18 +3,13 @@
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
-import { INVESTOR_ID } from "@/lib/constants";
+import {
+  INVESTOR_ID,
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+} from "@/lib/constants";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-
-const TC: Record<string, string> = {
-  DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
-  FUND_LP_POSITION: "purple", CO_INVESTMENT: "blue",
-};
-const TL: Record<string, string> = {
-  DIRECT_EQUITY: "Equity", PRIVATE_CREDIT: "Credit", REAL_ESTATE_DIRECT: "Real Estate",
-  FUND_LP_POSITION: "Fund LP", CO_INVESTMENT: "Co-Invest",
-};
 
 export default function LPPortfolioPage() {
   const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/portfolio`, fetcher);
@@ -29,11 +24,11 @@ export default function LPPortfolioPage() {
         Your pro-rata exposure to underlying assets ({allAssets.length} assets)
       </div>
       <div className="space-y-3">
-        {allAssets.map(({ asset: a, proRata, investorPct }: { asset: { id: string; name: string; assetType: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string }; proRata: number; investorPct: number }) => (
+        {allAssets.map(({ asset: a, proRata, investorPct }: { asset: { id: string; name: string; assetClass: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string }; proRata: number; investorPct: number }) => (
           <div key={a.id} className="p-4 bg-gray-50 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge>
+                <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
                 <span className="text-sm font-semibold">{a.name}</span>
               </div>
               <div className="text-right">

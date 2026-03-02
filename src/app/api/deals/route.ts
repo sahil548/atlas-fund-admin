@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       workstreams: { include: { tasks: true } },
       screeningResult: true,
       icProcess: { include: { votes: true } },
+      dealLead: { select: { id: true, name: true, initials: true } },
     },
     orderBy: { createdAt: "desc" },
   });

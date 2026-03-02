@@ -20,7 +20,7 @@ const SLACK_IC_CHANNEL = process.env.SLACK_IC_CHANNEL;
 interface Deal {
   id: string;
   name: string;
-  dealCategory: string;
+  assetClass: string;
   targetSize?: string | null;
   aiScore?: number | null;
   aiFlag?: string | null;
@@ -82,7 +82,7 @@ export async function postICReviewToSlack(
       {
         type: "section",
         fields: [
-          { type: "mrkdwn", text: `*Category:*\n${deal.dealCategory.replace(/_/g, " ")}` },
+          { type: "mrkdwn", text: `*Asset Class:*\n${deal.assetClass.replace(/_/g, " ")}` },
           { type: "mrkdwn", text: `*Target Size:*\n${deal.targetSize || "N/A"}` },
           { type: "mrkdwn", text: `*AI Score:*\n${scoreDisplay}` },
           { type: "mrkdwn", text: `*Recommendation:*\n${recommendationDisplay}` },

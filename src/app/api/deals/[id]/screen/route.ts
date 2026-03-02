@@ -26,11 +26,11 @@ const DEFAULT_CATEGORIES: ScreeningCategory[] = [
  * Generate mock AI findings contextual to the deal.
  */
 function generateMockFindings(
-  deal: { name: string; dealCategory: string; sector?: string | null; targetSize?: string | null },
+  deal: { name: string; assetClass: string; sector?: string | null; targetSize?: string | null },
   categories: ScreeningCategory[],
 ) {
   const sectorContext = deal.sector || "general";
-  const categoryContext = deal.dealCategory.replace(/_/g, " ").toLowerCase();
+  const categoryContext = deal.assetClass.replace(/_/g, " ").toLowerCase();
 
   const findingsMap: Record<string, { title: string; description: string; priority: string }[]> = {
     "Financial Analysis": [
@@ -124,7 +124,9 @@ export async function POST(
   // Build input context from deal data
   const inputContext = {
     dealName: deal.name,
-    dealCategory: deal.dealCategory,
+    assetClass: deal.assetClass,
+    capitalInstrument: deal.capitalInstrument,
+    participationStructure: deal.participationStructure,
     sector: deal.sector,
     targetSize: deal.targetSize,
     targetCheckSize: deal.targetCheckSize,

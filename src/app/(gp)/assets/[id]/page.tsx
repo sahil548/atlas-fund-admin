@@ -16,14 +16,10 @@ import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-const TC: Record<string, string> = {
-  DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
-  FUND_LP_POSITION: "purple", CO_INVESTMENT: "blue",
-};
-const TL: Record<string, string> = {
-  DIRECT_EQUITY: "Equity", PRIVATE_CREDIT: "Credit", REAL_ESTATE_DIRECT: "Real Estate",
-  FUND_LP_POSITION: "Fund LP", CO_INVESTMENT: "Co-Invest",
-};
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+} from "@/lib/constants";
 
 export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -54,7 +50,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-bold text-gray-900">{a.name}</h2>
-              <Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge>
+              <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
               <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase() ?? "—"}</Badge>
               {a.hasBoardSeat && <Badge color="indigo">Board Seat</Badge>}
             </div>
@@ -413,7 +409,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               ["Board Seat", a.hasBoardSeat ? "Yes — JK represents" : "None"],
               ["Information Rights", "Quarterly financials + annual audit"],
               ["Review Schedule", a.nextReview ? new Date(a.nextReview).toLocaleDateString() : "Not scheduled"],
-              ["Holding Type", a.holdingType?.replace(/_/g, " ")],
+              ["Asset Class", ASSET_CLASS_LABELS[a.assetClass] || a.assetClass?.replace(/_/g, " ")],
               ["Entities", a.entityAllocations?.map((ea: { entity: { name: string } }) => ea.entity.name).join(", ")],
             ].map(([k, v], i) => (
               <div key={i} className="flex justify-between py-2 border-b border-gray-50">

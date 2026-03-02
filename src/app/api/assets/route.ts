@@ -2,12 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
-  const type = req.nextUrl.searchParams.get("type");
+  const assetClass = req.nextUrl.searchParams.get("assetClass");
   const status = req.nextUrl.searchParams.get("status");
   const firmId = req.nextUrl.searchParams.get("firmId");
 
   const where: Record<string, unknown> = {};
-  if (type) where.assetType = type;
+  if (assetClass) where.assetClass = assetClass;
   if (status) where.status = status;
   if (firmId) {
     where.entityAllocations = { some: { entity: { firmId } } };

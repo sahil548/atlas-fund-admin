@@ -185,7 +185,7 @@ export async function sendToICReview(
   const dealForSlack = {
     id: deal.id,
     name: deal.name,
-    dealCategory: deal.dealCategory,
+    assetClass: deal.assetClass,
     targetSize: deal.targetSize,
     aiScore: deal.aiScore,
     aiFlag: deal.aiFlag,

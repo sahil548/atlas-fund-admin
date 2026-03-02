@@ -1,24 +1,38 @@
 import { z } from "zod";
 
-// ── Deals ──────────────────────────────────────────────
+// ── Shared Taxonomy ──────────────────────────────────────
 
-const DEAL_CATEGORIES = [
-  "PRIVATE_EQUITY",
-  "PRIVATE_CREDIT",
+export const ASSET_CLASSES = [
   "REAL_ESTATE",
-  "REAL_ASSETS",
-  "SECONDARIES",
-  "FUND_INVESTMENTS",
+  "PUBLIC_SECURITIES",
+  "VENTURE_CAPITAL",
+  "INFRASTRUCTURE",
+  "COMMODITIES",
+  "DIVERSIFIED",
+  "NON_CORRELATED",
+  "CASH_AND_EQUIVALENTS",
 ] as const;
+
+export const CAPITAL_INSTRUMENTS = ["DEBT", "EQUITY"] as const;
+
+export const PARTICIPATION_STRUCTURES = [
+  "DIRECT_GP",
+  "CO_INVEST_JV_PARTNERSHIP",
+  "LP_STAKE_SILENT_PARTNER",
+] as const;
+
+// ── Deals ──────────────────────────────────────────────
 
 export const CreateDealSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  dealCategory: z.enum(DEAL_CATEGORIES),
+  assetClass: z.enum(ASSET_CLASSES),
+  capitalInstrument: z.enum(CAPITAL_INSTRUMENTS).optional(),
+  participationStructure: z.enum(PARTICIPATION_STRUCTURES).optional(),
   sector: z.string().optional(),
   targetSize: z.string().optional(),
   targetCheckSize: z.string().optional(),
   targetReturn: z.string().optional(),
-  leadPartner: z.string().optional(),
+  dealLeadId: z.string().optional(),
   gpName: z.string().optional(),
   source: z.string().optional(),
   counterparty: z.string().optional(),
@@ -30,16 +44,18 @@ export const CreateDealSchema = z.object({
 
 export const UpdateDealSchema = z.object({
   name: z.string().min(1).optional(),
-  dealCategory: z.enum(DEAL_CATEGORIES).optional(),
+  assetClass: z.enum(ASSET_CLASSES).optional(),
+  capitalInstrument: z.enum(CAPITAL_INSTRUMENTS).nullable().optional(),
+  participationStructure: z.enum(PARTICIPATION_STRUCTURES).nullable().optional(),
   sector: z.string().optional(),
   targetSize: z.string().optional(),
   targetCheckSize: z.string().nullable().optional(),
   targetReturn: z.string().nullable().optional(),
-  leadPartner: z.string().optional(),
+  dealLeadId: z.string().nullable().optional(),
   gpName: z.string().nullable().optional(),
   source: z.string().optional(),
   counterparty: z.string().optional(),
-  entityId: z.string().optional(),
+  entityId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   thesisNotes: z.string().nullable().optional(),
   investmentRationale: z.string().nullable().optional(),
@@ -161,6 +177,9 @@ export const UpdateClosingChecklistItemSchema = z.object({
 export const UpdateAssetSchema = z.object({
   fairValue: z.number().positive().optional(),
   status: z.enum(["ACTIVE", "EXITED", "WRITTEN_OFF"]).optional(),
+  assetClass: z.enum(ASSET_CLASSES).optional(),
+  capitalInstrument: z.enum(CAPITAL_INSTRUMENTS).nullable().optional(),
+  participationStructure: z.enum(PARTICIPATION_STRUCTURES).nullable().optional(),
   sector: z.string().optional(),
   incomeType: z.string().optional(),
 });
