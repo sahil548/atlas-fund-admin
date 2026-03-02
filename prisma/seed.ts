@@ -13,6 +13,7 @@ async function main() {
   // ============================================================
   console.log("Clearing existing data...");
 
+  await prisma.aIConfiguration.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   await prisma.activityEvent.deleteMany();
@@ -1591,15 +1592,15 @@ async function main() {
   console.log("Creating meetings...");
 
   // Map meeting asset names to asset/deal IDs
-  const meetingAssetMap: Record<string, { assetId?: string; dealId?: string }> = {
-    "NovaTech AI": { assetId: asset1.id },
-    "Sequoia Capital Fund XVI": { assetId: asset5.id },
-    "123 Industrial Blvd": { assetId: asset4.id },
-    "Meridian Credit Facility": { assetId: asset3.id },
-    "LifeBridge Insurance Fund": { assetId: asset11.id },
+  const meetingAssetMap: Record<string, { assetId?: string; dealId?: string; entityId?: string }> = {
+    "NovaTech AI": { assetId: asset1.id, entityId: entity1.id },
+    "Sequoia Capital Fund XVI": { assetId: asset5.id, entityId: entity3.id },
+    "123 Industrial Blvd": { assetId: asset4.id, entityId: entity1.id },
+    "Meridian Credit Facility": { assetId: asset3.id, entityId: entity8.id },
+    "LifeBridge Insurance Fund": { assetId: asset11.id, entityId: entity2.id },
     "Apex Manufacturing": { dealId: deal1.id },
     "Beacon Health": { dealId: deal2.id },
-    "Ridgeline Senior Debt": { dealId: deal4.id },
+    "Ridgeline Senior Debt": { dealId: deal4.id, entityId: entity8.id },
   };
 
   const meetingsData = [
@@ -1627,6 +1628,7 @@ async function main() {
         decisions: m.decisions.length > 0 ? m.decisions : undefined,
         assetId: links.assetId || null,
         dealId: links.dealId || null,
+        entityId: links.entityId || null,
       },
     });
   }
@@ -1990,6 +1992,53 @@ async function main() {
     ],
   });
   console.log("✓ Notifications seeded");
+
+  // ============================================================
+  // AI CONFIGURATION (for firm-1, default OpenAI config)
+  // ============================================================
+  console.log("Creating AI configuration...");
+
+  await prisma.aIConfiguration.create({
+    data: {
+      id: "ai-config-1",
+      firmId: firm.id,
+      provider: "openai",
+      model: "gpt-4o",
+      systemPrompt: `You are an expert investment analyst for a family office GP. Analyze the provided deal documents and produce a structured screening report.\n\nEvaluate:\n1. Business quality and competitive positioning\n2. Financial health and growth trajectory\n3. Management team strength\n4. Deal structure and terms\n5. Key risks and mitigants\n\nProvide a score (0-100) and recommendation: PROCEED_TO_DD, WATCHLIST, or PASS.`,
+      thresholdScore: 70,
+      maxDocuments: 10,
+      processingMode: "async",
+    },
+  });
+  console.log("✓ AI configuration seeded");
+
+  // ============================================================
+  // TRANSACTIONS (ledger entries for capital calls + distributions)
+  // ============================================================
+  console.log("Creating transactions...");
+
+  await prisma.transaction.createMany({
+    data: [
+      // Capital call transactions
+      { id: "txn-1", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 25_000_000, date: new Date("2025-02-15"), description: "CC-007 — CloudBase follow-on", referenceId: "cc-1", referenceType: "CapitalCall" },
+      { id: "txn-2", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 15_000_000, date: new Date("2025-02-28"), description: "CC-008 — Mgmt fees Q1 + Expenses", referenceId: "cc-2", referenceType: "CapitalCall" },
+      { id: "txn-3", entityId: entity8.id, transactionType: "CAPITAL_CALL", amount: 10_000_000, date: new Date("2025-03-01"), description: "CC-003 — New credit deployment", referenceId: "cc-3", referenceType: "CapitalCall" },
+      { id: "txn-4", entityId: entity3.id, transactionType: "CAPITAL_CALL", amount: 8_000_000, date: new Date("2025-01-15"), description: "CC-005 — Sequoia pass-through", referenceId: "cc-4", referenceType: "CapitalCall" },
+      // Distribution transactions
+      { id: "txn-5", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 58_000_000, date: new Date("2025-01-31"), description: "Exit — SolarGrid Energy", referenceId: "dist-1", referenceType: "DistributionEvent" },
+      { id: "txn-6", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 12_000_000, date: new Date("2024-09-30"), description: "Dividend — NovaTech AI", referenceId: "dist-2", referenceType: "DistributionEvent" },
+      { id: "txn-7", entityId: entity8.id, transactionType: "DISTRIBUTION", amount: 2_100_000, date: new Date("2024-12-31"), description: "Interest income Q4", referenceId: "dist-3", referenceType: "DistributionEvent" },
+      { id: "txn-8", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 1_200_000, date: new Date("2024-06-30"), description: "Dividend — NovaTech AI", referenceId: "dist-4", referenceType: "DistributionEvent" },
+      // Additional income/fee transactions
+      { id: "txn-9", entityId: entity1.id, transactionType: "INCOME", amount: 1_520_000, date: new Date("2024-12-15"), description: "NovaTech AI — Q4 dividend", isPrincipal: false },
+      { id: "txn-10", entityId: entity3.id, transactionType: "FEE", amount: 375_000, date: new Date("2025-01-01"), description: "Q1 2025 management fee", isPrincipal: false },
+      { id: "txn-11", entityId: entity4.id, transactionType: "INCOME", amount: 410_000, date: new Date("2024-12-31"), description: "123 Industrial — Q4 rental NOI", isPrincipal: false },
+      { id: "txn-12", entityId: entity2.id, transactionType: "FEE", amount: 625_000, date: new Date("2025-01-01"), description: "Q1 2025 management fee", isPrincipal: false },
+      { id: "txn-13", entityId: entity1.id, transactionType: "EXIT", amount: 58_000_000, date: new Date("2025-01-31"), description: "SolarGrid Energy — full exit proceeds", isPrincipal: true, referenceId: "asset-7", referenceType: "Asset" },
+      { id: "txn-14", entityId: entity2.id, transactionType: "INVESTMENT", amount: 8_000_000, date: new Date("2024-11-01"), description: "CloudBase Systems — follow-on Series C", isPrincipal: true, referenceId: "asset-8", referenceType: "Asset" },
+    ],
+  });
+  console.log("✓ Transactions seeded");
 
   console.log("Seeding complete!");
 }

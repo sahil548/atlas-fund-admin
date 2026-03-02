@@ -1,5 +1,5 @@
-import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
+import { createAIClient, getModelForFirm } from "@/lib/ai-config";
 import type { AgentCapability, AgentResponse } from "./command-bar-types";
 
 // ── Agent capability definitions ────────────────────────────────
@@ -46,24 +46,6 @@ const AGENT_DEFINITIONS: Record<
   },
 };
 
-// ── AI Client ───────────────────────────────────────────────────
-
-function getAIClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const provider = process.env.AI_PROVIDER || "openai";
-  const baseURL = process.env.OPENAI_BASE_URL;
-
-  if (provider === "anthropic") {
-    return new OpenAI({ apiKey, baseURL: baseURL || "https://api.anthropic.com/v1/" });
-  }
-  return new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) });
-}
-
-function getModel(): string {
-  return process.env.AI_MODEL || "gpt-4o";
-}
-
 // ── Public API ──────────────────────────────────────────────────
 
 /**
@@ -81,17 +63,19 @@ export async function routeToAgent(
   query: string,
   firmId: string,
 ): Promise<AgentResponse | null> {
-  const client = getAIClient();
+  const client = await createAIClient(firmId);
   if (!client) return null;
 
   try {
+    const model = await getModelForFirm(firmId);
+
     // Step 1: Determine which agent should handle this query
     const agentList = Object.entries(AGENT_DEFINITIONS)
       .map(([name, def]) => `- ${name}: ${def.description}. Capabilities: ${def.capabilities.map((c) => c.name).join(", ")}`)
       .join("\n");
 
     const routingResponse = await client.chat.completions.create({
-      model: getModel(),
+      model,
       messages: [
         {
           role: "system",
@@ -114,7 +98,7 @@ export async function routeToAgent(
     const agentData = await gatherAgentData(routing.agent, routing.capability, firmId);
 
     const agentResponse = await client.chat.completions.create({
-      model: getModel(),
+      model,
       messages: [
         {
           role: "system",

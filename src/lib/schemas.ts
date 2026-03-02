@@ -394,3 +394,16 @@ export const AgentQuerySchema = z.object({
 export const AgentListSchema = z.object({
   action: z.literal("list"),
 });
+
+// ── AI Configuration ────────────────────────────────
+
+export const UpdateAIConfigSchema = z.object({
+  provider: z.enum(["openai", "anthropic"]).optional(),
+  model: z.string().min(1).optional(),
+  apiKey: z.string().optional(),
+  baseUrl: z.string().optional(),
+  systemPrompt: z.string().optional(),
+  thresholdScore: z.number().int().min(0).max(100).optional(),
+  maxDocuments: z.number().int().min(1).max(50).optional(),
+  processingMode: z.enum(["async", "sync"]).optional(),
+});

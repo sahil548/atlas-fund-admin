@@ -8,6 +8,7 @@ export async function GET() {
     include: {
       asset: { select: { id: true, name: true } },
       deal: { select: { id: true, name: true } },
+      entity: { select: { id: true, name: true } },
     },
     orderBy: { meetingDate: "desc" },
   });

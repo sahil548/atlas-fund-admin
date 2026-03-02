@@ -1,35 +1,6 @@
-import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
+import { createAIClient, getModelForFirm } from "@/lib/ai-config";
 import type { AIResponse, DatabaseContext, SearchResult } from "./command-bar-types";
-
-/**
- * Get an OpenAI-compatible client.
- * Supports: OpenAI (default), Anthropic (via OpenAI-compatible endpoint),
- * or any OpenAI-compatible API via OPENAI_BASE_URL.
- */
-function getAIClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const provider = process.env.AI_PROVIDER || "openai";
-  const baseURL = process.env.OPENAI_BASE_URL;
-
-  if (provider === "anthropic") {
-    return new OpenAI({
-      apiKey,
-      baseURL: baseURL || "https://api.anthropic.com/v1/",
-    });
-  }
-
-  return new OpenAI({
-    apiKey,
-    ...(baseURL ? { baseURL } : {}),
-  });
-}
-
-function getModel(): string {
-  return process.env.AI_MODEL || "gpt-4o";
-}
 
 /**
  * Gather portfolio context from the database for AI prompt enrichment.
@@ -209,12 +180,12 @@ export async function searchAndAnalyze(
   query: string,
   firmId: string,
 ): Promise<AIResponse> {
-  const client = getAIClient();
+  const client = await createAIClient(firmId);
 
   if (!client) {
     return {
       message:
-        "AI features require an API key. Add OPENAI_API_KEY to your .env file to enable intelligent search and chat.",
+        "AI features require an API key. Configure your API key in Settings → AI Configuration to enable intelligent search and chat.",
       searchResults: [],
       suggestions: [
         "How do I add an API key?",
@@ -227,9 +198,10 @@ export async function searchAndAnalyze(
   try {
     const ctx = await gatherContext(firmId);
     const systemPrompt = buildSystemPrompt(ctx);
+    const model = await getModelForFirm(firmId);
 
     const response = await client.chat.completions.create({
-      model: getModel(),
+      model,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: query },

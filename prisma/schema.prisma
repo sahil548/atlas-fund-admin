@@ -313,6 +313,26 @@ model Firm {
   ddCategoryTemplates DDCategoryTemplate[]
   companies  Company[]
   contacts   Contact[]
+  aiConfiguration AIConfiguration?
+}
+
+model AIConfiguration {
+  id             String   @id @default(cuid())
+  firmId         String   @unique
+  provider       String   @default("openai")
+  model          String   @default("gpt-4o")
+  apiKey         String?
+  apiKeyIV       String?
+  apiKeyTag      String?
+  baseUrl        String?
+  systemPrompt   String?
+  thresholdScore Int      @default(70)
+  maxDocuments   Int      @default(10)
+  processingMode String   @default("async")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  firm Firm @relation(fields: [firmId], references: [id])
 }
 
 model Entity {
