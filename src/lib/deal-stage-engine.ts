@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { postICReviewToSlack } from "@/lib/slack";
+import { notifyGPTeam } from "@/lib/notifications";
 
 /**
  * Central stage engine for deal workflow transitions.
@@ -48,6 +49,13 @@ export async function checkAndAdvanceDeal(dealId: string) {
       },
     });
 
+    // Non-blocking notification
+    notifyGPTeam({
+      type: "STAGE_CHANGE",
+      subject: `${deal.name} advanced to Due Diligence`,
+      body: `AI screening completed with score ${deal.screeningResult.score}/100.`,
+    }).catch(() => {});
+
     return updatedDeal;
   }
 
@@ -69,6 +77,12 @@ export async function checkAndAdvanceDeal(dealId: string) {
           metadata: { fromStage: "IC_REVIEW", toStage: "CLOSING", decision },
         },
       });
+
+      // Non-blocking notification
+      notifyGPTeam({
+        type: "STAGE_CHANGE",
+        subject: `${deal.name} approved by IC — moved to Closing`,
+      }).catch(() => {});
 
       return updatedDeal;
     }
@@ -181,6 +195,12 @@ export async function sendToICReview(
     },
   });
 
+  // Non-blocking notification
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} sent to IC Review`,
+  }).catch(() => {});
+
   // Post to Slack (non-blocking — fire and forget)
   const dealForSlack = {
     id: deal.id,
@@ -246,7 +266,100 @@ export async function killDeal(dealId: string) {
     },
   });
 
+  // Non-blocking notification
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} has been killed`,
+  }).catch(() => {});
+
   return updatedDeal;
+}
+
+/**
+ * Close a deal — CLOSING -> CLOSED
+ * Validates all closing checklist items are COMPLETE, then transitions.
+ * Also creates an Asset record from the deal data.
+ */
+export async function closeDeal(dealId: string) {
+  const deal = await prisma.deal.findUnique({
+    where: { id: dealId },
+    include: {
+      closingChecklist: true,
+      targetEntity: true,
+    },
+  });
+  if (!deal) throw new Error(`Deal ${dealId} not found`);
+  if (deal.stage !== "CLOSING") {
+    throw new Error(`Deal must be in CLOSING to close (currently ${deal.stage})`);
+  }
+
+  const totalItems = deal.closingChecklist.length;
+  const completedItems = deal.closingChecklist.filter(
+    (item) => item.status === "COMPLETE",
+  ).length;
+
+  if (totalItems === 0) {
+    throw new Error("Initialize the closing checklist before closing the deal");
+  }
+  if (completedItems < totalItems) {
+    throw new Error(
+      `${totalItems - completedItems} of ${totalItems} checklist items are not yet complete`,
+    );
+  }
+
+  // Create asset from deal data
+  const asset = await prisma.asset.create({
+    data: {
+      name: deal.name,
+      assetClass: deal.assetClass,
+      capitalInstrument: deal.capitalInstrument,
+      participationStructure: deal.participationStructure,
+      sector: deal.sector,
+      status: "ACTIVE",
+      costBasis: 0,
+      fairValue: 0,
+      entryDate: new Date(),
+    },
+  });
+
+  // Link asset to entity if deal has one
+  if (deal.entityId) {
+    await prisma.assetEntityAllocation.create({
+      data: {
+        assetId: asset.id,
+        entityId: deal.entityId,
+        allocationPercent: 100,
+        costBasis: 0,
+      },
+    });
+  }
+
+  const updatedDeal = await prisma.deal.update({
+    where: { id: dealId },
+    data: { stage: "CLOSED" },
+  });
+
+  await prisma.dealActivity.create({
+    data: {
+      dealId,
+      activityType: "DEAL_CLOSED",
+      description: `Deal closed — asset "${asset.name}" created and booked`,
+      metadata: {
+        fromStage: "CLOSING",
+        toStage: "CLOSED",
+        assetId: asset.id,
+        assetName: asset.name,
+      },
+    },
+  });
+
+  // Non-blocking notification
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} closed — asset created`,
+  }).catch(() => {});
+
+  return { deal: updatedDeal, asset };
 }
 
 /**

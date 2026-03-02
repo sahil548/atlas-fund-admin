@@ -162,14 +162,27 @@ export const CreateNoteSchema = z.object({
 export const CreateClosingChecklistItemSchema = z.object({
   dealId: z.string().min(1),
   title: z.string().min(1, "Title is required"),
-  assignee: z.string().optional(),
+  assigneeId: z.string().nullable().optional(),
   dueDate: z.string().optional(),
-  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).default("TODO"),
+  notes: z.string().optional(),
+  order: z.number().int().default(0),
+  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETE"]).default("NOT_STARTED"),
 });
 
 export const UpdateClosingChecklistItemSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]),
+  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETE"]).optional(),
+  assigneeId: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+});
+
+export const InitializeClosingSchema = z.object({
+  action: z.literal("INITIALIZE"),
+});
+
+export const CloseDealSchema = z.object({
+  action: z.literal("CLOSE"),
 });
 
 // ── Assets ─────────────────────────────────────────────

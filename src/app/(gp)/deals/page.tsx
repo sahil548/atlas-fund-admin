@@ -31,6 +31,7 @@ export default function DealsPage() {
   const { firmId } = useFirm();
   const [showCreate, setShowCreate] = useState(false);
   const [showDead, setShowDead] = useState(false);
+  const [showClosed, setShowClosed] = useState(false);
   const { data, isLoading } = useSWR(`/api/deals?firmId=${firmId}`, fetcher);
   if (isLoading || !data)
     return <div className="text-sm text-gray-400">Loading...</div>;
@@ -174,6 +175,45 @@ export default function DealsPage() {
           );
         })}
       </div>
+
+      {/* Closed Deals */}
+      {(() => {
+        const closedDeals = deals.filter((d: any) => d.stage === "CLOSED");
+        if (closedDeals.length === 0) return null;
+        return (
+          <div className="bg-emerald-50/50 rounded-xl border border-emerald-100">
+            <button
+              onClick={() => setShowClosed(!showClosed)}
+              className="w-full flex items-center justify-between p-3 text-xs font-semibold text-emerald-700"
+            >
+              <span>Closed Deals ({closedDeals.length})</span>
+              <span className="text-emerald-400">{showClosed ? "▲" : "▼"}</span>
+            </button>
+            {showClosed && (
+              <div className="px-3 pb-3 grid grid-cols-4 gap-2">
+                {closedDeals.map((p: any) => (
+                  <Link
+                    key={p.id}
+                    href={`/deals/${p.id}`}
+                    className="block bg-white rounded-lg p-3 shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-sm font-medium truncate pr-2">{p.name}</div>
+                      <Badge color="green">Closed</Badge>
+                    </div>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
+                        {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
+                      </Badge>
+                    </div>
+                    <div className="mt-2 text-[10px] text-gray-500">{p.targetSize || ""}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Dead Deals */}
       {(() => {

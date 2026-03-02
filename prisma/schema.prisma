@@ -65,7 +65,24 @@ enum DealStage {
   DUE_DILIGENCE
   IC_REVIEW
   CLOSING
+  CLOSED
   DEAD
+}
+
+enum ClosingChecklistStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+}
+
+enum NotificationType {
+  STAGE_CHANGE
+  IC_VOTE
+  DOCUMENT_UPLOAD
+  CAPITAL_CALL
+  TASK_ASSIGNED
+  CLOSING_UPDATE
+  GENERAL
 }
 
 // DealCategory removed — deals now use AssetClass + CapitalInstrument + ParticipationStructure
@@ -402,6 +419,8 @@ model User {
   icQuestionReplies  ICQuestionReply[] @relation("ICQuestionReplyAuthor")
   icDecisions        ICProcess[]       @relation("ICDecisions")
   dealsLead          Deal[]            @relation("DealLead")
+  closingAssignments ClosingChecklist[] @relation("ClosingAssignments")
+  notifications      Notification[]    @relation("UserNotifications")
 }
 
 // ============================================================
@@ -1078,16 +1097,20 @@ model ICQuestionReply {
 }
 
 model ClosingChecklist {
-  id        String     @id @default(cuid())
-  dealId    String
-  title     String
-  status    TaskStatus @default(TODO)
-  assignee  String?
-  dueDate   DateTime?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String                @id @default(cuid())
+  dealId     String
+  title      String
+  status     ClosingChecklistStatus @default(NOT_STARTED)
+  assigneeId String?
+  assignee   String?
+  dueDate    DateTime?
+  notes      String?
+  order      Int                   @default(0)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
 
-  deal Deal @relation(fields: [dealId], references: [id])
+  deal       Deal  @relation(fields: [dealId], references: [id])
+  assignedTo User? @relation("ClosingAssignments", fields: [assigneeId], references: [id])
 }
 
 model DealActivity {
@@ -1202,12 +1225,18 @@ model Document {
 model Notification {
   id          String              @id @default(cuid())
   investorId  String?
+  userId      String?
   channel     NotificationChannel @default(EMAIL)
+  type        NotificationType    @default(GENERAL)
   subject     String
   body        String?
+  isRead      Boolean             @default(false)
+  readAt      DateTime?
   sentAt      DateTime?
   status      String              @default("pending")
   createdAt   DateTime            @default(now())
+
+  user        User?               @relation("UserNotifications", fields: [userId], references: [id])
 }
 
 model ActivityEvent {

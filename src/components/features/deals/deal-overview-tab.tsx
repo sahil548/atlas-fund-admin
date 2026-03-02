@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InlineEditField } from "./inline-edit-field";
 import { ScreeningConfigModal } from "./screening-config-modal";
+import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -45,6 +46,14 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
   const [showScreeningConfig, setShowScreeningConfig] = useState(false);
   const [showLinkEntity, setShowLinkEntity] = useState(false);
   const [linkingEntity, setLinkingEntity] = useState(false);
+  const [showCreateEntity, setShowCreateEntity] = useState(false);
+  const [newEntityForm, setNewEntityForm] = useState({
+    name: "",
+    entityType: "MAIN_FUND",
+    vehicleStructure: "LLC",
+  });
+  const [creatingEntity, setCreatingEntity] = useState(false);
+  const toast = useToast();
 
   const { data: entities } = useSWR(
     showLinkEntity ? "/api/entities?firmId=firm-1" : null,
@@ -102,6 +111,37 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
       mutate(`/api/deals/${deal.id}`);
     } catch {
       // silently fail
+    }
+  }
+
+  async function handleCreateAndLink() {
+    if (!newEntityForm.name.trim()) return;
+    setCreatingEntity(true);
+    try {
+      const res = await fetch("/api/entities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firmId: "firm-1",
+          name: newEntityForm.name.trim(),
+          entityType: newEntityForm.entityType,
+          vehicleStructure: newEntityForm.vehicleStructure,
+        }),
+      });
+      const created = await res.json();
+      await fetch(`/api/deals/${deal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityId: created.id }),
+      });
+      mutate(`/api/deals/${deal.id}`);
+      toast.success(`Entity "${newEntityForm.name.trim()}" created & linked`);
+      setNewEntityForm({ name: "", entityType: "MAIN_FUND", vehicleStructure: "LLC" });
+      setShowCreateEntity(false);
+    } catch {
+      toast.error("Failed to create entity");
+    } finally {
+      setCreatingEntity(false);
     }
   }
 
@@ -304,12 +344,106 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
                   >
                     Link Existing
                   </Button>
-                  <Link href="/entities">
-                    <Button variant="secondary" size="sm" type="button">
-                      Create New
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowCreateEntity(true)}
+                  >
+                    Create New
+                  </Button>
                 </div>
+                {showCreateEntity && (
+                  <div className="mt-4 border border-gray-200 rounded-lg p-4 bg-white text-left">
+                    <div className="text-xs font-semibold text-gray-700 mb-3">
+                      Create New Entity
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[11px] text-gray-500 mb-1 block">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          value={newEntityForm.name}
+                          onChange={(e) =>
+                            setNewEntityForm((f) => ({ ...f, name: e.target.value }))
+                          }
+                          placeholder="e.g. Atlas Fund I LLC"
+                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[11px] text-gray-500 mb-1 block">
+                            Entity Type
+                          </label>
+                          <select
+                            value={newEntityForm.entityType}
+                            onChange={(e) =>
+                              setNewEntityForm((f) => ({
+                                ...f,
+                                entityType: e.target.value,
+                              }))
+                            }
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                          >
+                            {Object.entries(entityTypeLabels).map(([value, label]) => (
+                              <option key={value} value={value}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[11px] text-gray-500 mb-1 block">
+                            Vehicle Structure
+                          </label>
+                          <select
+                            value={newEntityForm.vehicleStructure}
+                            onChange={(e) =>
+                              setNewEntityForm((f) => ({
+                                ...f,
+                                vehicleStructure: e.target.value,
+                              }))
+                            }
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+                          >
+                            {Object.entries(vehicleStructureLabels).map(
+                              ([value, label]) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              )
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          onClick={handleCreateAndLink}
+                          disabled={creatingEntity || !newEntityForm.name.trim()}
+                        >
+                          {creatingEntity ? "Creating..." : "Create & Link"}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setShowCreateEntity(false);
+                            setNewEntityForm({
+                              name: "",
+                              entityType: "MAIN_FUND",
+                              vehicleStructure: "LLC",
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {showLinkEntity && (
                   <div className="mt-4 border-t border-gray-100 pt-3 text-left">
                     <div className="text-xs text-gray-500 mb-2">Select an entity:</div>

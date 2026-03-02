@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
-import { UpdateDealSchema, KillDealSchema } from "@/lib/schemas";
-import { killDeal } from "@/lib/deal-stage-engine";
+import { UpdateDealSchema } from "@/lib/schemas";
+import { killDeal, closeDeal } from "@/lib/deal-stage-engine";
 
 export async function GET(
   _req: Request,
@@ -80,20 +80,29 @@ export async function PUT(
 }
 
 /**
- * PATCH /api/deals/[id] — Kill deal (only action supported via PATCH now)
+ * PATCH /api/deals/[id] — Kill or Close deal
  */
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const { data, error } = await parseBody(req, KillDealSchema);
-  if (error) return error;
+  const body = await req.json();
 
-  if (data!.action === "KILL") {
+  if (body.action === "KILL") {
     try {
       const deal = await killDeal(id);
       return NextResponse.json(deal);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  }
+
+  if (body.action === "CLOSE") {
+    try {
+      const result = await closeDeal(id);
+      return NextResponse.json(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
       return NextResponse.json({ error: message }, { status: 400 });

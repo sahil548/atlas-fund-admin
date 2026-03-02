@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { FileUpload } from "@/components/ui/file-upload";
+import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,6 +37,7 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<any>(null);
 
   function formatSize(bytes: number | null | undefined) {
     if (!bytes) return "—";
@@ -134,6 +136,12 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
         </div>
       )}
 
+      <DocumentPreviewModal
+        open={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        document={previewDoc}
+      />
+
       {documents.length > 0 ? (
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
@@ -156,14 +164,13 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
               >
                 <td className="px-3 py-2.5 font-medium">
                   {d.fileUrl ? (
-                    <a
-                      href={d.fileUrl}
-                      className="text-indigo-600 hover:underline"
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => setPreviewDoc(d)}
+                      className="text-indigo-600 hover:underline cursor-pointer text-left"
                     >
                       {d.name}
-                    </a>
+                    </button>
                   ) : (
                     d.name
                   )}

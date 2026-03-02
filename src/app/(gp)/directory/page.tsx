@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,11 +11,16 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { fmt } from "@/lib/utils";
+import { CreateInvestorForm } from "@/components/features/investors/create-investor-form";
+import { EditInvestorForm } from "@/components/features/investors/edit-investor-form";
 import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+type InvestorRow = { id: string; name: string; investorType: string; totalCommitted: number; commitments: { entity: { name: string } }[]; kycStatus: string; advisoryBoard: boolean; contactPreference: string };
 
 const COMPANY_TYPE_LABELS: Record<string, string> = {
   GP: "GP",
@@ -39,13 +45,22 @@ const CONTACT_TYPE_LABELS: Record<string, string> = {
   EXTERNAL: "External",
 };
 
-export default function CRMPage() {
+export default function DirectoryPage() {
   const { firmId } = useFirm();
-  const [tab, setTab] = useState<"companies" | "contacts" | "team">("companies");
+  const [tab, setTab] = useState<"investors" | "companies" | "contacts" | "team" | "sideLetters">("investors");
+  const toast = useToast();
+
+  // Data fetching
+  const { data: investors, isLoading: investorsLoading } = useSWR(`/api/investors?firmId=${firmId}`, fetcher);
   const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcher);
   const { data: contacts } = useSWR(`/api/contacts?firmId=${firmId}`, fetcher);
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
-  const toast = useToast();
+  const { data: sideLetters } = useSWR("/api/side-letters", fetcher);
+
+  // Investor modals
+  const [showCreateInvestor, setShowCreateInvestor] = useState(false);
+  const [showEditInvestor, setShowEditInvestor] = useState(false);
+  const [editingInvestor, setEditingInvestor] = useState<InvestorRow | null>(null);
 
   // Create company modal
   const [showCreateCompany, setShowCreateCompany] = useState(false);
@@ -88,10 +103,14 @@ export default function CRMPage() {
   }
 
   const tabs = [
+    { key: "investors" as const, label: "Investors", count: investors?.length || 0 },
     { key: "companies" as const, label: "Companies", count: companies?.length || 0 },
     { key: "contacts" as const, label: "Contacts", count: contacts?.length || 0 },
     { key: "team" as const, label: "Team", count: users?.length || 0 },
+    { key: "sideLetters" as const, label: "Side Letters", count: sideLetters?.length || 0 },
   ];
+
+  if (investorsLoading || !investors) return <div className="text-sm text-gray-400">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -112,6 +131,9 @@ export default function CRMPage() {
             </button>
           ))}
         </div>
+        {tab === "investors" && (
+          <Button onClick={() => setShowCreateInvestor(true)}>+ Add Investor</Button>
+        )}
         {tab === "companies" && (
           <Button onClick={() => setShowCreateCompany(true)}>+ Add Company</Button>
         )}
@@ -119,6 +141,46 @@ export default function CRMPage() {
           <Button onClick={() => setShowCreateContact(true)}>+ Add Contact</Button>
         )}
       </div>
+
+      {/* Investors Tab */}
+      {tab === "investors" && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                {["Investor", "Type", "Total Committed", "Entities", "KYC", "Advisory", "Pref. Contact", ""].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {investors.map((inv: InvestorRow) => (
+                <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer">
+                  <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
+                  <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
+                  <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
+                  <td className="px-3 py-2.5">
+                    {inv.commitments?.map((c) => (
+                      <span key={c.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{c.entity.name}</span>
+                    ))}
+                  </td>
+                  <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
+                  <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">—</span>}</td>
+                  <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
+                  <td className="px-3 py-2.5">
+                    <button
+                      className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                      onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEditInvestor(true); }}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Companies Tab */}
       {tab === "companies" && (
@@ -249,6 +311,36 @@ export default function CRMPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Side Letters Tab */}
+      {tab === "sideLetters" && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="space-y-2">
+            {sideLetters?.map((sl: { id: string; investor: { name: string }; entity: { name: string }; terms: string }) => (
+              <div key={sl.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="text-sm font-medium">{sl.investor.name} — <span className="text-indigo-600">{sl.entity.name}</span></div>
+                  <div className="text-xs text-gray-500 mt-0.5">{sl.terms}</div>
+                </div>
+                <Badge color="purple">Side Letter</Badge>
+              </div>
+            ))}
+            {(!sideLetters || sideLetters.length === 0) && (
+              <div className="px-4 py-8 text-center text-gray-400 text-xs">No side letters yet.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Investor Modals */}
+      <CreateInvestorForm open={showCreateInvestor} onClose={() => setShowCreateInvestor(false)} />
+      {editingInvestor && (
+        <EditInvestorForm
+          open={showEditInvestor}
+          onClose={() => { setShowEditInvestor(false); setEditingInvestor(null); }}
+          investor={editingInvestor}
+        />
       )}
 
       {/* Create Company Modal */}

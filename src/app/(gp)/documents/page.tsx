@@ -9,6 +9,7 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
+import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -18,6 +19,7 @@ interface Doc {
   category: string;
   uploadDate: string;
   fileSize: number | null;
+  fileUrl: string | null;
   mimeType: string | null;
   asset?: { id: string; name: string } | null;
   entity?: { id: string; name: string } | null;
@@ -55,6 +57,7 @@ export default function DocumentsPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [uploadForm, setUploadForm] = useState({ name: "", category: "FINANCIAL", associateWith: "" });
   const [uploading, setUploading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
 
   if (isLoading || !docs) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -171,7 +174,19 @@ export default function DocumentsPage() {
               const assoc = association(d);
               return (
                 <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-3 py-2.5 font-medium">{d.name}</td>
+                  <td className="px-3 py-2.5 font-medium">
+                    {d.fileUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc(d)}
+                        className="text-indigo-600 hover:underline cursor-pointer text-left"
+                      >
+                        {d.name}
+                      </button>
+                    ) : (
+                      d.name
+                    )}
+                  </td>
                   <td className="px-3 py-2.5">
                     <Badge color={categoryColors[d.category] || "gray"}>{d.category}</Badge>
                   </td>
@@ -251,6 +266,12 @@ export default function DocumentsPage() {
           </FormField>
         </div>
       </Modal>
+
+      <DocumentPreviewModal
+        open={!!previewDoc}
+        onClose={() => setPreviewDoc(null)}
+        document={previewDoc}
+      />
     </div>
   );
 }

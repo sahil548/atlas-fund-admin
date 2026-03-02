@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -30,6 +31,7 @@ export function TopBar({ title }: { title: string }) {
     <div className="border-b border-gray-200 bg-white px-6 py-3 flex justify-between items-center sticky top-0 z-10">
       <h1 className="text-sm font-semibold">{title}</h1>
       <div className="flex items-center gap-3">
+        <NotificationBell />
         <span className="text-[10px] text-gray-500">QBO synced {syncLabel}</span>
         <span className={`w-2 h-2 rounded-full ${hasError ? "bg-red-400" : "bg-emerald-400"}`} />
       </div>

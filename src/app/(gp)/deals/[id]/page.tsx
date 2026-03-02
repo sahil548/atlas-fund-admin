@@ -27,12 +27,13 @@ import {
   CAPITAL_INSTRUMENT_LABELS,
 } from "@/lib/constants";
 
-const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"];
+const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"];
 const stageLabel: Record<string, string> = {
   SCREENING: "Screening",
   DUE_DILIGENCE: "Due Diligence",
   IC_REVIEW: "IC Review",
   CLOSING: "Closing",
+  CLOSED: "Closed",
   DEAD: "Dead",
 };
 
@@ -57,6 +58,16 @@ const stageTabs: Record<string, string[]> = {
     "IC Review",
   ],
   CLOSING: [
+    "Overview",
+    "Documents",
+    "Notes",
+    "AI Screening",
+    "Due Diligence",
+    "Activity",
+    "IC Review",
+    "Closing",
+  ],
+  CLOSED: [
     "Overview",
     "Documents",
     "Notes",
@@ -104,6 +115,7 @@ export default function DealDetailPage({
 
   const currentIdx = stageOrder.indexOf(deal.stage);
   const isDead = deal.stage === "DEAD";
+  const isClosed = deal.stage === "CLOSED";
   const visibleTabs = isDead
     ? getDeadTabs(deal)
     : stageTabs[deal.stage] || stageTabs.SCREENING;
@@ -219,6 +231,8 @@ export default function DealDetailPage({
               color={
                 isDead
                   ? "red"
+                  : deal.stage === "CLOSED"
+                  ? "emerald"
                   : deal.stage === "CLOSING"
                   ? "green"
                   : "yellow"
@@ -244,7 +258,7 @@ export default function DealDetailPage({
               Send to IC Review
             </Button>
           )}
-          {!isDead && (
+          {!isDead && !isClosed && (
             <Button
               variant="danger"
               size="sm"
@@ -296,6 +310,12 @@ export default function DealDetailPage({
       {isDead && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 font-medium">
           This deal has been killed and is no longer active.
+        </div>
+      )}
+
+      {isClosed && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700 font-medium">
+          This deal has been closed — the asset has been created and booked.
         </div>
       )}
 

@@ -1974,6 +1974,23 @@ async function main() {
   }
   console.log("✓ Contacts seeded");
 
+  // ============================================================
+  // SAMPLE NOTIFICATIONS (for user-jk)
+  // ============================================================
+  console.log("Creating sample notifications...");
+
+  await prisma.notification.createMany({
+    data: [
+      { userId: "user-jk", type: "STAGE_CHANGE", subject: "Apex Manufacturing advanced to IC Review", body: "Deal has moved from Due Diligence to IC Review stage.", isRead: true, readAt: new Date("2026-02-27"), createdAt: new Date("2026-02-27") },
+      { userId: "user-jk", type: "IC_VOTE", subject: "Sarah Martinez voted APPROVE on Apex Manufacturing", body: "Agree, but want customer concentration addressed in closing docs.", isRead: true, readAt: new Date("2026-02-28"), createdAt: new Date("2026-02-28") },
+      { userId: "user-jk", type: "DOCUMENT_UPLOAD", subject: "New document uploaded to Beacon Health", body: "Patient volume data and payer mix analysis uploaded by SM.", isRead: false, createdAt: new Date("2026-02-20") },
+      { userId: "user-jk", type: "STAGE_CHANGE", subject: "Ridgeline Senior Debt advanced to Due Diligence", body: "AI screening completed with score 88/100. Deal moved to Due Diligence.", isRead: false, createdAt: new Date("2026-02-08") },
+      { userId: "user-jk", type: "TASK_ASSIGNED", subject: "New task assigned: Review Apex QoE report", body: "You've been assigned to review the Quality of Earnings report for Apex Manufacturing.", isRead: false, createdAt: new Date("2026-02-12") },
+      { userId: "user-sm", type: "STAGE_CHANGE", subject: "Beacon Health advanced to Due Diligence", body: "AI screening completed with score 74/100.", isRead: false, createdAt: new Date("2026-02-10") },
+    ],
+  });
+  console.log("✓ Notifications seeded");
+
   console.log("Seeding complete!");
 }
 
