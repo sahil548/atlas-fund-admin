@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { PromptTemplatesEditor } from "@/components/features/settings/prompt-templates-editor";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -530,6 +531,9 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Prompt Templates */}
+          <PromptTemplatesEditor />
 
           {/* Connection Status */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">

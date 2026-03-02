@@ -1,4 +1,4 @@
-import { createAIClient, getAIConfig, getModelForFirm } from "@/lib/ai-config";
+import { createAIClient, getAIConfig, getModelForFirm, getPromptTemplate } from "@/lib/ai-config";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -153,10 +153,14 @@ export async function screenDealWithAI(
   const config = await getAIConfig(firmId);
   const model = await getModelForFirm(firmId);
 
+  // Prompt priority: template DB → legacy config.systemPrompt → hardcoded default
+  const screeningTemplate = await getPromptTemplate(firmId, "SCREENING");
+  const effectivePrompt = screeningTemplate || config.systemPrompt;
+
   const systemPrompt = buildScreeningPrompt(
     dealCtx,
     categories,
-    config.systemPrompt,
+    effectivePrompt,
     customInstructions,
   );
 

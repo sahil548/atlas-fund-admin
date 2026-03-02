@@ -120,6 +120,27 @@ export async function getModelForFirm(firmId: string): Promise<string> {
   return config.model;
 }
 
+// ── Prompt template lookup ─────────────────────────────
+
+import { getDefaultContent } from "@/lib/default-prompt-templates";
+
+/**
+ * Get prompt template for a given type. Any module can call this.
+ * Fallback: DB template → hardcoded default → null
+ */
+export async function getPromptTemplate(
+  firmId: string,
+  type: string,
+): Promise<string | null> {
+  const template = await prisma.aIPromptTemplate.findUnique({
+    where: { firmId_type: { firmId, type } },
+  });
+
+  if (template?.isActive) return template.content;
+
+  return getDefaultContent(type);
+}
+
 // ── Connection test ────────────────────────────────────
 
 export async function testConnection(

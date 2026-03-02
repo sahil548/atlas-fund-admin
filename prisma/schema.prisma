@@ -314,6 +314,7 @@ model Firm {
   companies  Company[]
   contacts   Contact[]
   aiConfiguration AIConfiguration?
+  aiPromptTemplates AIPromptTemplate[]
 }
 
 model AIConfiguration {
@@ -333,6 +334,27 @@ model AIConfiguration {
   updatedAt      DateTime @updatedAt
 
   firm Firm @relation(fields: [firmId], references: [id])
+}
+
+model AIPromptTemplate {
+  id          String   @id @default(cuid())
+  firmId      String
+  type        String                          // e.g. "SCREENING", "DD_FINANCIAL", "JOURNAL_ENTRY_REVIEW"
+  module      String   @default("deals")      // e.g. "deals", "accounting", "entities"
+  name        String
+  description String?
+  content     String                          // The actual prompt text
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  firm Firm @relation(fields: [firmId], references: [id])
+
+  @@unique([firmId, type])
+  @@index([firmId])
+  @@index([firmId, module])
 }
 
 model Entity {

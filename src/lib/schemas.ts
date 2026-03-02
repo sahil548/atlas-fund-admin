@@ -407,3 +407,23 @@ export const UpdateAIConfigSchema = z.object({
   maxDocuments: z.number().int().min(1).max(50).optional(),
   processingMode: z.enum(["async", "sync"]).optional(),
 });
+
+// ── AI Prompt Templates ────────────────────────────
+
+export const CreateAIPromptTemplateSchema = z.object({
+  type: z.string().min(1, "Template type is required"),
+  module: z.string().min(1).default("deals"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  content: z.string().min(1, "Prompt content is required"),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().default(0),
+});
+
+export const UpdateAIPromptTemplateSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  content: z.string().min(1).optional(),
+  isActive: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});

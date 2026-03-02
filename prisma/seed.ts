@@ -13,6 +13,7 @@ async function main() {
   // ============================================================
   console.log("Clearing existing data...");
 
+  await prisma.aIPromptTemplate.deleteMany();
   await prisma.aIConfiguration.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
@@ -2011,6 +2012,30 @@ async function main() {
     },
   });
   console.log("✓ AI configuration seeded");
+
+  // ============================================================
+  // AI PROMPT TEMPLATES
+  // ============================================================
+  console.log("Creating AI prompt templates...");
+
+  const { DEFAULT_PROMPT_TEMPLATES } = await import("../src/lib/default-prompt-templates");
+  for (let i = 0; i < DEFAULT_PROMPT_TEMPLATES.length; i++) {
+    const tmpl = DEFAULT_PROMPT_TEMPLATES[i];
+    await prisma.aIPromptTemplate.create({
+      data: {
+        firmId: firm.id,
+        type: tmpl.type,
+        module: tmpl.module,
+        name: tmpl.name,
+        description: tmpl.description,
+        content: tmpl.content,
+        isDefault: true,
+        isActive: true,
+        sortOrder: i,
+      },
+    });
+  }
+  console.log("✓ AI prompt templates seeded");
 
   // ============================================================
   // TRANSACTIONS (ledger entries for capital calls + distributions)
