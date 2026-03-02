@@ -4,12 +4,11 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   useCallback,
+  useEffect,
+  useRef,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
-import { CommandBar } from "./command-bar";
 
 // ── Context ─────────────────────────────────────────────
 
@@ -18,6 +17,7 @@ interface CommandBarContextType {
   open: () => void;
   close: () => void;
   toggle: () => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const CommandBarContext = createContext<CommandBarContextType>({
@@ -25,6 +25,7 @@ const CommandBarContext = createContext<CommandBarContextType>({
   open: () => {},
   close: () => {},
   toggle: () => {},
+  inputRef: { current: null },
 });
 
 export function useCommandBar() {
@@ -35,15 +36,24 @@ export function useCommandBar() {
 
 export function CommandBarProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    setMounted(true);
+  const open = useCallback(() => {
+    setIsOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
 
-  const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
+
+  const toggle = useCallback(() => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
+      return next;
+    });
+  }, []);
 
   // Cmd+K / Ctrl+K keyboard shortcut
   useEffect(() => {
@@ -52,23 +62,14 @@ export function CommandBarProvider({ children }: { children: ReactNode }) {
         e.preventDefault();
         toggle();
       }
-      // Escape handled inside CommandBar, but also here for safety
-      if (e.key === "Escape" && isOpen) {
-        close();
-      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [toggle, close, isOpen]);
+  }, [toggle]);
 
   return (
-    <CommandBarContext.Provider value={{ isOpen, open, close, toggle }}>
+    <CommandBarContext.Provider value={{ isOpen, open, close, toggle, inputRef }}>
       {children}
-      {mounted &&
-        createPortal(
-          <CommandBar isOpen={isOpen} onClose={close} />,
-          document.body,
-        )}
     </CommandBarContext.Provider>
   );
 }

@@ -7,8 +7,10 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FileUpload } from "@/components/ui/file-upload";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
+import { useFirm } from "@/components/providers/firm-provider";
 import useSWR from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -43,7 +45,8 @@ const DOC_CATEGORIES = [
   "Other",
 ];
 
-interface DocMeta {
+interface DocEntry {
+  file: File | null;
   name: string;
   category: string;
 }
@@ -53,13 +56,16 @@ interface Props {
   onClose: () => void;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export function CreateDealWizard({ open, onClose }: Props) {
   const toast = useToast();
   const router = useRouter();
+  const { firmId } = useFirm();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcher);
-  const { data: companies } = useSWR("/api/companies?firmId=firm-1", fetcher);
+  const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
+  const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcher);
 
   // Step 1: Basics
   const [basics, setBasics] = useState({
@@ -77,10 +83,10 @@ export function CreateDealWizard({ open, onClose }: Props) {
     source: "",
   });
 
-  // Step 2: Documents
-  const [docs, setDocs] = useState<DocMeta[]>([]);
-  const [newDocName, setNewDocName] = useState("");
-  const [newDocCategory, setNewDocCategory] = useState("CIM");
+  // Step 2: Documents (real file upload)
+  const [docs, setDocs] = useState<DocEntry[]>([]);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingCategory, setPendingCategory] = useState("CIM");
 
   // Step 3: Context
   const [context, setContext] = useState({
@@ -95,22 +101,14 @@ export function CreateDealWizard({ open, onClose }: Props) {
   function resetForm() {
     setStep(1);
     setBasics({
-      name: "",
-      assetClass: "REAL_ESTATE",
-      capitalInstrument: "",
-      participationStructure: "",
-      sector: "",
-      targetSize: "",
-      targetCheckSize: "",
-      targetReturn: "",
-      dealLeadId: "",
-      gpName: "",
-      counterparty: "",
-      source: "",
+      name: "", assetClass: "REAL_ESTATE", capitalInstrument: "",
+      participationStructure: "", sector: "", targetSize: "",
+      targetCheckSize: "", targetReturn: "", dealLeadId: "",
+      gpName: "", counterparty: "", source: "",
     });
     setDocs([]);
-    setNewDocName("");
-    setNewDocCategory("CIM");
+    setPendingFile(null);
+    setPendingCategory("CIM");
     setContext({ description: "", thesisNotes: "", investmentRationale: "", additionalContext: "" });
     setErrors({});
   }
@@ -123,15 +121,19 @@ export function CreateDealWizard({ open, onClose }: Props) {
   function validateStep1(): boolean {
     const errs: Record<string, string> = {};
     if (!basics.name.trim()) errs.name = "Deal name is required";
+    if (!basics.assetClass) errs.assetClass = "Asset class is required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
   function addDoc() {
-    if (!newDocName.trim()) return;
-    setDocs((prev) => [...prev, { name: newDocName, category: newDocCategory }]);
-    setNewDocName("");
-    setNewDocCategory("CIM");
+    if (!pendingFile) return;
+    setDocs((prev) => [
+      ...prev,
+      { file: pendingFile, name: pendingFile.name, category: pendingCategory },
+    ]);
+    setPendingFile(null);
+    setPendingCategory("CIM");
   }
 
   function removeDoc(index: number) {
@@ -153,16 +155,17 @@ export function CreateDealWizard({ open, onClose }: Props) {
       if (!dealRes.ok) throw new Error("Failed to create deal");
       const deal = await dealRes.json();
 
-      // 2. Create document metadata
+      // 2. Upload documents (real files via FormData)
       for (const doc of docs) {
+        const formData = new FormData();
+        formData.append("name", doc.name);
+        formData.append("category", mapDocCategory(doc.category));
+        if (doc.file) {
+          formData.append("file", doc.file);
+        }
         await fetch(`/api/deals/${deal.id}/documents`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: doc.name,
-            category: mapDocCategory(doc.category),
-            dealId: deal.id,
-          }),
+          body: formData,
         });
       }
 
@@ -171,7 +174,6 @@ export function CreateDealWizard({ open, onClose }: Props) {
         method: "POST",
       });
       if (!screenRes.ok) {
-        // Deal created but screening failed — still navigate
         toast.success("Deal created (screening will run later)");
       } else {
         toast.success("Deal created & AI screening complete");
@@ -234,7 +236,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                     : "bg-gray-100 text-gray-400"
               }`}
             >
-              {s < step ? "✓" : s}
+              {s < step ? "\u2713" : s}
             </div>
             {s < 3 && (
               <div
@@ -261,7 +263,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
             />
           </FormField>
 
-          <FormField label="Asset Class" required>
+          <FormField label="Asset Class" required error={errors.assetClass}>
             <Select
               value={basics.assetClass}
               onChange={(e) =>
@@ -278,7 +280,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 onChange={(e) =>
                   setBasics((p) => ({ ...p, capitalInstrument: e.target.value }))
                 }
-                options={[{ value: "", label: "— Select —" }, ...CAPITAL_INSTRUMENT_OPTIONS]}
+                options={[{ value: "", label: "\u2014 Select \u2014" }, ...CAPITAL_INSTRUMENT_OPTIONS]}
               />
             </FormField>
             <FormField label="Participation Structure">
@@ -287,7 +289,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 onChange={(e) =>
                   setBasics((p) => ({ ...p, participationStructure: e.target.value }))
                 }
-                options={[{ value: "", label: "— Select —" }, ...PARTICIPATION_OPTIONS]}
+                options={[{ value: "", label: "\u2014 Select \u2014" }, ...PARTICIPATION_OPTIONS]}
               />
             </FormField>
           </div>
@@ -342,7 +344,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   setBasics((p) => ({ ...p, dealLeadId: e.target.value }))
                 }
                 options={[
-                  { value: "", label: "— Select —" },
+                  { value: "", label: "\u2014 Select \u2014" },
                   ...(users || []).map((u: any) => ({ value: u.id, label: u.name })),
                 ]}
               />
@@ -354,7 +356,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   setBasics((p) => ({ ...p, gpName: e.target.value }))
                 }
                 options={[
-                  { value: "", label: "— Select —" },
+                  { value: "", label: "\u2014 Select \u2014" },
                   ...(companies || []).filter((c: any) => c.type === "GP").map((c: any) => ({ value: c.name, label: c.name })),
                   ...(companies || []).filter((c: any) => c.type !== "GP").map((c: any) => ({ value: c.name, label: `${c.name}` })),
                 ]}
@@ -370,7 +372,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   setBasics((p) => ({ ...p, counterparty: e.target.value }))
                 }
                 options={[
-                  { value: "", label: "— Select —" },
+                  { value: "", label: "\u2014 Select \u2014" },
                   ...(companies || []).filter((c: any) => ["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
                   ...(companies || []).filter((c: any) => !["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
                 ]}
@@ -383,7 +385,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   setBasics((p) => ({ ...p, source: e.target.value }))
                 }
                 options={[
-                  { value: "", label: "— Select —" },
+                  { value: "", label: "\u2014 Select \u2014" },
                   { value: "Direct / Proprietary", label: "Direct / Proprietary" },
                   { value: "Broker", label: "Broker" },
                   { value: "Advisor referral", label: "Advisor referral" },
@@ -398,43 +400,41 @@ export function CreateDealWizard({ open, onClose }: Props) {
         </div>
       )}
 
-      {/* Step 2: Documents */}
+      {/* Step 2: Documents — real file upload */}
       {step === 2 && (
         <div className="space-y-4">
           <p className="text-xs text-gray-500">
-            Add documents for AI screening. These are metadata references — file
-            upload is not yet active.
+            Upload documents for AI screening. Drag & drop or browse to select files.
           </p>
 
-          {/* Add Doc Form */}
-          <div className="flex gap-2 items-end">
-            <FormField label="Document Name" className="flex-1">
-              <Input
-                value={newDocName}
-                onChange={(e) => setNewDocName(e.target.value)}
-                placeholder="e.g. Q3 Financials.pdf"
-                onKeyDown={(e) => e.key === "Enter" && addDoc()}
+          {/* File upload + category */}
+          <div className="space-y-3">
+            <FormField label="Select File">
+              <FileUpload
+                onFileSelect={setPendingFile}
+                selectedFile={pendingFile}
               />
             </FormField>
-            <FormField label="Category">
-              <Select
-                value={newDocCategory}
-                onChange={(e) => setNewDocCategory(e.target.value)}
-                options={DOC_CATEGORIES.map((c) => ({
-                  value: c,
-                  label: c,
-                }))}
-              />
-            </FormField>
-            <Button onClick={addDoc} variant="secondary" className="mb-0">
-              Add
-            </Button>
+            {pendingFile && (
+              <div className="flex items-end gap-2">
+                <FormField label="Category" className="flex-1">
+                  <Select
+                    value={pendingCategory}
+                    onChange={(e) => setPendingCategory(e.target.value)}
+                    options={DOC_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                  />
+                </FormField>
+                <Button onClick={addDoc} variant="secondary" className="mb-0">
+                  Add
+                </Button>
+              </div>
+            )}
           </div>
 
-          {/* Doc List */}
+          {/* Queued docs */}
           {docs.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
-              No documents added yet. You can add them now or later.
+            <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+              No documents queued. You can add them now or later from the deal page.
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -443,16 +443,21 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   key={i}
                   className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">📄</span>
-                    <span className="text-sm font-medium">{doc.name}</span>
-                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm shrink-0">📄</span>
+                    <span className="text-sm font-medium truncate">{doc.name}</span>
+                    <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full shrink-0">
                       {doc.category}
                     </span>
+                    {doc.file && (
+                      <span className="text-[10px] text-gray-400">
+                        {(doc.file.size / 1024).toFixed(0)} KB
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => removeDoc(i)}
-                    className="text-gray-400 hover:text-red-500 text-sm"
+                    className="text-gray-400 hover:text-red-500 text-sm ml-2"
                   >
                     &times;
                   </button>
@@ -515,8 +520,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
               AI Screening
             </div>
             <p className="text-xs text-purple-600 mt-1">
-              Clicking &quot;Create & Screen&quot; will create the deal, save document
-              metadata, and trigger AI screening. The deal will automatically
+              Clicking &quot;Create & Screen&quot; will create the deal, upload
+              documents, and trigger AI screening. The deal will automatically
               advance to Due Diligence once screening completes.
             </p>
           </div>
@@ -534,22 +539,14 @@ export function CreateDealWizard({ open, onClose }: Props) {
               <div>
                 <span className="text-gray-500">Asset Class:</span>{" "}
                 <span className="font-medium">
-                  {
-                    ASSET_CLASS_OPTIONS.find(
-                      (c) => c.value === basics.assetClass,
-                    )?.label
-                  }
+                  {ASSET_CLASS_OPTIONS.find((c) => c.value === basics.assetClass)?.label}
                 </span>
               </div>
               {basics.capitalInstrument && (
                 <div>
                   <span className="text-gray-500">Instrument:</span>{" "}
                   <span className="font-medium">
-                    {
-                      CAPITAL_INSTRUMENT_OPTIONS.find(
-                        (c) => c.value === basics.capitalInstrument,
-                      )?.label
-                    }
+                    {CAPITAL_INSTRUMENT_OPTIONS.find((c) => c.value === basics.capitalInstrument)?.label}
                   </span>
                 </div>
               )}
@@ -585,7 +582,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
               )}
               <div>
                 <span className="text-gray-500">Documents:</span>{" "}
-                <span className="font-medium">{docs.length} attached</span>
+                <span className="font-medium">{docs.length} queued</span>
               </div>
             </div>
           </div>
@@ -595,9 +592,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
   );
 }
 
-function mapDocCategory(
-  cat: string,
-): string {
+function mapDocCategory(cat: string): string {
   const map: Record<string, string> = {
     "Term Sheet": "LEGAL",
     CIM: "REPORT",

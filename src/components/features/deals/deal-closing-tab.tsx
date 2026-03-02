@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -44,11 +45,12 @@ interface DealClosingTabProps {
 
 export function DealClosingTab({ deal }: DealClosingTabProps) {
   const toast = useToast();
+  const { firmId } = useFirm();
   const { data: checklistItems, isLoading } = useSWR(
     `/api/deals/${deal.id}/closing`,
     fetcher,
   );
-  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcher);
+  const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const [initializing, setInitializing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);

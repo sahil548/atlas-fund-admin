@@ -1,8 +1,5 @@
-"use client";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
+
 export default function WaterfallRedirect() {
-  const router = useRouter();
-  useEffect(() => { router.replace("/capital"); }, [router]);
-  return <div className="text-sm text-gray-400">Redirecting...</div>;
+  redirect("/transactions");
 }

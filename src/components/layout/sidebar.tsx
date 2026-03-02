@@ -3,28 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFirm } from "@/components/providers/firm-provider";
-
-const gpNav = [
-  { key: "/dashboard", label: "Dashboard", icon: "\u25FB" },
-  { key: "/entities", label: "Entities", icon: "\u25A3" },
-  { key: "/assets", label: "Assets", icon: "\u25C8" },
-  { key: "/deals", label: "Deal Desk", icon: "\u25C6" },
-  { key: "/capital", label: "Transactions", icon: "\u25C7" },
-  { key: "/meetings", label: "Meetings", icon: "\u25CE" },
-  { key: "/directory", label: "Directory", icon: "\u25A1" },
-  { key: "/documents", label: "Documents", icon: "\u25A5" },
-  { key: "/tasks", label: "Tasks", icon: "\u2611" },
-  { key: "/accounting", label: "Accounting", icon: "\u2B21" },
-  { key: "/settings", label: "Settings", icon: "\u2699" },
-];
-
-const lpNav = [
-  { key: "/lp-dashboard", label: "My Overview", icon: "\u25FB" },
-  { key: "/lp-account", label: "Capital Account", icon: "\u25C8" },
-  { key: "/lp-portfolio", label: "Portfolio", icon: "\u25C9" },
-  { key: "/lp-activity", label: "Notices & Activity", icon: "\u25C7" },
-  { key: "/lp-documents", label: "Documents", icon: "\u25A5" },
-];
+import { getSidebarNav } from "@/lib/routes";
 
 export function Sidebar({
   portal,
@@ -35,7 +14,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { firmId, firmName, firms, setFirmId } = useFirm();
-  const nav = portal === "gp" ? gpNav : lpNav;
+  const nav = getSidebarNav(portal);
 
   return (
     <div className="w-52 bg-slate-900 flex flex-col flex-shrink-0 h-screen sticky top-0">

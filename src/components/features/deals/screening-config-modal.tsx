@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import { mutate } from "swr";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -31,6 +32,7 @@ export function ScreeningConfigModal({
   onComplete,
 }: ScreeningConfigModalProps) {
   const toast = useToast();
+  const { firmId } = useFirm();
   const [categories, setCategories] = useState<CategoryConfig[]>([]);
   const [customInstructions, setCustomInstructions] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ export function ScreeningConfigModal({
     // Fetch DD category templates
     setFetching(true);
     Promise.all([
-      fetch(`/api/dd-categories?firmId=firm-1`)
+      fetch(`/api/dd-categories?firmId=${firmId}`)
         .then((r) => r.json())
         .catch(() => []),
       fetch(`/api/deals/${dealId}`)

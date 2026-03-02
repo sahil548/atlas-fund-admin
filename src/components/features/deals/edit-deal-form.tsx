@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
 import { UpdateDealSchema } from "@/lib/schemas";
+import { useFirm } from "@/components/providers/firm-provider";
 import useSWR from "swr";
 
 const fetcherFn = (url: string) => fetch(url).then((r) => r.json());
@@ -60,12 +61,13 @@ interface Props {
 
 export function EditDealForm({ open, onClose, deal }: Props) {
   const toast = useToast();
+  const { firmId } = useFirm();
   const { trigger, isLoading } = useMutation(`/api/deals/${deal.id}`, {
     method: "PUT",
     revalidateKeys: ["/api/deals", `/api/deals/${deal.id}`],
   });
-  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcherFn);
-  const { data: companies } = useSWR("/api/companies?firmId=firm-1", fetcherFn);
+  const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcherFn);
+  const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcherFn);
   const [form, setForm] = useState({
     name: "",
     sector: "",

@@ -1,26 +1,20 @@
 import type { CommandAction } from "./command-bar-types";
+import { APP_ROUTES } from "./routes";
 
-// All navigable routes and quick actions in Atlas
-export const ATLAS_COMMANDS: CommandAction[] = [
-  // ── GP Navigation ──────────────────────────────────────────
-  { id: "nav-dashboard", label: "Dashboard", description: "Main overview with KPIs, pipeline, and allocations", category: "navigation", keywords: ["home", "overview", "kpi", "stats", "metrics"], path: "/dashboard", icon: "LayoutDashboard", priority: 100 },
-  { id: "nav-deals", label: "Deal Desk", description: "Deal pipeline, screening, IC review", category: "navigation", keywords: ["deals", "pipeline", "screening", "ic", "investment", "opportunities"], path: "/deals", icon: "Briefcase", priority: 95 },
-  { id: "nav-entities", label: "Entities", description: "Fund entities, sidecars, SPVs", category: "navigation", keywords: ["funds", "vehicles", "sidecar", "spv", "formation", "llc", "lp"], path: "/entities", icon: "Building2", priority: 92 },
-  { id: "nav-assets", label: "Assets", description: "Portfolio assets and investments", category: "navigation", keywords: ["portfolio", "investments", "holdings", "real estate", "credit", "equity"], path: "/assets", icon: "TrendingUp", priority: 90 },
-  { id: "nav-directory", label: "Directory", description: "Contacts, companies, investors, team", category: "navigation", keywords: ["contacts", "companies", "investors", "people", "crm", "team", "lp"], path: "/directory", icon: "Users", priority: 88 },
-  { id: "nav-documents", label: "Documents", description: "Document management and file storage", category: "navigation", keywords: ["files", "docs", "pdf", "upload", "k1", "reports"], path: "/documents", icon: "FileText", priority: 85 },
-  { id: "nav-tasks", label: "Tasks", description: "Task management across deals and entities", category: "navigation", keywords: ["tasks", "todo", "checklist", "assignments", "workflow"], path: "/tasks", icon: "CheckSquare", priority: 85 },
-  { id: "nav-accounting", label: "Accounting", description: "QBO/Xero connections, trial balance, NAV", category: "navigation", keywords: ["accounting", "quickbooks", "qbo", "xero", "bookkeeping", "nav", "trial balance"], path: "/accounting", icon: "Calculator", priority: 82 },
-  { id: "nav-meetings", label: "Meetings", description: "Meeting notes, transcripts, and decisions", category: "navigation", keywords: ["meetings", "notes", "transcript", "decisions", "fireflies"], path: "/meetings", icon: "Calendar", priority: 80 },
-  { id: "nav-waterfall", label: "Waterfall", description: "Waterfall calculations and distributions", category: "navigation", keywords: ["waterfall", "distributions", "carried interest", "fees", "promote"], path: "/waterfall", icon: "Layers", priority: 78 },
-  { id: "nav-settings", label: "Settings", description: "Platform configuration and preferences", category: "navigation", keywords: ["settings", "config", "preferences", "api", "keys"], path: "/settings", icon: "Settings", priority: 60 },
+// Auto-generate navigation commands from the shared route registry
+const NAV_COMMANDS: CommandAction[] = APP_ROUTES.map((r) => ({
+  id: `nav-${r.path.replace(/\//g, "-").replace(/^-/, "")}`,
+  label: r.label,
+  description: r.description,
+  category: "navigation" as const,
+  keywords: r.keywords,
+  path: r.path,
+  icon: r.icon,
+  priority: r.priority,
+}));
 
-  // ── LP Navigation ──────────────────────────────────────────
-  { id: "nav-lp-dashboard", label: "LP Dashboard", description: "LP investor overview", category: "navigation", keywords: ["lp", "investor", "portal", "my overview"], path: "/lp-dashboard", icon: "LayoutDashboard", priority: 70 },
-  { id: "nav-lp-account", label: "Capital Account", description: "LP capital account statement", category: "navigation", keywords: ["capital account", "lp account", "statement"], path: "/lp-account", icon: "DollarSign", priority: 68 },
-  { id: "nav-lp-portfolio", label: "LP Portfolio", description: "LP portfolio view", category: "navigation", keywords: ["lp portfolio", "my investments"], path: "/lp-portfolio", icon: "TrendingUp", priority: 66 },
-
-  // ── Quick Create Actions ───────────────────────────────────
+// Quick create actions (manually defined — not routes)
+const CREATE_COMMANDS: CommandAction[] = [
   { id: "create-deal", label: "Create New Deal", description: "Start a new deal in the pipeline", category: "create", keywords: ["new deal", "add deal", "start deal", "create deal"], actionId: "createDeal", icon: "Plus", priority: 55 },
   { id: "create-entity", label: "Create New Entity", description: "Create a fund entity, sidecar, or SPV", category: "create", keywords: ["new entity", "new fund", "new spv", "new sidecar", "create entity", "add fund"], actionId: "createEntity", icon: "Plus", priority: 53 },
   { id: "create-investor", label: "Add Investor", description: "Add a new LP investor", category: "create", keywords: ["new investor", "add investor", "add lp", "create investor"], actionId: "createInvestor", icon: "Plus", priority: 51 },
@@ -29,6 +23,9 @@ export const ATLAS_COMMANDS: CommandAction[] = [
   { id: "create-company", label: "Add Company", description: "Add a company to the directory", category: "create", keywords: ["new company", "add company", "create company"], path: "/directory?tab=companies", icon: "Plus", priority: 46 },
   { id: "create-contact", label: "Add Contact", description: "Add a contact to the directory", category: "create", keywords: ["new contact", "add contact", "add person", "create contact"], path: "/directory?tab=contacts", icon: "Plus", priority: 44 },
 ];
+
+// All navigable routes and quick actions in Atlas
+export const ATLAS_COMMANDS: CommandAction[] = [...NAV_COMMANDS, ...CREATE_COMMANDS];
 
 /**
  * Fuzzy match scoring between a query and a target string.
@@ -116,17 +113,4 @@ export function discoverCommands(query: string): CommandAction[] {
 /**
  * Get module routes for the app grid.
  */
-export function getModuleRoutes() {
-  return [
-    { name: "Dashboard", path: "/dashboard", icon: "LayoutDashboard" },
-    { name: "Deal Desk", path: "/deals", icon: "Briefcase" },
-    { name: "Entities", path: "/entities", icon: "Building2" },
-    { name: "Assets", path: "/assets", icon: "TrendingUp" },
-    { name: "Directory", path: "/directory", icon: "Users" },
-    { name: "Documents", path: "/documents", icon: "FileText" },
-    { name: "Tasks", path: "/tasks", icon: "CheckSquare" },
-    { name: "Accounting", path: "/accounting", icon: "Calculator" },
-    { name: "Meetings", path: "/meetings", icon: "Calendar" },
-    { name: "Settings", path: "/settings", icon: "Settings" },
-  ];
-}
+export { getModuleRoutes } from "./routes";

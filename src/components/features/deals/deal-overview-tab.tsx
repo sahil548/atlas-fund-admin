@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { InlineEditField } from "./inline-edit-field";
 import { ScreeningConfigModal } from "./screening-config-modal";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -55,9 +56,10 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
   const [creatingEntity, setCreatingEntity] = useState(false);
   const [startFormation, setStartFormation] = useState(true);
   const toast = useToast();
+  const { firmId } = useFirm();
 
   const { data: entities } = useSWR(
-    showLinkEntity ? "/api/entities?firmId=firm-1" : null,
+    showLinkEntity ? `/api/entities?firmId=${firmId}` : null,
     fetcher
   );
 
@@ -123,7 +125,7 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firmId: "firm-1",
+          firmId,
           name: newEntityForm.name.trim(),
           entityType: newEntityForm.entityType,
           vehicleStructure: newEntityForm.vehicleStructure,

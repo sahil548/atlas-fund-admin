@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createAIClient, getModelForFirm } from "@/lib/ai-config";
+import { generateAIRouteList } from "@/lib/routes";
 import type { AIResponse, DatabaseContext, SearchResult } from "./command-bar-types";
 
 /**
@@ -146,8 +147,8 @@ CURRENT PORTFOLIO STATE:
 RECENT ACTIVITY:
 ${activitySummary}
 
-AVAILABLE MODULES:
-Dashboard, Deal Desk, Portfolio/Assets, Entities, Directory, Documents, Tasks, Accounting, Meetings, Waterfall, Capital Activity, Settings
+AVAILABLE MODULES (use ONLY these exact URL paths in searchResults):
+${generateAIRouteList()}
 
 INSTRUCTIONS:
 - Be concise and helpful. Reference real data from the portfolio state above.
@@ -155,6 +156,7 @@ INSTRUCTIONS:
 - When asked about performance, reference fair value vs cost basis.
 - Suggest relevant follow-up questions.
 - If the user wants to navigate somewhere, include search results with the page URL.
+- IMPORTANT: Only use URLs from the AVAILABLE MODULES list above. Never invent URLs like /portfolio, /portfolio/assets, /capital-activity, or /tasks/todo.
 
 You MUST respond in valid JSON with exactly this shape:
 {

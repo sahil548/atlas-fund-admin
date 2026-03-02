@@ -4,26 +4,7 @@ import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
-
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/entities": "Entities",
-  "/assets": "Assets",
-  "/deals": "Deal Desk",
-  "/capital": "Transactions",
-  "/meetings": "Meetings",
-  "/directory": "Directory",
-  "/investors": "Investors",
-  "/documents": "Documents",
-  "/tasks": "Tasks",
-  "/accounting": "Accounting",
-  "/settings": "Settings",
-  "/lp-dashboard": "My Overview",
-  "/lp-account": "Capital Account",
-  "/lp-portfolio": "Portfolio",
-  "/lp-activity": "Notices & Activity",
-  "/lp-documents": "Documents",
-};
+import { getPageTitle } from "@/lib/routes";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -36,12 +17,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push(p === "gp" ? "/dashboard" : "/lp-dashboard");
   };
 
-  const title =
-    pageTitles[pathname] ||
-    (pathname.startsWith("/assets/") ? "Asset Detail" :
-     pathname.startsWith("/deals/") ? "Deal Detail" :
-     pathname.startsWith("/entities/") ? "Entity Detail" :
-     pathname.startsWith("/investors/") ? "Investor Detail" : "Atlas");
+  const title = getPageTitle(pathname);
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900">

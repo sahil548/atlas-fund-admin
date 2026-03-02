@@ -8,8 +8,6 @@ import {
   MicOff,
   X,
   Send,
-  Bot,
-  ArrowRight,
   Sparkles,
   Plus,
   LayoutDashboard,
@@ -28,9 +26,14 @@ import {
   UserPlus,
   Calculator,
   Loader2,
+  ArrowRight,
+  Bot,
+  Bell,
 } from "lucide-react";
 import { useFirm } from "@/components/providers/firm-provider";
+import { useCommandBar } from "./command-bar-provider";
 import { discoverCommands } from "@/lib/command-discovery";
+import { isValidAppRoute } from "@/lib/routes";
 import type {
   CommandAction,
   CommandBarMessage,
@@ -40,22 +43,9 @@ import type {
 // ── Icon resolver ───────────────────────────────────────
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  LayoutDashboard,
-  Building2,
-  Briefcase,
-  FileText,
-  Users,
-  DollarSign,
-  CheckSquare,
-  Calendar,
-  Settings,
-  TrendingUp,
-  Layers,
-  Globe,
-  PieChart,
-  UserPlus,
-  Plus,
-  Calculator,
+  LayoutDashboard, Building2, Briefcase, FileText, Users, DollarSign,
+  CheckSquare, Calendar, Settings, TrendingUp, Layers, Globe,
+  PieChart, UserPlus, Plus, Calculator, Bell,
 };
 
 function CommandIcon({ name, className }: { name: string; className?: string }) {
@@ -78,16 +68,12 @@ const TYPE_COLORS: Record<string, string> = {
   page: "bg-slate-100 text-slate-700",
 };
 
-// ── Main Component ──────────────────────────────────────
+// ── Main Component (inline dropdown, not modal) ────────
 
-interface CommandBarProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-export function CommandBar({ isOpen, onClose }: CommandBarProps) {
+export function CommandBar() {
   const router = useRouter();
   const { firmId } = useFirm();
+  const { isOpen, open, close, inputRef } = useCommandBar();
 
   // State
   const [query, setQuery] = useState("");
@@ -98,17 +84,14 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
   const [dbResults, setDbResults] = useState<SearchResult[]>([]);
 
   // Refs
-  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const conversationRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const dbSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Focus input when opened
+  // Reset state when closed
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    } else {
-      // Reset on close
+    if (!isOpen) {
       setQuery("");
       setDynamicActions([]);
       setDbResults([]);
@@ -121,6 +104,18 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
       conversationRef.current.scrollTop = conversationRef.current.scrollHeight;
     }
   }, [conversation]);
+
+  // Click-outside to close dropdown
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        close();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isOpen, close]);
 
   // Fuzzy command discovery on query change
   useEffect(() => {
@@ -166,7 +161,6 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
       setIsSearching(true);
 
       try {
-        // Fire AI search and DB search in parallel
         const [aiRes, dbRes] = await Promise.all([
           fetch("/api/ai/search", {
             method: "POST",
@@ -179,7 +173,6 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
           ).then((r) => r.json()),
         ]);
 
-        // Merge search results (AI results first, then DB results deduplicated)
         const aiResults: SearchResult[] = aiRes.searchResults || [];
         const dbSearchResults: SearchResult[] = dbRes.results || [];
         const seenIds = new Set(aiResults.map((r: SearchResult) => r.id));
@@ -254,17 +247,22 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
   // ── Navigation handlers ──────────────────────────────
 
   const navigateTo = (path: string) => {
-    onClose();
-    router.push(path);
+    if (isValidAppRoute(path)) {
+      close();
+      router.push(path);
+    } else {
+      // Bad URL from AI — fall back to dashboard
+      close();
+      router.push("/dashboard");
+    }
   };
 
   const handleActionClick = (action: CommandAction) => {
     if (action.actionId) {
-      // Dispatch custom event for global dialog handling
       window.dispatchEvent(
         new CustomEvent("atlas:command-action", { detail: { actionId: action.actionId } }),
       );
-      onClose();
+      close();
     } else if (action.path) {
       navigateTo(action.path);
     }
@@ -287,13 +285,19 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
       submitQuery(query);
     }
     if (e.key === "Escape") {
-      onClose();
+      close();
+      inputRef.current?.blur();
     }
   };
 
-  if (!isOpen) return null;
+  // Determine if dropdown should show
+  const hasContent =
+    dynamicActions.length > 0 ||
+    dbResults.length > 0 ||
+    conversation.length > 0 ||
+    (isOpen && !query.trim());
 
-  // ── Default suggestions when empty ───────────────────
+  const showDropdown = isOpen && hasContent;
 
   const defaultSuggestions = [
     "What deals are in our pipeline?",
@@ -303,69 +307,46 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
   ];
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <div ref={containerRef} className="relative">
+      {/* Always-visible inline search input */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200/70 transition-colors w-72">
+        <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); if (!isOpen) open(); }}
+          onFocus={() => { if (!isOpen) open(); }}
+          onKeyDown={handleKeyDown}
+          placeholder="Search or ask AI..."
+          className="flex-1 text-xs bg-transparent outline-none placeholder:text-gray-400 text-gray-700"
+        />
+        {query && (
+          <button
+            onClick={() => submitQuery(query)}
+            className="p-0.5 text-gray-400 hover:text-indigo-600 transition-colors"
+          >
+            <Send className="w-3 h-3" />
+          </button>
+        )}
+        {!query && (
+          <kbd className="text-[9px] bg-gray-200 px-1 py-0.5 rounded font-mono text-gray-500">
+            ⌘K
+          </kbd>
+        )}
+      </div>
 
-      {/* Panel */}
-      <div className="fixed inset-x-0 top-[15vh] z-50 mx-auto max-w-2xl px-4">
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
-          {/* Search input row */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-            <Search className="w-4 h-4 text-gray-400 shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search or ask Atlas AI..."
-              className="flex-1 text-sm bg-transparent outline-none placeholder:text-gray-400"
-            />
-            {query && (
-              <button
-                onClick={() => submitQuery(query)}
-                className="p-1 text-gray-400 hover:text-indigo-600 transition-colors"
-                title="Send"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              onClick={toggleVoice}
-              className={`p-1 rounded-full transition-colors ${
-                isListening
-                  ? "text-red-500 bg-red-50 animate-pulse"
-                  : "text-gray-400 hover:text-gray-600"
-              }`}
-              title={isListening ? "Stop listening" : "Voice input"}
-            >
-              {isListening ? (
-                <MicOff className="w-4 h-4" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-              title="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
+      {/* Dropdown results panel */}
+      {showDropdown && (
+        <div className="absolute top-full right-0 mt-1.5 w-[520px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
           {/* Dynamic command actions (pill row) */}
           {dynamicActions.length > 0 && conversation.length === 0 && (
-            <div className="flex gap-2 px-4 py-2 overflow-x-auto border-b border-gray-50">
+            <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100">
               {dynamicActions.map((action) => (
                 <button
                   key={action.id}
                   onClick={() => handleActionClick(action)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 text-gray-700 whitespace-nowrap transition-colors border border-gray-100"
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-full bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 text-gray-700 whitespace-nowrap transition-colors border border-gray-100"
                 >
                   <CommandIcon name={action.icon} className="w-3 h-3" />
                   {action.label}
@@ -374,10 +355,10 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
             </div>
           )}
 
-          {/* DB search results (when typing but not yet submitted) */}
+          {/* DB search results (while typing, before submit) */}
           {dbResults.length > 0 && conversation.length === 0 && (
-            <div className="border-b border-gray-50 max-h-48 overflow-y-auto">
-              <div className="px-4 py-1.5">
+            <div className="border-b border-gray-100 max-h-48 overflow-y-auto">
+              <div className="px-3 py-1.5">
                 <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
                   Records
                 </span>
@@ -386,7 +367,7 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                 <button
                   key={result.id}
                   onClick={() => handleResultClick(result)}
-                  className="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-left transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-gray-50 text-left transition-colors"
                 >
                   <span
                     className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase ${
@@ -396,10 +377,10 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                     {result.type}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-xs font-medium text-gray-900 truncate">
                       {result.title}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-[10px] text-gray-500 truncate">
                       {result.subtitle}
                     </div>
                   </div>
@@ -410,28 +391,22 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
           )}
 
           {/* Conversation thread */}
-          <div
-            ref={conversationRef}
-            className="max-h-[50vh] overflow-y-auto"
-          >
+          <div ref={conversationRef} className="max-h-[400px] overflow-y-auto">
             {conversation.length === 0 ? (
-              /* Empty state */
-              <div className="px-6 py-8 text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-indigo-50 mb-3">
-                  <Bot className="w-6 h-6 text-indigo-600" />
+              <div className="px-4 py-4">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center">
+                    <Bot className="w-3 h-3 text-indigo-600" />
+                  </div>
+                  <span className="text-[11px] font-medium text-gray-700">Atlas AI</span>
+                  <span className="text-[10px] text-gray-400">— Ask anything about your portfolio</span>
                 </div>
-                <p className="text-sm font-medium text-gray-900 mb-1">
-                  Atlas AI Assistant
-                </p>
-                <p className="text-xs text-gray-500 mb-4">
-                  Ask me anything about your portfolio, deals, or entities
-                </p>
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {defaultSuggestions.map((s) => (
                     <button
                       key={s}
                       onClick={() => handleSuggestionClick(s)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 transition-colors border border-gray-100"
+                      className="text-[11px] px-2.5 py-1 rounded-full bg-gray-50 hover:bg-indigo-50 hover:text-indigo-700 text-gray-600 transition-colors border border-gray-100"
                     >
                       {s}
                     </button>
@@ -439,13 +414,12 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                 </div>
               </div>
             ) : (
-              /* Messages */
-              <div className="px-4 py-3 space-y-3">
+              <div className="px-3 py-2.5 space-y-2.5">
                 {conversation.map((msg) => (
                   <div key={msg.id}>
                     {msg.role === "user" ? (
                       <div className="flex justify-end">
-                        <div className="max-w-[80%] px-3 py-2 rounded-2xl rounded-br-md bg-indigo-600 text-white text-sm">
+                        <div className="max-w-[80%] px-3 py-1.5 rounded-xl rounded-br-sm bg-indigo-600 text-white text-xs">
                           {msg.content}
                         </div>
                       </div>
@@ -453,22 +427,21 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                       <div className="flex justify-start">
                         <div className="max-w-[90%]">
                           <div className="flex items-start gap-2">
-                            <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 mt-0.5">
-                              <Sparkles className="w-3 h-3 text-indigo-600" />
+                            <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center shrink-0 mt-0.5">
+                              <Sparkles className="w-2.5 h-2.5 text-indigo-600" />
                             </div>
-                            <div className="px-3 py-2 rounded-2xl rounded-bl-md bg-gray-100 text-sm text-gray-800">
+                            <div className="px-3 py-1.5 rounded-xl rounded-bl-sm bg-gray-100 text-xs text-gray-800">
                               {msg.content}
                             </div>
                           </div>
 
-                          {/* Search results within message */}
                           {msg.searchResults && msg.searchResults.length > 0 && (
-                            <div className="mt-2 ml-8 space-y-1">
+                            <div className="mt-1.5 ml-7 space-y-1">
                               {msg.searchResults.slice(0, 5).map((result) => (
                                 <button
                                   key={result.id}
                                   onClick={() => handleResultClick(result)}
-                                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-left transition-all"
+                                  className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/50 text-left transition-all"
                                 >
                                   <span
                                     className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase shrink-0 ${
@@ -477,7 +450,7 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                                   >
                                     {result.type}
                                   </span>
-                                  <span className="text-xs font-medium text-gray-800 truncate">
+                                  <span className="text-[11px] font-medium text-gray-800 truncate">
                                     {result.title}
                                   </span>
                                   <span className="text-[10px] text-gray-400 truncate">
@@ -489,14 +462,13 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                             </div>
                           )}
 
-                          {/* Suggestions */}
                           {msg.suggestions && msg.suggestions.length > 0 && (
-                            <div className="mt-2 ml-8 flex flex-wrap gap-1.5">
+                            <div className="mt-1.5 ml-7 flex flex-wrap gap-1">
                               {msg.suggestions.map((s) => (
                                 <button
                                   key={s}
                                   onClick={() => handleSuggestionClick(s)}
-                                  className="text-[11px] px-2.5 py-1 rounded-full bg-white border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 text-gray-600 transition-colors"
+                                  className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 text-gray-600 transition-colors"
                                 >
                                   {s}
                                 </button>
@@ -509,14 +481,13 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                   </div>
                 ))}
 
-                {/* Loading indicator */}
                 {isSearching && (
                   <div className="flex justify-start">
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <div className="w-6 h-6 rounded-full bg-indigo-50 flex items-center justify-center">
-                        <Loader2 className="w-3 h-3 text-indigo-600 animate-spin" />
+                    <div className="flex items-center gap-2 px-3 py-1.5">
+                      <div className="w-5 h-5 rounded-full bg-indigo-50 flex items-center justify-center">
+                        <Loader2 className="w-2.5 h-2.5 text-indigo-600 animate-spin" />
                       </div>
-                      <span className="text-xs text-gray-500">Thinking...</span>
+                      <span className="text-[10px] text-gray-500">Thinking...</span>
                     </div>
                   </div>
                 )}
@@ -524,9 +495,9 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
             )}
           </div>
 
-          {/* Quick action footer */}
-          <div className="flex items-center gap-2 px-4 py-2.5 border-t border-gray-100 bg-gray-50/50">
-            <span className="text-[10px] text-gray-400 mr-1">Quick:</span>
+          {/* Footer */}
+          <div className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-100 bg-gray-50/50">
+            <span className="text-[9px] text-gray-400 mr-0.5">Quick:</span>
             {[
               { label: "New Deal", actionId: "createDeal" },
               { label: "New Entity", actionId: "createEntity" },
@@ -540,23 +511,37 @@ export function CommandBar({ isOpen, onClose }: CommandBarProps) {
                       detail: { actionId: action.actionId },
                     }),
                   );
-                  onClose();
+                  close();
                 }}
-                className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 transition-colors"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-medium rounded bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-700 text-gray-600 transition-colors"
               >
                 <Plus className="w-2.5 h-2.5" />
                 {action.label}
               </button>
             ))}
-            <div className="ml-auto flex items-center gap-1.5">
-              <kbd className="text-[9px] bg-gray-200 px-1.5 py-0.5 rounded font-mono text-gray-500">
-                ⌘K
-              </kbd>
-              <span className="text-[9px] text-gray-400">to toggle</span>
-            </div>
+            <button
+              onClick={toggleVoice}
+              className={`ml-auto p-1 rounded-full transition-colors ${
+                isListening
+                  ? "text-red-500 bg-red-50 animate-pulse"
+                  : "text-gray-400 hover:text-gray-600"
+              }`}
+              title={isListening ? "Stop listening" : "Voice input"}
+            >
+              {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+            </button>
+            {isOpen && (
+              <button
+                onClick={() => { close(); inputRef.current?.blur(); }}
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Close"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
           </div>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 }
