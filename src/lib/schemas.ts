@@ -377,3 +377,20 @@ export const UpdateFirmSchema = z.object({
   name: z.string().min(1).optional(),
   legalName: z.string().optional(),
 });
+
+// ── AI / Command Bar ─────────────────────────────────
+
+export const AISearchSchema = z.object({
+  query: z.string().min(1, "Query is required"),
+  firmId: z.string().min(1, "Firm ID is required"),
+});
+
+export const AgentQuerySchema = z.object({
+  action: z.literal("query"),
+  query: z.string().min(1, "Query is required"),
+  firmId: z.string().min(1, "Firm ID is required"),
+});
+
+export const AgentListSchema = z.object({
+  action: z.literal("list"),
+});

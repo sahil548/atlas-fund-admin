@@ -4,6 +4,8 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/app-shell";
 import { ToastProvider } from "@/components/ui/toast";
 import { FirmProvider } from "@/components/providers/firm-provider";
+import { CommandBarProvider } from "@/components/features/command-bar/command-bar-provider";
+import { GlobalDialogsProvider } from "@/hooks/use-global-dialogs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,7 +27,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} font-sans antialiased`}>
         <ToastProvider>
           <FirmProvider>
-            <AppShell>{children}</AppShell>
+            <GlobalDialogsProvider>
+              <CommandBarProvider>
+                <AppShell>{children}</AppShell>
+              </CommandBarProvider>
+            </GlobalDialogsProvider>
           </FirmProvider>
         </ToastProvider>
       </body>
