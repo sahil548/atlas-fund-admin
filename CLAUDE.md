@@ -2,414 +2,325 @@
 
 ## What This Is
 
-Atlas is a full-stack fund administration platform for a family office GP managing ~9 fund entities (main funds, sidecars, SPVs) with ~10 LPs, scaling toward $1B AUM. It replaces spreadsheets, portals, and emails with a single operating system covering asset management, deal pipeline, LP relations, accounting integration, and capital activity.
+Atlas is your family office operating system. It replaces spreadsheets, portals, and emails with one app covering deal pipeline, asset management, LP relations, accounting (QBO sync), capital activity, and entity management. Built for ~9 fund entities, ~10 LPs, scaling toward $1B AUM.
 
-The architecture reference is at `docs/architecture-spec.md` — consult it for the full data model, entity relationships, holding structures, contract-level detail, access control, and phased build plan.
+---
+
+## Architecture Reference
+
+`docs/architecture-spec.md` is the architectural source of truth. **Consult it before building anything involving data models, entity relationships, or new domain features.** Key sections:
+
+| Section | What It Tells You |
+|---------|------------------|
+| §3 Entity & Accounting Architecture | Entity hierarchy, AccountingConnection, AccountMapping schemas |
+| §4 Asset Ownership Model | AssetEntityAllocation, complex ownership chains across funds/SPVs |
+| §5 Holding Structures | 5 holding types (direct, through_own_vehicle, lp_in_external_fund, co_invest, through_counterparty) — determines UI behavior |
+| §6 Contract-Level Detail | Lease schema (25+ fields), CreditAgreement (35+ fields), Covenant schema |
+| §7 Access Control | 5 roles (GP_ADMIN, GP_TEAM, SERVICE_PROVIDER, LP_INVESTOR, AUDITOR) + permissions matrix |
+| §8 IC Process | Slack-integrated voting flow, webhook capture, vote recording |
+| §9 LP Notifications | Notification preferences schema, delivery methods |
+| §14 Schema Summary | Complete table list by domain — use this as the database map |
+
+**Rule**: When adding a Prisma model, check §14 first. When building asset/entity UI, check §4–§5 for ownership logic. When touching capital flows, check §3 for accounting relationships.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Framework | Next.js (App Router) | 16.x |
-| Language | TypeScript (strict) | 5.x |
-| UI | React | 19.x |
-| Styling | Tailwind CSS | 4.x |
-| Database | PostgreSQL via Prisma ORM | Prisma 7.x |
-| Prisma Adapter | `@prisma/adapter-pg` (pg driver) | 7.x |
-| Validation | Zod | 4.x |
-| Data Fetching | SWR | 2.x |
-| Charts | Recharts | 3.x |
-| Package Manager | npm | — |
+Next.js 16 (App Router) · TypeScript · React 19 · Tailwind CSS 4 · PostgreSQL + Prisma 7 · Zod 4 · SWR 2 · Recharts 3
 
 ---
 
 ## Project Structure
 
 ```
-atlas/
-├── prisma/
-│   ├── schema.prisma          # Data model (47+ models, all enums)
-│   └── seed.ts                # Database seeding
-├── src/
-│   ├── app/
-│   │   ├── layout.tsx         # Root layout (ToastProvider → FirmProvider → AppShell)
-│   │   ├── globals.css        # Tailwind imports, Geist font, theme
-│   │   ├── (gp)/              # GP admin portal (route group, no URL prefix)
-│   │   │   ├── layout.tsx
-│   │   │   ├── dashboard/
-│   │   │   ├── entities/
-│   │   │   ├── assets/
-│   │   │   ├── deals/
-│   │   │   ├── directory/
-│   │   │   ├── documents/
-│   │   │   ├── tasks/
-│   │   │   ├── accounting/
-│   │   │   ├── meetings/
-│   │   │   ├── waterfall/
-│   │   │   └── settings/
-│   │   ├── (lp)/              # LP investor portal
-│   │   │   ├── lp-dashboard/
-│   │   │   ├── lp-account/
-│   │   │   ├── lp-portfolio/
-│   │   │   ├── lp-activity/
-│   │   │   └── lp-documents/
-│   │   └── api/               # API routes (~57 files)
-│   ├── components/
-│   │   ├── ui/                # Reusable primitives (Button, Badge, Modal, Toast, etc.)
-│   │   ├── layout/            # AppShell, Sidebar, TopBar
-│   │   ├── providers/         # FirmProvider (multi-tenant context)
-│   │   └── features/          # Domain components grouped by feature
-│   │       ├── deals/
-│   │       ├── assets/
-│   │       ├── entities/
-│   │       ├── investors/
-│   │       ├── accounting/
-│   │       ├── capital/
-│   │       ├── dashboard/
-│   │       ├── waterfall/
-│   │       ├── meetings/
-│   │       └── funds/
-│   ├── lib/                   # Shared utilities and business logic
-│   │   ├── prisma.ts          # Prisma singleton (hot-reload safe)
-│   │   ├── api-helpers.ts     # parseBody(req, zodSchema)
-│   │   ├── schemas.ts         # All Zod schemas + taxonomy constants
-│   │   ├── constants.ts       # Labels, colors, demo IDs
-│   │   ├── utils.ts           # fmt(), pct(), cn()
-│   │   ├── fetcher.ts         # SWR fetcher
-│   │   ├── mutations.ts       # apiMutate() for POST/PUT/PATCH/DELETE
-│   │   ├── notifications.ts   # createNotification(), notifyGPTeam()
-│   │   ├── slack.ts           # Slack IC voting integration
-│   │   ├── deal-stage-engine.ts  # Deal workflow state machine
-│   │   ├── dd-templates.ts    # Due diligence checklist templates
-│   │   ├── closing-templates.ts  # Closing checklist templates
-│   │   └── formation-templates.ts # Entity formation checklist templates
-│   └── hooks/
-│       └── use-mutation.ts    # useMutation() hook wrapping apiMutate
-└── docs/
-    └── architecture-spec.md   # Full architecture reference
+src/
+├── app/(gp)/              # GP admin pages
+├── app/(lp)/              # LP investor portal
+├── app/api/               # ~57 REST API route files
+├── components/ui/         # Primitives (Button, Badge, Modal, Toast, FileUpload)
+├── components/layout/     # AppShell, Sidebar, TopBar
+├── components/features/   # Domain components (deals/, assets/, entities/, etc.)
+├── components/providers/  # FirmProvider (multi-tenant context)
+├── lib/
+│   ├── routes.ts          # ⭐ SINGLE SOURCE OF TRUTH — all app routes
+│   ├── prisma.ts          # DB singleton (never instantiate PrismaClient elsewhere)
+│   ├── schemas.ts         # Zod schemas + taxonomy constants
+│   ├── ai-service.ts      # OpenAI: command bar + deal screening
+│   ├── deal-stage-engine.ts # Deal workflow state machine
+│   ├── api-helpers.ts     # parseBody(req, zodSchema)
+│   ├── constants.ts       # Labels, colors, demo IDs
+│   └── utils.ts           # fmt(), pct(), cn()
+└── hooks/use-mutation.ts
 ```
 
 ---
 
-## Critical Patterns (MUST follow)
+## Route Registry — routes.ts
 
-### 1. Toast Usage
-
-`useToast()` returns an object with `.success()` and `.error()` methods. Do NOT destructure.
+**Most important file for adding pages.** Add one entry → sidebar, command bar, AI prompt, page titles, URL validation all auto-update.
 
 ```typescript
-// CORRECT
-const toast = useToast();
-toast.success("Deal created");
-toast.error("Failed to update");
-
-// WRONG — will crash
-const { toast } = useToast();          // NO
-const { success, error } = useToast(); // NO — 'error' shadows React state
+// src/lib/routes.ts — add entry to APP_ROUTES:
+{ path: "/new-page", label: "New Page", description: "What it does",
+  keywords: ["search", "terms"], icon: "Icon", sidebarIcon: "◻", portal: "gp", priority: 50 }
 ```
 
-### 2. API Route Body Parsing
+Consumed by: `sidebar.tsx`, `app-shell.tsx`, `command-discovery.ts`, `ai-service.ts`, `command-bar.tsx`
 
-Always use `parseBody()` from `@/lib/api-helpers` with a Zod schema:
+---
 
+## Critical Coding Patterns
+
+### Toast — will crash if destructured
+```typescript
+const toast = useToast();
+toast.success("Saved");  toast.error("Failed");
+// NEVER: const { toast } = useToast()  ← CRASHES (shadows React internals)
+```
+
+### API Route Body Parsing — always use parseBody + Zod
 ```typescript
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDealSchema } from "@/lib/schemas";
 
 export async function POST(req: Request) {
   const { data, error } = await parseBody(req, CreateDealSchema);
-  if (error) return error;  // Returns NextResponse 400
-
+  if (error) return error;  // auto 400 with field errors
   const deal = await prisma.deal.create({ data: { ...data! } });
   return NextResponse.json(deal, { status: 201 });
 }
 ```
 
-### 3. Dynamic Route Params (Next.js 16 / React 19)
-
-Params are a `Promise` — must await:
-
+### Dynamic Route Params — Next.js 16 requires await
 ```typescript
-export async function GET(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const { id } = await params;
-  // ...
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;  // MUST await — it's a Promise now
 }
 ```
 
-### 4. SWR Data Fetching
-
+### SWR + FirmProvider — never hardcode firm-1
 ```typescript
-import useSWR from "swr";
-
-const fetcher = (url: string) => fetch(url).then(r => r.json());
-const { data, isLoading } = useSWR("/api/deals?firmId=firm-1", fetcher);
-
-if (isLoading || !data) return <div>Loading...</div>;
+const { firmId } = useFirm();  // from @/components/providers/firm-provider
+const { data, isLoading } = useSWR(`/api/deals?firmId=${firmId}`, fetcher);
+if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
 ```
 
-### 5. Mutations
-
+### Mutations — two patterns, both valid
 ```typescript
-// Option A: Direct fetch + SWR mutate
-import { mutate } from "swr";
-
-const res = await fetch(`/api/deals/${id}`, {
-  method: "PUT",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(payload),
-});
+// Pattern A: fetch + SWR revalidation
+const res = await fetch(`/api/deals/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 if (!res.ok) throw new Error("Failed");
 mutate(`/api/deals/${id}`);
 
-// Option B: useMutation hook
-import { useMutation } from "@/hooks/use-mutation";
-
-const { trigger, isLoading } = useMutation("/api/tasks", {
-  method: "POST",
-  revalidateKeys: ["/api/tasks"],
-});
+// Pattern B: useMutation hook
+const { trigger } = useMutation("/api/tasks", { method: "POST", revalidateKeys: ["/api/tasks"] });
 await trigger({ title: "New task" });
 ```
 
-### 6. Prisma Singleton
-
+### File Upload — FormData pattern
 ```typescript
-import { prisma } from "@/lib/prisma";
-// Always import from here — never instantiate PrismaClient directly
+const formData = new FormData();
+formData.append("file", file);
+formData.append("name", file.name);
+formData.append("category", "CIM");
+await fetch(`/api/deals/${dealId}/documents`, { method: "POST", body: formData });
+// Do NOT set Content-Type header — browser sets multipart boundary automatically
 ```
 
-After schema changes, ALWAYS run:
+### Prisma — singleton import + schema change workflow
+```typescript
+import { prisma } from "@/lib/prisma";  // always from here
+```
 ```bash
-npx prisma db push --force-reset  # Dev only (resets DB)
-npx prisma generate               # Regenerate client types
-npx prisma db seed                 # Re-seed data
+# After ANY schema.prisma change:
+PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="yes" npx prisma db push --force-reset
+npx prisma generate && npx prisma db seed
+# Then restart dev server
 ```
-Env var required: `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="yes"`
 
-### 7. Utility Functions
-
+### Utilities
 ```typescript
 import { fmt, pct, cn } from "@/lib/utils";
+fmt(1500000)  // "$1.5M"    pct(0.15)  // "15.0%"
+cn("base", isActive && "text-white")  // conditional Tailwind classes
+```
 
-fmt(1500000)    // "$1.5M"
-fmt(250000)     // "$250K"
-pct(0.15)       // "15.0%"
-cn("base", isActive && "text-white", className)  // conditional classes
+### New Page Checklist
+1. Create `src/app/(gp)/your-page/page.tsx` with `"use client"` directive
+2. Add entry to `APP_ROUTES` in `src/lib/routes.ts`
+3. That's it — sidebar, command bar, AI, page titles auto-update
+
+### New API Route Checklist
+1. Create `src/app/api/your-resource/route.ts`
+2. Define Zod schema in `src/lib/schemas.ts`
+3. Use `parseBody()` for POST/PUT/PATCH
+4. Always filter by `firmId` from query params
+5. Return `NextResponse.json()` with appropriate status codes
+
+---
+
+## Deal Stage Engine
+
+```
+SCREENING → DUE_DILIGENCE → IC_REVIEW → CLOSING → CLOSED (creates Asset)
+                                ↓
+                     REJECTED or SEND_BACK
+Any stage → DEAD (kill deal)
+```
+
+All transitions log `DealActivity` + notifications. Logic in `deal-stage-engine.ts`.
+
+---
+
+## Dev Commands
+
+```bash
+npm run dev            # Dev server on port 3000
+npm run build          # Production build — catches ALL type errors
+npx prisma studio      # Visual database browser
+npx prisma db seed     # Re-seed demo data
 ```
 
 ---
 
-## Naming Conventions
+## Parallel Agent Strategy
 
-| What | Convention | Example |
-|------|-----------|---------|
-| Files | kebab-case | `deal-stage-engine.ts`, `create-deal-wizard.tsx` |
-| Components | PascalCase | `StatCard`, `AssetAllocationChart` |
-| API routes | `route.ts` in folder | `src/app/api/deals/[id]/route.ts` |
-| Prisma models | PascalCase | `Deal`, `ICProcess`, `DDWorkstream` |
-| Prisma enums | PascalCase names, UPPER_SNAKE values | `DealStage.DUE_DILIGENCE` |
-| Zod schemas | PascalCase with Create/Update prefix | `CreateDealSchema`, `UpdateEntitySchema` |
-| Hooks | `use-` prefix, kebab-case file | `use-mutation.ts` |
-| Constants | UPPER_SNAKE or camelCase | `ASSET_CLASS_LABELS`, `INVESTOR_ID` |
-| CSS classes | Tailwind utility classes | No custom CSS classes |
+**Use multiple agents in parallel whenever possible to save time.** Specifically:
+
+- **Research in parallel**: When exploring code before making changes, launch parallel Explore agents (e.g., one searching components, one searching API routes, one searching lib files)
+- **Independent file edits**: When a task touches files that don't depend on each other, edit them concurrently
+- **Build + verify**: After code changes, run build validation and preview verification in parallel
+- **Plan before execute**: For any feature touching 3+ files, enter plan mode first to identify all touchpoints — then execute edits in parallel batches
+
+**Anti-pattern**: Don't serialize work that can be parallelized. If you need to update `routes.ts`, `sidebar.tsx`, and `command-discovery.ts` independently, do all three at once.
 
 ---
 
-## Prisma Schema Conventions
+## Likely Failure Points & Fixes
 
-- IDs: `String @id @default(cuid())`
-- Timestamps: always `createdAt DateTime @default(now())` and `updatedAt DateTime @updatedAt`
-- Optional fields: `String?` (nullable)
-- Flexible metadata: `Json?` type
-- Indexes: `@@index([field])` on frequently filtered columns
-- Relations: explicit `@relation` with named relations when multiple FKs to same model
-- Enums: defined in schema, values are UPPER_SNAKE_CASE
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| Page crashes with "undefined" | SWR data not loaded yet | Add `if (isLoading \|\| !data) return <Loading />` guard |
+| Toast crashes entire page | Destructured useToast | Change to `const toast = useToast()` (no destructuring) |
+| New page missing from sidebar | Not in routes.ts | Add entry to `APP_ROUTES` in `src/lib/routes.ts` |
+| AI suggests 404 URLs | Route not in registry | Add to `routes.ts` — AI prompt auto-generates from it |
+| Wrong tenant data | Hardcoded "firm-1" | Use `const { firmId } = useFirm()` instead |
+| Prisma errors after schema edit | Stale generated client | Run full reset: `db push --force-reset && generate && seed` |
+| Build type errors | Missing await, wrong imports | Run `npm run build` — error shows exact file:line |
+| File upload broken | Wrong component or missing FormData | Use `FileUpload` from `ui/file-upload`, upload via FormData |
+| Command bar is a modal | Old createPortal code | `command-bar-provider.tsx` must NOT use createPortal |
 
 ---
 
-## Component Architecture
+## Common Anti-Patterns (NEVER do these)
 
-### Layout Hierarchy
-```
-ToastProvider
-  └─ FirmProvider (multi-tenant context)
-       └─ AppShell (sidebar + topbar + content area)
-            └─ (gp)/layout.tsx or (lp)/layout.tsx
-                 └─ page.tsx
-```
-
-### Component Organization
-- **`components/ui/`** — Stateless, reusable primitives. Accept `className` prop. Use `cn()`.
-- **`components/features/{domain}/`** — Domain-specific, stateful, integrate with SWR/APIs.
-- **`components/layout/`** — App shell, sidebar, topbar.
-- **`components/providers/`** — React context providers.
-
-### Page Component Pattern
 ```typescript
-"use client";
+// ❌ Hardcoding firm ID
+const { data } = useSWR("/api/deals?firmId=firm-1", fetcher);
+// ✅ Dynamic firm ID
+const { firmId } = useFirm();
+const { data } = useSWR(`/api/deals?firmId=${firmId}`, fetcher);
 
+// ❌ Setting Content-Type on FormData (breaks multipart boundary)
+await fetch(url, { method: "POST", headers: { "Content-Type": "multipart/form-data" }, body: formData });
+// ✅ Let browser handle it
+await fetch(url, { method: "POST", body: formData });
+
+// ❌ Forgetting loading guard (crashes on first render)
+export default function Page() {
+  const { data } = useSWR("/api/stuff", fetcher);
+  return <div>{data.items.map(...)}</div>;  // 💥 data is undefined on first render
+}
+// ✅ Always guard
+const { data, isLoading } = useSWR("/api/stuff", fetcher);
+if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
+
+// ❌ Direct PrismaClient instantiation
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();  // creates new connection every hot-reload
+// ✅ Singleton
+import { prisma } from "@/lib/prisma";
+
+// ❌ Client component without directive (silently breaks hooks)
 import useSWR from "swr";
-// ... imports
+export default function Page() { ... }
+// ✅ Must have "use client" at top of file
+"use client";
+import useSWR from "swr";
 
-const fetcher = (url: string) => fetch(url).then(r => r.json());
+// ❌ Mutating SWR cache without revalidation (stale UI)
+await fetch(`/api/deals/${id}`, { method: "DELETE" });
+// ✅ Revalidate after mutation
+await fetch(`/api/deals/${id}`, { method: "DELETE" });
+mutate(`/api/deals?firmId=${firmId}`);  // refresh the list
 
-export default function PageName() {
-  const { firmId } = useFirm();
-  const { data, isLoading } = useSWR(`/api/resource?firmId=${firmId}`, fetcher);
-  const toast = useToast();
+// ❌ Nested fetch in useEffect (race conditions, no caching)
+useEffect(() => { fetch("/api/deals").then(r => r.json()).then(setData); }, []);
+// ✅ Use SWR (handles caching, dedup, revalidation, loading state)
+const { data } = useSWR("/api/deals?firmId=${firmId}", fetcher);
 
-  if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
-
-  return (
-    <div className="space-y-5">
-      {/* Content */}
-    </div>
-  );
+// ❌ Catching Prisma errors generically
+try { await prisma.deal.create({ data }) } catch (e) { return NextResponse.json({ error: "Failed" }, { status: 500 }); }
+// ✅ Return specific errors
+try { ... } catch (e: any) {
+  if (e.code === "P2002") return NextResponse.json({ error: "Already exists" }, { status: 409 });
+  if (e.code === "P2025") return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ error: e.message }, { status: 500 });
 }
 ```
 
 ---
 
-## Styling Guide
+## Adding Tabs to an Existing Page
 
-### Color System
-| Purpose | Classes |
-|---------|---------|
-| Primary action | `bg-indigo-600 text-white hover:bg-indigo-700` |
-| Success | `bg-emerald-600 text-white` or `bg-green-50 text-green-800` |
-| Danger | `bg-red-600 text-white` or `bg-red-50 text-red-700` |
-| Warning | `bg-amber-500` or `bg-yellow-50 text-yellow-800` |
-| Info | `bg-blue-50 text-blue-800` |
-| Sidebar | `bg-slate-900 text-slate-400` (active: `text-white bg-slate-800`) |
-| Cards | `bg-white rounded-xl border border-gray-200 p-5` |
-| Page background | `bg-gray-50` (via layout) |
+Many pages use a tab pattern. To add a new tab:
 
-### Common Patterns
-```
-Card:        bg-white rounded-xl border border-gray-200 p-5
-Button:      px-3 py-1.5 rounded-lg text-xs font-medium
-Badge:       text-xs px-2 py-0.5 rounded-full
-Table:       text-xs text-gray-500 (headers), text-sm (cells)
-Page:        space-y-5 (vertical rhythm)
-Grid:        grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4
-Text sizes:  text-[9px], text-[10px], text-xs, text-sm, text-lg, text-2xl
-```
-
----
-
-## API Design Patterns
-
-### Standard CRUD
-```
-GET    /api/{resource}              → List (with query filters)
-POST   /api/{resource}              → Create
-GET    /api/{resource}/[id]         → Get one (with includes)
-PUT    /api/{resource}/[id]         → Full update
-PATCH  /api/{resource}/[id]         → Partial update or action
-DELETE /api/{resource}/[id]         → Delete
-```
-
-### Action-Based PATCH
-For state machine transitions, use `action` field in body:
 ```typescript
-// PATCH /api/deals/[id]
-{ action: "KILL" }
-{ action: "ADVANCE_TO_CLOSING" }
-{ action: "CLOSE" }
+// 1. Add tab ID to the tabs array at top of the page component
+const TABS = ["overview", "documents", "workstreams", "closing", "new-tab"] as const;
+
+// 2. Add the tab button in the tab bar
+<button onClick={() => setTab("new-tab")}
+  className={cn("px-3 py-1.5 text-xs font-medium rounded-lg", tab === "new-tab" ? "bg-white shadow text-gray-900" : "text-gray-500")}>
+  New Tab
+</button>
+
+// 3. Add the tab panel
+{tab === "new-tab" && <NewTabComponent dealId={deal.id} />}
 ```
 
-### Query Parameter Filtering
+---
+
+## Prisma Relations & Includes
+
+When fetching related data, use `include` (not separate queries):
+
 ```typescript
-const url = new URL(req.url);
-const firmId = url.searchParams.get("firmId");
-const status = url.searchParams.get("status");
+// ❌ Two separate queries
+const deal = await prisma.deal.findUnique({ where: { id } });
+const docs = await prisma.document.findMany({ where: { dealId: id } });
+
+// ✅ Single query with include
+const deal = await prisma.deal.findUnique({
+  where: { id },
+  include: { documents: true, activities: { orderBy: { createdAt: "desc" }, take: 20 }, team: { include: { user: true } } },
+});
 ```
 
-### Error Response Format
-```json
-{ "error": "Human-readable message" }
-{ "error": { "fieldErrors": {}, "formErrors": [] } }
-```
-
----
-
-## Business Logic
-
-### Deal Stage Engine (`src/lib/deal-stage-engine.ts`)
-```
-SCREENING → (AI screening completes) → DUE_DILIGENCE
-DUE_DILIGENCE → (manual: Send to IC) → IC_REVIEW
-IC_REVIEW → APPROVED → CLOSING
-IC_REVIEW → REJECTED → DEAD
-IC_REVIEW → SEND_BACK → DUE_DILIGENCE
-CLOSING → (all checklist items done) → CLOSED (creates Asset)
-Any stage → (manual: Kill) → DEAD
-```
-
-All transitions log `DealActivity` records and send non-blocking `notifyGPTeam()` notifications.
-
-### Entity Formation Workflow
-```
-NOT_STARTED → FORMING (9 formation tasks created) → FORMED → REGISTERED
-```
-Templates in `src/lib/formation-templates.ts`. Tasks use `contextType: "FORMATION"`.
-
-### Task System
-Polymorphic via `contextType` + `contextId`, plus direct `dealId` / `entityId` FKs. Statuses: `TODO → IN_PROGRESS → DONE`. Priorities: `LOW`, `MEDIUM`, `HIGH`, `URGENT`.
-
----
-
-## Key Constants & Taxonomy
-
-### Asset Classes
-`REAL_ESTATE`, `PUBLIC_SECURITIES`, `OPERATING_BUSINESS`, `INFRASTRUCTURE`, `COMMODITIES`, `DIVERSIFIED`, `NON_CORRELATED`, `CASH_AND_EQUIVALENTS`
-
-### Capital Instruments
-`DEBT`, `EQUITY`
-
-### Participation Structures
-`DIRECT_GP`, `CO_INVEST_JV_PARTNERSHIP`, `LP_STAKE_SILENT_PARTNER`
-
-### Entity Types
-`MAIN_FUND`, `SIDECAR`, `SPV`, `CO_INVEST_VEHICLE`, `GP_ENTITY`, `HOLDING_COMPANY`
-
-### Demo IDs (for development)
-- Firm: `firm-1`
-- Current user: `user-jk` (James Kim, GP Admin)
-- LP investor: `investor-1`
-
-Labels and colors for all taxonomies are in `src/lib/constants.ts`.
-
----
-
-## Development Commands
-
-```bash
-npm run dev            # Start dev server (port 3000)
-npm run build          # Production build (validates types)
-npm run lint           # ESLint
-npx prisma studio      # Visual DB browser
-npx prisma db push     # Push schema changes (dev)
-npx prisma generate    # Regenerate Prisma client
-npx prisma db seed     # Seed database
-```
-
-### After Schema Changes
-```bash
-PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="yes" npx prisma db push --force-reset && npx prisma generate && npx prisma db seed
-```
-Then restart the dev server — Prisma client is cached in development.
+For the full data model and all available relations, see `prisma/schema.prisma` or architecture-spec.md §14.
 
 ---
 
 ## Standing Requirements
 
-1. **Push to git** after every version.
-2. **After every response**, provide a testing checklist for the current version and suggest next steps.
-3. **Before executing any large change or feature set**, develop a plan first (use plan mode).
-4. **Run `npm run build`** after making changes to verify zero TypeScript errors before committing.
+1. **`npm run build`** after changes — zero errors before committing
+2. **After every version**, tell me in plain english: what changed, what to test (specific clickthrough steps), what might break, and suggest what to build next
+3. **Before large changes**: plan mode first
+4. **Commit + push to git** after every version
+5. **Never hardcode firm-1** — always `useFirm()` hook
+6. **New pages → routes.ts** — single source of truth
+7. **Consult architecture-spec.md** before adding models, entities, or capital flow logic
+8. **Use parallel agents** for research, independent edits, and build+verify
+9. **Never create a page component without `"use client"`** if it uses hooks, SWR, or state
+10. **Always revalidate SWR** after any mutation (POST, PUT, PATCH, DELETE)
