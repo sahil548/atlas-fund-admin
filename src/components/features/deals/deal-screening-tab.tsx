@@ -12,6 +12,14 @@ interface DealScreeningTabProps {
   deal: any;
 }
 
+const REC_COLORS: Record<string, string> = {
+  STRONG_PROCEED: "green",
+  PROCEED: "blue",
+  PROCEED_WITH_CAUTION: "yellow",
+  WATCHLIST: "orange",
+  PASS: "red",
+};
+
 export function DealScreeningTab({ deal }: DealScreeningTabProps) {
   const toast = useToast();
   const [screeningLoading, setScreeningLoading] = useState(false);
@@ -20,14 +28,23 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
     deal.stage === "IC_REVIEW" ||
     deal.stage === "CLOSING";
 
-  async function runScreening() {
+  async function runScreening(rerun = false) {
     setScreeningLoading(true);
     try {
-      await fetch(`/api/deals/${deal.id}/screen`, { method: "POST" });
+      const res = await fetch(`/api/deals/${deal.id}/screen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rerun ? { rerun: true } : {}),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `HTTP ${res.status}`);
+      }
       toast.success("AI screening complete");
       mutate(`/api/deals/${deal.id}`);
-    } catch {
-      toast.error("Screening failed");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      toast.error(`Screening failed: ${msg}`);
     } finally {
       setScreeningLoading(false);
     }
@@ -56,8 +73,9 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
         </div>
         <p className="text-xs text-gray-500 mt-1 mb-3">
           Run AI screening to auto-analyze and advance to Due Diligence.
+          {" "}If you have an API key configured in Settings, screening will use real AI analysis.
         </p>
-        <Button loading={screeningLoading} onClick={runScreening}>
+        <Button loading={screeningLoading} onClick={() => runScreening(false)}>
           Run AI Screening
         </Button>
       </div>
@@ -66,6 +84,7 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
 
   const sr = deal.screeningResult;
   const score = sr.score ?? 0;
+  const isMock = sr.summary?.includes("Mock") || sr.summary?.includes("mock");
 
   return (
     <div className="space-y-4">
@@ -83,8 +102,13 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
             {sr.score}/100
           </div>
           <div>
-            <div className="text-sm font-semibold text-gray-900">
-              AI Screening Score
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold text-gray-900">
+                AI Screening Score
+              </div>
+              <Badge color={isMock ? "gray" : "purple"}>
+                {isMock ? "Mock" : "AI-Powered"}
+              </Badge>
             </div>
             <div className="text-xs text-gray-500">
               Processed{" "}
@@ -92,15 +116,7 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
             </div>
           </div>
           {sr.recommendation && (
-            <Badge
-              color={
-                sr.recommendation === "STRONG_PROCEED"
-                  ? "green"
-                  : sr.recommendation === "PROCEED"
-                  ? "blue"
-                  : "yellow"
-              }
-            >
+            <Badge color={REC_COLORS[sr.recommendation] || "gray"}>
               {sr.recommendation.replace(/_/g, " ")}
             </Badge>
           )}
@@ -110,7 +126,7 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
             variant="secondary"
             size="sm"
             loading={screeningLoading}
-            onClick={runScreening}
+            onClick={() => runScreening(true)}
           >
             Re-run Screening
           </Button>
@@ -123,6 +139,30 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
             Summary
           </div>
           <p className="text-sm text-gray-600">{sr.summary}</p>
+        </div>
+      )}
+
+      {/* Financials (shown when AI returns them) */}
+      {sr.financials && typeof sr.financials === "object" && Object.keys(sr.financials).length > 0 && (
+        <div>
+          <div className="text-xs font-semibold text-indigo-700 mb-1">
+            Key Financials
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {Object.entries(sr.financials).map(([key, value]) => (
+              <div
+                key={key}
+                className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2"
+              >
+                <div className="text-[10px] text-indigo-500 uppercase tracking-wide">
+                  {key.replace(/([A-Z])/g, " $1").trim()}
+                </div>
+                <div className="text-sm font-semibold text-indigo-800">
+                  {String(value)}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

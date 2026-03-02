@@ -1,46 +1,95 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import {
+  screenDealWithAI,
+  type ScreeningCategory,
+  type DealContext,
+} from "@/lib/screening-service";
 
-// Mock AI screening endpoint — scaffolding for future LLM integration
+const DEFAULT_CATEGORIES: ScreeningCategory[] = [
+  { name: "Financial Analysis", instructions: "Analyze financial statements, projections, and key metrics", enabled: true },
+  { name: "Legal & Regulatory", instructions: "Review legal structure, regulatory compliance, and pending litigation", enabled: true },
+  { name: "Commercial Due Diligence", instructions: "Assess market position, competitive landscape, and growth drivers", enabled: true },
+  { name: "Management & Governance", instructions: "Evaluate management team, governance structure, and key person risk", enabled: true },
+  { name: "Operational Assessment", instructions: "Review operations, technology infrastructure, and scalability", enabled: true },
+  { name: "ESG & Compliance", instructions: "Assess environmental, social, governance factors and compliance posture", enabled: true },
+];
+
+/**
+ * POST /api/ai/screening
+ *
+ * Standalone AI screening endpoint — performs LLM-powered screening
+ * without creating database records (useful for preview / ad-hoc analysis).
+ *
+ * Body: { dealId: string, categories?: ScreeningCategory[], customInstructions?: string }
+ */
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { dealId, documents, systemPrompt } = body as {
-    dealId?: string;
-    documents?: string[];
-    systemPrompt?: string;
-  };
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
 
+  const dealId = body.dealId as string | undefined;
   if (!dealId) {
     return NextResponse.json({ error: "dealId is required" }, { status: 400 });
   }
 
-  // Simulated AI screening response
-  const mockResult = {
-    dealId,
-    score: Math.floor(Math.random() * 30) + 65, // 65-95
-    summary: "This is a mock AI screening result. In production, this endpoint will process uploaded deal documents through an LLM pipeline using the configured system prompt to generate investment screening analysis.",
-    strengths: [
-      "Strong market position in target sector",
-      "Experienced management team with track record",
-      "Favorable deal structure and terms",
-    ],
-    risks: [
-      "Market concentration risk in primary revenue stream",
-      "Regulatory environment may shift in next 12-18 months",
-      "Integration complexity with existing portfolio",
-    ],
-    financials: {
-      revenueGrowth: "18% CAGR (3Y)",
-      ebitdaMargin: "24%",
-      leverage: "3.2x Net Debt / EBITDA",
+  const deal = await prisma.deal.findUnique({
+    where: { id: dealId },
+    include: {
+      documents: { select: { name: true, category: true } },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { content: true, author: { select: { name: true } } },
+      },
     },
-    recommendation: "PROCEED_TO_DD",
-    modelConfig: {
-      model: systemPrompt ? "custom-prompt" : "default",
-      documentsProcessed: documents?.length || 0,
-      processingTime: `${(Math.random() * 2 + 1).toFixed(1)}s`,
-    },
-    processedAt: new Date().toISOString(),
+  });
+
+  if (!deal) {
+    return NextResponse.json({ error: "Deal not found" }, { status: 404 });
+  }
+
+  const dealCtx: DealContext = {
+    dealName: deal.name,
+    assetClass: deal.assetClass,
+    capitalInstrument: deal.capitalInstrument,
+    participationStructure: deal.participationStructure,
+    sector: deal.sector,
+    targetSize: deal.targetSize,
+    targetCheckSize: deal.targetCheckSize,
+    targetReturn: deal.targetReturn,
+    gpName: deal.gpName,
+    description: deal.description,
+    investmentRationale: deal.investmentRationale,
+    additionalContext: deal.additionalContext,
+    thesisNotes: deal.thesisNotes,
+    documents: deal.documents,
+    notes: deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
   };
 
-  return NextResponse.json(mockResult);
+  const categories = (body.categories as ScreeningCategory[] | undefined) || DEFAULT_CATEGORIES;
+  const customInstructions = body.customInstructions as string | undefined;
+  const firmId = deal.firmId || "firm-1";
+
+  const result = await screenDealWithAI(firmId, dealCtx, categories, customInstructions);
+
+  if (!result) {
+    return NextResponse.json(
+      {
+        error: "No API key configured. Add your API key in Settings → AI Configuration to enable AI screening.",
+        aiPowered: false,
+      },
+      { status: 422 },
+    );
+  }
+
+  return NextResponse.json({
+    dealId,
+    ...result,
+    aiPowered: true,
+    processedAt: new Date().toISOString(),
+  });
 }

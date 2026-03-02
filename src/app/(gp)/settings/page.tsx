@@ -120,8 +120,8 @@ export default function SettingsPage() {
         provider: aiForm.provider,
         model: aiForm.model,
         systemPrompt: aiForm.systemPrompt,
-        thresholdScore: aiForm.thresholdScore,
-        maxDocuments: aiForm.maxDocuments,
+        thresholdScore: Number(aiForm.thresholdScore) || 70,
+        maxDocuments: Math.max(1, Number(aiForm.maxDocuments) || 10),
         processingMode: aiForm.processingMode,
       };
       if (aiForm.apiKey) payload.apiKey = aiForm.apiKey;
@@ -131,12 +131,16 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err?.error || `HTTP ${res.status}`);
+      }
       mutate(`/api/settings/ai-config?firmId=${firmId}`);
       setAiForm((prev) => ({ ...prev, apiKey: "" }));
       toast.success("AI configuration saved");
-    } catch {
-      toast.error("Failed to save AI configuration");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      toast.error(`Failed to save: ${msg}`);
     } finally {
       setAiSaving(false);
     }

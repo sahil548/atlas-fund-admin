@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { ScreeningConfigSchema } from "@/lib/schemas";
 import { checkAndAdvanceDeal, recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
-
-interface ScreeningCategory {
-  name: string;
-  instructions?: string;
-  enabled: boolean;
-}
+import {
+  screenDealWithAI,
+  type ScreeningCategory,
+  type DealContext,
+  type ScreeningResult,
+  type ScreeningFinding,
+} from "@/lib/screening-service";
 
 /**
  * Default screening categories used when no custom config is provided.
@@ -23,16 +24,16 @@ const DEFAULT_CATEGORIES: ScreeningCategory[] = [
 ];
 
 /**
- * Generate mock AI findings contextual to the deal.
+ * Generate mock AI findings contextual to the deal (used when no API key is configured).
  */
 function generateMockFindings(
   deal: { name: string; assetClass: string; sector?: string | null; targetSize?: string | null },
   categories: ScreeningCategory[],
-) {
+): Record<string, ScreeningFinding[]> {
   const sectorContext = deal.sector || "general";
   const categoryContext = deal.assetClass.replace(/_/g, " ").toLowerCase();
 
-  const findingsMap: Record<string, { title: string; description: string; priority: string }[]> = {
+  const findingsMap: Record<string, ScreeningFinding[]> = {
     "Financial Analysis": [
       { title: "Revenue concentration risk", description: `Top 3 customers represent >40% of revenue. For a ${categoryContext} deal in ${sectorContext}, diversification should be validated during DD.`, priority: "HIGH" },
       { title: "Working capital trends", description: "Working capital cycle has extended by 15 days over the last 12 months. Cash conversion analysis recommended.", priority: "MEDIUM" },
@@ -62,7 +63,7 @@ function generateMockFindings(
     ],
   };
 
-  const ddFindings: Record<string, { title: string; description: string; priority: string }[]> = {};
+  const ddFindings: Record<string, ScreeningFinding[]> = {};
   for (const cat of categories) {
     if (!cat.enabled) continue;
     ddFindings[cat.name] = findingsMap[cat.name] || [
@@ -73,10 +74,42 @@ function generateMockFindings(
   return ddFindings;
 }
 
+function generateMockResult(
+  deal: { name: string; assetClass: string; sector?: string | null; targetSize?: string | null },
+  enabledCategories: ScreeningCategory[],
+): ScreeningResult {
+  const score = Math.floor(Math.random() * 30) + 65;
+  const recommendation =
+    score >= 85 ? "STRONG_PROCEED" : score >= 70 ? "PROCEED" : "PROCEED_WITH_CAUTION";
+
+  return {
+    score,
+    summary: `Mock screening completed with a score of ${score}/100. Configure an API key in Settings → AI Configuration to enable real AI-powered screening. ${enabledCategories.length} due diligence workstreams have been auto-generated with example findings.`,
+    strengths: [
+      "Experienced management team with sector expertise",
+      "Attractive valuation relative to comparable transactions",
+      "Strong revenue growth trajectory",
+    ],
+    risks: [
+      "Market competition intensifying",
+      "Customer concentration risk to be monitored",
+      "Integration complexity post-close",
+    ],
+    recommendation,
+    financials: {},
+    ddFindings: generateMockFindings(deal, enabledCategories),
+  };
+}
+
 /**
  * POST /api/deals/[id]/screen
- * Trigger AI screening: create structured screening result with DD findings,
- * auto-create workstreams and tasks, then advance SCREENING -> DUE_DILIGENCE.
+ *
+ * Trigger AI screening: calls real LLM (if API key configured) or falls back
+ * to mock findings. Creates structured screening result with DD findings,
+ * auto-creates workstreams and tasks, then advances SCREENING → DUE_DILIGENCE.
+ *
+ * Supports rerun: if screening already exists, pass { "rerun": true } in the
+ * body alongside optional screening config to delete the old result and rescreen.
  */
 export async function POST(
   req: Request,
@@ -84,29 +117,42 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  // Parse optional screening config from body
+  // Parse body — we need to read it twice (for rerun flag + screening config)
+  let bodyJson: Record<string, unknown> = {};
+  try {
+    bodyJson = await req.json();
+  } catch {
+    // No body — use defaults
+  }
+
+  const rerun = bodyJson?.rerun === true;
+
   let screeningCategories: ScreeningCategory[] = DEFAULT_CATEGORIES;
   let screeningConfig: object | undefined = undefined;
+  let customInstructions: string | undefined = undefined;
 
-  try {
-    const { data } = await parseBody(req, ScreeningConfigSchema);
-    if (data) {
-      screeningCategories = data.categories;
-      screeningConfig = {
-        categories: data.categories,
-        customInstructions: data.customInstructions,
-      };
-    }
-  } catch {
-    // No body or invalid body — use defaults
+  // Validate screening config if present
+  const configResult = ScreeningConfigSchema.safeParse(bodyJson);
+  if (configResult.success) {
+    screeningCategories = configResult.data.categories;
+    customInstructions = configResult.data.customInstructions;
+    screeningConfig = {
+      categories: configResult.data.categories,
+      customInstructions: configResult.data.customInstructions,
+    };
   }
 
   const deal = await prisma.deal.findUnique({
     where: { id },
     include: {
       screeningResult: true,
-      documents: true,
-      notes: { orderBy: { createdAt: "desc" } },
+      documents: { select: { name: true, category: true } },
+      notes: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: { content: true, author: { select: { name: true } } },
+      },
+      workstreams: { select: { id: true, aiGenerated: true } },
     },
   });
 
@@ -114,14 +160,53 @@ export async function POST(
     return NextResponse.json({ error: "Deal not found" }, { status: 404 });
   }
 
+  // Handle rerun: delete old screening result + AI-generated workstreams/tasks
   if (deal.screeningResult) {
-    return NextResponse.json(
-      { error: "Screening already completed for this deal" },
-      { status: 400 },
-    );
+    if (!rerun) {
+      return NextResponse.json(
+        { error: "Screening already completed. Pass { rerun: true } to rescreen." },
+        { status: 400 },
+      );
+    }
+
+    // Delete old AI-generated workstreams (cascade to tasks)
+    const aiWorkstreamIds = deal.workstreams
+      .filter((w) => w.aiGenerated)
+      .map((w) => w.id);
+
+    if (aiWorkstreamIds.length > 0) {
+      await prisma.dDTask.deleteMany({
+        where: { workstreamId: { in: aiWorkstreamIds } },
+      });
+      await prisma.dDWorkstream.deleteMany({
+        where: { id: { in: aiWorkstreamIds } },
+      });
+    }
+
+    await prisma.aIScreeningResult.delete({
+      where: { dealId: id },
+    });
   }
 
-  // Build input context from deal data
+  // Build deal context for LLM
+  const dealCtx: DealContext = {
+    dealName: deal.name,
+    assetClass: deal.assetClass,
+    capitalInstrument: deal.capitalInstrument,
+    participationStructure: deal.participationStructure,
+    sector: deal.sector,
+    targetSize: deal.targetSize,
+    targetCheckSize: deal.targetCheckSize,
+    targetReturn: deal.targetReturn,
+    gpName: deal.gpName,
+    description: deal.description,
+    investmentRationale: deal.investmentRationale,
+    additionalContext: deal.additionalContext,
+    thesisNotes: deal.thesisNotes,
+    documents: deal.documents,
+    notes: deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
+  };
+
   const inputContext = {
     dealName: deal.name,
     assetClass: deal.assetClass,
@@ -140,52 +225,56 @@ export async function POST(
     noteCount: deal.notes.length,
   };
 
-  // Generate mock AI screening results
-  const score = Math.floor(Math.random() * 30) + 65; // 65-94
-  const recommendation =
-    score >= 85 ? "STRONG_PROCEED" : score >= 70 ? "PROCEED" : "PROCEED_WITH_CAUTION";
-
-  const strengths = [
-    "Experienced management team with sector expertise",
-    "Attractive valuation relative to comparable transactions",
-    "Strong revenue growth trajectory",
-  ];
-  const risks = [
-    "Market competition intensifying",
-    "Customer concentration risk to be monitored",
-    "Integration complexity post-close",
-  ];
-
-  // Generate structured DD findings per category
+  // Call real LLM or fall back to mock
   const enabledCategories = screeningCategories.filter((c) => c.enabled);
-  const ddFindings = generateMockFindings(deal, enabledCategories);
+  const firmId = deal.firmId || "firm-1";
+
+  let result: ScreeningResult;
+  let aiPowered = false;
+
+  const aiResult = await screenDealWithAI(
+    firmId,
+    dealCtx,
+    screeningCategories,
+    customInstructions,
+  );
+
+  if (aiResult) {
+    result = aiResult;
+    aiPowered = true;
+  } else {
+    // Fallback: mock screening (no API key or LLM error)
+    result = generateMockResult(deal, enabledCategories);
+  }
 
   // Create AIScreeningResult with enriched data
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const jsonSafe = (v: unknown) => JSON.parse(JSON.stringify(v)) as any;
   await prisma.aIScreeningResult.create({
     data: {
       dealId: id,
-      score,
-      summary: `AI screening completed with a score of ${score}/100. The deal shows ${recommendation === "STRONG_PROCEED" ? "strong" : "moderate"} fundamentals with manageable risk factors. ${enabledCategories.length} due diligence workstreams have been auto-generated with specific findings.`,
-      strengths,
-      risks,
-      recommendation,
-      financials: {},
-      ddFindings,
-      inputContext,
-      screeningConfig: screeningConfig ?? undefined,
+      score: result.score,
+      summary: result.summary,
+      strengths: result.strengths,
+      risks: result.risks,
+      recommendation: result.recommendation,
+      financials: jsonSafe(result.financials),
+      ddFindings: jsonSafe(result.ddFindings),
+      inputContext: jsonSafe(inputContext),
+      screeningConfig: screeningConfig ? jsonSafe(screeningConfig) : undefined,
     },
   });
 
   // Create DDWorkstream for each enabled category + DDTask for each finding
   for (let i = 0; i < enabledCategories.length; i++) {
     const cat = enabledCategories[i];
-    const findings = ddFindings[cat.name] || [];
+    const findings = result.ddFindings[cat.name] || [];
 
     const workstream = await prisma.dDWorkstream.create({
       data: {
         dealId: id,
         name: cat.name,
-        description: `AI-generated workstream for ${cat.name.toLowerCase()} due diligence.`,
+        description: `${aiPowered ? "AI" : "Mock"}-generated workstream for ${cat.name.toLowerCase()} due diligence.`,
         aiGenerated: true,
         customInstructions: cat.instructions || null,
         sortOrder: i,
@@ -195,7 +284,6 @@ export async function POST(
       },
     });
 
-    // Create DDTask for each finding
     for (const finding of findings) {
       await prisma.dDTask.create({
         data: {
@@ -209,21 +297,24 @@ export async function POST(
       });
     }
 
-    // Recalculate workstream progress
     await recalcWorkstreamProgress(workstream.id);
   }
 
   // Create DealActivity record for the screening event
+  const totalFindings = Object.values(result.ddFindings).flat().length;
+
   await prisma.dealActivity.create({
     data: {
       dealId: id,
       activityType: "AI_SCREENING",
-      description: `AI screening completed with score ${score}/100 (${recommendation}). ${enabledCategories.length} workstreams and ${Object.values(ddFindings).flat().length} tasks auto-generated.`,
+      description: `${aiPowered ? "AI" : "Mock"} screening ${rerun ? "rerun " : ""}completed with score ${result.score}/100 (${result.recommendation}). ${enabledCategories.length} workstreams and ${totalFindings} tasks auto-generated.`,
       metadata: {
-        score,
-        recommendation,
+        score: result.score,
+        recommendation: result.recommendation,
         workstreamCount: enabledCategories.length,
-        taskCount: Object.values(ddFindings).flat().length,
+        taskCount: totalFindings,
+        aiPowered,
+        rerun,
       },
     },
   });
