@@ -7,14 +7,13 @@ import { TopBar } from "./top-bar";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
+  "/entities": "Entities",
   "/assets": "Assets",
   "/deals": "Deal Desk",
-  "/funds": "Funds & NAV",
   "/investors": "Investors",
-  "/capital": "Capital Activity",
-  "/meetings": "Meetings & Notes",
-  "/waterfall": "Waterfall Config",
+  "/documents": "Documents",
   "/accounting": "Accounting",
+  "/settings": "Settings",
   "/lp-dashboard": "My Overview",
   "/lp-account": "Capital Account",
   "/lp-portfolio": "Portfolio",
@@ -36,7 +35,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const title =
     pageTitles[pathname] ||
     (pathname.startsWith("/assets/") ? "Asset Detail" :
-     pathname.startsWith("/deals/") ? "Deal Detail" : "Atlas");
+     pathname.startsWith("/deals/") ? "Deal Detail" :
+     pathname.startsWith("/entities/") ? "Entity Detail" :
+     pathname.startsWith("/investors/") ? "Investor Detail" : "Atlas");
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-gray-900">

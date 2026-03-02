@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/app-shell";
+import { ToastProvider } from "@/components/ui/toast";
+import { FirmProvider } from "@/components/providers/firm-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} font-sans antialiased`}>
-        <AppShell>{children}</AppShell>
+        <ToastProvider>
+          <FirmProvider>
+            <AppShell>{children}</AppShell>
+          </FirmProvider>
+        </ToastProvider>
       </body>
     </html>
   );

@@ -3,9 +3,9 @@
 import useSWR from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { fmt } from "@/lib/utils";
+import { INVESTOR_ID } from "@/lib/constants";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-const INVESTOR_ID = "investor-1"; // CalPERS
 
 export default function LPDashboardPage() {
   const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/dashboard`, fetcher);
@@ -22,16 +22,16 @@ export default function LPDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Committed" value={fmt(data.totalCommitted)} sub={`Across ${data.investor?.commitments?.length} entities`} />
         <StatCard label="Total Called" value={fmt(data.totalCalled)} />
-        <StatCard label="Distributions" value="$52.3M" sub="Income: $18.2M · Principal: $34.1M" />
-        <StatCard label="Current NAV" value="$148.7M" />
+        <StatCard label="Distributions" value={fmt(data.totalDistributed)} sub={`Income: ${fmt(data.totalIncome)} · Principal: ${fmt(data.totalPrincipal)}`} />
+        <StatCard label="Current NAV" value={fmt(data.currentNAV)} />
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         {[
-          { l: "Net IRR", v: "19.8%" },
-          { l: "TVPI", v: "1.56x" },
-          { l: "DPI", v: "0.41x" },
-          { l: "RVPI", v: "1.16x" },
+          { l: "Net IRR", v: data.irr != null ? `${(data.irr * 100).toFixed(1)}%` : "\u2014" },
+          { l: "TVPI", v: data.tvpi != null ? `${data.tvpi.toFixed(2)}x` : "\u2014" },
+          { l: "DPI", v: data.dpi != null ? `${data.dpi.toFixed(2)}x` : "\u2014" },
+          { l: "RVPI", v: data.rvpi != null ? `${data.rvpi.toFixed(2)}x` : "\u2014" },
         ].map((m, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
             <div className="text-xs text-gray-500 uppercase">{m.l}</div>

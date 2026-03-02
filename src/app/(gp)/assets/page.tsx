@@ -1,8 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { fmt, pct } from "@/lib/utils";
+import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -16,29 +20,46 @@ const TL: Record<string, string> = {
 };
 
 export default function AssetsPage() {
-  const { data: assets, isLoading } = useSWR("/api/assets", fetcher);
+  const { firmId } = useFirm();
+  const { data: assets, isLoading } = useSWR(`/api/assets?firmId=${firmId}`, fetcher);
+  const [filter, setFilter] = useState<string | null>(null);
+  const [showEdit, setShowEdit] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editingAsset, setEditingAsset] = useState<any>(null);
   if (isLoading || !assets) return <div className="text-sm text-gray-400">Loading...</div>;
+
+  const filtered = filter ? assets.filter((a: { assetType: string }) => a.assetType === filter) : assets;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-sm font-semibold">All Assets ({assets.length})</h3>
+        <h3 className="text-sm font-semibold">All Assets ({filtered.length})</h3>
         <div className="flex gap-1">
           {Object.entries(TL).map(([k, v]) => (
-            <button key={k} className="text-[10px] px-2 py-1 rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50">{v}</button>
+            <button
+              key={k}
+              onClick={() => setFilter(filter === k ? null : k)}
+              className={`text-[10px] px-2 py-1 rounded-full border transition-colors ${
+                filter === k
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
+              }`}
+            >
+              {v}
+            </button>
           ))}
         </div>
       </div>
       <table className="w-full text-xs">
         <thead className="bg-gray-50">
           <tr>
-            {["Asset", "Type", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Income", "Status"].map((h) => (
+            {["Asset", "Type", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Income", "Status", ""].map((h) => (
               <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {assets.map((a: { id: string; name: string; assetType: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
+          {filtered.map((a: { id: string; name: string; assetType: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
             const ur = a.fairValue - a.costBasis;
             return (
               <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/assets/${a.id}`}>
@@ -61,11 +82,18 @@ export default function AssetsPage() {
                 <td className="px-3 py-2.5 text-emerald-700">{a.irr ? pct(a.irr) : "—"}</td>
                 <td className="px-3 py-2.5 text-gray-600">{a.incomeType || "—"}</td>
                 <td className="px-3 py-2.5"><Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status.toLowerCase()}</Badge></td>
+                <td className="px-3 py-2.5">
+                  <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setEditingAsset(a); setShowEdit(true); }}>Edit</Button>
+                </td>
               </tr>
             );
           })}
         </tbody>
       </table>
+
+      {editingAsset && (
+        <EditAssetForm open={showEdit} onClose={() => { setShowEdit(false); setEditingAsset(null); }} asset={editingAsset} />
+      )}
     </div>
   );
 }

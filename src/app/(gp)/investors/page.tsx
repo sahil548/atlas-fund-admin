@@ -1,13 +1,25 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { fmt } from "@/lib/utils";
+import { CreateInvestorForm } from "@/components/features/investors/create-investor-form";
+import { EditInvestorForm } from "@/components/features/investors/edit-investor-form";
+import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+type InvestorRow = { id: string; name: string; investorType: string; totalCommitted: number; commitments: { entity: { name: string } }[]; kycStatus: string; advisoryBoard: boolean; contactPreference: string };
+
 export default function InvestorsPage() {
-  const { data: investors, isLoading } = useSWR("/api/investors", fetcher);
+  const { firmId } = useFirm();
+  const [showCreate, setShowCreate] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editingInvestor, setEditingInvestor] = useState<InvestorRow | null>(null);
+  const { data: investors, isLoading } = useSWR(`/api/investors?firmId=${firmId}`, fetcher);
   const { data: sideLetters } = useSWR("/api/side-letters", fetcher);
   if (isLoading || !investors) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -16,20 +28,20 @@ export default function InvestorsPage() {
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex justify-between items-center">
           <h3 className="text-sm font-semibold">Investors ({investors.length})</h3>
-          <button className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-medium">+ Add Investor</button>
+          <Button onClick={() => setShowCreate(true)}>+ Add Investor</Button>
         </div>
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Investor", "Type", "Total Committed", "Entities", "KYC", "Advisory", "Pref. Contact"].map((h) => (
+              {["Investor", "Type", "Total Committed", "Entities", "KYC", "Advisory", "Pref. Contact", ""].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {investors.map((inv: { id: string; name: string; investorType: string; totalCommitted: number; commitments: { entity: { name: string } }[]; kycStatus: string; advisoryBoard: boolean; contactPreference: string }) => (
+            {investors.map((inv: InvestorRow) => (
               <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer">
-                <td className="px-3 py-2.5 font-medium text-indigo-700">{inv.name}</td>
+                <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
                 <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
                 <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
                 <td className="px-3 py-2.5">
@@ -40,6 +52,14 @@ export default function InvestorsPage() {
                 <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
                 <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">—</span>}</td>
                 <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
+                <td className="px-3 py-2.5">
+                  <button
+                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                    onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEdit(true); }}
+                  >
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -60,6 +80,15 @@ export default function InvestorsPage() {
           ))}
         </div>
       </div>
+
+      <CreateInvestorForm open={showCreate} onClose={() => setShowCreate(false)} />
+      {editingInvestor && (
+        <EditInvestorForm
+          open={showEdit}
+          onClose={() => { setShowEdit(false); setEditingInvestor(null); }}
+          investor={editingInvestor}
+        />
+      )}
     </div>
   );
 }

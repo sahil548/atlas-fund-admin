@@ -57,13 +57,26 @@ enum HoldingType {
 }
 
 enum DealStage {
-  SOURCING
   SCREENING
-  AI_SCREEN
   DUE_DILIGENCE
   IC_REVIEW
   CLOSING
   DEAD
+}
+
+enum DealCategory {
+  PRIVATE_EQUITY
+  PRIVATE_CREDIT
+  REAL_ESTATE
+  REAL_ASSETS
+  SECONDARIES
+  FUND_INVESTMENTS
+}
+
+enum ICQuestionStatus {
+  OPEN
+  RESOLVED
+  DEFERRED
 }
 
 enum AccountingProvider {
@@ -261,6 +274,8 @@ model Firm {
 
   entities Entity[]
   users    User[]
+  deals    Deal[]
+  ddCategoryTemplates DDCategoryTemplate[]
 }
 
 model Entity {
@@ -310,6 +325,11 @@ model Entity {
   incomeEvents         IncomeEvent[]
   transactions         Transaction[]
   documents            Document[]
+  meetings             Meeting[]
+  deals                Deal[]             @relation("DealTargetEntity")
+  notes                Note[]
+  esignaturePackages   ESignaturePackage[]
+  fundraisingRounds    FundraisingRound[]
 }
 
 model AccountingConnection {
@@ -355,13 +375,19 @@ model User {
   entityAccess    String[]  @default([])
   accessExpiresAt DateTime?
 
+  slackUserId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  firm             Firm              @relation(fields: [firmId], references: [id])
-  assignedTasks    Task[]
-  icVoteRecords    ICVoteRecord[]
-  investorProfile  Investor?
+  firm               Firm              @relation(fields: [firmId], references: [id])
+  assignedTasks      Task[]
+  icVoteRecords      ICVoteRecord[]
+  investorProfile    Investor?
+  notes              Note[]
+  icQuestions        ICQuestion[]      @relation("ICQuestionAuthor")
+  icQuestionReplies  ICQuestionReply[] @relation("ICQuestionReplyAuthor")
+  icDecisions        ICProcess[]       @relation("ICDecisions")
 }
 
 // ============================================================
@@ -400,6 +426,7 @@ model Asset {
   meetings           Meeting[]
   incomeEvents       IncomeEvent[]
   activityEvents     ActivityEvent[]
+  notes              Note[]
 
   @@index([assetType])
   @@index([status])
@@ -608,6 +635,8 @@ model Investor {
   capitalCallLineItems   CapitalCallLineItem[]
   distributionLineItems  DistributionLineItem[]
   capitalAccounts        CapitalAccount[]
+  documents              Document[]
+  notes                  Note[]
 }
 
 model Commitment {
@@ -872,27 +901,45 @@ model CapitalAccount {
 // ============================================================
 
 model Deal {
-  id          String    @id @default(cuid())
-  name        String
-  dealType    AssetType
-  sector      String?
-  stage       DealStage @default(SCREENING)
-  targetSize  String?
-  leadPartner String?
-  aiScore     Int?
-  aiFlag      String?
-  source      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String       @id @default(cuid())
+  firmId         String?
+  name           String
+  dealCategory   DealCategory
+  sector         String?
+  stage          DealStage    @default(SCREENING)
+  targetSize     String?
+  leadPartner    String?
+  aiScore        Int?
+  aiFlag         String?
+  source         String?
+  counterparty   String?
+  entityId       String?
+  description         String?
+  thesisNotes         String?
+  aiPromptConfig      Json?
+  targetCheckSize     String?
+  targetReturn        String?
+  gpName              String?
+  investmentRationale String?
+  additionalContext   String?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
-  icProcess      ICProcess?
-  workstreams    DDWorkstream[]
-  screeningResult AIScreeningResult?
+  firm             Firm?              @relation(fields: [firmId], references: [id])
+  targetEntity     Entity?            @relation("DealTargetEntity", fields: [entityId], references: [id])
+  icProcess        ICProcess?
+  workstreams      DDWorkstream[]
+  screeningResult  AIScreeningResult?
   closingChecklist ClosingChecklist[]
-  documents      Document[]
-  meetings       Meeting[]
+  icQuestions      ICQuestion[]
+  documents          Document[]
+  meetings           Meeting[]
+  notes              Note[]
+  esignaturePackages ESignaturePackage[]
+  activities         DealActivity[]
 
   @@index([stage])
+  @@index([firmId])
 }
 
 model ICProcess {
@@ -904,11 +951,15 @@ model ICProcess {
   deadline       DateTime?
   status         String   @default("pending")
   finalDecision  String?
+  decidedById    String?
+  decidedAt      DateTime?
+  decisionNotes  String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  deal  Deal          @relation(fields: [dealId], references: [id])
-  votes ICVoteRecord[]
+  deal      Deal          @relation(fields: [dealId], references: [id])
+  votes     ICVoteRecord[]
+  decidedBy User?         @relation("ICDecisions", fields: [decidedById], references: [id])
 }
 
 model ICVoteRecord {
@@ -924,15 +975,19 @@ model ICVoteRecord {
 }
 
 model DDWorkstream {
-  id         String             @id @default(cuid())
-  dealId     String
-  name       String
-  status     DDWorkstreamStatus @default(NOT_STARTED)
-  totalTasks Int                @default(0)
-  completedTasks Int            @default(0)
-  hasAI      Boolean            @default(false)
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id                 String             @id @default(cuid())
+  dealId             String
+  name               String
+  status             DDWorkstreamStatus @default(NOT_STARTED)
+  totalTasks         Int                @default(0)
+  completedTasks     Int                @default(0)
+  hasAI              Boolean            @default(false)
+  description        String?
+  customInstructions String?
+  aiGenerated        Boolean            @default(false)
+  sortOrder          Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   deal  Deal     @relation(fields: [dealId], references: [id])
   tasks DDTask[]
@@ -946,6 +1001,12 @@ model DDTask {
   assignee     String?
   dueDate      DateTime?
   notes        String?
+  description  String?
+  priority     String?
+  source       String?
+  resolution   String?
+  resolvedAt   DateTime?
+  resolvedBy   String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -953,17 +1014,49 @@ model DDTask {
 }
 
 model AIScreeningResult {
-  id             String   @id @default(cuid())
-  dealId         String   @unique
-  score          Int?
-  summary        String?
-  strengths      Json?
-  risks          Json?
-  financials     Json?
-  recommendation String?
-  processedAt    DateTime @default(now())
+  id              String   @id @default(cuid())
+  dealId          String   @unique
+  score           Int?
+  summary         String?
+  strengths       Json?
+  risks           Json?
+  financials      Json?
+  recommendation  String?
+  ddFindings      Json?
+  inputContext     Json?
+  screeningConfig Json?
+  processedAt     DateTime @default(now())
 
   deal Deal @relation(fields: [dealId], references: [id])
+}
+
+model ICQuestion {
+  id        String           @id @default(cuid())
+  dealId    String
+  authorId  String
+  content   String
+  status    ICQuestionStatus @default(OPEN)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  deal    Deal              @relation(fields: [dealId], references: [id])
+  author  User              @relation("ICQuestionAuthor", fields: [authorId], references: [id])
+  replies ICQuestionReply[]
+
+  @@index([dealId])
+}
+
+model ICQuestionReply {
+  id         String   @id @default(cuid())
+  questionId String
+  authorId   String
+  content    String
+  createdAt  DateTime @default(now())
+
+  question ICQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  author   User       @relation("ICQuestionReplyAuthor", fields: [authorId], references: [id])
+
+  @@index([questionId])
 }
 
 model ClosingChecklist {
@@ -977,6 +1070,51 @@ model ClosingChecklist {
   updatedAt DateTime   @updatedAt
 
   deal Deal @relation(fields: [dealId], references: [id])
+}
+
+model DealActivity {
+  id           String   @id @default(cuid())
+  dealId       String
+  activityType String
+  description  String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id])
+
+  @@index([dealId])
+}
+
+model DDCategoryTemplate {
+  id                  String   @id @default(cuid())
+  firmId              String?
+  name                String
+  description         String?
+  defaultInstructions String?
+  isDefault           Boolean  @default(true)
+  sortOrder           Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  firm Firm? @relation(fields: [firmId], references: [id])
+}
+
+model Note {
+  id         String   @id @default(cuid())
+  content    String
+  authorId   String?
+  assetId    String?
+  dealId     String?
+  entityId   String?
+  investorId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author   User?     @relation(fields: [authorId], references: [id])
+  asset    Asset?    @relation(fields: [assetId], references: [id])
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+  entity   Entity?   @relation(fields: [entityId], references: [id])
+  investor Investor? @relation(fields: [investorId], references: [id])
 }
 
 // ============================================================
@@ -1011,13 +1149,15 @@ model Meeting {
   decisions     Json?
   assetId       String?
   dealId        String?
+  entityId      String?
   transcript    String?
   summary       String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  asset Asset? @relation(fields: [assetId], references: [id])
-  deal  Deal?  @relation(fields: [dealId], references: [id])
+  asset  Asset?  @relation(fields: [assetId], references: [id])
+  deal   Deal?   @relation(fields: [dealId], references: [id])
+  entity Entity? @relation(fields: [entityId], references: [id])
 }
 
 model Document {
@@ -1035,9 +1175,10 @@ model Document {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  asset  Asset?  @relation(fields: [assetId], references: [id])
-  entity Entity? @relation(fields: [entityId], references: [id])
-  deal   Deal?   @relation(fields: [dealId], references: [id])
+  asset    Asset?    @relation(fields: [assetId], references: [id])
+  entity   Entity?   @relation(fields: [entityId], references: [id])
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+  investor Investor? @relation(fields: [investorId], references: [id])
 }
 
 model Notification {
@@ -1060,4 +1201,108 @@ model ActivityEvent {
   createdAt   DateTime @default(now())
 
   asset Asset? @relation(fields: [assetId], references: [id])
+}
+
+// ============================================================
+// E-SIGNATURE
+// ============================================================
+
+enum ESignatureStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_SIGNED
+  COMPLETED
+  DECLINED
+  EXPIRED
+}
+
+model ESignaturePackage {
+  id          String           @id @default(cuid())
+  title       String
+  status      ESignatureStatus @default(DRAFT)
+  provider    String           @default("docusign")
+  externalId  String?
+  entityId    String?
+  dealId      String?
+  documentId  String?
+  signers     Json?
+  sentAt      DateTime?
+  completedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  entity   Entity?   @relation(fields: [entityId], references: [id])
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+
+  @@index([entityId])
+  @@index([dealId])
+  @@index([status])
+}
+
+// ============================================================
+// FUNDRAISING
+// ============================================================
+
+enum FundraisingRoundStatus {
+  PLANNING
+  OPEN
+  FINAL_CLOSE
+  CLOSED
+}
+
+enum ProspectStatus {
+  IDENTIFIED
+  CONTACTED
+  MEETING_SCHEDULED
+  DD_IN_PROGRESS
+  TERM_SHEET_SENT
+  SOFT_COMMIT
+  HARD_COMMIT
+  DECLINED
+  WITHDRAWN
+}
+
+model FundraisingRound {
+  id            String                  @id @default(cuid())
+  entityId      String
+  name          String
+  targetAmount  Float?
+  raisedAmount  Float                   @default(0)
+  status        FundraisingRoundStatus  @default(PLANNING)
+  openDate      DateTime?
+  closeDate     DateTime?
+  notes         String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  entity    Entity                @relation(fields: [entityId], references: [id])
+  prospects FundraisingProspect[]
+
+  @@index([entityId])
+  @@index([status])
+}
+
+model FundraisingProspect {
+  id              String          @id @default(cuid())
+  roundId         String
+  investorName    String
+  investorType    String?
+  contactName     String?
+  contactEmail    String?
+  targetAmount    Float?
+  softCommitAmount Float?
+  hardCommitAmount Float?
+  status          ProspectStatus  @default(IDENTIFIED)
+  lastContactDate DateTime?
+  nextFollowUp    DateTime?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  round FundraisingRound @relation(fields: [roundId], references: [id])
+
+  @@index([roundId])
+  @@index([status])
 }

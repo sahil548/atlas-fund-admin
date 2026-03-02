@@ -3,9 +3,9 @@
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
+import { INVESTOR_ID } from "@/lib/constants";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-const INVESTOR_ID = "investor-1";
 
 const TC: Record<string, string> = {
   DIRECT_EQUITY: "indigo", PRIVATE_CREDIT: "orange", REAL_ESTATE_DIRECT: "green",
@@ -20,24 +20,16 @@ export default function LPPortfolioPage() {
   const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/portfolio`, fetcher);
   if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
 
-  // Flatten all assets from all entity commitments
-  const allAssets: { asset: { id: string; name: string; assetType: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string }; proRata: number }[] = [];
-  const seen = new Set<string>();
-  data.commitments?.forEach((c: { entity: { assetAllocations: { asset: { id: string; name: string; assetType: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string } }[] } }) => {
-    c.entity?.assetAllocations?.forEach((aa: { asset: { id: string; name: string; assetType: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string } }) => {
-      if (!seen.has(aa.asset.id) && aa.asset.status === "ACTIVE") {
-        seen.add(aa.asset.id);
-        allAssets.push({ asset: aa.asset, proRata: aa.asset.fairValue * 0.15 });
-      }
-    });
-  });
+  const allAssets = data.assets || [];
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h3 className="text-sm font-semibold mb-1">Portfolio Look-Through</h3>
-      <div className="text-xs text-gray-500 mb-4">Your pro-rata exposure to underlying assets</div>
+      <div className="text-xs text-gray-500 mb-4">
+        Your pro-rata exposure to underlying assets ({allAssets.length} assets)
+      </div>
       <div className="space-y-3">
-        {allAssets.slice(0, 8).map(({ asset: a, proRata }) => (
+        {allAssets.map(({ asset: a, proRata, investorPct }: { asset: { id: string; name: string; assetType: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string }; proRata: number; investorPct: number }) => (
           <div key={a.id} className="p-4 bg-gray-50 rounded-xl">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -46,7 +38,7 @@ export default function LPPortfolioPage() {
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">{fmt(proRata)}</div>
-                <div className="text-[10px] text-gray-500">Your pro-rata</div>
+                <div className="text-[10px] text-gray-500">Your pro-rata ({(investorPct * 100).toFixed(1)}%)</div>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-2 text-xs">

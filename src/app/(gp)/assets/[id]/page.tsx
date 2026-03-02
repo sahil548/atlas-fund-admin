@@ -3,8 +3,14 @@
 import { use, useState } from "react";
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs } from "@/components/ui/tabs";
+import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
+import { LogValuationForm } from "@/components/features/assets/log-valuation-form";
+import { CreateTaskForm } from "@/components/features/assets/create-task-form";
+import { UploadDocumentForm } from "@/components/features/assets/upload-document-form";
+import { LogIncomeForm } from "@/components/features/assets/log-income-form";
 import { fmt, pct } from "@/lib/utils";
 import Link from "next/link";
 
@@ -23,6 +29,11 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const { id } = use(params);
   const { data: a, isLoading } = useSWR(`/api/assets/${id}`, fetcher);
   const [tab, setTab] = useState("overview");
+  const [showEditAsset, setShowEditAsset] = useState(false);
+  const [showLogValuation, setShowLogValuation] = useState(false);
+  const [showCreateTask, setShowCreateTask] = useState(false);
+  const [showUploadDoc, setShowUploadDoc] = useState(false);
+  const [showLogIncome, setShowLogIncome] = useState(false);
 
   if (isLoading || !a) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -44,7 +55,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-bold text-gray-900">{a.name}</h2>
               <Badge color={TC[a.assetType]}>{TL[a.assetType]}</Badge>
-              <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status.toLowerCase()}</Badge>
+              <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase() ?? "—"}</Badge>
               {a.hasBoardSeat && <Badge color="indigo">Board Seat</Badge>}
             </div>
             <div className="text-xs text-gray-500">
@@ -53,9 +64,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-gray-700">+ Log Income</button>
-            <button className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-gray-700">+ Task</button>
-            <button className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-medium">Mark Valuation</button>
+            <Button variant="secondary" size="sm" onClick={() => setShowEditAsset(true)}>Edit Asset</Button>
           </div>
         </div>
         <div className="grid grid-cols-6 gap-3">
@@ -119,7 +128,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
           {a.incomeEvents?.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold mb-3">Cash Flows</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-semibold">Cash Flows</h3>
+                <Button variant="secondary" size="sm" onClick={() => setShowLogIncome(true)}>+ Income</Button>
+              </div>
               {a.incomeEvents.map((cf: { id: string; date: string; incomeType: string; amount: number; isPrincipal: boolean }) => (
                 <div key={cf.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
                   <div className="flex items-center gap-2">
@@ -317,7 +329,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-semibold">Tasks</h3>
-            <button className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg font-medium">+ New Task</button>
+            <Button variant="secondary" size="sm" onClick={() => setShowCreateTask(true)}>+ Task</Button>
           </div>
           {a.tasks?.length > 0 ? a.tasks.map((t: { id: string; title: string; status: string; dueDate: string; assigneeName: string }) => (
             <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
@@ -343,7 +355,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-semibold">Documents</h3>
-            <button className="text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg">+ Upload</button>
+            <Button variant="secondary" size="sm" onClick={() => setShowUploadDoc(true)}>+ Document</Button>
           </div>
           {a.documents?.length > 0 ? a.documents.map((d: { id: string; name: string; uploadDate: string; category: string }) => (
             <div key={d.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2 hover:bg-gray-100 cursor-pointer">
@@ -363,7 +375,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       {/* Valuation Tab */}
       {tab === "valuation" && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold mb-3">Valuation History</h3>
+          <div className="flex justify-between items-center mb-3">
+            <h3 className="text-sm font-semibold">Valuation History</h3>
+            <Button variant="secondary" size="sm" onClick={() => setShowLogValuation(true)}>+ Valuation</Button>
+          </div>
           {a.valuations?.length > 0 ? (
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
@@ -409,6 +424,12 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       )}
+
+      <EditAssetForm open={showEditAsset} onClose={() => setShowEditAsset(false)} asset={a} />
+      <LogValuationForm open={showLogValuation} onClose={() => setShowLogValuation(false)} assetId={a.id} />
+      <CreateTaskForm open={showCreateTask} onClose={() => setShowCreateTask(false)} assetId={a.id} />
+      <UploadDocumentForm open={showUploadDoc} onClose={() => setShowUploadDoc(false)} assetId={a.id} />
+      <LogIncomeForm open={showLogIncome} onClose={() => setShowLogIncome(false)} assetId={a.id} entityId={a.entityAllocations?.[0]?.entity?.id || ""} />
     </div>
   );
 }

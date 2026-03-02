@@ -4,8 +4,9 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
 
+import { INVESTOR_ID } from "@/lib/constants";
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-const INVESTOR_ID = "investor-1";
 
 export default function LPActivityPage() {
   const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/activity`, fetcher);

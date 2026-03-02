@@ -3,8 +3,9 @@
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 
+import { INVESTOR_ID } from "@/lib/constants";
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
-const INVESTOR_ID = "investor-1";
 
 const categoryColor: Record<string, string> = {
   FINANCIAL: "indigo",
