@@ -17,13 +17,6 @@ interface DealDDTabProps {
   deal: any;
 }
 
-const DD_ANALYSIS_BUTTONS = [
-  { type: "DD_FINANCIAL", name: "Financial DD", desc: "Quality of earnings, balance sheet, cash flow", color: "bg-blue-50 border-blue-200" },
-  { type: "DD_LEGAL", name: "Legal DD", desc: "Entity structure, agreements, regulatory", color: "bg-purple-50 border-purple-200" },
-  { type: "DD_MARKET", name: "Market DD", desc: "Market sizing, competitive landscape", color: "bg-green-50 border-green-200" },
-  { type: "COMP_ANALYSIS", name: "Comp Analysis", desc: "Transaction comps, public comps, valuation", color: "bg-rose-50 border-rose-200" },
-] as const;
-
 export function DealDDTab({ deal }: DealDDTabProps) {
   const toast = useToast();
   const [expandedWorkstreams, setExpandedWorkstreams] = useState<Set<string>>(
@@ -32,7 +25,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [expandedAnalysis, setExpandedAnalysis] = useState<Set<string>>(
     new Set()
   );
-  const [runningAnalysis, setRunningAnalysis] = useState<string | null>(null);
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>(
     {}
   );
@@ -174,38 +166,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
-  // Map analysisType -> workstream for AI analysis panel
-  const analysisWorkstreams = new Map<string, any>();
-  for (const ws of workstreams) {
-    if (ws.analysisType) analysisWorkstreams.set(ws.analysisType, ws);
-  }
-
-  async function runAnalysis(type: string, rerun = false) {
-    setRunningAnalysis(type);
-    try {
-      const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, rerun }),
-      });
-      if (!res.ok) {
-        const data = await res.json();
-        if (data.error?.includes("already exists") && !rerun) {
-          return runAnalysis(type, true);
-        }
-        toast.error(data.error || "Analysis failed");
-        return;
-      }
-      const btn = DD_ANALYSIS_BUTTONS.find((b) => b.type === type);
-      toast.success(`${btn?.name || type} analysis complete`);
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      toast.error("Analysis failed");
-    } finally {
-      setRunningAnalysis(null);
-    }
-  }
-
   async function markCategoryComplete(workstreamId: string) {
     try {
       await fetch(`/api/deals/${deal.id}/workstreams`, {
@@ -252,56 +212,25 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         </div>
       )}
 
-      {/* AI Deep-Dive Analysis Panel */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">AI Deep-Dive Analysis</h3>
-            <p className="text-xs text-gray-500 mt-0.5">Run AI-powered analysis modules on this deal</p>
+      {/* SCREENING stage empty state */}
+      {deal.stage === "SCREENING" && workstreams.length === 0 && (
+        <div className="py-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
           </div>
-          <Badge color="purple">AI Powered</Badge>
+          <div className="text-sm font-semibold text-gray-700">Due Diligence Workstreams</div>
+          <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+            Workstreams and tasks will be auto-generated when you run AI Screening from the Overview tab. You can also manually add workstreams below.
+          </p>
+          <div className="mt-4">
+            <Button variant="secondary" size="sm" onClick={() => setShowAddWorkstream(true)}>
+              + Add Workstream Manually
+            </Button>
+          </div>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-          {DD_ANALYSIS_BUTTONS.map((at) => {
-            const ws = analysisWorkstreams.get(at.type);
-            const isRunning = runningAnalysis === at.type;
-            const isComplete = !!ws?.analysisResult;
-            return (
-              <div key={at.type} className={`rounded-lg border p-3 ${at.color}`}>
-                <div className="text-xs font-semibold text-gray-800">{at.name}</div>
-                <div className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{at.desc}</div>
-                <div className="mt-2">
-                  {isRunning ? (
-                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
-                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                      Running...
-                    </div>
-                  ) : isComplete ? (
-                    <div className="flex items-center gap-1">
-                      <Badge color="green">Complete</Badge>
-                      <button
-                        onClick={() => runAnalysis(at.type, true)}
-                        className="text-[10px] text-gray-400 hover:text-indigo-600 ml-auto"
-                        title="Re-run analysis"
-                      >
-                        &#8635;
-                      </button>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => runAnalysis(at.type)}
-                      disabled={!!runningAnalysis}
-                    >
-                      Run
-                    </Button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      )}
 
       {/* Template Picker */}
       {workstreams.length === 0 && (

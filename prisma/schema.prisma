@@ -1109,18 +1109,22 @@ model DDTask {
 }
 
 model AIScreeningResult {
-  id              String   @id @default(cuid())
-  dealId          String   @unique
-  score           Int?
-  summary         String?
-  strengths       Json?
-  risks           Json?
-  financials      Json?
-  recommendation  String?
-  ddFindings      Json?
-  inputContext     Json?
-  screeningConfig Json?
-  processedAt     DateTime @default(now())
+  id               String    @id @default(cuid())
+  dealId           String    @unique
+  score            Int?
+  summary          String?
+  strengths        Json?
+  risks            Json?
+  financials       Json?
+  recommendation   String?
+  ddFindings       Json?
+  inputContext      Json?
+  screeningConfig  Json?
+  processedAt      DateTime  @default(now())
+  version          Int       @default(1)
+  memo             Json?     // IC Memo: { summary, sections[], recommendation }
+  memoGeneratedAt  DateTime?
+  previousVersions Json?     // Array of full snapshots for version history
 
   deal Deal @relation(fields: [dealId], references: [id])
 }

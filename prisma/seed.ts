@@ -1250,6 +1250,20 @@ async function main() {
         { name: "Commercial DD", summary: "Strong niche positioning with expansion opportunity.", findings: [{ title: "Map competitive landscape and market share", priority: "HIGH" }, { title: "Evaluate defense contract pipeline", priority: "HIGH" }, { title: "Assess customer diversification opportunity", priority: "MEDIUM" }, { title: "Review pricing power and margin trends", priority: "MEDIUM" }] },
         { name: "Legal DD", summary: "Change of control consents and ITAR compliance are key.", findings: [{ title: "Review material contracts and change of control provisions", priority: "HIGH" }, { title: "Assess IP ownership and trade secret protection", priority: "MEDIUM" }, { title: "Review pending litigation and contingent liabilities", priority: "MEDIUM" }, { title: "Verify ITAR/EAR compliance history", priority: "HIGH" }] },
       ] },
+      version: 1,
+      memo: {
+        summary: "Apex Manufacturing is a specialty aerospace component manufacturer with $85M in revenue and 22% EBITDA margins. The company benefits from long-term customer contracts and a niche market position, though significant customer concentration (top 3 = 65% of revenue) and key person risk warrant careful DD.",
+        sections: [
+          { name: "Executive Summary", content: "Apex Manufacturing operates in the specialty aerospace components sector, serving defense and commercial aviation OEMs. Revenue of $85M with strong EBITDA margins of 22% ($18.7M) and 12% year-over-year growth. The company holds a defensible niche position with high barriers to entry due to AS9100 certifications and long qualification cycles. Management team has 20+ years of sector experience. Primary concerns center on customer concentration and cyclical end-market exposure.", riskLevel: "LOW" },
+          { name: "Investment Highlights", content: "Strong and expanding EBITDA margins driven by proprietary manufacturing processes. Long-term customer contracts (avg. 5-year terms) provide revenue visibility. Niche market position with limited direct competition and high switching costs. Experienced management team with deep industry relationships. Attractive entry multiple relative to aerospace/defense comparable transactions.", riskLevel: "LOW" },
+          { name: "Key Risks & Mitigants", content: "Customer Concentration: Top 3 customers represent 65% of revenue. Mitigant — contracts are long-term with high switching costs; pipeline shows diversification trajectory. Cyclical Markets: Aerospace spending correlates with broader economic cycles. Mitigant — defense contracts provide counter-cyclical stability (~40% of revenue). Key Person Risk: CEO controls major customer relationships. Mitigant — post-close management incentive plan and relationship transition program recommended.", riskLevel: "MEDIUM" },
+          { name: "Financial Summary", content: "Revenue: $85M (12% YoY growth). EBITDA: $18.7M (22% margin). Working capital cycle trending slightly longer (+15 days). Debt capacity supports proposed leverage of 3.5-4.0x. Cash flow conversion strong at 85%+. CapEx requirements moderate at ~4% of revenue for maintenance, with expansion CapEx of $5-8M planned for new production lines.", riskLevel: "LOW" },
+          { name: "Recommendation", content: "PROCEED to Due Diligence. The investment thesis is sound with strong fundamentals and attractive sector dynamics. Key DD priorities: (1) validate customer concentration risk through contract-level analysis, (2) assess CEO succession and key person mitigation, (3) stress test financial projections under cyclical downturn scenarios, (4) confirm ITAR/EAR compliance posture.", riskLevel: "LOW" },
+        ],
+        recommendation: "APPROVE_WITH_CONDITIONS",
+      },
+      memoGeneratedAt: new Date(),
+      previousVersions: [],
     },
   });
 
@@ -1268,6 +1282,20 @@ async function main() {
         { name: "Commercial DD", summary: "Fragmented market with rollup potential but rising CAC.", findings: [{ title: "Map competitive landscape in target markets", priority: "HIGH" }, { title: "Analyze patient acquisition cost trends", priority: "MEDIUM" }, { title: "Evaluate geographic expansion pipeline", priority: "MEDIUM" }, { title: "Review referral network strength", priority: "LOW" }] },
         { name: "Legal DD", summary: "Healthcare regulatory complexity requires thorough compliance review.", findings: [{ title: "Verify state medical licensing compliance", priority: "HIGH" }, { title: "Review Stark Law and Anti-Kickback compliance", priority: "HIGH" }, { title: "Assess malpractice exposure", priority: "MEDIUM" }, { title: "Review corporate practice of medicine structure", priority: "MEDIUM" }] },
       ] },
+      version: 1,
+      memo: {
+        summary: "Beacon Health operates a multi-site outpatient clinic platform with $42M revenue and 25% growth. The fragmented healthcare services market offers a compelling rollup opportunity, but regulatory reimbursement risk and physician recruitment challenges require careful diligence.",
+        sections: [
+          { name: "Executive Summary", content: "Beacon Health is a healthcare services platform operating 12 outpatient clinics across 3 states. The company has demonstrated strong same-store growth of 15% alongside an aggressive new-site expansion strategy. With $42M in revenue and $6.3M EBITDA (15% margin), the platform is positioned for continued growth in a highly fragmented market.", riskLevel: "LOW" },
+          { name: "Investment Highlights", content: "Exceptional same-store revenue growth of 15% demonstrates operating model strength. Highly fragmented market with significant rollup consolidation opportunity. Diversified payer mix reduces single-payer concentration risk. Scalable operating model with centralized back-office functions.", riskLevel: "LOW" },
+          { name: "Key Risks & Mitigants", content: "Reimbursement Risk: Healthcare reimbursement rates are subject to regulatory change. Mitigant — diversified payer mix and commercial insurance focus. New Site Economics: 18+ month ramp period creates near-term cash flow drag. Mitigant — mature sites demonstrate strong unit economics. Physician Recruitment: Competitive market for specialist physicians. Mitigant — competitive compensation and partnership track model.", riskLevel: "HIGH" },
+          { name: "Financial Summary", content: "Revenue: $42M (25% YoY growth). EBITDA: $6.3M (15% margin). New site openings depress blended margins; mature sites operate at 22%+ margins. AR aging trending slightly higher, needs investigation. Growth trajectory supports 2-3 new sites per year at $2-3M each.", riskLevel: "MEDIUM" },
+          { name: "Recommendation", content: "PROCEED WITH CAUTION to Due Diligence. Growth metrics are attractive but the reimbursement sensitivity and new site ramp risk warrant thorough validation before committing. Priority DD items: reimbursement rate sensitivity modeling, new site unit economics deep-dive, physician retention analysis.", riskLevel: "MEDIUM" },
+        ],
+        recommendation: "APPROVE_WITH_CONDITIONS",
+      },
+      memoGeneratedAt: new Date(),
+      previousVersions: [],
     },
   });
 
@@ -1286,6 +1314,20 @@ async function main() {
         { name: "Collateral DD", summary: "Appraisal supports LTV but lien position and insurance need verification.", findings: [{ title: "Review independent appraisal", priority: "HIGH" }, { title: "Confirm title and lien position", priority: "HIGH" }, { title: "Assess insurance coverage", priority: "MEDIUM" }, { title: "Evaluate property condition report", priority: "MEDIUM" }] },
         { name: "Counterparty DD", summary: "Strong sponsor with excellent track record.", findings: [{ title: "Review sponsor track record", priority: "HIGH" }, { title: "Assess sponsor financial capacity", priority: "HIGH" }, { title: "Verify sponsor team experience", priority: "MEDIUM" }] },
       ] },
+      version: 1,
+      memo: {
+        summary: "Ridgeline Senior Debt is a senior secured credit facility to an experienced real estate sponsor with a stabilized, fully leased multi-family portfolio. Conservative LTV of 55% and strong DSCR of 1.8x provide significant downside protection. SOFR+350bps pricing is attractive for the risk profile.",
+        sections: [
+          { name: "Executive Summary", content: "This is a senior secured debt opportunity with strong credit fundamentals. The borrower is an experienced real estate sponsor with a 15+ year track record and $2B+ in assets under management. The collateral is a stabilized, fully leased multi-family portfolio in a growth market. Conservative leverage (55% LTV) and strong debt service coverage (1.8x DSCR) provide significant cushion against downside scenarios.", riskLevel: "LOW" },
+          { name: "Investment Highlights", content: "Conservative LTV of 55% provides significant equity cushion below the senior debt position. DSCR of 1.8x offers substantial cash flow coverage with room for rate increases. Experienced sponsor with proven track record through multiple cycles. Stabilized portfolio with 97% occupancy and long weighted average lease term. Attractive risk-adjusted return at SOFR+350bps.", riskLevel: "LOW" },
+          { name: "Key Risks & Mitigants", content: "Interest Rate Risk: Floating rate exposure on SOFR-based pricing. Mitigant — rate cap required, DSCR stress tested to SOFR+200bps above current levels. Geographic Concentration: Portfolio concentrated in 2 MSAs. Mitigant — both markets have strong population growth and diversified employment bases. Tenant Rollover: ~30% of leases roll in 2027. Mitigant — multi-family leases are short-term by nature; market rents are 5-8% above in-place rents.", riskLevel: "LOW" },
+          { name: "Financial Summary", content: "Principal: $8M senior secured. LTV: 55% (based on independent appraisal). DSCR: 1.8x (current NOI / annual debt service). Pricing: SOFR+350bps with 1% floor. Maturity: 5 years with 2x1-year extension options. Amortization: Interest-only for 3 years, then 30-year amortization.", riskLevel: "LOW" },
+          { name: "Recommendation", content: "STRONG PROCEED. This is a well-structured senior secured credit facility with conservative leverage, strong cash flow coverage, and an experienced sponsor. Risk profile is consistent with core lending parameters. Recommend expedited DD process focused on: (1) independent appraisal validation, (2) title and lien confirmation, (3) rate cap structure, (4) sponsor financial capacity verification.", riskLevel: "LOW" },
+        ],
+        recommendation: "APPROVE",
+      },
+      memoGeneratedAt: new Date(),
+      previousVersions: [],
     },
   });
 

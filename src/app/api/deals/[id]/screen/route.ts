@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { parseBody } from "@/lib/api-helpers";
 import { ScreeningConfigSchema } from "@/lib/schemas";
 import { checkAndAdvanceDeal, recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
 import {
@@ -10,6 +9,12 @@ import {
   type ScreeningResult,
   type ScreeningFinding,
 } from "@/lib/screening-service";
+import {
+  runDDAnalysis,
+  type DDAnalysisResult,
+} from "@/lib/dd-analysis-service";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
  * Default screening categories used when no custom config is provided.
@@ -102,14 +107,44 @@ function generateMockResult(
 }
 
 /**
+ * Generate a mock IC Memo when no API key is configured.
+ */
+function generateMockICMemo(
+  deal: { name: string; assetClass: string; sector?: string | null },
+  screeningScore: number,
+  screeningRecommendation: string,
+): DDAnalysisResult {
+  const sectorCtx = deal.sector || "general";
+  const assetCtx = deal.assetClass.replace(/_/g, " ").toLowerCase();
+
+  return {
+    summary: `Mock IC memo for ${deal.name}. This ${assetCtx} opportunity in ${sectorCtx} scored ${screeningScore}/100 (${screeningRecommendation.replace(/_/g, " ")}). Configure an API key for a real AI-generated IC memo.`,
+    sections: [
+      { name: "Executive Summary", content: `${deal.name} is a ${assetCtx} investment opportunity in the ${sectorCtx} sector. The deal scored ${screeningScore}/100 in AI screening with a recommendation of ${screeningRecommendation.replace(/_/g, " ")}. Key investment thesis centers on organic growth and operational improvement potential.`, riskLevel: "LOW" },
+      { name: "Investment Highlights", content: `1. Experienced management team with 15+ years sector experience\n2. Attractive entry valuation below comparable transaction medians\n3. Multiple value creation levers identified (pricing, operational efficiency, add-on acquisitions)\n4. Strong recurring revenue base with high retention`, riskLevel: "LOW" },
+      { name: "Key Risks & Mitigants", content: `Primary risks: customer concentration (mitigated by diversification plan), execution risk on growth initiatives (mitigated by experienced team), and market cyclicality (mitigated by contractual revenue base). Overall risk profile: moderate.`, riskLevel: "MEDIUM" },
+      { name: "Financial Summary & Returns", content: `Based on preliminary analysis: entry at ~8x EBITDA, target exit at 10-12x over 4-5 year hold. Projected gross IRR: 18-22%. Projected gross MOIC: 2.0-2.5x. Downside case (6x exit): 8% IRR / 1.3x MOIC.`, riskLevel: "LOW" },
+      { name: "Recommendation", content: `Recommend APPROVE WITH CONDITIONS. Conditions: (1) Complete financial model with audited financials, (2) Obtain updated legal DD summary, (3) Finalize allocation recommendation across fund entities.`, riskLevel: "MEDIUM" },
+    ],
+    findings: [],
+    recommendation: "APPROVE_WITH_CONDITIONS",
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const jsonSafe = (v: unknown) => JSON.parse(JSON.stringify(v)) as any;
+
+/**
  * POST /api/deals/[id]/screen
  *
  * Trigger AI screening: calls real LLM (if API key configured) or falls back
- * to mock findings. Creates structured screening result with DD findings,
- * auto-creates workstreams and tasks, then advances SCREENING → DUE_DILIGENCE.
+ * to mock findings. Produces TWO outputs:
+ * 1. Screening score, strengths, risks, financials, DD findings → auto-creates workstreams/tasks
+ * 2. IC Memo → formatted investment committee memo stored on the screening result
  *
- * Supports rerun: if screening already exists, pass { "rerun": true } in the
- * body alongside optional screening config to delete the old result and rescreen.
+ * On rerun: snapshots the current result into previousVersions, increments version,
+ * deletes + recreates AI-generated workstreams/tasks.
+ * Advances SCREENING → DUE_DILIGENCE on first run.
  */
 export async function POST(
   req: Request,
@@ -117,7 +152,7 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  // Parse body — we need to read it twice (for rerun flag + screening config)
+  // Parse body
   let bodyJson: Record<string, unknown> = {};
   try {
     bodyJson = await req.json();
@@ -160,7 +195,10 @@ export async function POST(
     return NextResponse.json({ error: "Deal not found" }, { status: 404 });
   }
 
-  // Handle rerun: delete old screening result + AI-generated workstreams/tasks
+  // ── Handle rerun: snapshot current result + delete old workstreams ──
+  let previousVersions: any[] = [];
+  let newVersion = 1;
+
   if (deal.screeningResult) {
     if (!rerun) {
       return NextResponse.json(
@@ -168,6 +206,26 @@ export async function POST(
         { status: 400 },
       );
     }
+
+    // Snapshot current result into previousVersions
+    const curr = deal.screeningResult;
+    previousVersions = Array.isArray(curr.previousVersions) ? (curr.previousVersions as any[]) : [];
+    previousVersions.push({
+      version: curr.version ?? 1,
+      score: curr.score,
+      summary: curr.summary,
+      strengths: curr.strengths,
+      risks: curr.risks,
+      recommendation: curr.recommendation,
+      financials: curr.financials,
+      ddFindings: curr.ddFindings,
+      memo: curr.memo,
+      memoGeneratedAt: curr.memoGeneratedAt,
+      inputContext: curr.inputContext,
+      screeningConfig: curr.screeningConfig,
+      processedAt: curr.processedAt,
+    });
+    newVersion = (curr.version ?? 1) + 1;
 
     // Delete old AI-generated workstreams (cascade to tasks)
     const aiWorkstreamIds = deal.workstreams
@@ -182,13 +240,9 @@ export async function POST(
         where: { id: { in: aiWorkstreamIds } },
       });
     }
-
-    await prisma.aIScreeningResult.delete({
-      where: { dealId: id },
-    });
   }
 
-  // Build deal context for LLM
+  // ── Build deal context for LLM ──
   const dealCtx: DealContext = {
     dealName: deal.name,
     assetClass: deal.assetClass,
@@ -225,7 +279,7 @@ export async function POST(
     noteCount: deal.notes.length,
   };
 
-  // Call real LLM or fall back to mock
+  // ── Call real LLM or fall back to mock ──
   const enabledCategories = screeningCategories.filter((c) => c.enabled);
   const firmId = deal.firmId || "firm-1";
 
@@ -243,29 +297,64 @@ export async function POST(
     result = aiResult;
     aiPowered = true;
   } else {
-    // Fallback: mock screening (no API key or LLM error)
     result = generateMockResult(deal, enabledCategories);
   }
 
-  // Create AIScreeningResult with enriched data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const jsonSafe = (v: unknown) => JSON.parse(JSON.stringify(v)) as any;
-  await prisma.aIScreeningResult.create({
-    data: {
-      dealId: id,
-      score: result.score,
-      summary: result.summary,
-      strengths: result.strengths,
-      risks: result.risks,
-      recommendation: result.recommendation,
-      financials: jsonSafe(result.financials),
-      ddFindings: jsonSafe(result.ddFindings),
-      inputContext: jsonSafe(inputContext),
-      screeningConfig: screeningConfig ? jsonSafe(screeningConfig) : undefined,
-    },
-  });
+  // ── Generate IC Memo (second LLM call, or mock) ──
+  const screeningData = {
+    score: result.score,
+    recommendation: result.recommendation,
+    strengths: result.strengths,
+    risks: result.risks,
+  };
 
-  // Create DDWorkstream for each enabled category + DDTask for each finding
+  let memoResult: DDAnalysisResult | null = null;
+
+  if (aiPowered) {
+    // Real LLM — pass screening data as context
+    memoResult = await runDDAnalysis(firmId, dealCtx, "IC_MEMO", screeningData);
+  }
+
+  // Fall back to mock if LLM failed or wasn't available
+  if (!memoResult) {
+    memoResult = generateMockICMemo(deal, result.score, result.recommendation);
+  }
+
+  // ── Store screening result + IC Memo ──
+  const screeningData_ = {
+    score: result.score,
+    summary: result.summary,
+    strengths: result.strengths,
+    risks: result.risks,
+    recommendation: result.recommendation,
+    financials: jsonSafe(result.financials),
+    ddFindings: jsonSafe(result.ddFindings),
+    inputContext: jsonSafe(inputContext),
+    screeningConfig: screeningConfig ? jsonSafe(screeningConfig) : undefined,
+    version: newVersion,
+    memo: jsonSafe({
+      summary: memoResult.summary,
+      sections: memoResult.sections,
+      recommendation: memoResult.recommendation,
+    }),
+    memoGeneratedAt: new Date(),
+    previousVersions: previousVersions.length > 0 ? jsonSafe(previousVersions) : undefined,
+  };
+
+  if (deal.screeningResult) {
+    // Rerun — update in place
+    await prisma.aIScreeningResult.update({
+      where: { dealId: id },
+      data: { ...screeningData_, processedAt: new Date() },
+    });
+  } else {
+    // First run — create
+    await prisma.aIScreeningResult.create({
+      data: { dealId: id, ...screeningData_ },
+    });
+  }
+
+  // ── Create DDWorkstream + DDTask for each enabled category ──
   for (let i = 0; i < enabledCategories.length; i++) {
     const cat = enabledCategories[i];
     const findings = result.ddFindings[cat.name] || [];
@@ -300,14 +389,14 @@ export async function POST(
     await recalcWorkstreamProgress(workstream.id);
   }
 
-  // Create DealActivity record for the screening event
+  // ── Log activity ──
   const totalFindings = Object.values(result.ddFindings).flat().length;
 
   await prisma.dealActivity.create({
     data: {
       dealId: id,
       activityType: "AI_SCREENING",
-      description: `${aiPowered ? "AI" : "Mock"} screening ${rerun ? "rerun " : ""}completed with score ${result.score}/100 (${result.recommendation}). ${enabledCategories.length} workstreams and ${totalFindings} tasks auto-generated.`,
+      description: `${aiPowered ? "AI" : "Mock"} screening ${rerun ? "(v" + newVersion + " rerun) " : ""}completed with score ${result.score}/100 (${result.recommendation}). IC Memo generated. ${enabledCategories.length} workstreams and ${totalFindings} tasks auto-generated.`,
       metadata: {
         score: result.score,
         recommendation: result.recommendation,
@@ -315,6 +404,8 @@ export async function POST(
         taskCount: totalFindings,
         aiPowered,
         rerun,
+        version: newVersion,
+        memoGenerated: true,
       },
     },
   });

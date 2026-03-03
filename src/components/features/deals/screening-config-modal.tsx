@@ -23,6 +23,7 @@ interface ScreeningConfigModalProps {
   onClose: () => void;
   dealId: string;
   onComplete: () => void;
+  rerun?: boolean;
 }
 
 export function ScreeningConfigModal({
@@ -30,6 +31,7 @@ export function ScreeningConfigModal({
   onClose,
   dealId,
   onComplete,
+  rerun = false,
 }: ScreeningConfigModalProps) {
   const toast = useToast();
   const { firmId } = useFirm();
@@ -143,7 +145,7 @@ export function ScreeningConfigModal({
   async function runScreening() {
     setLoading(true);
     try {
-      const config = {
+      const config: Record<string, unknown> = {
         categories: categories
           .filter((c) => c.enabled)
           .map((c) => ({
@@ -153,6 +155,7 @@ export function ScreeningConfigModal({
           })),
         customInstructions: customInstructions || undefined,
       };
+      if (rerun) config.rerun = true;
       const res = await fetch(`/api/deals/${dealId}/screen`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,7 +163,9 @@ export function ScreeningConfigModal({
       });
       if (!res.ok) throw new Error("Screening failed");
       toast.success(
-        "AI screening complete — deal advanced to Due Diligence"
+        rerun
+          ? "AI screening re-run complete — IC Memo regenerated"
+          : "AI screening complete — IC Memo generated"
       );
       mutate(`/api/deals/${dealId}`);
       onComplete();
@@ -177,7 +182,7 @@ export function ScreeningConfigModal({
     <Modal
       open={open}
       onClose={onClose}
-      title="Configure AI Screening"
+      title={rerun ? "Re-run AI Screening" : "Configure AI Screening"}
       size="lg"
       footer={
         <>
@@ -185,7 +190,7 @@ export function ScreeningConfigModal({
             Cancel
           </Button>
           <Button loading={loading} onClick={runScreening}>
-            Run AI Screening
+            {rerun ? "Re-run Screening" : "Run AI Screening"}
           </Button>
         </>
       }

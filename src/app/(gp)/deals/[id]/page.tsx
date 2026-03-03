@@ -13,7 +13,6 @@ import Link from "next/link";
 import { DealOverviewTab } from "@/components/features/deals/deal-overview-tab";
 import { DealDocumentsTab } from "@/components/features/deals/deal-documents-tab";
 import { DealNotesTab } from "@/components/features/deals/deal-notes-tab";
-import { DealScreeningTab } from "@/components/features/deals/deal-screening-tab";
 import { DealDDTab } from "@/components/features/deals/deal-dd-tab";
 import { DealActivityTab } from "@/components/features/deals/deal-activity-tab";
 import { DealICReviewTab } from "@/components/features/deals/deal-ic-review-tab";
@@ -39,40 +38,36 @@ const stageLabel: Record<string, string> = {
 
 /* ── Stage-dependent tab visibility ──────────────── */
 const stageTabs: Record<string, string[]> = {
-  SCREENING: ["Overview", "Documents", "Notes", "Activity"],
+  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity"],
   DUE_DILIGENCE: [
     "Overview",
+    "Due Diligence",
     "Documents",
     "Notes",
-    "AI Screening",
-    "Due Diligence",
     "Activity",
   ],
   IC_REVIEW: [
     "Overview",
+    "Due Diligence",
     "Documents",
     "Notes",
-    "AI Screening",
-    "Due Diligence",
     "Activity",
     "IC Review",
   ],
   CLOSING: [
     "Overview",
+    "Due Diligence",
     "Documents",
     "Notes",
-    "AI Screening",
-    "Due Diligence",
     "Activity",
     "IC Review",
     "Closing",
   ],
   CLOSED: [
     "Overview",
+    "Due Diligence",
     "Documents",
     "Notes",
-    "AI Screening",
-    "Due Diligence",
     "Activity",
     "IC Review",
     "Closing",
@@ -82,11 +77,7 @@ const stageTabs: Record<string, string[]> = {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 function getDeadTabs(deal: any): string[] {
-  const tabs = ["Overview", "Documents", "Notes", "Activity"];
-  if (deal.screeningResult) {
-    tabs.push("AI Screening");
-    tabs.push("Due Diligence");
-  }
+  const tabs = ["Overview", "Due Diligence", "Documents", "Notes", "Activity"];
   if (deal.icProcess) {
     tabs.push("IC Review");
   }
@@ -106,7 +97,6 @@ export default function DealDetailPage({
   const [showKillConfirm, setShowKillConfirm] = useState(false);
   const [showSendToIC, setShowSendToIC] = useState(false);
   const [sendToICWarning, setSendToICWarning] = useState<string | null>(null);
-  const [screeningLoading, setScreeningLoading] = useState(false);
   const [killingDeal, setKillingDeal] = useState(false);
   const [sendingToIC, setSendingToIC] = useState(false);
   const [showAdvanceToClosing, setShowAdvanceToClosing] = useState(false);
@@ -128,19 +118,6 @@ export default function DealDetailPage({
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
 
   /* ── Header Actions ────────────────────────────── */
-
-  async function runScreening() {
-    setScreeningLoading(true);
-    try {
-      await fetch(`/api/deals/${id}/screen`, { method: "POST" });
-      toast.success("AI screening complete — deal advanced to Due Diligence");
-      mutate(`/api/deals/${id}`);
-    } catch {
-      toast.error("Screening failed");
-    } finally {
-      setScreeningLoading(false);
-    }
-  }
 
   async function handleKillDeal() {
     setKillingDeal(true);
@@ -241,8 +218,6 @@ export default function DealDetailPage({
         return <DealDocumentsTab deal={deal} />;
       case "Notes":
         return <DealNotesTab deal={deal} />;
-      case "AI Screening":
-        return <DealScreeningTab deal={deal} />;
       case "Due Diligence":
         return <DealDDTab deal={deal} />;
       case "Activity":
@@ -299,11 +274,6 @@ export default function DealDetailPage({
           </div>
         </div>
         <div className="flex gap-2">
-          {deal.stage === "SCREENING" && !deal.screeningResult && (
-            <Button loading={screeningLoading} onClick={runScreening}>
-              Run AI Screening
-            </Button>
-          )}
           {deal.stage === "DUE_DILIGENCE" && (
             <Button onClick={() => setShowSendToIC(true)}>
               Send to IC Review
