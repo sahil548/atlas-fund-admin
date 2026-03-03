@@ -44,6 +44,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const { data, error } = await parseBody(req, CreateDealSchema);
   if (error) return error;
-  const deal = await prisma.deal.create({ data: { ...data!, firmId: "firm-1" } });
+
+  // Sanitize optional FK fields: convert empty strings to null/undefined
+  const cleaned = { ...data! };
+  if (!cleaned.dealLeadId) cleaned.dealLeadId = undefined;
+
+  const deal = await prisma.deal.create({ data: { ...cleaned, firmId: "firm-1" } });
   return NextResponse.json(deal, { status: 201 });
 }

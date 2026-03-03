@@ -23,23 +23,30 @@ export const PARTICIPATION_STRUCTURES = [
 
 // ── Deals ──────────────────────────────────────────────
 
+// Helper: accept enum value OR empty string → transform "" to undefined
+const optionalEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.enum(values).or(z.literal("")).transform((v) => (v === "" ? undefined : v)).optional();
+
+// Helper: accept string OR empty → transform "" to undefined
+const optionalStr = z.string().transform((v) => (v === "" ? undefined : v)).optional();
+
 export const CreateDealSchema = z.object({
   name: z.string().min(1, "Name is required"),
   assetClass: z.enum(ASSET_CLASSES),
-  capitalInstrument: z.enum(CAPITAL_INSTRUMENTS).optional(),
-  participationStructure: z.enum(PARTICIPATION_STRUCTURES).optional(),
-  sector: z.string().optional(),
-  targetSize: z.string().optional(),
-  targetCheckSize: z.string().optional(),
-  targetReturn: z.string().optional(),
-  dealLeadId: z.string().optional(),
-  gpName: z.string().optional(),
-  source: z.string().optional(),
-  counterparty: z.string().optional(),
-  description: z.string().optional(),
-  thesisNotes: z.string().optional(),
-  investmentRationale: z.string().optional(),
-  additionalContext: z.string().optional(),
+  capitalInstrument: optionalEnum(CAPITAL_INSTRUMENTS),
+  participationStructure: optionalEnum(PARTICIPATION_STRUCTURES),
+  sector: optionalStr,
+  targetSize: optionalStr,
+  targetCheckSize: optionalStr,
+  targetReturn: optionalStr,
+  dealLeadId: optionalStr,
+  gpName: optionalStr,
+  source: optionalStr,
+  counterparty: optionalStr,
+  description: optionalStr,
+  thesisNotes: optionalStr,
+  investmentRationale: optionalStr,
+  additionalContext: optionalStr,
 });
 
 export const UpdateDealSchema = z.object({
