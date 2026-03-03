@@ -1,0 +1,221 @@
+import { createAIClient, getModelForFirm, getPromptTemplate } from "@/lib/ai-config";
+import type { DealContext } from "@/lib/screening-service";
+
+// ── Types ────────────────────────────────────────────
+
+export interface DDAnalysisSection {
+  name: string;
+  content: string;
+  riskLevel: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface DDAnalysisFinding {
+  title: string;
+  description: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+}
+
+export interface DDAnalysisResult {
+  summary: string;
+  sections: DDAnalysisSection[];
+  findings: DDAnalysisFinding[];
+  recommendation: string;
+}
+
+// ── Analysis type metadata ───────────────────────────
+
+export const DD_ANALYSIS_META: Record<
+  string,
+  { name: string; description: string }
+> = {
+  DD_FINANCIAL: {
+    name: "Financial Due Diligence",
+    description: "Quality of earnings, balance sheet, cash flow, projections stress test",
+  },
+  DD_LEGAL: {
+    name: "Legal Due Diligence",
+    description: "Entity structure, key agreements, regulatory, covenant analysis",
+  },
+  DD_MARKET: {
+    name: "Market Due Diligence",
+    description: "Market sizing, competitive landscape, customer analysis, industry trends",
+  },
+  IC_MEMO: {
+    name: "IC Memo",
+    description: "Investment Committee memo with recommendation",
+  },
+  COMP_ANALYSIS: {
+    name: "Comparable Analysis",
+    description: "Transaction comps, public comps, valuation benchmark",
+  },
+};
+
+// ── Prompt Builder ───────────────────────────────────
+
+function buildDealContextBlock(dealCtx: DealContext): string {
+  const docsList =
+    dealCtx.documents.length > 0
+      ? dealCtx.documents
+          .map((d) => `- ${d.name} (${d.category || "uncategorized"})`)
+          .join("\n")
+      : "No documents uploaded yet";
+
+  const notesList =
+    dealCtx.notes.length > 0
+      ? dealCtx.notes
+          .slice(0, 5)
+          .map((n) => `- ${n.author || "Unknown"}: ${n.content.slice(0, 300)}`)
+          .join("\n")
+      : "No analyst notes";
+
+  return `
+DEAL UNDER REVIEW:
+- Name: ${dealCtx.dealName}
+- Asset Class: ${dealCtx.assetClass.replace(/_/g, " ")}
+${dealCtx.capitalInstrument ? `- Capital Instrument: ${dealCtx.capitalInstrument.replace(/_/g, " ")}` : ""}
+${dealCtx.participationStructure ? `- Participation: ${dealCtx.participationStructure.replace(/_/g, " ")}` : ""}
+${dealCtx.sector ? `- Sector: ${dealCtx.sector}` : ""}
+${dealCtx.targetSize ? `- Target Size: ${dealCtx.targetSize}` : ""}
+${dealCtx.targetCheckSize ? `- Check Size: ${dealCtx.targetCheckSize}` : ""}
+${dealCtx.targetReturn ? `- Target Return: ${dealCtx.targetReturn}` : ""}
+${dealCtx.gpName ? `- GP / Sponsor: ${dealCtx.gpName}` : ""}
+
+${dealCtx.description ? `DEAL DESCRIPTION:\n${dealCtx.description}\n` : ""}
+${dealCtx.investmentRationale ? `INVESTMENT RATIONALE:\n${dealCtx.investmentRationale}\n` : ""}
+${dealCtx.thesisNotes ? `THESIS NOTES:\n${dealCtx.thesisNotes}\n` : ""}
+${dealCtx.additionalContext ? `ADDITIONAL CONTEXT:\n${dealCtx.additionalContext}\n` : ""}
+
+ATTACHED DOCUMENTS:
+${docsList}
+
+ANALYST NOTES:
+${notesList}
+`.trim();
+}
+
+function buildAnalysisPrompt(
+  dealCtx: DealContext,
+  type: string,
+  templateContent: string,
+  screeningData?: { score: number; recommendation: string; strengths: string[]; risks: string[] } | null,
+): string {
+  const dealContextBlock = buildDealContextBlock(dealCtx);
+
+  const isICMemo = type === "IC_MEMO";
+  const recommendationOptions = isICMemo
+    ? "APPROVE | APPROVE_WITH_CONDITIONS | DECLINE"
+    : "GO | NO_GO | NEEDS_MORE_INFO";
+
+  let screeningBlock = "";
+  if (screeningData && isICMemo) {
+    screeningBlock = `
+PRIOR AI SCREENING RESULTS:
+- Score: ${screeningData.score}/100
+- Recommendation: ${screeningData.recommendation}
+- Strengths: ${screeningData.strengths.join("; ")}
+- Risks: ${screeningData.risks.join("; ")}
+`;
+  }
+
+  return `${templateContent}
+
+${dealContextBlock}
+${screeningBlock}
+You MUST respond in valid JSON with exactly this shape:
+{
+  "summary": "<2-3 sentence executive overview of this analysis>",
+  "sections": [
+    {
+      "name": "<Section Title>",
+      "content": "<Detailed analysis text for this section — 2-4 paragraphs>",
+      "riskLevel": "HIGH | MEDIUM | LOW"
+    }
+  ],
+  "findings": [
+    {
+      "title": "<Short finding title — becomes a DD task>",
+      "description": "<1-2 sentence actionable finding with specific next steps>",
+      "priority": "HIGH | MEDIUM | LOW"
+    }
+  ],
+  "recommendation": "${recommendationOptions}"
+}
+
+RULES:
+- Provide 3-6 sections covering the major analytical areas
+- Provide 4-8 findings that become actionable due diligence tasks
+- Each finding should be specific to this deal, not generic boilerplate
+- Section content should reference the deal context provided above
+- Be specific about dollar amounts, percentages, and timeline estimates where possible
+- Findings with priority HIGH should be addressed before IC submission`;
+}
+
+// ── LLM Analysis Call ────────────────────────────────
+
+export async function runDDAnalysis(
+  firmId: string,
+  dealCtx: DealContext,
+  type: string,
+  screeningData?: { score: number; recommendation: string; strengths: string[]; risks: string[] } | null,
+): Promise<DDAnalysisResult | null> {
+  const client = await createAIClient(firmId);
+  if (!client) return null;
+
+  const model = await getModelForFirm(firmId);
+  const templateContent = await getPromptTemplate(firmId, type);
+  if (!templateContent) return null;
+
+  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData);
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `Run ${type.replace(/_/g, " ")} analysis for "${dealCtx.dealName}" — ${dealCtx.sector || "general"} sector, ${dealCtx.assetClass.replace(/_/g, " ")} asset class. Produce the full analysis JSON.`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 6000,
+      temperature: 0.3,
+    });
+
+    const raw = response.choices[0]?.message?.content || "{}";
+    const parsed = JSON.parse(raw);
+
+    const validLevels = ["HIGH", "MEDIUM", "LOW"];
+
+    const sections: DDAnalysisSection[] = Array.isArray(parsed.sections)
+      ? parsed.sections.map((s: Record<string, unknown>) => ({
+          name: String(s.name || "Analysis"),
+          content: String(s.content || ""),
+          riskLevel: (validLevels.includes(String(s.riskLevel))
+            ? String(s.riskLevel)
+            : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+        }))
+      : [];
+
+    const findings: DDAnalysisFinding[] = Array.isArray(parsed.findings)
+      ? parsed.findings.map((f: Record<string, unknown>) => ({
+          title: String(f.title || "Review required"),
+          description: String(f.description || "Further analysis needed."),
+          priority: (validLevels.includes(String(f.priority))
+            ? String(f.priority)
+            : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+        }))
+      : [];
+
+    return {
+      summary:
+        String(parsed.summary || "").slice(0, 2000) || "Analysis completed.",
+      sections,
+      findings,
+      recommendation: String(parsed.recommendation || "NEEDS_MORE_INFO"),
+    };
+  } catch (error) {
+    console.error(`[DD Analysis Service] ${type} LLM call failed:`, error);
+    return null;
+  }
+}

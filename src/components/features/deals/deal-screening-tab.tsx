@@ -23,10 +23,17 @@ const REC_COLORS: Record<string, string> = {
 export function DealScreeningTab({ deal }: DealScreeningTabProps) {
   const toast = useToast();
   const [screeningLoading, setScreeningLoading] = useState(false);
+  const [memoLoading, setMemoLoading] = useState(false);
+  const [memoExpanded, setMemoExpanded] = useState(true);
   const canRerun =
     deal.stage === "DUE_DILIGENCE" ||
     deal.stage === "IC_REVIEW" ||
     deal.stage === "CLOSING";
+
+  // Find IC Memo workstream if it exists
+  const icMemoWs = (deal.workstreams || []).find(
+    (ws: any) => ws.analysisType === "IC_MEMO"
+  );
 
   async function runScreening(rerun = false) {
     setScreeningLoading(true);
@@ -47,6 +54,31 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
       toast.error(`Screening failed: ${msg}`);
     } finally {
       setScreeningLoading(false);
+    }
+  }
+
+  async function generateICMemo(rerun = false) {
+    setMemoLoading(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "IC_MEMO", rerun }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        if (err.error?.includes("already exists") && !rerun) {
+          return generateICMemo(true);
+        }
+        throw new Error(err?.error || `HTTP ${res.status}`);
+      }
+      toast.success("IC Memo generated");
+      mutate(`/api/deals/${deal.id}`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Unknown error";
+      toast.error(`IC Memo failed: ${msg}`);
+    } finally {
+      setMemoLoading(false);
     }
   }
 
@@ -205,6 +237,89 @@ export function DealScreeningTab({ deal }: DealScreeningTabProps) {
           </ul>
         </div>
       )}
+
+      {/* IC Memo Section */}
+      <div className="border-t border-gray-200 pt-4 mt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">IC Memo</div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              AI-generated Investment Committee memo synthesizing screening results
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {icMemoWs?.analysisResult && (
+              <Badge color="green">Generated</Badge>
+            )}
+            <Button
+              size="sm"
+              variant={icMemoWs?.analysisResult ? "secondary" : "primary"}
+              loading={memoLoading}
+              onClick={() => generateICMemo(!!icMemoWs)}
+            >
+              {icMemoWs?.analysisResult ? "Regenerate" : "Generate IC Memo"}
+            </Button>
+          </div>
+        </div>
+
+        {icMemoWs?.analysisResult && (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <button
+              onClick={() => setMemoExpanded((p) => !p)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="text-sm font-semibold text-amber-900">Investment Committee Memo</span>
+                {icMemoWs.analysisResult.recommendation && (
+                  <Badge
+                    color={
+                      icMemoWs.analysisResult.recommendation.includes("APPROVE") ? "green" :
+                      icMemoWs.analysisResult.recommendation === "DECLINE" ? "red" : "yellow"
+                    }
+                  >
+                    {icMemoWs.analysisResult.recommendation.replace(/_/g, " ")}
+                  </Badge>
+                )}
+              </div>
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${memoExpanded ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {memoExpanded && (
+              <div className="p-4 space-y-4">
+                {/* Summary */}
+                <p className="text-sm text-gray-700">{icMemoWs.analysisResult.summary}</p>
+
+                {/* Memo Sections */}
+                {Array.isArray(icMemoWs.analysisResult.sections) &&
+                  icMemoWs.analysisResult.sections.map((section: any, i: number) => (
+                    <div key={i}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">{section.name}</h4>
+                        {section.riskLevel && (
+                          <Badge
+                            color={section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"}
+                          >
+                            {section.riskLevel}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 whitespace-pre-wrap">{section.content}</p>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

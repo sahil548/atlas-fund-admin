@@ -17,11 +17,22 @@ interface DealDDTabProps {
   deal: any;
 }
 
+const DD_ANALYSIS_BUTTONS = [
+  { type: "DD_FINANCIAL", name: "Financial DD", desc: "Quality of earnings, balance sheet, cash flow", color: "bg-blue-50 border-blue-200" },
+  { type: "DD_LEGAL", name: "Legal DD", desc: "Entity structure, agreements, regulatory", color: "bg-purple-50 border-purple-200" },
+  { type: "DD_MARKET", name: "Market DD", desc: "Market sizing, competitive landscape", color: "bg-green-50 border-green-200" },
+  { type: "COMP_ANALYSIS", name: "Comp Analysis", desc: "Transaction comps, public comps, valuation", color: "bg-rose-50 border-rose-200" },
+] as const;
+
 export function DealDDTab({ deal }: DealDDTabProps) {
   const toast = useToast();
   const [expandedWorkstreams, setExpandedWorkstreams] = useState<Set<string>>(
     new Set()
   );
+  const [expandedAnalysis, setExpandedAnalysis] = useState<Set<string>>(
+    new Set()
+  );
+  const [runningAnalysis, setRunningAnalysis] = useState<string | null>(null);
   const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>(
     {}
   );
@@ -163,6 +174,38 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
+  // Map analysisType -> workstream for AI analysis panel
+  const analysisWorkstreams = new Map<string, any>();
+  for (const ws of workstreams) {
+    if (ws.analysisType) analysisWorkstreams.set(ws.analysisType, ws);
+  }
+
+  async function runAnalysis(type: string, rerun = false) {
+    setRunningAnalysis(type);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, rerun }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        if (data.error?.includes("already exists") && !rerun) {
+          return runAnalysis(type, true);
+        }
+        toast.error(data.error || "Analysis failed");
+        return;
+      }
+      const btn = DD_ANALYSIS_BUTTONS.find((b) => b.type === type);
+      toast.success(`${btn?.name || type} analysis complete`);
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Analysis failed");
+    } finally {
+      setRunningAnalysis(null);
+    }
+  }
+
   async function markCategoryComplete(workstreamId: string) {
     try {
       await fetch(`/api/deals/${deal.id}/workstreams`, {
@@ -208,6 +251,57 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           </div>
         </div>
       )}
+
+      {/* AI Deep-Dive Analysis Panel */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">AI Deep-Dive Analysis</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Run AI-powered analysis modules on this deal</p>
+          </div>
+          <Badge color="purple">AI Powered</Badge>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          {DD_ANALYSIS_BUTTONS.map((at) => {
+            const ws = analysisWorkstreams.get(at.type);
+            const isRunning = runningAnalysis === at.type;
+            const isComplete = !!ws?.analysisResult;
+            return (
+              <div key={at.type} className={`rounded-lg border p-3 ${at.color}`}>
+                <div className="text-xs font-semibold text-gray-800">{at.name}</div>
+                <div className="text-[10px] text-gray-500 mt-0.5 line-clamp-2">{at.desc}</div>
+                <div className="mt-2">
+                  {isRunning ? (
+                    <div className="flex items-center gap-1 text-[10px] text-gray-500">
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                      Running...
+                    </div>
+                  ) : isComplete ? (
+                    <div className="flex items-center gap-1">
+                      <Badge color="green">Complete</Badge>
+                      <button
+                        onClick={() => runAnalysis(at.type, true)}
+                        className="text-[10px] text-gray-400 hover:text-indigo-600 ml-auto"
+                        title="Re-run analysis"
+                      >
+                        &#8635;
+                      </button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => runAnalysis(at.type)}
+                      disabled={!!runningAnalysis}
+                    >
+                      Run
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Template Picker */}
       {workstreams.length === 0 && (
@@ -334,6 +428,60 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                       </div>
                     )}
 
+                    {/* Analysis Result Panel */}
+                    {ws.analysisResult && (
+                      <div className="mb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100 p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-semibold text-indigo-900">Analysis Summary</div>
+                          {ws.analysisResult.recommendation && (
+                            <Badge
+                              color={
+                                ws.analysisResult.recommendation === "GO" || ws.analysisResult.recommendation === "APPROVE"
+                                  ? "green"
+                                  : ws.analysisResult.recommendation === "NO_GO" || ws.analysisResult.recommendation === "DECLINE"
+                                  ? "red"
+                                  : "yellow"
+                              }
+                            >
+                              {ws.analysisResult.recommendation.replace(/_/g, " ")}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-700 mb-2">{ws.analysisResult.summary}</p>
+                        <button
+                          onClick={() =>
+                            setExpandedAnalysis((prev) => {
+                              const next = new Set(prev);
+                              next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
+                              return next;
+                            })
+                          }
+                          className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
+                        >
+                          {expandedAnalysis.has(ws.id) ? "Hide Details ▴" : "Show Full Analysis ▾"}
+                        </button>
+                        {expandedAnalysis.has(ws.id) && Array.isArray(ws.analysisResult.sections) && (
+                          <div className="mt-2 space-y-2">
+                            {ws.analysisResult.sections.map((section: any, i: number) => (
+                              <div key={i} className="bg-white rounded border border-gray-100 p-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-800">{section.name}</span>
+                                  <Badge
+                                    color={
+                                      section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
+                                    }
+                                  >
+                                    {section.riskLevel}
+                                  </Badge>
+                                </div>
+                                <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Tasks list */}
                     {ws.tasks && ws.tasks.length > 0 ? (
                       ws.tasks.map((task: any) => (
@@ -396,12 +544,22 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                                     color={
                                       task.source === "AI_SCREENING"
                                         ? "purple"
+                                        : task.source?.startsWith("AI_")
+                                        ? "indigo"
                                         : "gray"
                                     }
                                   >
                                     {task.source === "AI_SCREENING"
-                                      ? "AI"
-                                      : "Manual"}
+                                      ? "Screening"
+                                      : task.source?.startsWith("AI_DD_")
+                                      ? "AI DD"
+                                      : task.source?.startsWith("AI_IC_")
+                                      ? "AI Memo"
+                                      : task.source?.startsWith("AI_COMP")
+                                      ? "AI Comp"
+                                      : task.source === "MANUAL"
+                                      ? "Manual"
+                                      : task.source}
                                   </Badge>
                                 )}
                                 {task.assignee && (

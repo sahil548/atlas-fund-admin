@@ -143,6 +143,21 @@ export const ScreeningConfigSchema = z.object({
   customInstructions: z.string().optional(),
 });
 
+// ── DD Analysis ─────────────────────────────────────
+
+export const DD_ANALYSIS_TYPES = [
+  "DD_FINANCIAL",
+  "DD_LEGAL",
+  "DD_MARKET",
+  "IC_MEMO",
+  "COMP_ANALYSIS",
+] as const;
+
+export const DDAnalyzeRequestSchema = z.object({
+  type: z.enum(DD_ANALYSIS_TYPES),
+  rerun: z.boolean().default(false),
+});
+
 // ── Deal Activity ───────────────────────────────────
 
 export const CreateDealActivitySchema = z.object({
