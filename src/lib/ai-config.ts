@@ -156,6 +156,24 @@ export async function getPromptTemplate(
   return getDefaultContent(type);
 }
 
+/**
+ * Get DD category instructions for a given category name.
+ * Fallback: firm-specific → global default → null
+ */
+export async function getCategoryInstructions(
+  firmId: string,
+  categoryName: string,
+): Promise<string | null> {
+  const template = await prisma.dDCategoryTemplate.findFirst({
+    where: {
+      name: categoryName,
+      OR: [{ firmId }, { firmId: null, isDefault: true }],
+    },
+    orderBy: { firmId: "desc" },
+  });
+  return template?.defaultInstructions || null;
+}
+
 // ── Connection test ────────────────────────────────────
 
 export async function testConnection(

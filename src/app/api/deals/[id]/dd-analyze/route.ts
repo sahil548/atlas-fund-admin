@@ -84,18 +84,45 @@ function generateMockAnalysis(
       ],
       recommendation: "APPROVE_WITH_CONDITIONS",
     },
-    COMP_ANALYSIS: {
-      summary: `Mock comparable analysis for ${deal.name}. Transaction and public comps suggest a valuation range. Configure an API key for real AI-powered comp analysis.`,
+    DD_TAX: {
+      summary: `Mock tax DD for ${deal.name}. Tax structure review flagged entity optimization opportunities and compliance areas requiring further investigation.`,
       sections: [
-        { name: "Transaction Comps", content: `Identified 8 relevant transactions in ${sectorCtx} over the past 3 years. Median EV/EBITDA: 9.2x (range: 7.0x - 13.5x). Median EV/Revenue: 2.8x (range: 1.5x - 4.2x). Recent trend shows slight multiple compression.`, riskLevel: "MEDIUM" },
-        { name: "Public Market Comps", content: `5 publicly traded comparables identified. Median trading EV/EBITDA: 11.4x (25% premium reflecting liquidity). Median revenue growth: 12%. Target's growth rate of ~15% supports a slight premium to median.`, riskLevel: "LOW" },
-        { name: "Valuation Benchmark", content: `Proposed entry at ~8x EBITDA represents a 13% discount to transaction comp median of 9.2x. Discount justified by: smaller scale, customer concentration risk, and private market illiquidity. Implied fair value range: $40M - $55M EV.`, riskLevel: "LOW" },
+        { name: "Tax Structure Review", content: `Current entity structure is a pass-through for this ${assetCtx} investment. UBTI exposure analysis needed for tax-exempt LPs. State tax nexus analysis covers the primary operating jurisdictions in ${sectorCtx}.`, riskLevel: "MEDIUM" },
+        { name: "Compliance & Exposures", content: `Federal and state tax returns current for trailing 3 years. No open audits identified. Estimated tax credits of $200K may be available. Transfer pricing documentation is adequate for intercompany transactions.`, riskLevel: "LOW" },
       ],
       findings: [
-        { title: "Source additional transaction comps", description: "Current dataset of 8 transactions may be incomplete. Engage data provider for comprehensive sector deal history.", priority: "MEDIUM" },
-        { title: "Validate comparability of selected comps", description: "Confirm size, geography, and business model alignment of each comp. Remove outliers with documented rationale.", priority: "HIGH" },
-        { title: "Model sensitivity on exit multiple", description: "Show IRR/MOIC sensitivity table for exit multiples from 7x to 12x EBITDA.", priority: "HIGH" },
-        { title: "Assess multiple expansion/compression trend", description: "Determine if current sector multiples are at a cyclical high. Consider through-cycle average for exit assumption.", priority: "MEDIUM" },
+        { title: "Analyze UBTI exposure for tax-exempt LPs", description: "Model UBTI impact under current structure. Evaluate blocker entity if exposure exceeds threshold.", priority: "HIGH" },
+        { title: "Review Section 754 election implications", description: "Confirm whether a 754 election is in place and model step-up benefit for incoming investors.", priority: "MEDIUM" },
+        { title: "Map state and local tax obligations", description: "Identify all state nexus points and estimate state income tax liability. Review sales tax compliance.", priority: "MEDIUM" },
+        { title: "Quantify available tax credits", description: "Verify eligibility for R&D, energy, or other tax credits. Estimate annual benefit.", priority: "LOW" },
+      ],
+      recommendation: "GO",
+    },
+    DD_OPERATIONAL: {
+      summary: `Mock operational DD for ${deal.name}. Management team assessment and process review identified scalability opportunities and key person risks.`,
+      sections: [
+        { name: "Management Assessment", content: `Leadership team has 12+ years average tenure in ${sectorCtx}. CEO and CFO are strong but COO position is vacant. Board has 3 independent directors. Compensation structure is performance-aligned with appropriate vesting.`, riskLevel: "MEDIUM" },
+        { name: "Technology & Scalability", content: `Core ERP system is adequate for current scale but will need upgrade at 2x revenue. CRM implementation is recent and well-adopted. Cybersecurity posture is basic — SOC 2 Type I obtained, Type II in progress.`, riskLevel: "MEDIUM" },
+      ],
+      findings: [
+        { title: "Assess key person risk and succession plan", description: "CEO and CFO are critical. Review employment contracts, non-competes, and succession planning. Consider key-man insurance.", priority: "HIGH" },
+        { title: "Evaluate technology scalability", description: "Current ERP has capacity limits. Estimate cost and timeline for upgrade at projected growth trajectory.", priority: "MEDIUM" },
+        { title: "Review operational efficiency metrics", description: "Benchmark operating metrics (revenue per employee, utilization rates) against industry peers.", priority: "MEDIUM" },
+        { title: "Assess integration readiness for add-ons", description: "Evaluate shared services infrastructure and playbook for bolt-on acquisition integration.", priority: "LOW" },
+      ],
+      recommendation: "GO",
+    },
+    DD_ESG: {
+      summary: `Mock ESG DD for ${deal.name}. Environmental and governance factors are manageable. Social factors show areas for improvement in workforce diversity.`,
+      sections: [
+        { name: "Environmental", content: `No significant environmental liabilities identified for this ${assetCtx} investment. Carbon footprint is moderate for the ${sectorCtx} sector. No Phase I/II environmental concerns flagged. Resource efficiency initiatives are nascent but planned.`, riskLevel: "LOW" },
+        { name: "Social & Governance", content: `Workforce diversity metrics are below industry benchmarks. Safety record is clean with no OSHA violations in 3 years. Board governance is adequate with majority independence. Ethics and compliance program is in place but informal.`, riskLevel: "MEDIUM" },
+      ],
+      findings: [
+        { title: "Develop ESG baseline metrics", description: "Establish baseline Scope 1 and 2 emissions, diversity metrics, and governance scores for reporting.", priority: "MEDIUM" },
+        { title: "Assess climate transition risk", description: "Model impact of potential carbon pricing or regulatory changes on operating costs over hold period.", priority: "MEDIUM" },
+        { title: "Review workforce diversity initiatives", description: "Current diversity metrics below benchmarks. Develop improvement plan aligned with LP reporting requirements.", priority: "LOW" },
+        { title: "Formalize ESG reporting framework", description: "Adopt SASB standards for the relevant industry classification. Prepare for TCFD-aligned climate disclosure.", priority: "LOW" },
       ],
       recommendation: "GO",
     },
@@ -121,8 +148,19 @@ export async function POST(
   const { data, error } = await parseBody(req, DDAnalyzeRequestSchema);
   if (error) return error;
 
-  const { type, rerun } = data!;
+  const { type, categoryName: rawCategoryName, rerun } = data!;
   const meta = DD_ANALYSIS_META[type];
+
+  // Resolve category name: explicit from request OR from type mapping
+  const TYPE_TO_CATEGORY: Record<string, string> = {
+    DD_FINANCIAL: "Financial DD",
+    DD_LEGAL: "Legal DD",
+    DD_MARKET: "Market DD",
+    DD_TAX: "Tax DD",
+    DD_OPERATIONAL: "Operational DD",
+    DD_ESG: "ESG DD",
+  };
+  const categoryName = rawCategoryName || TYPE_TO_CATEGORY[type] || null;
 
   // Fetch deal with context
   const deal = await prisma.deal.findUnique({
@@ -135,7 +173,7 @@ export async function POST(
         take: 10,
         select: { content: true, author: { select: { name: true } } },
       },
-      workstreams: { select: { id: true, analysisType: true, name: true, customInstructions: true, aiGenerated: true } },
+      workstreams: { select: { id: true, analysisType: true, name: true, aiGenerated: true } },
     },
   });
 
@@ -199,17 +237,6 @@ export async function POST(
     : null;
 
   // ── Extract prior screening findings for this analysis type ──
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const TYPE_TO_CATEGORY: Record<string, string> = {
-    DD_FINANCIAL: "Financial DD",
-    DD_LEGAL: "Legal DD",
-    DD_MARKET: "Market DD",
-    DD_TAX: "Tax DD",
-    DD_OPERATIONAL: "Operational DD",
-    DD_ESG: "ESG DD",
-  };
-
-  const categoryName = TYPE_TO_CATEGORY[type];
   const ddFindingsRaw = deal.screeningResult?.ddFindings;
   let priorFindings: { title: string; description: string; priority: string }[] | null = null;
 
@@ -226,18 +253,12 @@ export async function POST(
     }
   }
 
-  // Get customInstructions from the screening workstream for this category (if any)
-  const matchingScreeningWs = deal.workstreams.find(
-    (ws) => ws.name === categoryName && ws.aiGenerated && !ws.analysisType,
-  );
-  const categoryInstructions = matchingScreeningWs?.customInstructions || null;
-
   // Call LLM or fallback to mock
   const firmId = deal.firmId || "firm-1";
   let result: DDAnalysisResult;
   let aiPowered = false;
 
-  const aiResult = await runDDAnalysis(firmId, dealCtx, type, screeningData, priorFindings, categoryInstructions);
+  const aiResult = await runDDAnalysis(firmId, dealCtx, type, screeningData, priorFindings, categoryName);
   if (aiResult) {
     result = aiResult;
     aiPowered = true;
@@ -250,8 +271,10 @@ export async function POST(
     DD_FINANCIAL: 100,
     DD_LEGAL: 101,
     DD_MARKET: 102,
-    IC_MEMO: 103,
-    COMP_ANALYSIS: 104,
+    DD_TAX: 103,
+    DD_OPERATIONAL: 104,
+    DD_ESG: 105,
+    IC_MEMO: 110,
   };
 
   // Create workstream with analysis

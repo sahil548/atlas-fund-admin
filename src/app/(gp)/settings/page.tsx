@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { AIGlobalConfig } from "@/components/features/settings/ai-global-config";
-import { PromptTemplatesEditor } from "@/components/features/settings/prompt-templates-editor";
-import { DDCategoryEditor } from "@/components/features/settings/dd-category-editor";
+import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline-editor";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -269,13 +268,8 @@ export default function SettingsPage() {
       {/* Tab 5: AI Configuration — global provider/model/key only */}
       {tab === "ai" && <AIGlobalConfig firmId={firmId} />}
 
-      {/* Tab 6: Deal Desk — prompt templates + DD categories */}
-      {tab === "dealdesk" && (
-        <div className="space-y-4">
-          <PromptTemplatesEditor module="deals" />
-          <DDCategoryEditor firmId={firmId} />
-        </div>
-      )}
+      {/* Tab 6: Deal Desk — pipeline configuration */}
+      {tab === "dealdesk" && <DealPipelineEditor firmId={firmId} />}
 
       {/* Tab 7: Notifications (stub) */}
       {tab === "notifications" && (

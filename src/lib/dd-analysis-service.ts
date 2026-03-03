@@ -1,4 +1,4 @@
-import { createAIClient, getModelForFirm, getPromptTemplate } from "@/lib/ai-config";
+import { createAIClient, getModelForFirm, getPromptTemplate, getCategoryInstructions } from "@/lib/ai-config";
 import type { DealContext } from "@/lib/screening-service";
 
 // ── Types ────────────────────────────────────────────
@@ -38,15 +38,23 @@ export const DD_ANALYSIS_META: Record<
   },
   DD_MARKET: {
     name: "Market Due Diligence",
-    description: "Market sizing, competitive landscape, customer analysis, industry trends",
+    description: "Market sizing, competitive landscape, customer analysis, comparable analysis",
+  },
+  DD_TAX: {
+    name: "Tax Due Diligence",
+    description: "Tax structure, compliance, entity elections, credits and exposures",
+  },
+  DD_OPERATIONAL: {
+    name: "Operational Due Diligence",
+    description: "Management, processes, technology, scalability, key person risk",
+  },
+  DD_ESG: {
+    name: "ESG Due Diligence",
+    description: "Environmental, social, governance factors and compliance",
   },
   IC_MEMO: {
     name: "IC Memo",
     description: "Investment Committee memo with recommendation",
-  },
-  COMP_ANALYSIS: {
-    name: "Comparable Analysis",
-    description: "Transaction comps, public comps, valuation benchmark",
   },
 };
 
@@ -105,7 +113,6 @@ function buildAnalysisPrompt(
     ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
   } | null,
   priorFindings?: { title: string; description: string; priority: string }[] | null,
-  categoryInstructions?: string | null,
 ): string {
   const dealContextBlock = buildDealContextBlock(dealCtx);
 
@@ -146,16 +153,10 @@ PRIOR AI SCREENING RESULTS:
     priorFindingsBlock += `\nBuild on these findings — go deeper, validate, and add new findings the screening may have missed.\n`;
   }
 
-  // Category-specific instructions from the user / workstream config
-  let categoryBlock = "";
-  if (categoryInstructions && !isICMemo) {
-    categoryBlock = `\nCATEGORY-SPECIFIC INSTRUCTIONS:\n${categoryInstructions}\n`;
-  }
-
   return `${templateContent}
 
 ${dealContextBlock}
-${screeningBlock}${priorFindingsBlock}${categoryBlock}
+${screeningBlock}${priorFindingsBlock}
 You MUST respond in valid JSON with exactly this shape:
 {
   "summary": "<2-3 sentence executive overview of this analysis>",
@@ -199,16 +200,26 @@ export async function runDDAnalysis(
     ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
   } | null,
   priorFindings?: { title: string; description: string; priority: string }[] | null,
-  categoryInstructions?: string | null,
+  categoryName?: string | null,
 ): Promise<DDAnalysisResult | null> {
   const client = await createAIClient(firmId);
   if (!client) return null;
 
   const model = await getModelForFirm(firmId);
-  const templateContent = await getPromptTemplate(firmId, type);
+
+  // Template resolution: IC_MEMO uses prompt template; DD types use category instructions
+  let templateContent: string | null;
+  if (type === "IC_MEMO") {
+    templateContent = await getPromptTemplate(firmId, type);
+  } else if (categoryName) {
+    templateContent = await getCategoryInstructions(firmId, categoryName);
+  } else {
+    // Legacy fallback for old callers
+    templateContent = await getPromptTemplate(firmId, type);
+  }
   if (!templateContent) return null;
 
-  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData, priorFindings, categoryInstructions);
+  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData, priorFindings);
 
   try {
     const response = await client.chat.completions.create({

@@ -1338,20 +1338,495 @@ async function main() {
 
   const ddCategories = [
     // Universal categories (scope: UNIVERSAL — apply to all deals)
-    { firmId: firm.id, name: "Financial DD", description: "Revenue/cash flow analysis, financial model, projections, quality of earnings", defaultInstructions: "Analyze financial statements, projections, quality of earnings, cash flow dynamics, and key financial metrics. Benchmark margins against peers.", isDefault: true, scope: "UNIVERSAL", sortOrder: 1 },
-    { firmId: firm.id, name: "Legal DD", description: "Corporate structure, contracts, litigation, IP", defaultInstructions: "Review corporate structure, material contracts, pending litigation, IP ownership, and change-of-control provisions.", isDefault: true, scope: "UNIVERSAL", sortOrder: 2 },
-    { firmId: firm.id, name: "Tax DD", description: "Tax structure, compliance, entity elections", defaultInstructions: "Review tax structure, compliance history, entity elections, and structural optimization opportunities. Identify tax credits and exposures.", isDefault: true, scope: "UNIVERSAL", sortOrder: 3 },
-    { firmId: firm.id, name: "Operational DD", description: "Management, processes, technology, scalability", defaultInstructions: "Evaluate management team, business processes, technology infrastructure, scalability, and key operational risks.", isDefault: true, scope: "UNIVERSAL", sortOrder: 4 },
-    { firmId: firm.id, name: "Market DD", description: "Market size, competitive landscape, positioning", defaultInstructions: "Analyze market size, competitive landscape, positioning, growth drivers, and pricing power.", isDefault: true, scope: "UNIVERSAL", sortOrder: 5 },
-    { firmId: firm.id, name: "ESG DD", description: "Environmental, social, governance, compliance", defaultInstructions: "Assess environmental, social, and governance factors, compliance posture, and sustainability risks.", isDefault: true, scope: "UNIVERSAL", sortOrder: 6 },
+    // Each category's defaultInstructions IS the analysis framework used by the AI pipeline.
+    {
+      firmId: firm.id, name: "Financial DD", description: "Revenue/cash flow analysis, financial model, projections, quality of earnings",
+      defaultInstructions: `Perform a comprehensive financial due diligence analysis.
+
+Quality of Earnings:
+- Revenue breakdown by customer/segment/geography
+- Recurring vs one-time revenue identification
+- EBITDA adjustments (add-backs, normalizations)
+- Working capital trends and seasonality
+- Pro forma vs reported gaps
+
+Balance Sheet:
+- Asset quality and impairment risks
+- Debt maturity schedule and covenants
+- Off-balance-sheet liabilities
+- Cash vs accrual discrepancies
+- Intercompany transactions to eliminate
+
+Cash Flow:
+- Free cash flow conversion rate
+- Capex breakdown (maintenance vs growth)
+- Cash flow bridge (EBITDA to FCF)
+- Distributions capacity analysis
+
+Projections Stress Test:
+- Management case vs independent analysis
+- Sensitivity on: revenue growth, margins, cost of capital
+- Downside scenario: what breaks first
+
+Red Flags to check: revenue recognition policies, related-party transactions, unusual accounting elections, deferred revenue/liability trends, customer concentration above 20%, pending contingent liabilities.
+
+End with GO / NO-GO / NEEDS MORE INFO and specific follow-up questions for the sponsor.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 1,
+    },
+    {
+      firmId: firm.id, name: "Legal DD", description: "Corporate structure, contracts, litigation, IP",
+      defaultInstructions: `Perform legal and structural due diligence analysis.
+
+Entity Structure:
+- Holding structure (who owns what, through which vehicles)
+- Tax implications (pass-through, blocker, UBTI)
+- Jurisdictional risks
+
+Key Agreements:
+- Purchase/subscription agreement: terms, reps & warranties, indemnification
+- Side letters with preferential terms
+- Management agreement: fees, carry, clawback
+- Operating/partnership agreement: governance, voting, consent rights
+
+Regulatory:
+- Required licenses and permits status
+- Pending or threatened litigation
+- Environmental compliance (Phase I/II if RE)
+- OFAC/sanctions/KYC/AML screening
+
+Covenant Analysis (if debt):
+- Financial covenants: type, threshold, test frequency, headroom
+- Negative covenants: restricted payments, additional indebtedness
+- Change of control provisions
+- Default triggers and cure periods
+
+For each risk: provide Severity, Likelihood, Mitigation, and Owner.
+Flag deal-breakers prominently. End with conditions to satisfy before closing.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 2,
+    },
+    {
+      firmId: firm.id, name: "Tax DD", description: "Tax structure, compliance, entity elections",
+      defaultInstructions: `Perform comprehensive tax due diligence analysis.
+
+Tax Structure Review:
+- Current entity structure and tax classification (pass-through, C-corp, REIT, etc.)
+- Holding company and blocker entity analysis
+- State and local tax nexus and apportionment
+- International tax considerations if applicable
+
+Entity Elections & Optimization:
+- Section 754 election status and implications
+- Check-the-box elections
+- QOZ, REIT, or RIC qualification analysis
+- Optimal structure for LP base (tax-exempt, foreign, taxable)
+
+Compliance History:
+- Federal and state tax return filing history (3+ years)
+- Open audit periods and pending examinations
+- Prior tax controversy or settlement history
+- Estimated tax payment compliance
+
+Tax Credits & Exposures:
+- Available tax credits (R&D, energy, historic, NMTC, LIHTC)
+- UBTI exposure analysis for tax-exempt investors
+- Withholding tax obligations
+- Transfer pricing documentation (if intercompany transactions)
+- Contingent tax liabilities and FIN 48 reserves
+
+Transaction Tax Implications:
+- Step-up in basis opportunities (338(h)(10), Section 754)
+- Depreciation and amortization schedules
+- Installment sale or like-kind exchange eligibility
+- Transaction costs allocation and deductibility
+
+End with key tax risks, estimated exposure amounts, and recommended structural optimizations.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 3,
+    },
+    {
+      firmId: firm.id, name: "Operational DD", description: "Management, processes, technology, scalability",
+      defaultInstructions: `Perform comprehensive operational due diligence analysis.
+
+Management Assessment:
+- Leadership team experience, tenure, and track record
+- Key person risk and succession planning
+- Organizational structure and reporting lines
+- Compensation structure and retention mechanisms
+- Board composition and governance effectiveness
+
+Business Process Analysis:
+- Core operational workflows and bottlenecks
+- Quality control and compliance processes
+- Supply chain dependencies and vendor concentration
+- Procurement practices and cost management
+
+Technology Infrastructure:
+- Core systems (ERP, CRM, BI) maturity and integration
+- Technical debt and modernization needs
+- Data management, backup, and disaster recovery
+- Cybersecurity posture and incident history
+
+Scalability & Integration:
+- Capacity utilization and expansion runway
+- Unit economics at current vs projected scale
+- Integration complexity for add-on acquisitions
+- Shared services and centralization opportunities
+
+Key Person & Talent Risk:
+- Employee turnover rates by department
+- Key employee contracts and non-competes
+- Talent market dynamics and hiring pipeline
+- Culture assessment and change management readiness
+
+End with operational risk rating, key improvement opportunities, and estimated value creation from operational initiatives.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 4,
+    },
+    {
+      firmId: firm.id, name: "Market DD", description: "Market size, competitive landscape, positioning, comparable analysis",
+      defaultInstructions: `Perform market, commercial, and comparable analysis due diligence.
+
+Market Sizing:
+- TAM / SAM / SOM with sources
+- Market growth rate and key drivers
+- Cycle position (early/growth/mature/declining)
+
+Competitive Landscape:
+- Top 5 competitors with market share estimates
+- Competitive moats: brand, scale, IP, switching costs, network effects
+- Threat of new entrants and substitutes
+- Pricing power assessment
+
+Customer Analysis:
+- Customer segmentation and concentration
+- Retention/churn rates (or lease renewal rates for RE)
+- Customer acquisition cost and lifetime value
+
+Industry Trends:
+- Tailwinds and headwinds
+- Regulatory direction
+- Technology disruption risks
+
+Real Estate Specific (if applicable):
+- Submarket supply/demand dynamics
+- Rent comp analysis
+- Vacancy trends
+- Cap rate trends for the asset type and geography
+
+Transaction Comps:
+- Search for recent M&A, investment, and financing transactions in the same sector/geography
+- Deal size range: 0.5x to 3x the target, time period: last 3 years
+- Build table: Date, Target, Acquirer/Investor, Deal Size, EV/EBITDA, EV/Revenue, Notes
+- Median and mean multiples, range (25th to 75th percentile), trend over time
+
+Public Market Comps (if applicable):
+- Table: Ticker, Company, Market Cap, EV/EBITDA, EV/Revenue, Growth, Margin
+- Trading vs transaction multiples gap
+- Liquidity discount considerations
+
+Valuation Benchmark:
+- Where does the deal fall vs comps? Above median: justify the premium. Below median: identify discount factors
+- Implied valuation range based on comp multiples
+
+End with: is this a good market to deploy capital into right now, the fair value range, and whether the proposed entry represents a premium or discount.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 5,
+    },
+    {
+      firmId: firm.id, name: "ESG DD", description: "Environmental, social, governance, compliance",
+      defaultInstructions: `Perform comprehensive ESG due diligence analysis.
+
+Environmental Assessment:
+- Carbon footprint and emissions profile (Scope 1, 2, 3)
+- Climate risk exposure (physical and transition risks)
+- Environmental liabilities and remediation obligations
+- Resource efficiency (energy, water, waste)
+- Regulatory compliance (EPA, state environmental agencies)
+- Phase I/II environmental site assessment findings (if applicable)
+
+Social Factors:
+- Workforce demographics, diversity, and inclusion metrics
+- Labor practices, safety record (OSHA incidents), and worker satisfaction
+- Community impact and stakeholder relationships
+- Supply chain labor and human rights standards
+- Product safety and customer welfare
+- Data privacy and consumer protection compliance
+
+Governance Structure:
+- Board independence, diversity, and expertise
+- Executive compensation alignment with long-term value
+- Ethics policies, whistleblower protections, and compliance programs
+- Related-party transactions and conflicts of interest
+- Shareholder rights and minority protections
+
+ESG Framework Alignment:
+- SASB materiality mapping for the relevant industry
+- TCFD climate disclosure readiness
+- UN SDG alignment opportunities
+- ESG rating agency scores (if available)
+
+Risk & Opportunity Assessment:
+- Material ESG risks that could impact valuation
+- ESG improvement opportunities that create value
+- Estimated cost of ESG remediation or compliance gaps
+- Reputational risk factors
+
+End with ESG risk rating (HIGH/MEDIUM/LOW), key findings, and recommended ESG action items for the hold period.`,
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 6,
+    },
     // Asset-class-specific categories
-    { firmId: firm.id, name: "Collateral DD", description: "Property appraisals, site condition, title/lien positions, insurance (Real Estate)", defaultInstructions: "Review property appraisals, site condition reports, title/lien positions, insurance coverage, and environmental assessments.", isDefault: false, scope: "REAL_ESTATE", sortOrder: 7 },
-    { firmId: firm.id, name: "Tenant & Lease DD", description: "Tenant credit, lease terms, occupancy, rent comparables (Real Estate)", defaultInstructions: "Analyze tenant creditworthiness, lease terms, rollover schedule, occupancy trends, and rent comparables.", isDefault: false, scope: "REAL_ESTATE", sortOrder: 8 },
-    { firmId: firm.id, name: "Customer DD", description: "Customer concentration, retention, cohort economics (Operating Business)", defaultInstructions: "Analyze customer concentration, retention/churn metrics, cohort economics, and pipeline quality.", isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 9 },
-    { firmId: firm.id, name: "Technology DD", description: "Tech stack, technical debt, product roadmap, cybersecurity (Operating Business)", defaultInstructions: "Evaluate technology stack, technical debt, product roadmap, IP moat, and cybersecurity posture.", isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 10 },
-    { firmId: firm.id, name: "Regulatory & Permitting DD", description: "Regulatory approvals, permits, government concessions (Infrastructure)", defaultInstructions: "Review regulatory approvals, permitting status, government concessions, and compliance requirements.", isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 11 },
-    { firmId: firm.id, name: "Engineering DD", description: "Engineering design, construction risk, asset condition (Infrastructure)", defaultInstructions: "Assess engineering design, construction risk, maintenance capex, and asset condition.", isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 12 },
-    { firmId: firm.id, name: "Credit DD", description: "Credit metrics, covenants, collateral coverage, downside modeling (Debt)", defaultInstructions: "Analyze credit metrics (LTV, DSCR, ICR), debt structure, covenant package, collateral coverage, and downside scenarios.", isDefault: false, scope: "DEBT", sortOrder: 13 },
+    {
+      firmId: firm.id, name: "Collateral DD", description: "Property appraisals, site condition, title/lien positions, insurance",
+      defaultInstructions: `Perform real estate collateral due diligence analysis.
+
+Property Valuation:
+- Independent appraisal review (methodology, comparable selection, cap rate)
+- As-is vs as-stabilized valuation gap
+- Replacement cost analysis
+- Historical valuation trends for the asset and submarket
+
+Physical Condition:
+- Property condition assessment (PCA) findings
+- Immediate repair needs vs deferred maintenance
+- Capital expenditure reserve adequacy
+- Remaining useful life of major building systems (HVAC, roof, elevator, parking)
+- Seismic, flood zone, and natural hazard exposure
+
+Title & Lien Analysis:
+- Title search results and exception review
+- Lien priority and intercreditor arrangements
+- Easements, encroachments, and restrictions
+- Survey review and boundary confirmation
+- Zoning compliance and entitlement status
+
+Insurance Review:
+- Property insurance coverage adequacy (replacement cost vs actual cash value)
+- Liability coverage limits
+- Flood, earthquake, and windstorm coverage
+- Business interruption / rent loss coverage
+- Insurance claims history
+
+Environmental:
+- Phase I ESA findings and recognized environmental conditions
+- Phase II requirements (if triggered)
+- Asbestos, lead paint, mold, or radon issues
+- Underground storage tank status
+
+End with collateral risk rating and conditions for lending/investing.`,
+      isDefault: false, scope: "REAL_ESTATE", sortOrder: 7,
+    },
+    {
+      firmId: firm.id, name: "Tenant & Lease DD", description: "Tenant credit, lease terms, occupancy, rent comparables",
+      defaultInstructions: `Perform tenant and lease due diligence analysis.
+
+Tenant Credit Analysis:
+- Tenant financial health (credit ratings, financial statements if available)
+- Tenant concentration risk (% of base rent from top 5 tenants)
+- Tenant industry diversification
+- Government or investment-grade tenant percentage
+
+Lease Terms Review:
+- Weighted average lease term (WALT) and expiration schedule
+- Rent escalation structures (fixed, CPI, percentage rent)
+- Renewal options and tenant termination rights
+- Tenant improvement allowances and free rent periods
+- Co-tenancy and exclusivity clauses
+
+Occupancy Analysis:
+- Current physical and economic occupancy rates
+- Historical occupancy trends (3-5 years)
+- Submarket vacancy comparison
+- Absorption rate and leasing velocity
+- Dark space or subleased space identification
+
+Rent Comparables:
+- In-place rents vs market rents (mark-to-market analysis)
+- Comparable lease transactions in the submarket
+- Effective rent analysis (accounting for concessions)
+- Rent growth projections based on supply/demand dynamics
+
+Rollover Risk:
+- Near-term lease expirations (0-3 years) as % of revenue
+- Re-leasing cost estimates (TI, leasing commissions, downtime)
+- Probability of renewal by tenant
+- Downside scenario: key tenant departure impact on NOI
+
+End with tenant quality assessment, rollover risk rating, and key lease-related findings.`,
+      isDefault: false, scope: "REAL_ESTATE", sortOrder: 8,
+    },
+    {
+      firmId: firm.id, name: "Customer DD", description: "Customer concentration, retention, cohort economics",
+      defaultInstructions: `Perform customer due diligence analysis for operating businesses.
+
+Customer Concentration:
+- Revenue breakdown by top 10 customers ($ and %)
+- Customer concentration trend over 3 years (improving or worsening)
+- Contractual vs at-will revenue
+- Customer switching costs and lock-in mechanisms
+
+Retention & Churn:
+- Gross and net revenue retention rates
+- Cohort-level retention analysis (by vintage, segment, geography)
+- Churn drivers and win-back success rates
+- Customer satisfaction scores (NPS, CSAT) and trends
+
+Unit Economics:
+- Customer acquisition cost (CAC) by channel
+- Customer lifetime value (LTV) and LTV/CAC ratio
+- Payback period trends
+- Gross margin by customer segment
+
+Pipeline & Growth:
+- Sales pipeline quality and conversion rates
+- New customer win rate trends
+- Cross-sell and upsell penetration
+- Geographic or segment expansion opportunity
+
+End with customer risk assessment, key findings on retention sustainability, and recommendations for reducing concentration risk.`,
+      isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 9,
+    },
+    {
+      firmId: firm.id, name: "Technology DD", description: "Tech stack, technical debt, product roadmap, cybersecurity",
+      defaultInstructions: `Perform technology due diligence analysis for operating businesses.
+
+Technology Stack:
+- Core platform architecture and tech stack assessment
+- Cloud infrastructure and hosting (AWS, Azure, GCP, on-prem)
+- Third-party dependencies and vendor lock-in risks
+- API ecosystem and integration capabilities
+- Mobile and web platform maturity
+
+Technical Debt & Code Quality:
+- Estimated technical debt and remediation cost
+- Code quality metrics (test coverage, deployment frequency, incident rates)
+- Legacy system risks and modernization roadmap
+- Scalability limits of current architecture
+
+Product & Roadmap:
+- Product-market fit assessment
+- Feature development velocity and release cadence
+- Product roadmap alignment with market needs
+- Competitive feature gap analysis
+
+Cybersecurity:
+- Security framework compliance (SOC 2, ISO 27001, HIPAA, PCI-DSS)
+- Vulnerability assessment and penetration testing history
+- Incident response plan and breach history
+- Data encryption, access controls, and authentication
+- Third-party security audit findings
+
+IP & Data:
+- Proprietary technology and patent portfolio
+- Open-source license compliance
+- Data assets and monetization potential
+- Data privacy compliance (GDPR, CCPA)
+
+End with technology risk rating, key findings, and estimated investment needed for technology improvements.`,
+      isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 10,
+    },
+    {
+      firmId: firm.id, name: "Regulatory & Permitting DD", description: "Regulatory approvals, permits, government concessions",
+      defaultInstructions: `Perform regulatory and permitting due diligence analysis for infrastructure assets.
+
+Regulatory Framework:
+- Applicable regulatory bodies and jurisdictions
+- Rate-setting mechanisms and regulatory review cycles
+- Political and regulatory stability assessment
+- Regulatory change risk and pending legislation
+
+Permitting Status:
+- All required permits, licenses, and approvals inventory
+- Permit expiration dates and renewal requirements
+- Pending permit applications and expected timelines
+- Environmental permits (air, water, waste) and compliance status
+- Construction permits and building code compliance
+
+Government Concessions & Contracts:
+- Concession agreement terms, duration, and renewal options
+- Government contract performance obligations
+- Revenue guarantee or minimum payment mechanisms
+- Termination provisions and compensation formulas
+- Political force majeure protections
+
+Compliance:
+- Historical compliance record and enforcement actions
+- Ongoing reporting and monitoring requirements
+- Environmental impact assessments and mitigation commitments
+- Community benefit agreements and stakeholder obligations
+
+End with regulatory risk assessment, critical permit timelines, and recommended mitigation strategies.`,
+      isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 11,
+    },
+    {
+      firmId: firm.id, name: "Engineering DD", description: "Engineering design, construction risk, asset condition",
+      defaultInstructions: `Perform engineering due diligence analysis for infrastructure assets.
+
+Design & Engineering:
+- Engineering design review and adequacy assessment
+- Technology selection and proven vs novel technology risk
+- Design life and residual value assumptions
+- Performance guarantees and warranty coverage
+
+Construction Risk (if applicable):
+- Construction progress and schedule assessment
+- Cost overrun risk and contingency adequacy
+- Contractor qualifications and bonding
+- Change order history and dispute status
+- Commissioning and testing plan
+
+Asset Condition:
+- Physical inspection findings and condition rating
+- Remaining useful life of major components
+- Maintenance history and deferred maintenance backlog
+- Capital expenditure forecast (maintenance and growth)
+- Spare parts inventory and supply chain reliability
+
+Performance:
+- Historical performance vs design specifications
+- Availability and capacity factor trends
+- Throughput or output efficiency metrics
+- Weather, seasonal, or cyclical performance patterns
+
+End with engineering risk rating, capital expenditure forecast, and key technical findings.`,
+      isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 12,
+    },
+    {
+      firmId: firm.id, name: "Credit DD", description: "Credit metrics, covenants, collateral coverage, downside modeling",
+      defaultInstructions: `Perform credit due diligence analysis for debt investments.
+
+Credit Metrics:
+- Loan-to-Value (LTV) at origination and current
+- Debt Service Coverage Ratio (DSCR) historical and projected
+- Interest Coverage Ratio (ICR) and fixed charge coverage
+- Debt yield and return on equity analysis
+- Leverage ratios (Debt/EBITDA, Debt/Equity)
+
+Debt Structure:
+- Capital structure and priority of claims (senior, mezzanine, subordinated)
+- Interest rate structure (fixed vs floating, hedging in place)
+- Amortization schedule and maturity profile
+- Prepayment provisions and call protection
+- Extension options and conditions
+
+Covenant Package:
+- Financial covenants: type, threshold, test frequency, current headroom
+- Maintenance vs incurrence covenants
+- Negative covenants: restricted payments, additional debt, asset sales
+- Reporting requirements and compliance monitoring
+- Event of default triggers and cure provisions
+
+Collateral Coverage:
+- Collateral identification and perfection status
+- Appraisal methodology and current value
+- Collateral coverage ratio and stress scenarios
+- Cross-collateralization and cross-default provisions
+
+Downside Modeling:
+- Base, stress, and default scenario analysis
+- Recovery rate assumptions by collateral type
+- Time to recovery and liquidation cost estimates
+- Sensitivity analysis on key credit drivers (occupancy, revenue, rates)
+
+End with credit risk rating, key covenant concerns, and recommended structural protections.`,
+      isDefault: false, scope: "DEBT", sortOrder: 13,
+    },
   ];
 
   for (const cat of ddCategories) {

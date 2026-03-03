@@ -157,12 +157,15 @@ export const DD_ANALYSIS_TYPES = [
   "DD_FINANCIAL",
   "DD_LEGAL",
   "DD_MARKET",
+  "DD_TAX",
+  "DD_OPERATIONAL",
+  "DD_ESG",
   "IC_MEMO",
-  "COMP_ANALYSIS",
 ] as const;
 
 export const DDAnalyzeRequestSchema = z.object({
   type: z.enum(DD_ANALYSIS_TYPES),
+  categoryName: z.string().optional(),
   rerun: z.boolean().default(false),
 });
 
