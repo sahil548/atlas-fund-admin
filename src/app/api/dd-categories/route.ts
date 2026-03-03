@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
       description: (body.description as string) || null,
       defaultInstructions: (body.defaultInstructions as string) || null,
       isDefault: body.isDefault === true,
-      sortOrder: typeof body.sortOrder === "number" ? body.sortOrder : 0,
+      scope: (body.scope as string) || "UNIVERSAL",
+      sortOrder: typeof body.sortOrder === "number" ? body.sortOrder : 99,
     },
   });
 

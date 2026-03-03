@@ -38,10 +38,16 @@ const TYPE_COLORS: Record<string, string> = {
   COMP_ANALYSIS: "pink",
 };
 
-export function PromptTemplatesEditor() {
+interface PromptTemplatesEditorProps {
+  module?: string;
+}
+
+export function PromptTemplatesEditor({ module }: PromptTemplatesEditorProps = {}) {
   const { firmId } = useFirm();
   const toast = useToast();
-  const swrKey = `/api/settings/ai-prompts?firmId=${firmId}`;
+  const swrKey = module
+    ? `/api/settings/ai-prompts?firmId=${firmId}&module=${module}`
+    : `/api/settings/ai-prompts?firmId=${firmId}`;
   const { data: templates, isLoading } = useSWR<PromptTemplate[]>(swrKey, fetcher);
 
   const [expandedType, setExpandedType] = useState<string | null>(null);
