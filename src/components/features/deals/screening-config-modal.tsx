@@ -77,55 +77,13 @@ export function ScreeningConfigModal({
       .finally(() => setFetching(false));
   }, [open, dealId]);
 
-  // If no templates from API, provide reasonable defaults
+  // Minimal fallback — should not happen with proper seed data in DB
   useEffect(() => {
     if (open && !fetching && categories.length === 0) {
       setCategories([
-        {
-          name: "Financial",
-          description: "Revenue, margins, cash flow analysis",
-          defaultInstructions:
-            "Analyze financial statements, revenue growth, and cash flow dynamics.",
-          enabled: true,
-          instructions:
-            "Analyze financial statements, revenue growth, and cash flow dynamics.",
-        },
-        {
-          name: "Operational",
-          description: "Business operations and technology",
-          defaultInstructions:
-            "Evaluate operational efficiency, technology stack, and key processes.",
-          enabled: true,
-          instructions:
-            "Evaluate operational efficiency, technology stack, and key processes.",
-        },
-        {
-          name: "Legal",
-          description: "Legal structure and compliance",
-          defaultInstructions:
-            "Review corporate structure, contracts, IP, and regulatory compliance.",
-          enabled: true,
-          instructions:
-            "Review corporate structure, contracts, IP, and regulatory compliance.",
-        },
-        {
-          name: "ESG",
-          description: "Environmental, social, and governance",
-          defaultInstructions:
-            "Assess ESG risks, environmental compliance, and governance structure.",
-          enabled: true,
-          instructions:
-            "Assess ESG risks, environmental compliance, and governance structure.",
-        },
-        {
-          name: "Market",
-          description: "Market positioning and competition",
-          defaultInstructions:
-            "Analyze competitive landscape, market size, and growth potential.",
-          enabled: true,
-          instructions:
-            "Analyze competitive landscape, market size, and growth potential.",
-        },
+        { name: "Financial DD", description: "Financial analysis", defaultInstructions: "Analyze financial statements and key metrics.", enabled: true, instructions: "Analyze financial statements and key metrics." },
+        { name: "Legal DD", description: "Legal review", defaultInstructions: "Review legal structure and compliance.", enabled: true, instructions: "Review legal structure and compliance." },
+        { name: "Operational DD", description: "Operations review", defaultInstructions: "Evaluate operations and technology.", enabled: true, instructions: "Evaluate operations and technology." },
       ]);
     }
   }, [open, fetching, categories.length]);

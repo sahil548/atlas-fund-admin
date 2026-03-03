@@ -309,7 +309,7 @@ export function CommandBar() {
   return (
     <div ref={containerRef} className="relative">
       {/* Always-visible inline search input */}
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200/70 transition-colors w-72">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200/70 transition-colors w-full">
         <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
         <input
           ref={inputRef}
@@ -338,7 +338,7 @@ export function CommandBar() {
 
       {/* Dropdown results panel */}
       {showDropdown && (
-        <div className="absolute top-full right-0 mt-1.5 w-[520px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-1.5 w-[520px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
           {/* Dynamic command actions (pill row) */}
           {dynamicActions.length > 0 && conversation.length === 0 && (
             <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100">

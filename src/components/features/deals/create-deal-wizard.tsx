@@ -29,11 +29,6 @@ const CAPITAL_INSTRUMENT_OPTIONS = [
   { value: "DEBT", label: "Debt" },
   { value: "EQUITY", label: "Equity" },
 ];
-const PARTICIPATION_OPTIONS = [
-  { value: "DIRECT_GP", label: "Direct / GP" },
-  { value: "CO_INVEST_JV_PARTNERSHIP", label: "Co-Invest / JV / Partnership" },
-  { value: "LP_STAKE_SILENT_PARTNER", label: "LP Stake / Silent Partner" },
-];
 
 const DOC_CATEGORIES = [
   "Term Sheet",
@@ -66,50 +61,40 @@ export function CreateDealWizard({ open, onClose }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcher);
+  const { data: entities } = useSWR(`/api/entities?firmId=${firmId}`, fetcher);
 
-  // Step 1: Basics
-  const [basics, setBasics] = useState({
+  // Step 1: Deal Identity
+  const [identity, setIdentity] = useState({
     name: "",
     assetClass: "REAL_ESTATE",
     capitalInstrument: "",
-    participationStructure: "",
-    sector: "",
-    targetSize: "",
     targetCheckSize: "",
-    targetReturn: "",
     dealLeadId: "",
     gpName: "",
     counterparty: "",
     source: "",
+    entityId: "",
   });
 
-  // Step 2: Documents (real file upload)
+  // Step 2: Materials & Context
   const [docs, setDocs] = useState<DocEntry[]>([]);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingCategory, setPendingCategory] = useState("CIM");
-
-  // Step 3: Context
-  const [context, setContext] = useState({
-    description: "",
-    thesisNotes: "",
-    investmentRationale: "",
-    additionalContext: "",
-  });
+  const [additionalContext, setAdditionalContext] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function resetForm() {
     setStep(1);
-    setBasics({
+    setIdentity({
       name: "", assetClass: "REAL_ESTATE", capitalInstrument: "",
-      participationStructure: "", sector: "", targetSize: "",
-      targetCheckSize: "", targetReturn: "", dealLeadId: "",
-      gpName: "", counterparty: "", source: "",
+      targetCheckSize: "", dealLeadId: "", gpName: "",
+      counterparty: "", source: "", entityId: "",
     });
     setDocs([]);
     setPendingFile(null);
     setPendingCategory("CIM");
-    setContext({ description: "", thesisNotes: "", investmentRationale: "", additionalContext: "" });
+    setAdditionalContext("");
     setErrors({});
   }
 
@@ -120,8 +105,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
   function validateStep1(): boolean {
     const errs: Record<string, string> = {};
-    if (!basics.name.trim()) errs.name = "Deal name is required";
-    if (!basics.assetClass) errs.assetClass = "Asset class is required";
+    if (!identity.name.trim()) errs.name = "Deal name is required";
+    if (!identity.assetClass) errs.assetClass = "Asset class is required";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -140,37 +125,53 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setDocs((prev) => prev.filter((_, i) => i !== index));
   }
 
+  /** Shared: create deal + upload docs → returns deal ID */
+  async function createDealAndUploadDocs(): Promise<string> {
+    const dealRes = await fetch("/api/deals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...identity,
+        additionalContext: additionalContext || undefined,
+      }),
+    });
+    if (!dealRes.ok) throw new Error("Failed to create deal");
+    const deal = await dealRes.json();
+
+    for (const doc of docs) {
+      const formData = new FormData();
+      formData.append("name", doc.name);
+      formData.append("category", mapDocCategory(doc.category));
+      if (doc.file) formData.append("file", doc.file);
+      await fetch(`/api/deals/${deal.id}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+    }
+
+    return deal.id;
+  }
+
+  async function handleCreateDeal() {
+    setIsLoading(true);
+    try {
+      const dealId = await createDealAndUploadDocs();
+      toast.success("Deal created");
+      handleClose();
+      router.push(`/deals/${dealId}`);
+    } catch {
+      toast.error("Failed to create deal");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   async function handleCreateAndScreen() {
     setIsLoading(true);
     try {
-      // 1. Create the deal
-      const dealRes = await fetch("/api/deals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...basics,
-          ...context,
-        }),
-      });
-      if (!dealRes.ok) throw new Error("Failed to create deal");
-      const deal = await dealRes.json();
+      const dealId = await createDealAndUploadDocs();
 
-      // 2. Upload documents (real files via FormData)
-      for (const doc of docs) {
-        const formData = new FormData();
-        formData.append("name", doc.name);
-        formData.append("category", mapDocCategory(doc.category));
-        if (doc.file) {
-          formData.append("file", doc.file);
-        }
-        await fetch(`/api/deals/${deal.id}/documents`, {
-          method: "POST",
-          body: formData,
-        });
-      }
-
-      // 3. Trigger AI screening
-      const screenRes = await fetch(`/api/deals/${deal.id}/screen`, {
+      const screenRes = await fetch(`/api/deals/${dealId}/screen`, {
         method: "POST",
       });
       if (!screenRes.ok) {
@@ -180,7 +181,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
       }
 
       handleClose();
-      router.push(`/deals/${deal.id}`);
+      router.push(`/deals/${dealId}`);
     } catch {
       toast.error("Failed to create deal");
     } finally {
@@ -188,7 +189,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
     }
   }
 
-  const stepTitles = ["Deal Basics", "Upload Documents", "Context & Screen"];
+  const stepTitles = ["Deal Identity", "Materials & Context"];
 
   return (
     <Modal
@@ -202,30 +203,35 @@ export function CreateDealWizard({ open, onClose }: Props) {
             Cancel
           </Button>
           {step > 1 && (
-            <Button variant="secondary" onClick={() => setStep(step - 1)}>
+            <Button variant="secondary" onClick={() => setStep(1)}>
               Back
             </Button>
           )}
-          {step < 3 ? (
+          {step < 2 ? (
             <Button
               onClick={() => {
-                if (step === 1 && !validateStep1()) return;
-                setStep(step + 1);
+                if (!validateStep1()) return;
+                setStep(2);
               }}
             >
               Next
             </Button>
           ) : (
-            <Button loading={isLoading} onClick={handleCreateAndScreen}>
-              Create & Screen
-            </Button>
+            <>
+              <Button variant="secondary" loading={isLoading} onClick={handleCreateDeal}>
+                Create Deal
+              </Button>
+              <Button loading={isLoading} onClick={handleCreateAndScreen}>
+                Create & Screen
+              </Button>
+            </>
           )}
         </>
       }
     >
       {/* Step Indicator */}
       <div className="flex items-center gap-2 mb-5">
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <div key={s} className="flex items-center gap-2 flex-1">
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
@@ -238,7 +244,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
             >
               {s < step ? "\u2713" : s}
             </div>
-            {s < 3 && (
+            {s < 2 && (
               <div
                 className={`flex-1 h-0.5 ${
                   s < step ? "bg-emerald-500" : "bg-gray-200"
@@ -249,68 +255,37 @@ export function CreateDealWizard({ open, onClose }: Props) {
         ))}
       </div>
 
-      {/* Step 1: Basics */}
+      {/* Step 1: Deal Identity */}
       {step === 1 && (
         <div className="space-y-3">
           <FormField label="Deal Name" required error={errors.name}>
             <Input
-              value={basics.name}
+              value={identity.name}
               onChange={(e) =>
-                setBasics((p) => ({ ...p, name: e.target.value }))
+                setIdentity((p) => ({ ...p, name: e.target.value }))
               }
               error={!!errors.name}
               placeholder="e.g. Apex Manufacturing Acquisition"
             />
           </FormField>
 
-          <FormField label="Asset Class" required error={errors.assetClass}>
-            <Select
-              value={basics.assetClass}
-              onChange={(e) =>
-                setBasics((p) => ({ ...p, assetClass: e.target.value }))
-              }
-              options={ASSET_CLASS_OPTIONS}
-            />
-          </FormField>
-
           <div className="grid grid-cols-2 gap-3">
+            <FormField label="Asset Class" required error={errors.assetClass}>
+              <Select
+                value={identity.assetClass}
+                onChange={(e) =>
+                  setIdentity((p) => ({ ...p, assetClass: e.target.value }))
+                }
+                options={ASSET_CLASS_OPTIONS}
+              />
+            </FormField>
             <FormField label="Capital Instrument">
               <Select
-                value={basics.capitalInstrument}
+                value={identity.capitalInstrument}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, capitalInstrument: e.target.value }))
+                  setIdentity((p) => ({ ...p, capitalInstrument: e.target.value }))
                 }
                 options={[{ value: "", label: "\u2014 Select \u2014" }, ...CAPITAL_INSTRUMENT_OPTIONS]}
-              />
-            </FormField>
-            <FormField label="Participation Structure">
-              <Select
-                value={basics.participationStructure}
-                onChange={(e) =>
-                  setBasics((p) => ({ ...p, participationStructure: e.target.value }))
-                }
-                options={[{ value: "", label: "\u2014 Select \u2014" }, ...PARTICIPATION_OPTIONS]}
-              />
-            </FormField>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <FormField label="Sector">
-              <Input
-                value={basics.sector}
-                onChange={(e) =>
-                  setBasics((p) => ({ ...p, sector: e.target.value }))
-                }
-                placeholder="e.g. Healthcare"
-              />
-            </FormField>
-            <FormField label="Total Raise">
-              <Input
-                value={basics.targetSize}
-                onChange={(e) =>
-                  setBasics((p) => ({ ...p, targetSize: e.target.value }))
-                }
-                placeholder="e.g. $25-50M"
               />
             </FormField>
           </div>
@@ -318,30 +293,18 @@ export function CreateDealWizard({ open, onClose }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Target Check Size">
               <Input
-                value={basics.targetCheckSize}
+                value={identity.targetCheckSize}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, targetCheckSize: e.target.value }))
+                  setIdentity((p) => ({ ...p, targetCheckSize: e.target.value }))
                 }
                 placeholder="e.g. $5-10M"
               />
             </FormField>
-            <FormField label="Target Return">
-              <Input
-                value={basics.targetReturn}
-                onChange={(e) =>
-                  setBasics((p) => ({ ...p, targetReturn: e.target.value }))
-                }
-                placeholder="e.g. 2.5-3x MOIC"
-              />
-            </FormField>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <FormField label="Deal Lead">
               <Select
-                value={basics.dealLeadId}
+                value={identity.dealLeadId}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, dealLeadId: e.target.value }))
+                  setIdentity((p) => ({ ...p, dealLeadId: e.target.value }))
                 }
                 options={[
                   { value: "", label: "\u2014 Select \u2014" },
@@ -349,27 +312,27 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <FormField label="GP / Sponsor">
               <Select
-                value={basics.gpName}
+                value={identity.gpName}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, gpName: e.target.value }))
+                  setIdentity((p) => ({ ...p, gpName: e.target.value }))
                 }
                 options={[
                   { value: "", label: "\u2014 Select \u2014" },
                   ...(companies || []).filter((c: any) => c.type === "GP").map((c: any) => ({ value: c.name, label: c.name })),
-                  ...(companies || []).filter((c: any) => c.type !== "GP").map((c: any) => ({ value: c.name, label: `${c.name}` })),
+                  ...(companies || []).filter((c: any) => c.type !== "GP").map((c: any) => ({ value: c.name, label: c.name })),
                 ]}
               />
             </FormField>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <FormField label="Counterparty">
               <Select
-                value={basics.counterparty}
+                value={identity.counterparty}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, counterparty: e.target.value }))
+                  setIdentity((p) => ({ ...p, counterparty: e.target.value }))
                 }
                 options={[
                   { value: "", label: "\u2014 Select \u2014" },
@@ -378,11 +341,14 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <FormField label="Source">
               <Select
-                value={basics.source}
+                value={identity.source}
                 onChange={(e) =>
-                  setBasics((p) => ({ ...p, source: e.target.value }))
+                  setIdentity((p) => ({ ...p, source: e.target.value }))
                 }
                 options={[
                   { value: "", label: "\u2014 Select \u2014" },
@@ -396,19 +362,30 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
+            <FormField label="Entity Link">
+              <Select
+                value={identity.entityId}
+                onChange={(e) =>
+                  setIdentity((p) => ({ ...p, entityId: e.target.value }))
+                }
+                options={[
+                  { value: "", label: "\u2014 None \u2014" },
+                  ...(entities || []).map((e: any) => ({ value: e.id, label: e.name })),
+                ]}
+              />
+            </FormField>
           </div>
         </div>
       )}
 
-      {/* Step 2: Documents — real file upload */}
+      {/* Step 2: Materials & Context */}
       {step === 2 && (
         <div className="space-y-4">
-          <p className="text-xs text-gray-500">
-            Upload documents for AI screening. Drag & drop or browse to select files.
-          </p>
-
-          {/* File upload + category */}
+          {/* File upload */}
           <div className="space-y-3">
+            <p className="text-xs text-gray-500">
+              Upload documents for AI screening. Drag & drop or browse to select files.
+            </p>
             <FormField label="Select File">
               <FileUpload
                 onFileSelect={setPendingFile}
@@ -433,7 +410,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
           {/* Queued docs */}
           {docs.length === 0 ? (
-            <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+            <div className="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
               No documents queued. You can add them now or later from the deal page.
             </div>
           ) : (
@@ -465,64 +442,26 @@ export function CreateDealWizard({ open, onClose }: Props) {
               ))}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Step 3: Context & Screen */}
-      {step === 3 && (
-        <div className="space-y-4">
-          <FormField label="Description">
-            <Textarea
-              value={context.description}
-              onChange={(e) =>
-                setContext((p) => ({ ...p, description: e.target.value }))
-              }
-              placeholder="Brief overview of the deal opportunity..."
-              rows={3}
-            />
-          </FormField>
-
-          <FormField label="Investment Rationale">
-            <Textarea
-              value={context.investmentRationale}
-              onChange={(e) =>
-                setContext((p) => ({ ...p, investmentRationale: e.target.value }))
-              }
-              placeholder="Why are we looking at this deal? What's the strategic fit?"
-              rows={3}
-            />
-          </FormField>
-
-          <FormField label="Thesis Notes">
-            <Textarea
-              value={context.thesisNotes}
-              onChange={(e) =>
-                setContext((p) => ({ ...p, thesisNotes: e.target.value }))
-              }
-              placeholder="Investment thesis, key value drivers, strategic rationale..."
-              rows={3}
-            />
-          </FormField>
-
+          {/* Additional Context */}
           <FormField label="Additional Context">
             <Textarea
-              value={context.additionalContext}
-              onChange={(e) =>
-                setContext((p) => ({ ...p, additionalContext: e.target.value }))
-              }
-              placeholder="Anything else the AI should know when screening this deal..."
-              rows={2}
+              value={additionalContext}
+              onChange={(e) => setAdditionalContext(e.target.value)}
+              placeholder="Provide any context about this deal: description, thesis, rationale, background, etc. The AI will use this along with uploaded documents for screening."
+              rows={5}
             />
           </FormField>
 
+          {/* AI Screening info */}
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
             <div className="text-sm font-medium text-purple-800">
               AI Screening
             </div>
             <p className="text-xs text-purple-600 mt-1">
-              Clicking &quot;Create & Screen&quot; will create the deal, upload
-              documents, and trigger AI screening. The deal will automatically
-              advance to Due Diligence once screening completes.
+              &quot;Create & Screen&quot; will create the deal, upload documents, and trigger AI screening.
+              The deal will automatically advance to Due Diligence once screening completes.
+              Or use &quot;Create Deal&quot; to skip screening and add more context later.
             </p>
           </div>
 
@@ -534,50 +473,32 @@ export function CreateDealWizard({ open, onClose }: Props) {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
               <div>
                 <span className="text-gray-500">Name:</span>{" "}
-                <span className="font-medium">{basics.name}</span>
+                <span className="font-medium">{identity.name}</span>
               </div>
               <div>
                 <span className="text-gray-500">Asset Class:</span>{" "}
                 <span className="font-medium">
-                  {ASSET_CLASS_OPTIONS.find((c) => c.value === basics.assetClass)?.label}
+                  {ASSET_CLASS_OPTIONS.find((c) => c.value === identity.assetClass)?.label}
                 </span>
               </div>
-              {basics.capitalInstrument && (
+              {identity.capitalInstrument && (
                 <div>
                   <span className="text-gray-500">Instrument:</span>{" "}
                   <span className="font-medium">
-                    {CAPITAL_INSTRUMENT_OPTIONS.find((c) => c.value === basics.capitalInstrument)?.label}
+                    {CAPITAL_INSTRUMENT_OPTIONS.find((c) => c.value === identity.capitalInstrument)?.label}
                   </span>
                 </div>
               )}
-              {basics.sector && (
-                <div>
-                  <span className="text-gray-500">Sector:</span>{" "}
-                  <span className="font-medium">{basics.sector}</span>
-                </div>
-              )}
-              {basics.targetSize && (
-                <div>
-                  <span className="text-gray-500">Target Size:</span>{" "}
-                  <span className="font-medium">{basics.targetSize}</span>
-                </div>
-              )}
-              {basics.targetCheckSize && (
+              {identity.targetCheckSize && (
                 <div>
                   <span className="text-gray-500">Check Size:</span>{" "}
-                  <span className="font-medium">{basics.targetCheckSize}</span>
+                  <span className="font-medium">{identity.targetCheckSize}</span>
                 </div>
               )}
-              {basics.targetReturn && (
-                <div>
-                  <span className="text-gray-500">Target Return:</span>{" "}
-                  <span className="font-medium">{basics.targetReturn}</span>
-                </div>
-              )}
-              {basics.gpName && (
+              {identity.gpName && (
                 <div>
                   <span className="text-gray-500">GP:</span>{" "}
-                  <span className="font-medium">{basics.gpName}</span>
+                  <span className="font-medium">{identity.gpName}</span>
                 </div>
               )}
               <div>

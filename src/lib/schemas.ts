@@ -43,6 +43,7 @@ export const CreateDealSchema = z.object({
   gpName: optionalStr,
   source: optionalStr,
   counterparty: optionalStr,
+  entityId: optionalStr,
   description: optionalStr,
   thesisNotes: optionalStr,
   investmentRationale: optionalStr,

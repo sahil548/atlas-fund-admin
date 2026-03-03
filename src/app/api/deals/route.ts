@@ -48,6 +48,7 @@ export async function POST(req: Request) {
   // Sanitize optional FK fields: convert empty strings to null/undefined
   const cleaned = { ...data! };
   if (!cleaned.dealLeadId) cleaned.dealLeadId = undefined;
+  if (!cleaned.entityId) cleaned.entityId = undefined;
 
   const deal = await prisma.deal.create({ data: { ...cleaned, firmId: "firm-1" } });
   return NextResponse.json(deal, { status: 201 });

@@ -66,12 +66,17 @@ export async function getAIConfig(firmId: string): Promise<AIConfig> {
   });
 
   if (row) {
+    const dbApiKey = row.apiKey
+      ? decryptApiKey(row.apiKey, row.apiKeyIV || "", row.apiKeyTag || "")
+      : null;
+    // If DB has no key, fall back to env vars
+    const resolvedApiKey =
+      dbApiKey || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY || null;
+
     return {
       provider: row.provider,
       model: row.model,
-      apiKey: row.apiKey
-        ? decryptApiKey(row.apiKey, row.apiKeyIV || "", row.apiKeyTag || "")
-        : null,
+      apiKey: resolvedApiKey,
       baseUrl: row.baseUrl,
       systemPrompt: row.systemPrompt,
       thresholdScore: row.thresholdScore,
@@ -80,12 +85,22 @@ export async function getAIConfig(firmId: string): Promise<AIConfig> {
     };
   }
 
-  // Fallback to env vars
+  // Fallback to env vars — check both OpenAI and Anthropic keys
+  const openaiKey = process.env.OPENAI_API_KEY || null;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY || null;
+  const resolvedKey = openaiKey || anthropicKey || null;
+  const resolvedProvider =
+    process.env.AI_PROVIDER || (anthropicKey && !openaiKey ? "anthropic" : "openai");
+  const resolvedModel =
+    process.env.AI_MODEL || (resolvedProvider === "anthropic" ? "claude-sonnet-4-20250514" : "gpt-4o");
+  const resolvedBaseUrl =
+    process.env.OPENAI_BASE_URL || (resolvedProvider === "anthropic" ? "https://api.anthropic.com/v1/" : null);
+
   return {
-    provider: process.env.AI_PROVIDER || "openai",
-    model: process.env.AI_MODEL || "gpt-4o",
-    apiKey: process.env.OPENAI_API_KEY || null,
-    baseUrl: process.env.OPENAI_BASE_URL || null,
+    provider: resolvedProvider,
+    model: resolvedModel,
+    apiKey: resolvedKey,
+    baseUrl: resolvedBaseUrl,
     systemPrompt: null,
     thresholdScore: 70,
     maxDocuments: 10,

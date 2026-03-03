@@ -1195,6 +1195,7 @@ model DDCategoryTemplate {
   description         String?
   defaultInstructions String?
   isDefault           Boolean  @default(true)
+  scope               String   @default("UNIVERSAL")
   sortOrder           Int      @default(0)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

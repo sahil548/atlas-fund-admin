@@ -97,7 +97,15 @@ function buildAnalysisPrompt(
   dealCtx: DealContext,
   type: string,
   templateContent: string,
-  screeningData?: { score: number; recommendation: string; strengths: string[]; risks: string[] } | null,
+  screeningData?: {
+    score: number;
+    recommendation: string;
+    strengths: string[];
+    risks: string[];
+    ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
+  } | null,
+  priorFindings?: { title: string; description: string; priority: string }[] | null,
+  categoryInstructions?: string | null,
 ): string {
   const dealContextBlock = buildDealContextBlock(dealCtx);
 
@@ -115,12 +123,39 @@ PRIOR AI SCREENING RESULTS:
 - Strengths: ${screeningData.strengths.join("; ")}
 - Risks: ${screeningData.risks.join("; ")}
 `;
+    // Include detailed findings per category for IC Memo
+    if (screeningData.ddFindings) {
+      screeningBlock += `\nDETAILED SCREENING FINDINGS BY CATEGORY:\n`;
+      for (const [category, findings] of Object.entries(screeningData.ddFindings)) {
+        screeningBlock += `\n${category}:\n`;
+        for (const f of findings) {
+          screeningBlock += `  - [${f.priority}] ${f.title}: ${f.description}\n`;
+        }
+      }
+      screeningBlock += `\nReference these specific findings in the memo sections. The IC memo should synthesize and contextualize the screening findings, not repeat them verbatim.\n`;
+    }
+  }
+
+  // Prior screening findings for per-workstream DD analysis (not IC Memo)
+  let priorFindingsBlock = "";
+  if (priorFindings && priorFindings.length > 0 && !isICMemo) {
+    priorFindingsBlock = `\nPRIOR SCREENING FINDINGS FOR THIS CATEGORY:\n`;
+    for (const f of priorFindings) {
+      priorFindingsBlock += `- [${f.priority}] ${f.title}: ${f.description}\n`;
+    }
+    priorFindingsBlock += `\nBuild on these findings — go deeper, validate, and add new findings the screening may have missed.\n`;
+  }
+
+  // Category-specific instructions from the user / workstream config
+  let categoryBlock = "";
+  if (categoryInstructions && !isICMemo) {
+    categoryBlock = `\nCATEGORY-SPECIFIC INSTRUCTIONS:\n${categoryInstructions}\n`;
   }
 
   return `${templateContent}
 
 ${dealContextBlock}
-${screeningBlock}
+${screeningBlock}${priorFindingsBlock}${categoryBlock}
 You MUST respond in valid JSON with exactly this shape:
 {
   "summary": "<2-3 sentence executive overview of this analysis>",
@@ -156,7 +191,15 @@ export async function runDDAnalysis(
   firmId: string,
   dealCtx: DealContext,
   type: string,
-  screeningData?: { score: number; recommendation: string; strengths: string[]; risks: string[] } | null,
+  screeningData?: {
+    score: number;
+    recommendation: string;
+    strengths: string[];
+    risks: string[];
+    ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
+  } | null,
+  priorFindings?: { title: string; description: string; priority: string }[] | null,
+  categoryInstructions?: string | null,
 ): Promise<DDAnalysisResult | null> {
   const client = await createAIClient(firmId);
   if (!client) return null;
@@ -165,7 +208,7 @@ export async function runDDAnalysis(
   const templateContent = await getPromptTemplate(firmId, type);
   if (!templateContent) return null;
 
-  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData);
+  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData, priorFindings, categoryInstructions);
 
   try {
     const response = await client.chat.completions.create({

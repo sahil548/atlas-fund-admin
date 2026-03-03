@@ -26,7 +26,7 @@ import {
   CAPITAL_INSTRUMENT_LABELS,
 } from "@/lib/constants";
 
-const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"];
+const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"];
 const stageLabel: Record<string, string> = {
   SCREENING: "Screening",
   DUE_DILIGENCE: "Due Diligence",
@@ -107,7 +107,9 @@ export default function DealDetailPage({
   if (isLoading || !deal)
     return <div className="text-sm text-gray-400">Loading...</div>;
 
-  const currentIdx = stageOrder.indexOf(deal.stage);
+  const currentIdx = deal.stage === "CLOSED"
+    ? stageOrder.length // all segments show as completed
+    : stageOrder.indexOf(deal.stage);
   const isDead = deal.stage === "DEAD";
   const isClosed = deal.stage === "CLOSED";
   const visibleTabs = isDead
@@ -253,19 +255,6 @@ export default function DealDetailPage({
                 {CAPITAL_INSTRUMENT_LABELS[deal.capitalInstrument]}
               </Badge>
             )}
-            <Badge
-              color={
-                isDead
-                  ? "red"
-                  : deal.stage === "CLOSED"
-                  ? "emerald"
-                  : deal.stage === "CLOSING"
-                  ? "green"
-                  : "yellow"
-              }
-            >
-              {stageLabel[deal.stage] || deal.stage}
-            </Badge>
           </div>
           <div className="text-xs text-gray-500 mt-1">
             {deal.sector} · Target: {deal.targetSize} · Lead:{" "}

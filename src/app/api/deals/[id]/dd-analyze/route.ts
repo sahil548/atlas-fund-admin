@@ -135,7 +135,7 @@ export async function POST(
         take: 10,
         select: { content: true, author: { select: { name: true } } },
       },
-      workstreams: { select: { id: true, analysisType: true } },
+      workstreams: { select: { id: true, analysisType: true, name: true, customInstructions: true, aiGenerated: true } },
     },
   });
 
@@ -198,12 +198,46 @@ export async function POST(
       }
     : null;
 
+  // ── Extract prior screening findings for this analysis type ──
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const TYPE_TO_CATEGORY: Record<string, string> = {
+    DD_FINANCIAL: "Financial DD",
+    DD_LEGAL: "Legal DD",
+    DD_MARKET: "Market DD",
+    DD_TAX: "Tax DD",
+    DD_OPERATIONAL: "Operational DD",
+    DD_ESG: "ESG DD",
+  };
+
+  const categoryName = TYPE_TO_CATEGORY[type];
+  const ddFindingsRaw = deal.screeningResult?.ddFindings;
+  let priorFindings: { title: string; description: string; priority: string }[] | null = null;
+
+  if (categoryName && ddFindingsRaw && typeof ddFindingsRaw === "object") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const raw = (ddFindingsRaw as Record<string, unknown>)[categoryName];
+    if (Array.isArray(raw)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      priorFindings = raw.map((f: any) => ({
+        title: String(f.title || ""),
+        description: String(f.description || ""),
+        priority: String(f.priority || "MEDIUM"),
+      }));
+    }
+  }
+
+  // Get customInstructions from the screening workstream for this category (if any)
+  const matchingScreeningWs = deal.workstreams.find(
+    (ws) => ws.name === categoryName && ws.aiGenerated && !ws.analysisType,
+  );
+  const categoryInstructions = matchingScreeningWs?.customInstructions || null;
+
   // Call LLM or fallback to mock
   const firmId = deal.firmId || "firm-1";
   let result: DDAnalysisResult;
   let aiPowered = false;
 
-  const aiResult = await runDDAnalysis(firmId, dealCtx, type, screeningData);
+  const aiResult = await runDDAnalysis(firmId, dealCtx, type, screeningData, priorFindings, categoryInstructions);
   if (aiResult) {
     result = aiResult;
     aiPowered = true;
