@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
+import { extractTextFromFile } from "@/lib/document-extraction";
 
 export async function GET(
   _req: Request,
@@ -26,17 +27,30 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   let fileSize: number | null = null;
   let mimeType: string | null = null;
 
+  let diskFileName: string | null = null;
+
   if (file && file.size > 0) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     const uploadDir = path.join(process.cwd(), "data", "uploads");
     await mkdir(uploadDir, { recursive: true });
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-    const filePath = path.join(uploadDir, fileName);
+    diskFileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+    const filePath = path.join(uploadDir, diskFileName);
     await writeFile(filePath, buffer);
-    fileUrl = `/api/documents/download/${fileName}`;
+    fileUrl = `/api/documents/download/${diskFileName}`;
     fileSize = buffer.length;
     mimeType = file.type || "application/octet-stream";
+  }
+
+  // Extract text content (non-blocking — store even if extraction fails)
+  let extractedText: string | null = null;
+  if (diskFileName && mimeType) {
+    try {
+      const text = await extractTextFromFile(diskFileName, mimeType);
+      if (text.length > 0) extractedText = text;
+    } catch (err) {
+      console.error("[documents] Text extraction failed:", err);
+    }
   }
 
   const document = await prisma.document.create({
@@ -47,6 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       fileUrl,
       fileSize,
       mimeType,
+      extractedText,
     },
   });
   return NextResponse.json(document, { status: 201 });

@@ -43,8 +43,12 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   >({});
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [showAddWorkstream, setShowAddWorkstream] = useState(false);
+  const [analyzingWs, setAnalyzingWs] = useState<string | null>(null);
+  const [analyzingAll, setAnalyzingAll] = useState(false);
 
-  const workstreams = (deal.workstreams || []) as any[];
+  const allWorkstreams = (deal.workstreams || []) as any[];
+  // IC_MEMO is not a workstream — it's an aggregated product stored in AIScreeningResult
+  const workstreams = allWorkstreams.filter((w: any) => w.analysisType !== "IC_MEMO");
   const sortedWorkstreams = [...workstreams].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
   );
@@ -166,6 +170,78 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
+  // ── Analysis triggers ──
+
+  // Map workstream name → dd-analyze type
+  const NAME_TO_TYPE: Record<string, string> = {
+    "Financial DD": "DD_FINANCIAL",
+    "Legal DD": "DD_LEGAL",
+    "Market DD": "DD_MARKET",
+    "Tax DD": "DD_TAX",
+    "Operational DD": "DD_OPERATIONAL",
+    "ESG DD": "DD_ESG",
+    "Collateral DD": "DD_COLLATERAL",
+    "Tenant & Lease DD": "DD_TENANT_LEASE",
+    "Customer DD": "DD_CUSTOMER",
+    "Technology DD": "DD_TECHNOLOGY",
+    "Regulatory & Permitting DD": "DD_REGULATORY",
+    "Engineering DD": "DD_ENGINEERING",
+    "Credit DD": "DD_CREDIT",
+    "Commercial DD": "DD_COMMERCIAL",
+    "Management DD": "DD_MANAGEMENT",
+  };
+
+  async function runWorkstreamAnalysis(ws: any) {
+    const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
+    setAnalyzingWs(ws.id);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          categoryName: ws.name,
+          rerun: !!ws.analysisResult,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Analysis failed");
+      }
+      toast.success(`${ws.name} analysis complete`);
+      mutate(`/api/deals/${deal.id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Analysis failed");
+    } finally {
+      setAnalyzingWs(null);
+    }
+  }
+
+  async function runAllAnalysis() {
+    setAnalyzingAll(true);
+    let completed = 0;
+    for (const ws of sortedWorkstreams) {
+      const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
+      try {
+        await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type,
+            categoryName: ws.name,
+            rerun: !!ws.analysisResult,
+          }),
+        });
+        completed++;
+      } catch {
+        // continue with next
+      }
+    }
+    toast.success(`Analysis complete for ${completed}/${sortedWorkstreams.length} workstreams`);
+    mutate(`/api/deals/${deal.id}`);
+    setAnalyzingAll(false);
+  }
+
   async function markCategoryComplete(workstreamId: string) {
     try {
       await fetch(`/api/deals/${deal.id}/workstreams`, {
@@ -206,8 +282,18 @@ export function DealDDTab({ deal }: DealDDTabProps) {
               {overallPct}%
             </span>
           </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {completedTasks} of {totalTasks} tasks complete
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-xs text-gray-500">
+              {completedTasks} of {totalTasks} tasks complete
+            </span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={runAllAnalysis}
+              disabled={analyzingAll || analyzingWs !== null}
+            >
+              {analyzingAll ? "Analyzing..." : "Run All Analysis"}
+            </Button>
           </div>
         </div>
       )}
@@ -222,7 +308,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           </div>
           <div className="text-sm font-semibold text-gray-700">Due Diligence Workstreams</div>
           <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
-            Workstreams and tasks will be auto-generated when you run AI Screening from the Overview tab. You can also manually add workstreams below.
+            Workstreams will be created when you start Due Diligence from the Overview tab. You can also manually add workstreams below.
           </p>
           <div className="mt-4">
             <Button variant="secondary" size="sm" onClick={() => setShowAddWorkstream(true)}>
@@ -291,9 +377,12 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                 className="border border-gray-200 rounded-lg overflow-hidden"
               >
                 {/* Header row */}
-                <button
-                  className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                   onClick={() => toggleWorkstream(ws.id)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggleWorkstream(ws.id); }}
                 >
                   <span
                     className={`text-xs transition-transform ${
@@ -315,9 +404,22 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                     {ws.name}
                   </span>
                   <div className="flex items-center gap-2">
-                    {ws.aiGenerated && (
+                    {ws.analysisResult ? (
+                      ws.analysisResult.aiPowered ? (
+                        <Badge color="indigo">AI Analyzed</Badge>
+                      ) : (
+                        <Badge color="gray">Sample Data</Badge>
+                      )
+                    ) : ws.aiGenerated ? (
                       <Badge color="purple">AI</Badge>
-                    )}
+                    ) : null}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); runWorkstreamAnalysis(ws); }}
+                      disabled={analyzingWs === ws.id || analyzingAll}
+                      className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzingWs === ws.id ? "Analyzing..." : ws.analysisResult ? "Re-analyze" : "Run Analysis"}
+                    </button>
                     <Badge
                       color={
                         ws.status === "COMPLETE"
@@ -341,7 +443,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                       {ws.completedTasks}/{ws.totalTasks}
                     </span>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded section */}
                 {isExpanded && (
@@ -359,9 +461,14 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
                     {/* Analysis Result Panel */}
                     {ws.analysisResult && (
-                      <div className="mb-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100 p-3">
+                      <div className={`mb-3 rounded-lg border p-3 ${ws.analysisResult.aiPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100"}`}>
                         <div className="flex items-center justify-between mb-2">
-                          <div className="text-xs font-semibold text-indigo-900">Analysis Summary</div>
+                          <div className="flex items-center gap-2">
+                            <div className={`text-xs font-semibold ${ws.analysisResult.aiPowered ? "text-indigo-900" : "text-gray-700"}`}>Analysis Summary</div>
+                            {!ws.analysisResult.aiPowered && (
+                              <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Sample — configure AI for full analysis</span>
+                            )}
+                          </div>
                           {ws.analysisResult.recommendation && (
                             <Badge
                               color={

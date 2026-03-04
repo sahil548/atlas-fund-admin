@@ -1,5 +1,5 @@
 import { createAIClient, getModelForFirm, getPromptTemplate, getCategoryInstructions } from "@/lib/ai-config";
-import type { DealContext } from "@/lib/screening-service";
+import type { DealContext } from "@/lib/deal-types";
 
 // ── Types ────────────────────────────────────────────
 
@@ -52,6 +52,46 @@ export const DD_ANALYSIS_META: Record<
     name: "ESG Due Diligence",
     description: "Environmental, social, governance factors and compliance",
   },
+  DD_COLLATERAL: {
+    name: "Collateral Due Diligence",
+    description: "Property appraisals, site condition, title/lien positions, insurance",
+  },
+  DD_TENANT_LEASE: {
+    name: "Tenant & Lease Due Diligence",
+    description: "Tenant credit, lease terms, occupancy, rent comparables",
+  },
+  DD_CUSTOMER: {
+    name: "Customer Due Diligence",
+    description: "Customer concentration, retention, cohort economics",
+  },
+  DD_TECHNOLOGY: {
+    name: "Technology Due Diligence",
+    description: "Tech stack, technical debt, product roadmap, cybersecurity",
+  },
+  DD_REGULATORY: {
+    name: "Regulatory & Permitting Due Diligence",
+    description: "Regulatory approvals, permits, government concessions",
+  },
+  DD_ENGINEERING: {
+    name: "Engineering Due Diligence",
+    description: "Engineering design, construction risk, asset condition",
+  },
+  DD_CREDIT: {
+    name: "Credit Due Diligence",
+    description: "Credit metrics, covenants, collateral coverage, downside modeling",
+  },
+  DD_COMMERCIAL: {
+    name: "Commercial Due Diligence",
+    description: "Commercial assessment, revenue validation, go-to-market analysis",
+  },
+  DD_MANAGEMENT: {
+    name: "Management Due Diligence",
+    description: "Leadership assessment, succession planning, organizational structure",
+  },
+  DD_CUSTOM: {
+    name: "Custom Due Diligence",
+    description: "Custom analysis based on workstream-specific instructions",
+  },
   IC_MEMO: {
     name: "IC Memo",
     description: "Investment Committee memo with recommendation",
@@ -76,6 +116,19 @@ function buildDealContextBlock(dealCtx: DealContext): string {
           .join("\n")
       : "No analyst notes";
 
+  // Include actual document content when available
+  let documentContentSection = "";
+  if (dealCtx.documentContents && dealCtx.documentContents.length > 0) {
+    documentContentSection = "\nDOCUMENT CONTENTS:\n";
+    for (const doc of dealCtx.documentContents) {
+      const content = doc.content.slice(0, 10_000);
+      documentContentSection += `\n--- ${doc.name} ---\n${content}\n`;
+      if (doc.content.length > 10_000) {
+        documentContentSection += `[... truncated, ${doc.content.length.toLocaleString()} total characters ...]\n`;
+      }
+    }
+  }
+
   return `
 DEAL UNDER REVIEW:
 - Name: ${dealCtx.dealName}
@@ -95,7 +148,7 @@ ${dealCtx.additionalContext ? `ADDITIONAL CONTEXT:\n${dealCtx.additionalContext}
 
 ATTACHED DOCUMENTS:
 ${docsList}
-
+${documentContentSection}
 ANALYST NOTES:
 ${notesList}
 `.trim();
@@ -214,10 +267,26 @@ export async function runDDAnalysis(
   } else if (categoryName) {
     templateContent = await getCategoryInstructions(firmId, categoryName);
   } else {
-    // Legacy fallback for old callers
     templateContent = await getPromptTemplate(firmId, type);
   }
-  if (!templateContent) return null;
+
+  // If no custom instructions found, use a sensible default prompt
+  if (!templateContent) {
+    const meta = DD_ANALYSIS_META[type];
+    const analysisName = meta?.name || type.replace(/_/g, " ");
+    const analysisDesc = meta?.description || "comprehensive analysis";
+    templateContent = `You are a senior investment analyst performing ${analysisName} for a private investment firm.
+
+Your task is to conduct a thorough ${analysisDesc}. Analyze all available deal data — documents, notes, financial information, and metadata — and produce a structured assessment.
+
+Focus on:
+- Key risks and their severity
+- Material findings that could affect the investment decision
+- Specific, actionable next steps for the deal team
+- Areas where additional information is needed
+
+Be specific to the deal at hand. Reference actual data points, figures, and facts from the provided materials. Avoid generic boilerplate.`;
+  }
 
   const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData, priorFindings);
 

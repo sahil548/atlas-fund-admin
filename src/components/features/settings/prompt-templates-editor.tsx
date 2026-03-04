@@ -28,7 +28,6 @@ interface PromptTemplate {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  SCREENING: "indigo",
   DD_FINANCIAL: "blue",
   DD_LEGAL: "purple",
   DD_MARKET: "green",

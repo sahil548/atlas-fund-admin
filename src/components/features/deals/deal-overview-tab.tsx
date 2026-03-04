@@ -6,10 +6,10 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InlineEditField } from "./inline-edit-field";
-import { ScreeningConfigModal } from "./screening-config-modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
+import type { AnalysisProgress } from "@/app/(gp)/deals/[id]/page";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -40,23 +40,31 @@ const vehicleStructureLabels: Record<string, string> = {
 };
 
 const REC_COLORS: Record<string, string> = {
-  STRONG_PROCEED: "green",
-  PROCEED: "blue",
-  PROCEED_WITH_CAUTION: "yellow",
-  WATCHLIST: "orange",
-  PASS: "red",
   APPROVE: "green",
   APPROVE_WITH_CONDITIONS: "yellow",
   DECLINE: "red",
+  GO: "green",
+  NO_GO: "red",
+  NEEDS_MORE_INFO: "yellow",
 };
 
 interface DealOverviewTabProps {
   deal: any;
+  analysisProgress: AnalysisProgress | null;
+  ddStarting: boolean;
+  regenerating: boolean;
+  startScreening: () => void;
+  regenerateMemo: () => void;
 }
 
-export function DealOverviewTab({ deal }: DealOverviewTabProps) {
-  const [showScreeningConfig, setShowScreeningConfig] = useState(false);
-  const [showRerunConfig, setShowRerunConfig] = useState(false);
+export function DealOverviewTab({
+  deal,
+  analysisProgress,
+  ddStarting,
+  regenerating,
+  startScreening,
+  regenerateMemo,
+}: DealOverviewTabProps) {
   const [showLinkEntity, setShowLinkEntity] = useState(false);
   const [linkingEntity, setLinkingEntity] = useState(false);
   const [showCreateEntity, setShowCreateEntity] = useState(false);
@@ -67,10 +75,9 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
   });
   const [creatingEntity, setCreatingEntity] = useState(false);
   const [startFormation, setStartFormation] = useState(true);
-  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
-  const [screeningDetailsOpen, setScreeningDetailsOpen] = useState(false);
   const [sourceDataOpen, setSourceDataOpen] = useState(false);
-  const [screeningLoading, setScreeningLoading] = useState(false);
+  const [memoExpanded, setMemoExpanded] = useState(true);
+  const [selectedMemoVersion, setSelectedMemoVersion] = useState<number | null>(null);
   const toast = useToast();
   const { firmId } = useFirm();
 
@@ -79,35 +86,28 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
     fetcher
   );
 
-  const hasScreeningResult = !!deal.screeningResult;
   const isScreening = deal.stage === "SCREENING";
+  const workstreams = ((deal.workstreams || []) as any[]).filter(
+    (w: any) => w.analysisType !== "IC_MEMO"
+  );
 
-  // ── Version management ──
+  // IC Memo data from AIScreeningResult
   const sr = deal.screeningResult;
-  const previousVersions: any[] = sr?.previousVersions
-    ? (Array.isArray(sr.previousVersions) ? sr.previousVersions : [])
+  const hasMemo = !!sr?.memo;
+  const isAnalyzing = !!analysisProgress;
+
+  const previousMemoVersions: any[] = sr?.previousVersions
+    ? (Array.isArray(sr.previousVersions) ? sr.previousVersions.filter((v: any) => v.memo) : [])
     : [];
-  const currentVersion = sr?.version ?? 1;
+  const currentMemoVersion = sr?.version ?? 1;
 
-  // Build display data: either current or a historical version
-  const displayData =
-    selectedVersion != null
-      ? previousVersions.find((v: any) => v.version === selectedVersion)
-      : sr;
+  // Display the selected version or current
+  const displayMemo =
+    selectedMemoVersion != null
+      ? previousMemoVersions.find((v: any) => v.version === selectedMemoVersion)?.memo
+      : sr?.memo;
 
-  const displayMemo = displayData?.memo;
-  const displayScore = displayData?.score ?? 0;
-  const isMock = displayData?.summary?.includes("Mock") || displayData?.summary?.includes("mock");
-  const isHistorical = selectedVersion != null;
-
-  function getScoreColor(score: number | null | undefined) {
-    if (score == null) return undefined;
-    if (score >= 70) return "green";
-    if (score >= 40) return "yellow";
-    return "red";
-  }
-
-  // ── Entity management (same as before) ──
+  // ── Entity management ──
 
   async function handleLinkEntity(entityId: string) {
     setLinkingEntity(true);
@@ -171,39 +171,25 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
     }
   }
 
-  async function runScreening() {
-    setScreeningLoading(true);
-    try {
-      await fetch(`/api/deals/${deal.id}/screen`, { method: "POST" });
-      toast.success("AI screening complete — IC Memo generated");
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      toast.error("Screening failed");
-    } finally {
-      setScreeningLoading(false);
-    }
-  }
+  // ── Render ──
 
-  // ── If screening hasn't run, show input form + CTA ──
-
-  if (!hasScreeningResult) {
-    return (
-      <div className="space-y-6">
-        {/* Editable fields */}
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-2 space-y-6">
-            {renderEditableFields()}
+  return (
+    <div className="space-y-6">
+      {/* ── SCREENING stage: show deal details + Run AI Screening CTA ── */}
+      {isScreening && (
+        <>
+          <div className="grid grid-cols-3 gap-6">
+            <div className="col-span-2 space-y-6">
+              {renderEditableFields()}
+            </div>
+            <div className="space-y-3">
+              <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
+              <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
+              <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
+            </div>
           </div>
-          <div className="space-y-3">
-            <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
-            <StatCard label="AI Score" value="---" small />
-            <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
-            <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
-          </div>
-        </div>
 
-        {/* Run AI Screening CTA */}
-        {isScreening && (
+          {/* Run AI Screening CTA */}
           <div className="bg-purple-50 border border-purple-200 rounded-xl p-5">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
@@ -212,296 +198,336 @@ export function DealOverviewTab({ deal }: DealOverviewTabProps) {
                 </svg>
               </div>
               <div className="flex-1">
-                <div className="text-sm font-semibold text-purple-900">Ready to screen?</div>
+                <div className="text-sm font-semibold text-purple-900">Ready to screen this deal?</div>
                 <p className="text-sm text-purple-700 mt-1">
-                  AI will analyze all deal info, documents, and notes to generate an IC Memo with screening score and populate Due Diligence workstreams.
+                  AI will analyze all uploaded documents across {workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} and generate a unified IC Memo.
                 </p>
-                <div className="flex gap-2 mt-3">
-                  <Button loading={screeningLoading} onClick={runScreening}>
-                    Run AI Screening
-                  </Button>
-                  <Button variant="secondary" onClick={() => setShowScreeningConfig(true)}>
-                    Configure &amp; Run
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        <ScreeningConfigModal
-          open={showScreeningConfig}
-          onClose={() => setShowScreeningConfig(false)}
-          dealId={deal.id}
-          onComplete={() => setShowScreeningConfig(false)}
-        />
-      </div>
-    );
-  }
-
-  // ── Screening has run: show IC Memo + collapsible sections ──
-
-  const scoreColor = getScoreColor(displayScore);
-
-  return (
-    <div className="space-y-4">
-      {/* Historical version banner */}
-      {isHistorical && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Viewing historical version {selectedVersion}. </span>
-          <button
-            onClick={() => setSelectedVersion(null)}
-            className="text-amber-700 font-semibold underline hover:text-amber-900"
-          >
-            Return to current
-          </button>
-        </div>
-      )}
-
-      {/* ── Memo Header ── */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-5 py-4 bg-gradient-to-r from-indigo-50 to-purple-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Score badge */}
-              <div className={`text-2xl font-bold px-4 py-2 rounded-xl ${
-                scoreColor === "green"
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  : scoreColor === "yellow"
-                  ? "bg-amber-50 text-amber-700 border border-amber-200"
-                  : "bg-red-50 text-red-700 border border-red-200"
-              }`}>
-                {displayScore}/100
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold text-gray-900">AI Screening Score</div>
-                  <Badge color={isMock ? "gray" : "purple"}>
-                    {isMock ? "Mock" : "AI-Powered"}
-                  </Badge>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Processed {new Date(displayData?.processedAt || displayData?.memoGeneratedAt || Date.now()).toLocaleDateString()}
-                </div>
-              </div>
-              {displayData?.recommendation && (
-                <Badge color={REC_COLORS[displayData.recommendation] || "gray"}>
-                  {displayData.recommendation.replace(/_/g, " ")}
-                </Badge>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* Version selector */}
-              {previousVersions.length > 0 && (
-                <select
-                  value={selectedVersion ?? ""}
-                  onChange={(e) => setSelectedVersion(e.target.value ? Number(e.target.value) : null)}
-                  className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white"
-                >
-                  <option value="">v{currentVersion} (Current)</option>
-                  {[...previousVersions].reverse().map((v: any) => (
-                    <option key={v.version} value={v.version}>
-                      v{v.version} ({new Date(v.processedAt).toLocaleDateString()})
-                    </option>
-                  ))}
-                </select>
-              )}
-              {!isHistorical && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setShowRerunConfig(true)}
-                >
-                  Re-run Screening
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* ── IC Memo Body ── */}
-        {displayMemo && (
-          <div className="p-5 space-y-4">
-            {/* Memo summary */}
-            <p className="text-sm text-gray-700">{displayMemo.summary}</p>
-
-            {/* Memo sections */}
-            {Array.isArray(displayMemo.sections) && displayMemo.sections.map((section: any, i: number) => (
-              <div key={i}>
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wide">{section.name}</h4>
-                  {section.riskLevel && (
-                    <Badge
-                      color={section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"}
-                    >
-                      {section.riskLevel}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-gray-600 whitespace-pre-wrap">{section.content}</p>
-              </div>
-            ))}
-
-            {/* Memo recommendation */}
-            {displayMemo.recommendation && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
-                <span className="text-xs font-semibold text-gray-700">IC Recommendation:</span>
-                <Badge
-                  color={
-                    displayMemo.recommendation.includes("APPROVE") && !displayMemo.recommendation.includes("CONDITIONS") ? "green" :
-                    displayMemo.recommendation === "DECLINE" ? "red" : "yellow"
-                  }
-                >
-                  {displayMemo.recommendation.replace(/_/g, " ")}
-                </Badge>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Fallback if no memo yet */}
-        {!displayMemo && displayData?.summary && (
-          <div className="p-5">
-            <p className="text-sm text-gray-600">{displayData.summary}</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── Screening Details (collapsible) ── */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setScreeningDetailsOpen(!screeningDetailsOpen)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-        >
-          <span className="text-sm font-semibold text-gray-700">Screening Details</span>
-          <svg
-            className={`w-4 h-4 text-gray-400 transition-transform ${screeningDetailsOpen ? "rotate-180" : ""}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {screeningDetailsOpen && (
-          <div className="p-4 space-y-4">
-            {/* Financials */}
-            {displayData?.financials && typeof displayData.financials === "object" && Object.keys(displayData.financials).length > 0 && (
-              <div>
-                <div className="text-xs font-semibold text-indigo-700 mb-1">Key Financials</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {Object.entries(displayData.financials).map(([key, value]) => (
-                    <div key={key} className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
-                      <div className="text-[10px] text-indigo-500 uppercase tracking-wide">
-                        {key.replace(/([A-Z])/g, " $1").trim()}
-                      </div>
-                      <div className="text-sm font-semibold text-indigo-800">{String(value)}</div>
+                {/* Progress indicator */}
+                {analysisProgress && (
+                  <div className="mt-3 bg-white/60 rounded-lg p-3 border border-purple-100">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-medium text-purple-800">
+                        {analysisProgress.phase || "Processing"}
+                        {analysisProgress.current
+                          ? ` — ${analysisProgress.current}...`
+                          : "..."}
+                      </span>
+                      <span className="text-xs text-purple-600">
+                        {analysisProgress.completed}/{analysisProgress.total}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
+                    <div className="bg-purple-200 rounded-full h-1.5">
+                      <div
+                        className="h-1.5 rounded-full bg-purple-500 transition-all"
+                        style={{
+                          width: `${analysisProgress.total > 0 ? Math.round((analysisProgress.completed / analysisProgress.total) * 100) : 0}%`,
+                        }}
+                      />
+                    </div>
+                    {/* Show workstream names being analyzed */}
+                    {analysisProgress.workstreamNames && analysisProgress.workstreamNames.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {analysisProgress.workstreamNames.map((name, i) => (
+                          <span
+                            key={name}
+                            className={`text-[10px] px-1.5 py-0.5 rounded ${
+                              i < (analysisProgress.completed ?? 0)
+                                ? "bg-purple-200 text-purple-700 line-through"
+                                : analysisProgress.current === name
+                                  ? "bg-purple-300 text-purple-800 font-semibold"
+                                  : "bg-purple-100 text-purple-500"
+                            }`}
+                          >
+                            {name}
+                          </span>
+                        ))}
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            analysisProgress.phase === "Generating IC Memo"
+                              ? "bg-purple-300 text-purple-800 font-semibold"
+                              : "bg-purple-100 text-purple-500"
+                          }`}
+                        >
+                          IC Memo
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-            {/* Strengths */}
-            {displayData?.strengths && (
-              <div>
-                <div className="text-xs font-semibold text-emerald-700 mb-1">Strengths</div>
-                <ul className="space-y-1">
-                  {(Array.isArray(displayData.strengths) ? displayData.strengths : []).map((s: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-emerald-500 mt-0.5">+</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Risks */}
-            {displayData?.risks && (
-              <div>
-                <div className="text-xs font-semibold text-red-700 mb-1">Risks</div>
-                <ul className="space-y-1">
-                  {(Array.isArray(displayData.risks) ? displayData.risks : []).map((r: string, i: number) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-red-500 mt-0.5">-</span>
-                      <span>{r}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Source Data & Deal Details (collapsible) ── */}
-      <div className="border border-gray-200 rounded-xl overflow-hidden">
-        <button
-          onClick={() => setSourceDataOpen(!sourceDataOpen)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-        >
-          <span className="text-sm font-semibold text-gray-700">Source Data &amp; Deal Details</span>
-          <svg
-            className={`w-4 h-4 text-gray-400 transition-transform ${sourceDataOpen ? "rotate-180" : ""}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-        {sourceDataOpen && (
-          <div className="p-4">
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-2 space-y-6">
-                {renderEditableFields()}
-              </div>
-              <div className="space-y-3">
-                <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
-                <StatCard
-                  label="AI Score"
-                  value={sr?.score != null ? `${sr.score}/100` : "---"}
-                  small
-                />
-                <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
-                <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
+                {!analysisProgress && (
+                  <div className="mt-3">
+                    <Button loading={ddStarting} onClick={startScreening}>
+                      Run AI Screening
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Stage Gate Summary (for DUE_DILIGENCE stage) */}
-      {deal.stage === "DUE_DILIGENCE" && deal.workstreams?.length > 0 && (
-        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
-          <div className="text-xs font-semibold text-gray-700 mb-2">Workstream Progress</div>
-          <div className="space-y-1">
-            {(deal.workstreams as any[]).map((ws: any) => {
-              const pct = ws.totalTasks > 0 ? Math.round((ws.completedTasks / ws.totalTasks) * 100) : 0;
-              return (
-                <div key={ws.id} className="flex items-center gap-2 text-xs">
-                  <span className={`w-2 h-2 rounded-full ${
-                    ws.status === "COMPLETE" ? "bg-emerald-400" :
-                    ws.status === "IN_PROGRESS" ? "bg-amber-400" : "bg-gray-300"
-                  }`} />
-                  <span className="flex-1">{ws.name}</span>
-                  <span className="text-gray-500">{ws.completedTasks}/{ws.totalTasks} ({pct}%)</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        </>
       )}
 
-      {/* Rerun config modal */}
-      <ScreeningConfigModal
-        open={showRerunConfig}
-        onClose={() => setShowRerunConfig(false)}
-        dealId={deal.id}
-        rerun
-        onComplete={() => setShowRerunConfig(false)}
-      />
+      {/* ── Post-screening: IC Memo (primary AI overview) + deal details ── */}
+      {!isScreening && (
+        <>
+          {/* ── IC Memo — primary AI overview of the deal ── */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setMemoExpanded(!memoExpanded)} className="text-xs">
+                  <span className={`transition-transform inline-block ${memoExpanded ? "rotate-90" : ""}`}>&#9654;</span>
+                </button>
+                <div className="text-sm font-semibold text-gray-900">AI Overview — IC Memo</div>
+                {hasMemo && (
+                  <Badge color="indigo">v{currentMemoVersion}</Badge>
+                )}
+                {hasMemo && sr?.memoGeneratedAt && (
+                  <span className="text-[10px] text-gray-400">
+                    Generated {new Date(sr.memoGeneratedAt).toLocaleDateString()}
+                  </span>
+                )}
+                {isAnalyzing && (
+                  <Badge color="yellow">Generating...</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {previousMemoVersions.length > 0 && (
+                  <select
+                    value={selectedMemoVersion ?? ""}
+                    onChange={(e) => setSelectedMemoVersion(e.target.value ? Number(e.target.value) : null)}
+                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white"
+                  >
+                    <option value="">v{currentMemoVersion} (Current)</option>
+                    {[...previousMemoVersions].reverse().map((v: any) => (
+                      <option key={v.version} value={v.version}>
+                        v{v.version} ({new Date(v.memoGeneratedAt).toLocaleDateString()})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {!isAnalyzing && (
+                  <Button
+                    size="sm"
+                    variant={hasMemo ? "secondary" : "primary"}
+                    loading={regenerating}
+                    onClick={regenerateMemo}
+                  >
+                    {hasMemo ? "Regenerate" : "Generate IC Memo"}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Progress bar inside IC memo box */}
+            {analysisProgress && (
+              <div className="px-4 py-2 bg-indigo-50/50 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-indigo-800">
+                    {analysisProgress.phase || "Processing"}
+                    {analysisProgress.current ? ` — ${analysisProgress.current}...` : "..."}
+                  </span>
+                  <span className="text-xs text-indigo-600">
+                    {analysisProgress.completed}/{analysisProgress.total}
+                  </span>
+                </div>
+                <div className="bg-indigo-200 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full bg-indigo-500 transition-all"
+                    style={{
+                      width: `${analysisProgress.total > 0 ? Math.round((analysisProgress.completed / analysisProgress.total) * 100) : 0}%`,
+                    }}
+                  />
+                </div>
+                {/* Show workstream names being analyzed */}
+                {analysisProgress.workstreamNames && analysisProgress.workstreamNames.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {analysisProgress.workstreamNames.map((name, i) => (
+                      <span
+                        key={name}
+                        className={`text-[10px] px-1.5 py-0.5 rounded ${
+                          i < (analysisProgress.completed ?? 0)
+                            ? "bg-indigo-200 text-indigo-700 line-through"
+                            : analysisProgress.current === name
+                              ? "bg-indigo-300 text-indigo-800 font-semibold"
+                              : "bg-indigo-100 text-indigo-500"
+                        }`}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded ${
+                        analysisProgress.phase === "Generating IC Memo"
+                          ? "bg-indigo-300 text-indigo-800 font-semibold"
+                          : "bg-indigo-100 text-indigo-500"
+                      }`}
+                    >
+                      IC Memo
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {memoExpanded && (
+              <div className="p-4">
+                {displayMemo ? (
+                  <div className="space-y-3">
+                    {/* Historical version banner */}
+                    {selectedMemoVersion != null && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-800 flex items-center gap-2">
+                        <span>Viewing version {selectedMemoVersion}.</span>
+                        <button
+                          onClick={() => setSelectedMemoVersion(null)}
+                          className="text-amber-700 font-semibold underline hover:text-amber-900"
+                        >
+                          Return to current
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Recommendation */}
+                    {displayMemo.recommendation && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-600">Recommendation:</span>
+                        <Badge color={REC_COLORS[displayMemo.recommendation] || "gray"}>
+                          {displayMemo.recommendation.replace(/_/g, " ")}
+                        </Badge>
+                      </div>
+                    )}
+
+                    {/* Summary */}
+                    {displayMemo.summary && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700 mb-1">Executive Summary</div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{displayMemo.summary}</p>
+                      </div>
+                    )}
+
+                    {/* Sections */}
+                    {Array.isArray(displayMemo.sections) && displayMemo.sections.length > 0 && (
+                      <div className="space-y-2">
+                        {displayMemo.sections.map((section: any, i: number) => (
+                          <div key={i} className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-semibold text-gray-800">{section.name}</span>
+                              {section.riskLevel && (
+                                <Badge
+                                  color={section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"}
+                                >
+                                  {section.riskLevel}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 whitespace-pre-wrap">{section.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Key Findings / Action Items */}
+                    {Array.isArray(displayMemo.findings) && displayMemo.findings.length > 0 && (
+                      <div>
+                        <div className="text-xs font-semibold text-gray-700 mb-2">Key Action Items ({displayMemo.findings.length})</div>
+                        <div className="space-y-1">
+                          {displayMemo.findings.map((f: any, i: number) => (
+                            <div key={i} className="flex items-start gap-2 text-xs">
+                              <Badge color={f.priority === "HIGH" ? "red" : f.priority === "MEDIUM" ? "yellow" : "gray"}>
+                                {f.priority}
+                              </Badge>
+                              <div>
+                                <span className="font-medium text-gray-800">{f.title}</span>
+                                {f.description && (
+                                  <span className="text-gray-500 ml-1">— {f.description}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : isAnalyzing ? (
+                  <div className="py-6 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="text-sm font-medium text-indigo-700">Generating IC Memo...</div>
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      Analyzing {workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} and synthesizing into an IC-ready document.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="py-6 text-center">
+                    <div className="text-sm text-gray-500">No IC Memo generated yet.</div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Click &ldquo;Generate IC Memo&rdquo; to run all workstream analyses and synthesize findings into an IC-ready document.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Workstream Progress Summary */}
+          {workstreams.length > 0 && (
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+              <div className="text-xs font-semibold text-gray-700 mb-2">Workstream Progress</div>
+              <div className="space-y-1">
+                {workstreams.map((ws: any) => {
+                  const pct = ws.totalTasks > 0 ? Math.round((ws.completedTasks / ws.totalTasks) * 100) : 0;
+                  const hasAnalysis = !!ws.analysisResult;
+                  return (
+                    <div key={ws.id} className="flex items-center gap-2 text-xs">
+                      <span className={`w-2 h-2 rounded-full ${
+                        ws.status === "COMPLETE" ? "bg-emerald-400" :
+                        ws.status === "IN_PROGRESS" ? "bg-amber-400" : "bg-gray-300"
+                      }`} />
+                      <span className="flex-1">{ws.name}</span>
+                      {hasAnalysis && (
+                        <Badge color="indigo">Analyzed</Badge>
+                      )}
+                      <span className="text-gray-500">{ws.completedTasks}/{ws.totalTasks} ({pct}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Source Data & Deal Details (collapsible) */}
+          <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <button
+              onClick={() => setSourceDataOpen(!sourceDataOpen)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm font-semibold text-gray-700">Deal Details</span>
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${sourceDataOpen ? "rotate-180" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {sourceDataOpen && (
+              <div className="p-4">
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="col-span-2 space-y-6">
+                    {renderEditableFields()}
+                  </div>
+                  <div className="space-y-3">
+                    <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
+                    <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
+                    <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 

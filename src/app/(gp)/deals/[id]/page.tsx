@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ import {
   CAPITAL_INSTRUMENT_LABELS,
 } from "@/lib/constants";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 const stageOrder = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"];
 const stageLabel: Record<string, string> = {
   SCREENING: "Screening",
@@ -34,6 +36,24 @@ const stageLabel: Record<string, string> = {
   CLOSING: "Closing",
   CLOSED: "Closed",
   DEAD: "Dead",
+};
+
+const NAME_TO_TYPE: Record<string, string> = {
+  "Financial DD": "DD_FINANCIAL",
+  "Legal DD": "DD_LEGAL",
+  "Market DD": "DD_MARKET",
+  "Tax DD": "DD_TAX",
+  "Operational DD": "DD_OPERATIONAL",
+  "ESG DD": "DD_ESG",
+  "Collateral DD": "DD_COLLATERAL",
+  "Tenant & Lease DD": "DD_TENANT_LEASE",
+  "Customer DD": "DD_CUSTOMER",
+  "Technology DD": "DD_TECHNOLOGY",
+  "Regulatory & Permitting DD": "DD_REGULATORY",
+  "Engineering DD": "DD_ENGINEERING",
+  "Credit DD": "DD_CREDIT",
+  "Commercial DD": "DD_COMMERCIAL",
+  "Management DD": "DD_MANAGEMENT",
 };
 
 /* ── Stage-dependent tab visibility ──────────────── */
@@ -74,14 +94,21 @@ const stageTabs: Record<string, string[]> = {
   ],
 };
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 function getDeadTabs(deal: any): string[] {
   const tabs = ["Overview", "Due Diligence", "Documents", "Notes", "Activity"];
   if (deal.icProcess) {
     tabs.push("IC Review");
   }
   return tabs;
+}
+
+export interface AnalysisProgress {
+  total: number;
+  completed: number;
+  current?: string;
+  phase?: string;
+  /** Names of the workstreams being analyzed (for dynamic display) */
+  workstreamNames?: string[];
 }
 
 export default function DealDetailPage({
@@ -103,6 +130,135 @@ export default function DealDetailPage({
   const [showCloseDeal, setShowCloseDeal] = useState(false);
   const [advancingToClosing, setAdvancingToClosing] = useState(false);
   const [closingDeal, setClosingDeal] = useState(false);
+
+  // ── Analysis orchestration state (lives here so tab switches don't kill it) ──
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | null>(null);
+  const [ddStarting, setDDStarting] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const autoStartedRef = useRef(false);
+
+  // ── Auto-trigger for "Create & Screen" path ──
+  // When the deal is in DUE_DILIGENCE with workstreams but no analyses, auto-start.
+  useEffect(() => {
+    if (!deal) return;
+    const ws = (deal.workstreams || []) as any[];
+    const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
+    const hasAnyAnalysis = nonMemo.some((w: any) => !!w.analysisResult);
+    const hasMemo = !!deal.screeningResult?.memo;
+    const needsInitial = deal.stage !== "SCREENING" && nonMemo.length > 0 && !hasAnyAnalysis && !hasMemo;
+
+    if (needsInitial && !autoStartedRef.current && !analysisProgress && !regenerating) {
+      autoStartedRef.current = true;
+      runAnalysesAndMemo(nonMemo, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deal?.stage, deal?.workstreams?.length, deal?.screeningResult?.memo]);
+
+  // ── Core analysis runner (survives tab switches) ──
+  const runAnalysesAndMemo = useCallback(async (workstreamsList: any[], isRerun: boolean) => {
+    const analyzable = isRerun
+      ? workstreamsList.filter((w: any) => w.analysisType !== "IC_MEMO")
+      : workstreamsList.filter((w: any) => !w.analysisResult);
+
+    const wsNames = analyzable.map((w: any) => w.name);
+    const totalSteps = analyzable.length + 1; // +1 for IC memo
+    setAnalysisProgress({ total: totalSteps, completed: 0, phase: "Analyzing workstreams", workstreamNames: wsNames });
+
+    // Phase 1: Run all workstream analyses in parallel
+    let completed = 0;
+    await Promise.allSettled(
+      analyzable.map(async (w: any) => {
+        const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
+        setAnalysisProgress((p) =>
+          p ? { ...p, current: w.name } : null
+        );
+        try {
+          const res = await fetch(`/api/deals/${id}/dd-analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            console.warn(`Analysis failed for ${w.name}:`, err.error);
+          }
+        } catch {
+          // continue with other workstreams
+        }
+        completed++;
+        setAnalysisProgress((p) =>
+          p ? { ...p, completed } : null
+        );
+      })
+    );
+
+    // Phase 2: Generate IC Memo from workstream outputs
+    setAnalysisProgress((p) =>
+      p ? { ...p, current: "IC Memo", phase: "Generating IC Memo" } : null
+    );
+    try {
+      await fetch(`/api/deals/${id}/dd-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
+      });
+    } catch {
+      toast.error("IC Memo generation failed — workstream analyses are still available");
+    }
+    setAnalysisProgress((p) =>
+      p ? { ...p, completed: totalSteps } : null
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // ── Start screening (from SCREENING stage button) ──
+  async function startScreening() {
+    setDDStarting(true);
+    try {
+      // Advance stage (workstreams already exist from deal creation)
+      const res = await fetch(`/api/deals/${id}/screen`, { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to start screening");
+      }
+      const updatedDeal = await res.json();
+      mutate(`/api/deals/${id}`, updatedDeal, false);
+
+      // Run all analyses + generate IC memo
+      const ws = (updatedDeal.workstreams || []) as any[];
+      const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
+      if (nonMemo.length > 0) {
+        autoStartedRef.current = true; // prevent useEffect double-trigger
+        await runAnalysesAndMemo(nonMemo, false);
+      }
+
+      toast.success("Screening complete — IC Memo generated");
+      mutate(`/api/deals/${id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to start screening");
+    } finally {
+      setDDStarting(false);
+      setAnalysisProgress(null);
+    }
+  }
+
+  // ── Regenerate (re-run all analyses + regenerate IC memo) ──
+  async function regenerateMemo() {
+    if (!deal) return;
+    setRegenerating(true);
+    try {
+      const ws = (deal.workstreams || []) as any[];
+      const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
+      await runAnalysesAndMemo(nonMemo, true);
+      toast.success("All analyses re-run — IC Memo regenerated");
+      mutate(`/api/deals/${id}`);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to regenerate");
+    } finally {
+      setRegenerating(false);
+      setAnalysisProgress(null);
+    }
+  }
 
   if (isLoading || !deal)
     return <div className="text-sm text-gray-400">Loading...</div>;
@@ -215,7 +371,16 @@ export default function DealDetailPage({
   function renderTab() {
     switch (activeTab) {
       case "Overview":
-        return <DealOverviewTab deal={deal} />;
+        return (
+          <DealOverviewTab
+            deal={deal}
+            analysisProgress={analysisProgress}
+            ddStarting={ddStarting}
+            regenerating={regenerating}
+            startScreening={startScreening}
+            regenerateMemo={regenerateMemo}
+          />
+        );
       case "Documents":
         return <DealDocumentsTab deal={deal} />;
       case "Notes":

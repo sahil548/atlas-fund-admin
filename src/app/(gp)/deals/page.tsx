@@ -121,25 +121,12 @@ export default function DealsPage() {
                         )}
                       </div>
 
-                      {/* AI Score Pill */}
-                      {p.aiScore != null && (
+                      {/* DD Status */}
+                      {p.stage !== "SCREENING" && (
                         <div className="mt-2 flex items-center gap-1.5">
-                          <span
-                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                              p.aiScore >= 80
-                                ? "bg-emerald-100 text-emerald-700"
-                                : p.aiScore >= 60
-                                  ? "bg-amber-100 text-amber-700"
-                                  : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            AI: {p.aiScore}
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700">
+                            DD Active
                           </span>
-                          {p.aiFlag && (
-                            <span className="text-[10px] text-gray-500 truncate">
-                              {p.aiFlag}
-                            </span>
-                          )}
                         </div>
                       )}
 
@@ -254,14 +241,13 @@ export default function DealsPage() {
         );
       })()}
 
-      {/* AI Screening Engine Banner */}
+      {/* AI Pipeline Stats Banner */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-5 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold">AI Screening Engine</div>
+            <div className="text-sm font-semibold">AI Deal Pipeline</div>
             <div className="text-xs opacity-80 mt-1">
-              Upload documents → auto-extract metrics → flag risks →
-              categorize DD workstreams
+              Upload documents → start due diligence → AI workstream analysis → IC memo
             </div>
           </div>
           <div />

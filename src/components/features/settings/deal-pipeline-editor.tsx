@@ -89,7 +89,6 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
   }, [prompts]);
 
   // Find specific prompts
-  const screeningPrompt = prompts?.find((p) => p.type === "SCREENING");
   const icMemoPrompt = prompts?.find((p) => p.type === "IC_MEMO");
 
   // ── Prompt handlers ──
@@ -259,7 +258,7 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
 
   // ── Prompt editor sub-component ──
 
-  function PromptStepEditor({ tmpl, stepNum, label, sublabel }: { tmpl: PromptTemplate | undefined; stepNum: 1 | 3; label: string; sublabel: string }) {
+  function PromptStepEditor({ tmpl, stepNum, label, sublabel }: { tmpl: PromptTemplate | undefined; stepNum: 1 | 2; label: string; sublabel: string }) {
     if (!tmpl) return null;
     const isExpanded = expandedStep === stepNum;
     const content = promptEdits[tmpl.type] ?? tmpl.content;
@@ -276,7 +275,7 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
           onClick={() => setExpandedStep(isExpanded ? null : stepNum)}
         >
           <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-            {stepNum === 1 ? "1" : "3"}
+            {stepNum}
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-gray-900">{label}</div>
@@ -335,24 +334,11 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
       <div className="mb-2">
         <h3 className="text-sm font-semibold text-gray-900">Deal Pipeline Configuration</h3>
         <p className="text-xs text-gray-500 mt-1">
-          Configure how AI processes deals from initial screening through IC memo. Each step feeds into the next.
+          Configure how AI processes deals through due diligence workstreams and IC memo generation.
         </p>
       </div>
 
-      {/* Step 1: Screening Prompt */}
-      <PromptStepEditor
-        tmpl={screeningPrompt}
-        stepNum={1}
-        label="Screening Prompt"
-        sublabel="The initial AI evaluation when a deal enters the pipeline"
-      />
-
-      {/* Connector */}
-      <div className="flex justify-start pl-9">
-        <div className="w-0.5 h-4 bg-indigo-200" />
-      </div>
-
-      {/* Step 2: DD Workstreams */}
+      {/* Step 1: DD Workstreams */}
       <div className={cn(
         "bg-white rounded-xl border transition-all",
         expandedStep === 2 ? "border-gray-300 shadow-sm" : "border-gray-200",
@@ -363,7 +349,7 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
           onClick={() => setExpandedStep(expandedStep === 2 ? null : 2)}
         >
           <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
-            2
+            1
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-semibold text-gray-900">DD Workstreams</div>
@@ -562,10 +548,10 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
         <div className="w-0.5 h-4 bg-indigo-200" />
       </div>
 
-      {/* Step 3: IC Memo Prompt */}
+      {/* Step 2: IC Memo Prompt */}
       <PromptStepEditor
         tmpl={icMemoPrompt}
-        stepNum={3}
+        stepNum={2}
         label="IC Memo Prompt"
         sublabel="Final synthesis — combines all workstream outputs into an Investment Committee memo"
       />

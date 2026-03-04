@@ -156,6 +156,12 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
+      // Create workstreams (scaffolding) but stay in SCREENING
+      await fetch(`/api/deals/${dealId}/screen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ advanceStage: false }),
+      });
       toast.success("Deal created");
       handleClose();
       router.push(`/deals/${dealId}`);

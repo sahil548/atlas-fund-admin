@@ -39,6 +39,20 @@ export async function POST(
     },
   });
 
+  // Also create in the global Task system
+  await prisma.task.create({
+    data: {
+      title: data!.title,
+      description: data!.description || null,
+      priority: data!.priority || "MEDIUM",
+      status: "TODO",
+      dealId: id,
+      contextType: "WORKSTREAM",
+      contextId: data!.workstreamId,
+      dueDate: data!.dueDate ? new Date(data!.dueDate) : null,
+    },
+  });
+
   await recalcWorkstreamProgress(data!.workstreamId);
 
   return NextResponse.json(task, { status: 201 });
@@ -51,7 +65,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  void (await params); // validate route param exists
+  const { id: dealId } = await params;
   const { data, error } = await parseBody(req, UpdateDDTaskSchema);
   if (error) return error;
 
@@ -91,6 +105,24 @@ export async function PATCH(
 
   await recalcWorkstreamProgress(existing.workstreamId);
 
+  // Sync status to global Task system if a matching task exists
+  if (data!.status !== undefined) {
+    const globalTask = await prisma.task.findFirst({
+      where: {
+        dealId,
+        contextType: "WORKSTREAM",
+        contextId: existing.workstreamId,
+        title: existing.title,
+      },
+    });
+    if (globalTask) {
+      await prisma.task.update({
+        where: { id: globalTask.id },
+        data: { status: data!.status },
+      });
+    }
+  }
+
   return NextResponse.json(task);
 }
 
@@ -101,7 +133,7 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  void (await params);
+  const { id: dealId } = await params;
   const body = await req.json();
   const taskId = body?.id;
   if (!taskId) {
@@ -116,6 +148,20 @@ export async function DELETE(
   }
 
   await prisma.dDTask.delete({ where: { id: taskId } });
+
+  // Also remove the corresponding global Task
+  const globalTask = await prisma.task.findFirst({
+    where: {
+      dealId,
+      contextType: "WORKSTREAM",
+      contextId: existing.workstreamId,
+      title: existing.title,
+    },
+  });
+  if (globalTask) {
+    await prisma.task.delete({ where: { id: globalTask.id } });
+  }
+
   await recalcWorkstreamProgress(existing.workstreamId);
 
   return NextResponse.json({ success: true });

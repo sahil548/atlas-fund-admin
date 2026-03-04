@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/layout/app-shell";
 import { ToastProvider } from "@/components/ui/toast";
 import { FirmProvider } from "@/components/providers/firm-provider";
+import { UserProvider } from "@/components/providers/user-provider";
 import { CommandBarProvider } from "@/components/features/command-bar/command-bar-provider";
 import { GlobalDialogsProvider } from "@/hooks/use-global-dialogs";
 
@@ -27,11 +28,13 @@ export default function RootLayout({
       <body className={`${geistSans.variable} font-sans antialiased`}>
         <ToastProvider>
           <FirmProvider>
-            <GlobalDialogsProvider>
-              <CommandBarProvider>
-                <AppShell>{children}</AppShell>
-              </CommandBarProvider>
-            </GlobalDialogsProvider>
+            <UserProvider>
+              <GlobalDialogsProvider>
+                <CommandBarProvider>
+                  <AppShell>{children}</AppShell>
+                </CommandBarProvider>
+              </GlobalDialogsProvider>
+            </UserProvider>
           </FirmProvider>
         </ToastProvider>
       </body>

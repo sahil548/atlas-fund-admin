@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { mutate } from "swr";
+import { useUser } from "@/components/providers/user-provider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -11,6 +12,7 @@ interface DealNotesTabProps {
 }
 
 export function DealNotesTab({ deal }: DealNotesTabProps) {
+  const { userId } = useUser();
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
 
@@ -21,7 +23,7 @@ export function DealNotesTab({ deal }: DealNotesTabProps) {
       await fetch(`/api/deals/${deal.id}/notes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: noteText }),
+        body: JSON.stringify({ content: noteText, authorId: userId }),
       });
       setNoteText("");
       mutate(`/api/deals/${deal.id}`);

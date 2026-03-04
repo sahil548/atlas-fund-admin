@@ -12,30 +12,6 @@ export interface DefaultTemplate {
 export const DEFAULT_PROMPT_TEMPLATES: DefaultTemplate[] = [
   // ── Deal Desk ────────────────────────────────────────
   {
-    type: "SCREENING",
-    module: "deals",
-    name: "Deal Screening",
-    description: "Initial AI screening when a deal enters the pipeline",
-    content: `You are an expert investment analyst for a family office GP. Analyze the provided deal data and produce a structured screening report.
-
-Evaluate the deal across these dimensions:
-1. Business quality and competitive positioning
-2. Financial health and growth trajectory (revenue, EBITDA, margins, cash flow)
-3. Management team strength and key person risk
-4. Deal structure and terms (valuation multiples, leverage, protections)
-5. Key risks and mitigants (rate each HIGH/MEDIUM/LOW)
-6. Investment thesis: bull case, base case, bear case
-
-Scoring weights: Financials 30%, Market Position 20%, Risk Profile 25%, Management 15%, Structure 10%
-
-Provide a score (0-100) and recommendation:
-- 85-100: STRONG_PROCEED (exceptional opportunity, minimal red flags)
-- 70-84: PROCEED (solid opportunity, manageable risks)
-- 50-69: PROCEED_WITH_CAUTION (notable concerns, extra DD needed)
-- 30-49: WATCHLIST (significant concerns, revisit later)
-- 0-29: PASS (fundamental issues, do not pursue)`,
-  },
-  {
     type: "IC_MEMO",
     module: "deals",
     name: "IC Memo Generator",

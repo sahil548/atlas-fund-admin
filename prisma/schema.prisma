@@ -1282,9 +1282,10 @@ model Document {
   name        String
   category    DocumentCategory @default(OTHER)
   fileUrl     String?
-  fileSize    Int?
-  mimeType    String?
-  assetId     String?
+  fileSize      Int?
+  mimeType      String?
+  extractedText String?
+  assetId       String?
   entityId    String?
   dealId      String?
   investorId  String?

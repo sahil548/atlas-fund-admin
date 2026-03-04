@@ -6,7 +6,7 @@ import { notifyGPTeam } from "@/lib/notifications";
  * Central stage engine for deal workflow transitions.
  *
  * Rules:
- *  SCREENING + screeningResult exists  -> DUE_DILIGENCE
+ *  SCREENING -> DUE_DILIGENCE is handled directly by the screen route
  *  IC_REVIEW  + decision APPROVED      -> CLOSING
  *  IC_REVIEW  + decision REJECTED      -> DEAD
  *  IC_REVIEW  + decision SEND_BACK     -> DUE_DILIGENCE
@@ -16,48 +16,11 @@ export async function checkAndAdvanceDeal(dealId: string) {
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: {
-      screeningResult: true,
       icProcess: true,
     },
   });
 
   if (!deal) throw new Error(`Deal ${dealId} not found`);
-
-  // SCREENING -> DUE_DILIGENCE when AI screening completes
-  if (deal.stage === "SCREENING" && deal.screeningResult) {
-    const updatedDeal = await prisma.deal.update({
-      where: { id: dealId },
-      data: {
-        stage: "DUE_DILIGENCE",
-        aiScore: deal.screeningResult.score,
-        aiFlag: deal.screeningResult.recommendation,
-      },
-    });
-
-    // Log stage transition activity
-    await prisma.dealActivity.create({
-      data: {
-        dealId,
-        activityType: "STAGE_TRANSITION",
-        description: `Deal advanced from SCREENING to DUE_DILIGENCE`,
-        metadata: {
-          fromStage: "SCREENING",
-          toStage: "DUE_DILIGENCE",
-          aiScore: deal.screeningResult.score,
-          aiFlag: deal.screeningResult.recommendation,
-        },
-      },
-    });
-
-    // Non-blocking notification
-    notifyGPTeam({
-      type: "STAGE_CHANGE",
-      subject: `${deal.name} advanced to Due Diligence`,
-      body: `AI screening completed with score ${deal.screeningResult.score}/100.`,
-    }).catch(() => {});
-
-    return updatedDeal;
-  }
 
   // IC_REVIEW -> auto-advance based on decision
   if (deal.stage === "IC_REVIEW" && deal.icProcess?.finalDecision) {

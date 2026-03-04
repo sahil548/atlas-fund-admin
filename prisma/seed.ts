@@ -5,6 +5,99 @@ import { PrismaPg } from "@prisma/adapter-pg";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * DD Category Templates — returns the full template array for seeding.
+ * This is extracted so workstreams can be derived from it at seed time,
+ * using the same scope-matching logic as the screen route.
+ */
+function SEED_DD_CATEGORIES(firmId: string) {
+  return [
+    // ── UNIVERSAL (apply to all deals) ──
+    {
+      firmId, name: "Financial DD",
+      description: "Revenue/cash flow analysis, financial model, projections, quality of earnings",
+      defaultInstructions: "Perform a comprehensive financial due diligence analysis. Cover quality of earnings, balance sheet review, cash flow analysis, and projections stress test.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 1,
+    },
+    {
+      firmId, name: "Legal DD",
+      description: "Corporate structure, contracts, litigation, IP",
+      defaultInstructions: "Perform legal and structural due diligence analysis. Cover entity structure, key agreements, regulatory compliance, and covenant analysis.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 2,
+    },
+    {
+      firmId, name: "Tax DD",
+      description: "Tax structure, compliance, entity elections",
+      defaultInstructions: "Perform comprehensive tax due diligence analysis. Cover tax structure, entity elections, compliance history, credits/exposures, and transaction implications.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 3,
+    },
+    {
+      firmId, name: "Operational DD",
+      description: "Management, processes, technology, scalability",
+      defaultInstructions: "Perform comprehensive operational due diligence analysis. Cover management assessment, business processes, technology infrastructure, scalability, and key person risk.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 4,
+    },
+    {
+      firmId, name: "Market DD",
+      description: "Market size, competitive landscape, positioning, comparable analysis",
+      defaultInstructions: "Perform market and comparable analysis due diligence. Cover market sizing, competitive landscape, customer analysis, industry trends, and transaction/public comps.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 5,
+    },
+    {
+      firmId, name: "ESG DD",
+      description: "Environmental, social, governance, compliance",
+      defaultInstructions: "Perform comprehensive ESG due diligence analysis. Cover environmental assessment, social factors, governance structure, ESG framework alignment, and risk/opportunity assessment.",
+      isDefault: true, scope: "UNIVERSAL", sortOrder: 6,
+    },
+    // ── REAL_ESTATE specific ──
+    {
+      firmId, name: "Collateral DD",
+      description: "Property appraisals, site condition, title/lien positions, insurance",
+      defaultInstructions: "Perform real estate collateral due diligence analysis. Cover property valuation, physical condition, title/lien analysis, insurance review, and environmental assessment.",
+      isDefault: false, scope: "REAL_ESTATE", sortOrder: 7,
+    },
+    {
+      firmId, name: "Tenant & Lease DD",
+      description: "Tenant credit, lease terms, occupancy, rent comparables",
+      defaultInstructions: "Perform tenant and lease due diligence analysis. Cover tenant credit, lease terms, occupancy analysis, rent comparables, and rollover risk.",
+      isDefault: false, scope: "REAL_ESTATE", sortOrder: 8,
+    },
+    // ── OPERATING_BUSINESS specific ──
+    {
+      firmId, name: "Customer DD",
+      description: "Customer concentration, retention, cohort economics",
+      defaultInstructions: "Perform customer due diligence analysis. Cover customer concentration, retention/churn, unit economics, and pipeline/growth analysis.",
+      isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 9,
+    },
+    {
+      firmId, name: "Technology DD",
+      description: "Tech stack, technical debt, product roadmap, cybersecurity",
+      defaultInstructions: "Perform technology due diligence analysis. Cover technology stack, technical debt, product/roadmap, cybersecurity, and IP/data assessment.",
+      isDefault: false, scope: "OPERATING_BUSINESS", sortOrder: 10,
+    },
+    // ── INFRASTRUCTURE specific ──
+    {
+      firmId, name: "Regulatory & Permitting DD",
+      description: "Regulatory approvals, permits, government concessions",
+      defaultInstructions: "Perform regulatory and permitting due diligence. Cover regulatory framework, permitting status, government concessions, and compliance assessment.",
+      isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 11,
+    },
+    {
+      firmId, name: "Engineering DD",
+      description: "Engineering design, construction risk, asset condition",
+      defaultInstructions: "Perform engineering due diligence analysis. Cover design/engineering, construction risk, asset condition, and performance assessment.",
+      isDefault: false, scope: "INFRASTRUCTURE", sortOrder: 12,
+    },
+    // ── DEBT specific ──
+    {
+      firmId, name: "Credit DD",
+      description: "Credit metrics, covenants, collateral coverage, downside modeling",
+      defaultInstructions: "Perform credit due diligence analysis. Cover credit metrics, debt structure, covenant package, collateral coverage, and downside modeling.",
+      isDefault: false, scope: "DEBT", sortOrder: 13,
+    },
+  ];
+}
+
 async function main() {
   console.log("Seeding Atlas database...");
 
@@ -1100,245 +1193,104 @@ async function main() {
   });
 
   // ============================================================
-  // DD WORKSTREAMS + AI-GENERATED FINDINGS
-  // ============================================================
-  console.log("Creating DD workstreams with AI findings...");
-
-  // Deal 1 (IC_REVIEW) - Completed workstreams with all findings resolved
-  const deal1Workstreams = [
-    { id: "ws-1-1", name: "Financial DD", description: "AI identified 5 financial areas requiring investigation for Apex Manufacturing.", customInstructions: "Focus on margin sustainability and customer revenue concentration.", sortOrder: 1, status: "COMPLETE" as const, totalTasks: 5, completedTasks: 5, hasAI: true, aiGenerated: true },
-    { id: "ws-1-2", name: "Commercial DD", description: "Market positioning and competitive dynamics analysis.", customInstructions: "Analyze defense contract pipeline and market share.", sortOrder: 2, status: "COMPLETE" as const, totalTasks: 4, completedTasks: 4, hasAI: true, aiGenerated: true },
-    { id: "ws-1-3", name: "Legal DD", description: "Corporate structure, IP, and contract review.", sortOrder: 3, status: "COMPLETE" as const, totalTasks: 4, completedTasks: 4, hasAI: true, aiGenerated: true },
-    { id: "ws-1-4", name: "Tax DD", description: "Tax structure and compliance review.", sortOrder: 4, status: "COMPLETE" as const, totalTasks: 3, completedTasks: 3, hasAI: true, aiGenerated: true },
-    { id: "ws-1-5", name: "ESG DD", description: "Environmental and governance assessment.", sortOrder: 5, status: "COMPLETE" as const, totalTasks: 3, completedTasks: 3, hasAI: true, aiGenerated: true },
-    { id: "ws-1-6", name: "Management DD", description: "Leadership team assessment and succession planning.", sortOrder: 6, status: "COMPLETE" as const, totalTasks: 3, completedTasks: 3, hasAI: true, aiGenerated: true },
-  ];
-
-  for (const ws of deal1Workstreams) {
-    await prisma.dDWorkstream.create({ data: { ...ws, dealId: deal1.id } });
-  }
-
-  // Deal 1 tasks (all resolved since in IC_REVIEW)
-  const deal1Tasks = [
-    { workstreamId: "ws-1-1", title: "Validate EBITDA margin sustainability at 22%", description: "Management claims 22% EBITDA margins. Verify through QoE analysis and benchmark against specialty manufacturing peers.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "QoE confirmed 21.8% normalized margin. Add-backs are reasonable.", resolvedAt: new Date("2026-02-15"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-1", title: "Analyze customer concentration impact on revenue stability", description: "Top 3 customers represent 65% of revenue. Model impact of losing any single customer on cash flow and covenant coverage.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "Modeled 3 scenarios. Even loss of largest customer (28%) keeps DSCR above 1.2x with cost restructuring.", resolvedAt: new Date("2026-02-18"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-1", title: "Review working capital cycle and cash conversion", description: "DSO appears elevated at 62 days. Investigate receivables aging and collection patterns.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "DSO driven by DoD payment terms (60-90 days). Normal for defense contracts. No collection issues.", resolvedAt: new Date("2026-02-20"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-1", title: "Assess CapEx requirements for growth plan", description: "Management projects $5M annual CapEx. Verify against historical spend and facility condition.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Historical CapEx averaged $4.2M. $5M estimate includes CNC machine upgrade — confirmed with site visit.", resolvedAt: new Date("2026-02-22"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-1", title: "Model debt capacity and financing structure", description: "Proposed leverage of 3.5x EBITDA. Stress test under downside scenarios.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "3.5x achievable with 2-year deleveraging to 2.5x. Bank term sheet received at SOFR+275.", resolvedAt: new Date("2026-02-25"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-2", title: "Map competitive landscape and market share", description: "Assess Apex's position in specialty aerospace manufacturing market. Identify key competitors and barriers to entry.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "Top 5 player in niche. High barriers (AS9100 certification, security clearances). 2-3 year moat.", resolvedAt: new Date("2026-02-16"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-2", title: "Evaluate defense contract pipeline", description: "Review backlog of $120M. Assess probability-weighted pipeline and renewal rates.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "Backlog confirmed. 85% historical renewal rate. 3 new RFPs in pipeline worth $40M.", resolvedAt: new Date("2026-02-19"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-2", title: "Assess customer diversification opportunity", description: "Management claims ability to expand into commercial aerospace. Validate market entry strategy.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Preliminary discussions with Boeing Tier 2 supplier program. 12-18 month qualification timeline.", resolvedAt: new Date("2026-02-21"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-2", title: "Review pricing power and margin trends", description: "Assess ability to pass through raw material cost increases to customers.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Most contracts have annual price escalation clauses. 6-month lag on pass-through for spot purchases.", resolvedAt: new Date("2026-02-23"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-3", title: "Review material contracts and change of control provisions", description: "Assess impact of acquisition on key customer contracts and supplier agreements.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "3 of 5 major contracts require change of control consent. All 3 consents received.", resolvedAt: new Date("2026-02-17"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-3", title: "Assess IP ownership and trade secret protection", description: "Review proprietary manufacturing processes and patent portfolio.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "12 active patents. Trade secrets well-protected with employee NDAs and information security protocols.", resolvedAt: new Date("2026-02-20"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-3", title: "Review pending litigation and contingent liabilities", description: "Check for any outstanding legal claims or environmental liabilities.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "One minor workers comp claim ($50K). No environmental issues. Clean litigation history.", resolvedAt: new Date("2026-02-22"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-3", title: "Verify ITAR/EAR compliance history", description: "Defense manufacturer requires full compliance audit for International Traffic in Arms Regulations.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "Clean compliance record. Internal compliance officer and annual third-party audit in place.", resolvedAt: new Date("2026-02-24"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-4", title: "Review tax structure and optimize for acquisition", description: "Analyze current C-corp structure and evaluate pass-through options.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Stock purchase preferred by seller. 338(h)(10) election provides step-up basis worth ~$8M in tax shield.", resolvedAt: new Date("2026-02-19"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-4", title: "Assess R&D tax credit utilization", description: "Manufacturing R&D activities may qualify for federal and state credits.", priority: "LOW", source: "AI_SCREENING", status: "DONE" as const, resolution: "R&D credit study identified $1.2M annual benefit. Previously unclaimed by seller.", resolvedAt: new Date("2026-02-21"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-4", title: "Review state tax nexus and transfer pricing", description: "Multi-state operations create nexus considerations.", priority: "LOW", source: "AI_SCREENING", status: "DONE" as const, resolution: "Operations in 3 states. No material transfer pricing issues. State tax burden ~4%.", resolvedAt: new Date("2026-02-23"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-5", title: "Assess environmental compliance", description: "Manufacturing operations may have environmental exposure. Review permits and compliance history.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Phase I ESA clean. All permits current. No material environmental liabilities.", resolvedAt: new Date("2026-02-18"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-5", title: "Review workplace safety record", description: "OSHA compliance and injury rate analysis.", priority: "LOW", source: "AI_SCREENING", status: "DONE" as const, resolution: "TRIR of 1.2 vs industry avg 3.4. Strong safety culture. No OSHA citations in 5 years.", resolvedAt: new Date("2026-02-20"), resolvedBy: "AL" },
-    { workstreamId: "ws-1-5", title: "Evaluate governance and board structure", description: "Assess corporate governance practices and proposed board composition.", priority: "LOW", source: "AI_SCREENING", status: "DONE" as const, resolution: "Will establish 5-member board. 2 Atlas seats, 2 management, 1 independent.", resolvedAt: new Date("2026-02-22"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-6", title: "Assess CEO key-man risk and succession plan", description: "Founder/CEO is critical to operations. Evaluate transition and retention plan.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, resolution: "CEO committed to 3-year transition. COO identified as successor. Key-man insurance to be obtained.", resolvedAt: new Date("2026-02-17"), resolvedBy: "JK" },
-    { workstreamId: "ws-1-6", title: "Evaluate management team depth", description: "Assess capabilities of VP-level team and operational bench strength.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "Strong VP Engineering and VP Sales. Need to hire CFO (currently outsourced). Budget allocated.", resolvedAt: new Date("2026-02-19"), resolvedBy: "SM" },
-    { workstreamId: "ws-1-6", title: "Review compensation and incentive alignment", description: "Ensure management incentives are aligned with investment thesis.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, resolution: "30% management rollover. Option pool of 10% for key employees. Vesting tied to MOIC hurdles.", resolvedAt: new Date("2026-02-21"), resolvedBy: "JK" },
-  ];
-
-  for (const task of deal1Tasks) {
-    await prisma.dDTask.create({ data: { ...task, assignee: task.resolvedBy || "JK" } });
-  }
-
-  // Deal 2 (DUE_DILIGENCE) - AI-generated findings, some resolved, some in progress
-  const deal2Workstreams = [
-    { id: "ws-2-1", name: "Financial DD", description: "AI identified 5 financial areas requiring investigation based on clinic platform financials.", customInstructions: "Focus on same-store growth metrics and new site unit economics.", sortOrder: 1, status: "IN_PROGRESS" as const, totalTasks: 5, completedTasks: 2, hasAI: true, aiGenerated: true },
-    { id: "ws-2-2", name: "Commercial DD", description: "Market dynamics and competitive positioning analysis for outpatient clinic platform.", customInstructions: "Analyze patient acquisition costs and geographic expansion potential.", sortOrder: 2, status: "IN_PROGRESS" as const, totalTasks: 4, completedTasks: 1, hasAI: true, aiGenerated: true },
-    { id: "ws-2-3", name: "Legal DD", description: "Healthcare regulatory compliance and corporate structure review.", customInstructions: "Focus on state licensing requirements and Stark Law compliance.", sortOrder: 3, status: "NOT_STARTED" as const, totalTasks: 4, completedTasks: 0, hasAI: true, aiGenerated: true },
-    { id: "ws-2-4", name: "Operational DD", description: "Clinic operations, staffing model, and technology infrastructure.", customInstructions: "Evaluate EMR system, staffing ratios, and patient throughput metrics.", sortOrder: 4, status: "IN_PROGRESS" as const, totalTasks: 3, completedTasks: 1, hasAI: true, aiGenerated: true },
-    { id: "ws-2-5", name: "Tax DD", description: "Healthcare-specific tax structure and compliance.", sortOrder: 5, status: "NOT_STARTED" as const, totalTasks: 2, completedTasks: 0, hasAI: true, aiGenerated: true },
-    { id: "ws-2-6", name: "ESG DD", description: "Healthcare access and quality of care assessment.", sortOrder: 6, status: "NOT_STARTED" as const, totalTasks: 2, completedTasks: 0, hasAI: true, aiGenerated: true },
-  ];
-
-  for (const ws of deal2Workstreams) {
-    await prisma.dDWorkstream.create({ data: { ...ws, dealId: deal2.id } });
-  }
-
-  const deal2Tasks = [
-    { workstreamId: "ws-2-1", title: "Validate same-store revenue growth of 15%", description: "Management claims 15% same-store growth but this needs validation against patient volume data and payer mix shifts. Check if growth is driven by volume vs. rate increases.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "SM", resolution: "Confirmed 14.8% SSS growth through patient records analysis. Primarily volume-driven.", resolvedAt: new Date("2026-02-20"), resolvedBy: "SM" },
-    { workstreamId: "ws-2-1", title: "Assess new site ramp economics", description: "New sites reportedly take 18+ months to break even. Need to verify actual ramp curves across the 8 sites opened in last 3 years.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "SM", resolution: "Average breakeven is 16 months. 2 of 8 sites took 22+ months due to staffing issues.", resolvedAt: new Date("2026-02-25"), resolvedBy: "SM" },
-    { workstreamId: "ws-2-1", title: "Review reimbursement rate sensitivity", description: "30% of revenue comes from Medicare/Medicaid. Model impact of potential 5-10% rate cuts on EBITDA margin.", priority: "HIGH", source: "AI_SCREENING", status: "IN_PROGRESS" as const, assignee: "JK" },
-    { workstreamId: "ws-2-1", title: "Analyze physician compensation structure", description: "Physician comp as % of revenue appears above market at 42%. Investigate if this is sustainable and what happens at scale.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-2-1", title: "Verify accounts receivable aging", description: "A/R days appear elevated at 58 days. Check if this is driven by specific payer mix or collection issues.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-2", title: "Map competitive landscape in target markets", description: "Identify competing outpatient clinic platforms in the 5 states of operation. Assess market share and differentiation.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "SM", resolution: "3 direct competitors identified. Beacon has strongest brand in 3 of 5 markets. OneHealth poses threat in FL.", resolvedAt: new Date("2026-02-22"), resolvedBy: "SM" },
-    { workstreamId: "ws-2-2", title: "Analyze patient acquisition cost trends", description: "CAC has been rising 12% YoY. Investigate drivers and sustainability of current marketing spend efficiency.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-2-2", title: "Evaluate geographic expansion pipeline", description: "Management targets 5 new markets in 2027. Assess market selection criteria and execution risk.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "JK" },
-    { workstreamId: "ws-2-2", title: "Review referral network strength", description: "40% of patients come from physician referrals. Assess stability and exclusivity of referral relationships.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-2-3", title: "Verify state medical licensing compliance", description: "Operations in 5 states with different licensing requirements. Confirm all licenses current and transferable.", priority: "HIGH", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-3", title: "Review Stark Law and Anti-Kickback compliance", description: "Physician employment model and referral arrangements need compliance review.", priority: "HIGH", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-3", title: "Assess malpractice exposure", description: "Review claims history, insurance coverage, and outstanding litigation.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-3", title: "Review corporate practice of medicine structure", description: "Several states have CPOM restrictions. Verify management services organization structure is compliant.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-4", title: "Evaluate EMR system and technology stack", description: "Currently on AthenaHealth. Assess scalability and integration costs for multi-site expansion.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, assignee: "JK", resolution: "AthenaHealth adequate for current scale. May need enterprise upgrade at 30+ sites (~$500K one-time).", resolvedAt: new Date("2026-02-24"), resolvedBy: "JK" },
-    { workstreamId: "ws-2-4", title: "Analyze staffing model and physician recruitment", description: "Physician recruitment is the #1 growth bottleneck. Assess pipeline, compensation benchmarks, and retention rates.", priority: "HIGH", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-2-4", title: "Review patient throughput metrics", description: "Average patients per physician per day varies 15-22 across sites. Investigate variance drivers.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "JK" },
-    { workstreamId: "ws-2-5", title: "Analyze tax-exempt bond financing options", description: "Healthcare facilities may qualify for tax-exempt financing for expansion.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-5", title: "Review state tax incentives for healthcare", description: "Several target expansion states offer healthcare investment tax credits.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-2-6", title: "Assess healthcare access impact", description: "Evaluate whether clinic locations serve underserved communities and impact on health outcomes.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-2-6", title: "Review quality of care metrics", description: "Patient satisfaction scores, readmission rates, and clinical outcomes benchmarking.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-  ];
-
-  for (const task of deal2Tasks) {
-    await prisma.dDTask.create({ data: task });
-  }
-
-  // Deal 4 (DUE_DILIGENCE - Credit) - AI-generated credit DD findings
-  const deal4Workstreams = [
-    { id: "ws-4-1", name: "Financial DD", description: "Property-level financial analysis and cash flow validation.", customInstructions: "Focus on NOI stability, lease rollover risk, and debt service coverage.", sortOrder: 1, status: "IN_PROGRESS" as const, totalTasks: 4, completedTasks: 2, hasAI: true, aiGenerated: true },
-    { id: "ws-4-2", name: "Collateral DD", description: "Asset valuation, lien position, and insurance review.", customInstructions: "Review appraisals, title reports, and insurance coverage adequacy.", sortOrder: 2, status: "IN_PROGRESS" as const, totalTasks: 4, completedTasks: 1, hasAI: true, aiGenerated: true },
-    { id: "ws-4-3", name: "Legal DD", description: "Loan documentation, security perfection, and regulatory compliance.", sortOrder: 3, status: "IN_PROGRESS" as const, totalTasks: 3, completedTasks: 1, hasAI: true, aiGenerated: true },
-    { id: "ws-4-4", name: "Tax DD", description: "Property tax assessment and REIT structure review.", sortOrder: 4, status: "NOT_STARTED" as const, totalTasks: 2, completedTasks: 0, hasAI: true, aiGenerated: true },
-    { id: "ws-4-5", name: "Environmental DD", description: "Environmental site assessments and compliance.", sortOrder: 5, status: "IN_PROGRESS" as const, totalTasks: 2, completedTasks: 1, hasAI: true, aiGenerated: true },
-    { id: "ws-4-6", name: "Counterparty DD", description: "Sponsor track record and financial capacity assessment.", sortOrder: 6, status: "COMPLETE" as const, totalTasks: 3, completedTasks: 3, hasAI: true, aiGenerated: true },
-  ];
-
-  for (const ws of deal4Workstreams) {
-    await prisma.dDWorkstream.create({ data: { ...ws, dealId: deal4.id } });
-  }
-
-  const deal4Tasks = [
-    { workstreamId: "ws-4-1", title: "Validate NOI and DSCR calculations", description: "Verify net operating income of $1.44M and 1.8x DSCR against actual rent rolls and operating expenses.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "NOI confirmed at $1.42M. DSCR is 1.78x — within acceptable range.", resolvedAt: new Date("2026-02-18"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-1", title: "Analyze tenant rollover schedule", description: "Major tenant lease expires in 2027 (35% of rent). Assess renewal probability and re-leasing risk.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "Tenant has expansion option and verbal commitment to renew. Market rents are 8% above in-place.", resolvedAt: new Date("2026-02-22"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-1", title: "Model interest rate sensitivity", description: "Floating rate exposure. Stress test DSCR under +200bps and +400bps rate scenarios.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-4-1", title: "Review CapEx reserve adequacy", description: "Assess whether $200K annual CapEx reserve is sufficient for building age and condition.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "JK" },
-    { workstreamId: "ws-4-2", title: "Review independent appraisal", description: "Third-party appraisal shows $14.5M value (55% LTV). Verify methodology and comparable sales.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "Appraisal methodology sound. Comparable sales support $14-15M range.", resolvedAt: new Date("2026-02-20"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-2", title: "Confirm title and lien position", description: "Verify clean title and first lien position. Review any existing encumbrances.", priority: "HIGH", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-4-2", title: "Assess insurance coverage", description: "Review property insurance, liability coverage, and flood/earthquake exposure.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-4-2", title: "Evaluate property condition report", description: "Review PCA findings and estimated immediate repair needs.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "JK" },
-    { workstreamId: "ws-4-3", title: "Review loan document drafts", description: "Assess covenants, default provisions, and remedies in proposed credit agreement.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "Loan docs reviewed by external counsel. Standard covenants with quarterly reporting.", resolvedAt: new Date("2026-02-25"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-3", title: "Verify UCC filings and security perfection", description: "Confirm all collateral is properly perfected under applicable state law.", priority: "HIGH", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-4-3", title: "Review guarantor agreements", description: "Assess personal/corporate guaranty strength and enforceability.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "AL" },
-    { workstreamId: "ws-4-4", title: "Review property tax assessments", description: "Current assessment is $12.8M. Verify no pending reassessment risk post-acquisition.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-4-4", title: "Assess tax structure optimization", description: "Evaluate whether borrower structure provides optimal tax treatment for interest deductions.", priority: "LOW", source: "AI_SCREENING", status: "TODO" as const, assignee: "SM" },
-    { workstreamId: "ws-4-5", title: "Review Phase I ESA", description: "Environmental site assessment for all portfolio properties.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "JK", resolution: "Phase I clean for all 3 properties. No RECs identified.", resolvedAt: new Date("2026-02-19"), resolvedBy: "JK" },
-    { workstreamId: "ws-4-5", title: "Assess flood zone and natural hazard exposure", description: "Review FEMA flood maps and natural hazard reports for all properties.", priority: "MEDIUM", source: "AI_SCREENING", status: "TODO" as const, assignee: "JK" },
-    { workstreamId: "ws-4-6", title: "Review sponsor track record", description: "Evaluate Ridgeline Capital Partners' historical portfolio performance and default history.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "15-year track record, 42 completed deals, zero defaults. Strong reputation with lenders.", resolvedAt: new Date("2026-02-16"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-6", title: "Assess sponsor financial capacity", description: "Review sponsor's balance sheet and ability to fund equity contribution and guarantees.", priority: "HIGH", source: "AI_SCREENING", status: "DONE" as const, assignee: "AL", resolution: "Sponsor net worth >$200M. Liquid assets >$50M. Strong capacity for guarantees.", resolvedAt: new Date("2026-02-17"), resolvedBy: "AL" },
-    { workstreamId: "ws-4-6", title: "Verify sponsor team experience", description: "Key person assessment for portfolio management team.", priority: "MEDIUM", source: "AI_SCREENING", status: "DONE" as const, assignee: "SM", resolution: "Principal has 20+ years CRE experience. Team of 12 manages $1.2B portfolio.", resolvedAt: new Date("2026-02-18"), resolvedBy: "SM" },
-  ];
-
-  for (const task of deal4Tasks) {
-    await prisma.dDTask.create({ data: task });
-  }
-
-  // Deals 3 and 5 (SCREENING) - no workstreams yet (pre-screening)
-
-  // ============================================================
-  // AI SCREENING RESULTS (for deals that have been screened)
-  // ============================================================
-  console.log("Creating AI screening results...");
-
-  await prisma.aIScreeningResult.create({
-    data: {
-      dealId: deal1.id,
-      score: 82,
-      summary: "Apex Manufacturing presents a compelling opportunity in specialty aerospace manufacturing with strong margins and recurring revenue. Customer concentration in top 3 clients is the primary risk.",
-      strengths: ["Strong EBITDA margins (22%)", "Long-term customer contracts", "Niche market position", "Experienced management team"],
-      risks: ["Top 3 customers represent 65% of revenue", "Cyclical end markets", "Key man dependency on CEO"],
-      recommendation: "PROCEED",
-      financials: { revenue: "$85M", ebitda: "$18.7M", margin: "22%", yoyGrowth: "12%" },
-      screeningConfig: { categories: [{ name: "Financial DD", enabled: true }, { name: "Commercial DD", enabled: true }, { name: "Legal DD", enabled: true }, { name: "Tax DD", enabled: true }, { name: "ESG DD", enabled: true }, { name: "Management DD", enabled: true }] },
-      ddFindings: { categories: [
-        { name: "Financial DD", summary: "Strong margins but customer concentration creates revenue risk.", findings: [{ title: "Validate EBITDA margin sustainability at 22%", priority: "HIGH" }, { title: "Analyze customer concentration impact on revenue stability", priority: "HIGH" }, { title: "Review working capital cycle and cash conversion", priority: "MEDIUM" }, { title: "Assess CapEx requirements for growth plan", priority: "MEDIUM" }, { title: "Model debt capacity and financing structure", priority: "MEDIUM" }] },
-        { name: "Commercial DD", summary: "Strong niche positioning with expansion opportunity.", findings: [{ title: "Map competitive landscape and market share", priority: "HIGH" }, { title: "Evaluate defense contract pipeline", priority: "HIGH" }, { title: "Assess customer diversification opportunity", priority: "MEDIUM" }, { title: "Review pricing power and margin trends", priority: "MEDIUM" }] },
-        { name: "Legal DD", summary: "Change of control consents and ITAR compliance are key.", findings: [{ title: "Review material contracts and change of control provisions", priority: "HIGH" }, { title: "Assess IP ownership and trade secret protection", priority: "MEDIUM" }, { title: "Review pending litigation and contingent liabilities", priority: "MEDIUM" }, { title: "Verify ITAR/EAR compliance history", priority: "HIGH" }] },
-      ] },
-      version: 1,
-      memo: {
-        summary: "Apex Manufacturing is a specialty aerospace component manufacturer with $85M in revenue and 22% EBITDA margins. The company benefits from long-term customer contracts and a niche market position, though significant customer concentration (top 3 = 65% of revenue) and key person risk warrant careful DD.",
-        sections: [
-          { name: "Executive Summary", content: "Apex Manufacturing operates in the specialty aerospace components sector, serving defense and commercial aviation OEMs. Revenue of $85M with strong EBITDA margins of 22% ($18.7M) and 12% year-over-year growth. The company holds a defensible niche position with high barriers to entry due to AS9100 certifications and long qualification cycles. Management team has 20+ years of sector experience. Primary concerns center on customer concentration and cyclical end-market exposure.", riskLevel: "LOW" },
-          { name: "Investment Highlights", content: "Strong and expanding EBITDA margins driven by proprietary manufacturing processes. Long-term customer contracts (avg. 5-year terms) provide revenue visibility. Niche market position with limited direct competition and high switching costs. Experienced management team with deep industry relationships. Attractive entry multiple relative to aerospace/defense comparable transactions.", riskLevel: "LOW" },
-          { name: "Key Risks & Mitigants", content: "Customer Concentration: Top 3 customers represent 65% of revenue. Mitigant — contracts are long-term with high switching costs; pipeline shows diversification trajectory. Cyclical Markets: Aerospace spending correlates with broader economic cycles. Mitigant — defense contracts provide counter-cyclical stability (~40% of revenue). Key Person Risk: CEO controls major customer relationships. Mitigant — post-close management incentive plan and relationship transition program recommended.", riskLevel: "MEDIUM" },
-          { name: "Financial Summary", content: "Revenue: $85M (12% YoY growth). EBITDA: $18.7M (22% margin). Working capital cycle trending slightly longer (+15 days). Debt capacity supports proposed leverage of 3.5-4.0x. Cash flow conversion strong at 85%+. CapEx requirements moderate at ~4% of revenue for maintenance, with expansion CapEx of $5-8M planned for new production lines.", riskLevel: "LOW" },
-          { name: "Recommendation", content: "PROCEED to Due Diligence. The investment thesis is sound with strong fundamentals and attractive sector dynamics. Key DD priorities: (1) validate customer concentration risk through contract-level analysis, (2) assess CEO succession and key person mitigation, (3) stress test financial projections under cyclical downturn scenarios, (4) confirm ITAR/EAR compliance posture.", riskLevel: "LOW" },
-        ],
-        recommendation: "APPROVE_WITH_CONDITIONS",
-      },
-      memoGeneratedAt: new Date(),
-      previousVersions: [],
-    },
-  });
-
-  await prisma.aIScreeningResult.create({
-    data: {
-      dealId: deal2.id,
-      score: 74,
-      summary: "Beacon Health's multi-site clinic model shows promising growth but faces regulatory headwinds. Same-store growth is strong but new site economics need validation.",
-      strengths: ["15% same-store revenue growth", "Fragmented market with rollup potential", "Diversified payer mix"],
-      risks: ["Regulatory risk around reimbursement", "New site ramp takes 18+ months", "Physician recruitment challenges"],
-      recommendation: "PROCEED_WITH_CAUTION",
-      financials: { revenue: "$42M", ebitda: "$6.3M", margin: "15%", yoyGrowth: "25%" },
-      screeningConfig: { categories: [{ name: "Financial DD", enabled: true }, { name: "Commercial DD", enabled: true }, { name: "Legal DD", enabled: true }, { name: "Operational DD", enabled: true }, { name: "Tax DD", enabled: true }, { name: "ESG DD", enabled: true }] },
-      ddFindings: { categories: [
-        { name: "Financial DD", summary: "Growth metrics strong but reimbursement sensitivity and AR aging need investigation.", findings: [{ title: "Validate same-store revenue growth of 15%", priority: "HIGH" }, { title: "Assess new site ramp economics", priority: "HIGH" }, { title: "Review reimbursement rate sensitivity", priority: "HIGH" }, { title: "Analyze physician compensation structure", priority: "MEDIUM" }, { title: "Verify accounts receivable aging", priority: "MEDIUM" }] },
-        { name: "Commercial DD", summary: "Fragmented market with rollup potential but rising CAC.", findings: [{ title: "Map competitive landscape in target markets", priority: "HIGH" }, { title: "Analyze patient acquisition cost trends", priority: "MEDIUM" }, { title: "Evaluate geographic expansion pipeline", priority: "MEDIUM" }, { title: "Review referral network strength", priority: "LOW" }] },
-        { name: "Legal DD", summary: "Healthcare regulatory complexity requires thorough compliance review.", findings: [{ title: "Verify state medical licensing compliance", priority: "HIGH" }, { title: "Review Stark Law and Anti-Kickback compliance", priority: "HIGH" }, { title: "Assess malpractice exposure", priority: "MEDIUM" }, { title: "Review corporate practice of medicine structure", priority: "MEDIUM" }] },
-      ] },
-      version: 1,
-      memo: {
-        summary: "Beacon Health operates a multi-site outpatient clinic platform with $42M revenue and 25% growth. The fragmented healthcare services market offers a compelling rollup opportunity, but regulatory reimbursement risk and physician recruitment challenges require careful diligence.",
-        sections: [
-          { name: "Executive Summary", content: "Beacon Health is a healthcare services platform operating 12 outpatient clinics across 3 states. The company has demonstrated strong same-store growth of 15% alongside an aggressive new-site expansion strategy. With $42M in revenue and $6.3M EBITDA (15% margin), the platform is positioned for continued growth in a highly fragmented market.", riskLevel: "LOW" },
-          { name: "Investment Highlights", content: "Exceptional same-store revenue growth of 15% demonstrates operating model strength. Highly fragmented market with significant rollup consolidation opportunity. Diversified payer mix reduces single-payer concentration risk. Scalable operating model with centralized back-office functions.", riskLevel: "LOW" },
-          { name: "Key Risks & Mitigants", content: "Reimbursement Risk: Healthcare reimbursement rates are subject to regulatory change. Mitigant — diversified payer mix and commercial insurance focus. New Site Economics: 18+ month ramp period creates near-term cash flow drag. Mitigant — mature sites demonstrate strong unit economics. Physician Recruitment: Competitive market for specialist physicians. Mitigant — competitive compensation and partnership track model.", riskLevel: "HIGH" },
-          { name: "Financial Summary", content: "Revenue: $42M (25% YoY growth). EBITDA: $6.3M (15% margin). New site openings depress blended margins; mature sites operate at 22%+ margins. AR aging trending slightly higher, needs investigation. Growth trajectory supports 2-3 new sites per year at $2-3M each.", riskLevel: "MEDIUM" },
-          { name: "Recommendation", content: "PROCEED WITH CAUTION to Due Diligence. Growth metrics are attractive but the reimbursement sensitivity and new site ramp risk warrant thorough validation before committing. Priority DD items: reimbursement rate sensitivity modeling, new site unit economics deep-dive, physician retention analysis.", riskLevel: "MEDIUM" },
-        ],
-        recommendation: "APPROVE_WITH_CONDITIONS",
-      },
-      memoGeneratedAt: new Date(),
-      previousVersions: [],
-    },
-  });
-
-  await prisma.aIScreeningResult.create({
-    data: {
-      dealId: deal4.id,
-      score: 88,
-      summary: "Ridgeline Senior Debt presents a low-risk credit opportunity with strong collateral coverage and experienced sponsor. LTV and DSCR metrics are well within conservative thresholds.",
-      strengths: ["55% LTV", "1.8x DSCR", "Experienced real estate sponsor", "Stabilized, fully leased portfolio"],
-      risks: ["Interest rate environment", "Geographic concentration", "Tenant rollover in 2027"],
-      recommendation: "STRONG_PROCEED",
-      financials: { principal: "$8M", ltv: "55%", dscr: "1.8x", rate: "SOFR+350bps" },
-      screeningConfig: { categories: [{ name: "Financial DD", enabled: true }, { name: "Collateral DD", enabled: true }, { name: "Legal DD", enabled: true }, { name: "Tax DD", enabled: true }, { name: "Environmental DD", enabled: true }, { name: "Counterparty DD", enabled: true }] },
-      ddFindings: { categories: [
-        { name: "Financial DD", summary: "Strong cash flow metrics but floating rate exposure needs stress testing.", findings: [{ title: "Validate NOI and DSCR calculations", priority: "HIGH" }, { title: "Analyze tenant rollover schedule", priority: "HIGH" }, { title: "Model interest rate sensitivity", priority: "MEDIUM" }, { title: "Review CapEx reserve adequacy", priority: "MEDIUM" }] },
-        { name: "Collateral DD", summary: "Appraisal supports LTV but lien position and insurance need verification.", findings: [{ title: "Review independent appraisal", priority: "HIGH" }, { title: "Confirm title and lien position", priority: "HIGH" }, { title: "Assess insurance coverage", priority: "MEDIUM" }, { title: "Evaluate property condition report", priority: "MEDIUM" }] },
-        { name: "Counterparty DD", summary: "Strong sponsor with excellent track record.", findings: [{ title: "Review sponsor track record", priority: "HIGH" }, { title: "Assess sponsor financial capacity", priority: "HIGH" }, { title: "Verify sponsor team experience", priority: "MEDIUM" }] },
-      ] },
-      version: 1,
-      memo: {
-        summary: "Ridgeline Senior Debt is a senior secured credit facility to an experienced real estate sponsor with a stabilized, fully leased multi-family portfolio. Conservative LTV of 55% and strong DSCR of 1.8x provide significant downside protection. SOFR+350bps pricing is attractive for the risk profile.",
-        sections: [
-          { name: "Executive Summary", content: "This is a senior secured debt opportunity with strong credit fundamentals. The borrower is an experienced real estate sponsor with a 15+ year track record and $2B+ in assets under management. The collateral is a stabilized, fully leased multi-family portfolio in a growth market. Conservative leverage (55% LTV) and strong debt service coverage (1.8x DSCR) provide significant cushion against downside scenarios.", riskLevel: "LOW" },
-          { name: "Investment Highlights", content: "Conservative LTV of 55% provides significant equity cushion below the senior debt position. DSCR of 1.8x offers substantial cash flow coverage with room for rate increases. Experienced sponsor with proven track record through multiple cycles. Stabilized portfolio with 97% occupancy and long weighted average lease term. Attractive risk-adjusted return at SOFR+350bps.", riskLevel: "LOW" },
-          { name: "Key Risks & Mitigants", content: "Interest Rate Risk: Floating rate exposure on SOFR-based pricing. Mitigant — rate cap required, DSCR stress tested to SOFR+200bps above current levels. Geographic Concentration: Portfolio concentrated in 2 MSAs. Mitigant — both markets have strong population growth and diversified employment bases. Tenant Rollover: ~30% of leases roll in 2027. Mitigant — multi-family leases are short-term by nature; market rents are 5-8% above in-place rents.", riskLevel: "LOW" },
-          { name: "Financial Summary", content: "Principal: $8M senior secured. LTV: 55% (based on independent appraisal). DSCR: 1.8x (current NOI / annual debt service). Pricing: SOFR+350bps with 1% floor. Maturity: 5 years with 2x1-year extension options. Amortization: Interest-only for 3 years, then 30-year amortization.", riskLevel: "LOW" },
-          { name: "Recommendation", content: "STRONG PROCEED. This is a well-structured senior secured credit facility with conservative leverage, strong cash flow coverage, and an experienced sponsor. Risk profile is consistent with core lending parameters. Recommend expedited DD process focused on: (1) independent appraisal validation, (2) title and lien confirmation, (3) rate cap structure, (4) sponsor financial capacity verification.", riskLevel: "LOW" },
-        ],
-        recommendation: "APPROVE",
-      },
-      memoGeneratedAt: new Date(),
-      previousVersions: [],
-    },
-  });
-
-  // ============================================================
   // DD CATEGORY TEMPLATES (firm-level library)
+  // Must be created before workstreams since workstreams are derived from templates
   // ============================================================
   console.log("Creating DD category templates...");
 
-  const ddCategories = [
-    // Universal categories (scope: UNIVERSAL — apply to all deals)
-    // Each category's defaultInstructions IS the analysis framework used by the AI pipeline.
+  const ddCategories: {
+    firmId: string; name: string; description: string;
+    defaultInstructions: string; isDefault: boolean; scope: string; sortOrder: number;
+  }[] = SEED_DD_CATEGORIES(firm.id);
+
+  for (const cat of ddCategories) {
+    await prisma.dDCategoryTemplate.create({ data: cat });
+  }
+
+  // ============================================================
+  // DD WORKSTREAMS (scaffolding only — derived from DD category templates)
+  // Uses the same logic as the screen route: UNIVERSAL + assetClass + DEBT
+  // ============================================================
+  console.log("Creating DD workstreams (empty scaffolding from templates)...");
+
+  // Category name → analysis type mapping (mirrors src/lib/schemas.ts)
+  const CATEGORY_NAME_TO_TYPE: Record<string, string> = {
+    "Financial DD": "DD_FINANCIAL",
+    "Legal DD": "DD_LEGAL",
+    "Market DD": "DD_MARKET",
+    "Tax DD": "DD_TAX",
+    "Operational DD": "DD_OPERATIONAL",
+    "ESG DD": "DD_ESG",
+    "Collateral DD": "DD_COLLATERAL",
+    "Tenant & Lease DD": "DD_TENANT_LEASE",
+    "Customer DD": "DD_CUSTOMER",
+    "Technology DD": "DD_TECHNOLOGY",
+    "Regulatory & Permitting DD": "DD_REGULATORY",
+    "Engineering DD": "DD_ENGINEERING",
+    "Credit DD": "DD_CREDIT",
+    "Commercial DD": "DD_COMMERCIAL",
+    "Management DD": "DD_MANAGEMENT",
+  };
+
+  // Helper: get workstream templates for a deal based on asset class + instrument
+  // Mirrors the screen route logic exactly
+  function getTemplatesForDeal(
+    assetClass: string,
+    capitalInstrument: string | null,
+    categories: { name: string; scope: string; sortOrder: number }[],
+  ) {
+    const scopes = new Set(["UNIVERSAL", assetClass]);
+    if (capitalInstrument === "DEBT") scopes.add("DEBT");
+    return categories
+      .filter((c) => scopes.has(c.scope))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  // All deals that should have workstreams scaffolded
+  const dealsToScaffold = [
+    { deal: deal1, prefix: "ws-1" }, // DIVERSIFIED, EQUITY  → 6 UNIVERSAL
+    { deal: deal2, prefix: "ws-2" }, // DIVERSIFIED, EQUITY  → 6 UNIVERSAL
+    { deal: deal3, prefix: "ws-3" }, // REAL_ESTATE, EQUITY  → 6 UNIVERSAL + 2 RE = 8
+    { deal: deal4, prefix: "ws-4" }, // REAL_ESTATE, DEBT    → 6 UNIVERSAL + 2 RE + Credit DD = 9
+    { deal: deal5, prefix: "ws-5" }, // INFRASTRUCTURE, EQUITY → 6 UNIVERSAL + 2 INFRA = 8
+  ];
+
+  for (const { deal, prefix } of dealsToScaffold) {
+    const templates = getTemplatesForDeal(
+      deal.assetClass,
+      deal.capitalInstrument,
+      ddCategories.map((c) => ({ name: c.name, scope: c.scope, sortOrder: c.sortOrder })),
+    );
+
+    for (let i = 0; i < templates.length; i++) {
+      const t = templates[i];
+      await prisma.dDWorkstream.create({
+        data: {
+          id: `${prefix}-${i + 1}`,
+          dealId: deal.id,
+          name: t.name,
+          description: `Due diligence workstream for ${t.name.toLowerCase()}.`,
+          analysisType: CATEGORY_NAME_TO_TYPE[t.name] || "DD_CUSTOM",
+          sortOrder: i,
+          status: "NOT_STARTED",
+          totalTasks: 0,
+          completedTasks: 0,
+          aiGenerated: true,
+        },
+      });
+    }
+
+    console.log(`  → ${deal.name}: ${templates.length} workstreams (${templates.map((t) => t.name).join(", ")})`);
+  }
+
+  // AI Screening Results and DD Tasks removed — seed without AI output
+  // so actual AI generation can be tested cleanly.
+
+  // NOTE: DD category templates + workstreams are created above.
+  // Full detailed instructions for each category are in SEED_DD_CATEGORIES().
+  // The legacy verbose instructions block below is kept as reference only.
+  if (false as unknown as boolean) {
+  const _legacyRef = [
     {
       firmId: firm.id, name: "Financial DD", description: "Revenue/cash flow analysis, financial model, projections, quality of earnings",
       defaultInstructions: `Perform a comprehensive financial due diligence analysis.
@@ -1828,10 +1780,8 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       isDefault: false, scope: "DEBT", sortOrder: 13,
     },
   ];
-
-  for (const cat of ddCategories) {
-    await prisma.dDCategoryTemplate.create({ data: cat });
-  }
+  void _legacyRef;
+  } // end if(false) dead code block
 
   // ============================================================
   // DEAL ACTIVITIES (timeline events)

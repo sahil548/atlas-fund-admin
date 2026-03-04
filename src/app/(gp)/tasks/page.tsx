@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { useUser } from "@/components/providers/user-provider";
 import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -46,7 +47,7 @@ export default function TasksPage() {
     dueDate: "",
   });
 
-  const currentUserId = "user-jk";
+  const { userId: currentUserId } = useUser();
   const now = new Date();
 
   const filtered = tasks.filter((t: any) => {

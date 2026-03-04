@@ -160,8 +160,37 @@ export const DD_ANALYSIS_TYPES = [
   "DD_TAX",
   "DD_OPERATIONAL",
   "DD_ESG",
+  "DD_COLLATERAL",
+  "DD_TENANT_LEASE",
+  "DD_CUSTOMER",
+  "DD_TECHNOLOGY",
+  "DD_REGULATORY",
+  "DD_ENGINEERING",
+  "DD_CREDIT",
+  "DD_COMMERCIAL",
+  "DD_MANAGEMENT",
+  "DD_CUSTOM",
   "IC_MEMO",
 ] as const;
+
+/** Map DD category template names → analysis type enum values */
+export const CATEGORY_NAME_TO_TYPE: Record<string, string> = {
+  "Financial DD": "DD_FINANCIAL",
+  "Legal DD": "DD_LEGAL",
+  "Market DD": "DD_MARKET",
+  "Tax DD": "DD_TAX",
+  "Operational DD": "DD_OPERATIONAL",
+  "ESG DD": "DD_ESG",
+  "Collateral DD": "DD_COLLATERAL",
+  "Tenant & Lease DD": "DD_TENANT_LEASE",
+  "Customer DD": "DD_CUSTOMER",
+  "Technology DD": "DD_TECHNOLOGY",
+  "Regulatory & Permitting DD": "DD_REGULATORY",
+  "Engineering DD": "DD_ENGINEERING",
+  "Credit DD": "DD_CREDIT",
+  "Commercial DD": "DD_COMMERCIAL",
+  "Management DD": "DD_MANAGEMENT",
+};
 
 export const DDAnalyzeRequestSchema = z.object({
   type: z.enum(DD_ANALYSIS_TYPES),
@@ -179,6 +208,7 @@ export const CreateDealActivitySchema = z.object({
 
 export const CreateNoteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
+  authorId: z.string().optional(),
   dealId: z.string().optional(),
   assetId: z.string().optional(),
   entityId: z.string().optional(),

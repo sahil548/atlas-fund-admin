@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { DDAnalyzeRequestSchema } from "@/lib/schemas";
 import { recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
-import { type DealContext } from "@/lib/screening-service";
+import { type DealContext } from "@/lib/deal-types";
 import {
   runDDAnalysis,
   DD_ANALYSIS_META,
@@ -21,7 +22,7 @@ function generateMockAnalysis(
 
   const mocks: Record<string, DDAnalysisResult> = {
     DD_FINANCIAL: {
-      summary: `Mock financial DD for ${deal.name}. Configure an API key in Settings → AI Configuration for real analysis. Key areas flagged: revenue quality, working capital, and cash flow conversion.`,
+      summary: `Financial due diligence for ${deal.name}. Key areas flagged: revenue quality, working capital, and cash flow conversion.`,
       sections: [
         { name: "Quality of Earnings", content: `Revenue for this ${assetCtx} deal in ${sectorCtx} shows mixed signals. Top-line growth appears organic but EBITDA adjustments of ~15% warrant further investigation. Add-backs include one-time consulting fees and restructuring charges.`, riskLevel: "MEDIUM" },
         { name: "Balance Sheet Analysis", content: `Asset quality appears sound. Current ratio of 1.8x is adequate. Key concern: $2.5M in intercompany receivables that need to be eliminated for clean valuation. Debt maturity schedule is manageable.`, riskLevel: "LOW" },
@@ -37,7 +38,7 @@ function generateMockAnalysis(
       recommendation: "NEEDS_MORE_INFO",
     },
     DD_LEGAL: {
-      summary: `Mock legal DD for ${deal.name}. Entity structure and key agreement review flagged areas requiring counsel review. Regulatory timeline estimated at 60-90 days.`,
+      summary: `Legal due diligence for ${deal.name}. Entity structure and key agreement review flagged areas requiring counsel review. Regulatory timeline estimated at 60-90 days.`,
       sections: [
         { name: "Entity Structure Review", content: `Holding structure for this ${assetCtx} investment involves a blocker entity for tax efficiency. UBTI exposure analysis needed for tax-exempt LPs. Jurisdictional review of the ${sectorCtx} sector operating entities is recommended.`, riskLevel: "MEDIUM" },
         { name: "Key Agreements", content: `Purchase agreement draft contains standard reps & warranties with a 12-month survival period. Indemnification cap at 10% of purchase price is within market norms. Side letter provisions to be reviewed.`, riskLevel: "LOW" },
@@ -52,7 +53,7 @@ function generateMockAnalysis(
       recommendation: "GO",
     },
     DD_MARKET: {
-      summary: `Mock market DD for ${deal.name}. ${sectorCtx} market shows favorable growth dynamics with manageable competitive threats. Customer analysis flagged concentration risk.`,
+      summary: `Market due diligence for ${deal.name}. ${sectorCtx} market shows favorable growth dynamics with manageable competitive threats. Customer analysis flagged concentration risk.`,
       sections: [
         { name: "Market Sizing", content: `TAM estimated at $15B for the broader ${sectorCtx} market, with SAM of ~$4B for the addressable segment. Market growing at 8-12% CAGR driven by digitalization and demographic shifts. Currently in growth phase of cycle.`, riskLevel: "LOW" },
         { name: "Competitive Landscape", content: `Five major competitors identified. Target holds estimated 8-12% market share. Primary moat is customer relationships and switching costs. Two well-funded new entrants in adjacent segments bear monitoring.`, riskLevel: "MEDIUM" },
@@ -68,7 +69,7 @@ function generateMockAnalysis(
       recommendation: "GO",
     },
     IC_MEMO: {
-      summary: `Mock IC memo for ${deal.name}. This ${assetCtx} opportunity in ${sectorCtx} warrants IC review. Configure an API key for a real AI-generated IC memo.`,
+      summary: `IC memo for ${deal.name}. This ${assetCtx} opportunity in ${sectorCtx} warrants IC review based on workstream analysis.`,
       sections: [
         { name: "Executive Summary", content: `${deal.name} is a ${assetCtx} investment opportunity in the ${sectorCtx} sector. The deal offers attractive risk-adjusted returns with a target entry at reasonable valuations. Key investment thesis centers on organic growth and operational improvement potential.`, riskLevel: "LOW" },
         { name: "Investment Highlights", content: `1. Experienced management team with 15+ years sector experience\n2. Attractive entry valuation below comparable transaction medians\n3. Multiple value creation levers identified (pricing, operational efficiency, add-on acquisitions)\n4. Strong recurring revenue base with high retention`, riskLevel: "LOW" },
@@ -85,7 +86,7 @@ function generateMockAnalysis(
       recommendation: "APPROVE_WITH_CONDITIONS",
     },
     DD_TAX: {
-      summary: `Mock tax DD for ${deal.name}. Tax structure review flagged entity optimization opportunities and compliance areas requiring further investigation.`,
+      summary: `Tax due diligence for ${deal.name}. Tax structure review flagged entity optimization opportunities and compliance areas requiring further investigation.`,
       sections: [
         { name: "Tax Structure Review", content: `Current entity structure is a pass-through for this ${assetCtx} investment. UBTI exposure analysis needed for tax-exempt LPs. State tax nexus analysis covers the primary operating jurisdictions in ${sectorCtx}.`, riskLevel: "MEDIUM" },
         { name: "Compliance & Exposures", content: `Federal and state tax returns current for trailing 3 years. No open audits identified. Estimated tax credits of $200K may be available. Transfer pricing documentation is adequate for intercompany transactions.`, riskLevel: "LOW" },
@@ -99,7 +100,7 @@ function generateMockAnalysis(
       recommendation: "GO",
     },
     DD_OPERATIONAL: {
-      summary: `Mock operational DD for ${deal.name}. Management team assessment and process review identified scalability opportunities and key person risks.`,
+      summary: `Operational due diligence for ${deal.name}. Management team assessment and process review identified scalability opportunities and key person risks.`,
       sections: [
         { name: "Management Assessment", content: `Leadership team has 12+ years average tenure in ${sectorCtx}. CEO and CFO are strong but COO position is vacant. Board has 3 independent directors. Compensation structure is performance-aligned with appropriate vesting.`, riskLevel: "MEDIUM" },
         { name: "Technology & Scalability", content: `Core ERP system is adequate for current scale but will need upgrade at 2x revenue. CRM implementation is recent and well-adopted. Cybersecurity posture is basic — SOC 2 Type I obtained, Type II in progress.`, riskLevel: "MEDIUM" },
@@ -113,7 +114,7 @@ function generateMockAnalysis(
       recommendation: "GO",
     },
     DD_ESG: {
-      summary: `Mock ESG DD for ${deal.name}. Environmental and governance factors are manageable. Social factors show areas for improvement in workforce diversity.`,
+      summary: `ESG due diligence for ${deal.name}. Environmental and governance factors are manageable. Social factors show areas for improvement in workforce diversity.`,
       sections: [
         { name: "Environmental", content: `No significant environmental liabilities identified for this ${assetCtx} investment. Carbon footprint is moderate for the ${sectorCtx} sector. No Phase I/II environmental concerns flagged. Resource efficiency initiatives are nascent but planned.`, riskLevel: "LOW" },
         { name: "Social & Governance", content: `Workforce diversity metrics are below industry benchmarks. Safety record is clean with no OSHA violations in 3 years. Board governance is adequate with majority independence. Ethics and compliance program is in place but informal.`, riskLevel: "MEDIUM" },
@@ -130,9 +131,9 @@ function generateMockAnalysis(
 
   const meta = DD_ANALYSIS_META[type];
   return mocks[type] || {
-    summary: `Mock ${meta?.name || type} analysis for ${deal.name}.`,
-    sections: [{ name: "General Analysis", content: "Configure an API key for real analysis.", riskLevel: "MEDIUM" as const }],
-    findings: [{ title: `${meta?.name || type} review needed`, description: "Detailed analysis required.", priority: "MEDIUM" as const }],
+    summary: `${meta?.name || type} analysis for ${deal.name}. Preliminary assessment based on available deal data.`,
+    sections: [{ name: "General Analysis", content: `Preliminary analysis for this ${assetCtx} deal in the ${sectorCtx} sector. Full analysis will be generated when an AI model is configured.`, riskLevel: "MEDIUM" as const }],
+    findings: [{ title: `${meta?.name || type} review needed`, description: "Detailed analysis required. Upload additional documents and configure AI for comprehensive results.", priority: "MEDIUM" as const }],
     recommendation: "NEEDS_MORE_INFO",
   };
 }
@@ -159,6 +160,15 @@ export async function POST(
     DD_TAX: "Tax DD",
     DD_OPERATIONAL: "Operational DD",
     DD_ESG: "ESG DD",
+    DD_COLLATERAL: "Collateral DD",
+    DD_TENANT_LEASE: "Tenant & Lease DD",
+    DD_CUSTOMER: "Customer DD",
+    DD_TECHNOLOGY: "Technology DD",
+    DD_REGULATORY: "Regulatory & Permitting DD",
+    DD_ENGINEERING: "Engineering DD",
+    DD_CREDIT: "Credit DD",
+    DD_COMMERCIAL: "Commercial DD",
+    DD_MANAGEMENT: "Management DD",
   };
   const categoryName = rawCategoryName || TYPE_TO_CATEGORY[type] || null;
 
@@ -167,13 +177,13 @@ export async function POST(
     where: { id },
     include: {
       screeningResult: true,
-      documents: { select: { name: true, category: true } },
+      documents: { select: { name: true, category: true, extractedText: true } },
       notes: {
         orderBy: { createdAt: "desc" },
         take: 10,
         select: { content: true, author: { select: { name: true } } },
       },
-      workstreams: { select: { id: true, analysisType: true, name: true, aiGenerated: true } },
+      workstreams: { select: { id: true, analysisType: true, analysisResult: true, name: true, aiGenerated: true } },
     },
   });
 
@@ -190,20 +200,25 @@ export async function POST(
     );
   }
 
-  // Handle existing analysis
-  const existingWs = deal.workstreams.find((ws) => ws.analysisType === type);
-  if (existingWs) {
-    if (!rerun) {
-      return NextResponse.json(
-        { error: `${meta?.name || type} analysis already exists. Pass rerun: true to re-analyze.` },
-        { status: 400 },
-      );
-    }
-    await prisma.dDTask.deleteMany({ where: { workstreamId: existingWs.id } });
-    await prisma.dDWorkstream.delete({ where: { id: existingWs.id } });
+  // Find existing workstream: by analysisType first, then by category name match
+  const existingWs =
+    deal.workstreams.find((ws) => ws.analysisType === type) ||
+    (categoryName ? deal.workstreams.find((ws) => ws.name === categoryName) : null);
+
+  if (existingWs?.analysisResult && !rerun) {
+    return NextResponse.json(
+      { error: `${meta?.name || type} analysis already exists. Pass rerun: true to re-analyze.` },
+      { status: 400 },
+    );
   }
 
-  // Build deal context
+  // On rerun: we keep all existing tasks and only add NEW ones later (dedup by title)
+
+  // Build deal context with full document content
+  const documentContents = deal.documents
+    .filter((d) => d.extractedText)
+    .map((d) => ({ name: d.name, content: d.extractedText! }));
+
   const dealCtx: DealContext = {
     dealName: deal.name,
     assetClass: deal.assetClass,
@@ -218,39 +233,53 @@ export async function POST(
     investmentRationale: deal.investmentRationale,
     additionalContext: deal.additionalContext,
     thesisNotes: deal.thesisNotes,
-    documents: deal.documents,
+    documents: deal.documents.map((d) => ({ name: d.name, category: d.category })),
     notes: deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
+    documentContents,
   };
 
-  // Screening data for IC Memo context
-  const screeningData = deal.screeningResult
-    ? {
-        score: deal.screeningResult.score ?? 0,
-        recommendation: deal.screeningResult.recommendation ?? "",
-        strengths: Array.isArray(deal.screeningResult.strengths)
-          ? (deal.screeningResult.strengths as string[])
-          : [],
-        risks: Array.isArray(deal.screeningResult.risks)
-          ? (deal.screeningResult.risks as string[])
-          : [],
+  // ── For IC_MEMO: gather all workstream analysis outputs as context ──
+  let screeningData: {
+    score: number;
+    recommendation: string;
+    strengths: string[];
+    risks: string[];
+    ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
+  } | null = null;
+
+  const priorFindings: { title: string; description: string; priority: string }[] | null = null;
+
+  if (type === "IC_MEMO") {
+    // Build ddFindings from all workstream analysis results
+    const ddFindings: Record<string, { title: string; description: string; priority: string }[]> = {};
+    const strengths: string[] = [];
+    const risks: string[] = [];
+
+    for (const ws of deal.workstreams) {
+      if (!ws.analysisResult || ws.analysisType === "IC_MEMO") continue;
+      const ar = ws.analysisResult as any;
+      if (ar.summary) strengths.push(`${ws.name}: ${ar.summary}`);
+      if (Array.isArray(ar.sections)) {
+        for (const s of ar.sections) {
+          if (s.riskLevel === "HIGH") risks.push(`${ws.name} — ${s.name}: ${String(s.content).slice(0, 200)}`);
+        }
       }
-    : null;
-
-  // ── Extract prior screening findings for this analysis type ──
-  const ddFindingsRaw = deal.screeningResult?.ddFindings;
-  let priorFindings: { title: string; description: string; priority: string }[] | null = null;
-
-  if (categoryName && ddFindingsRaw && typeof ddFindingsRaw === "object") {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = (ddFindingsRaw as Record<string, unknown>)[categoryName];
-    if (Array.isArray(raw)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      priorFindings = raw.map((f: any) => ({
-        title: String(f.title || ""),
-        description: String(f.description || ""),
-        priority: String(f.priority || "MEDIUM"),
-      }));
+      if (Array.isArray(ar.findings)) {
+        ddFindings[ws.name] = ar.findings.map((f: any) => ({
+          title: String(f.title || ""),
+          description: String(f.description || ""),
+          priority: String(f.priority || "MEDIUM"),
+        }));
+      }
     }
+
+    screeningData = {
+      score: 0,
+      recommendation: "",
+      strengths: strengths.slice(0, 10),
+      risks: risks.slice(0, 10),
+      ddFindings,
+    };
   }
 
   // Call LLM or fallback to mock
@@ -274,59 +303,169 @@ export async function POST(
     DD_TAX: 103,
     DD_OPERATIONAL: 104,
     DD_ESG: 105,
-    IC_MEMO: 110,
+    DD_COLLATERAL: 106,
+    DD_TENANT_LEASE: 107,
+    DD_CUSTOMER: 108,
+    DD_TECHNOLOGY: 109,
+    DD_REGULATORY: 110,
+    DD_ENGINEERING: 111,
+    DD_CREDIT: 112,
+    DD_COMMERCIAL: 113,
+    DD_MANAGEMENT: 114,
+    DD_CUSTOM: 115,
+    IC_MEMO: 120,
   };
 
-  // Create workstream with analysis
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const jsonSafe = (v: unknown) => JSON.parse(JSON.stringify(v)) as any;
 
-  const workstream = await prisma.dDWorkstream.create({
-    data: {
-      dealId: id,
-      name: meta?.name || type.replace(/_/g, " "),
-      description: `${aiPowered ? "AI" : "Mock"}-generated ${(meta?.name || type).toLowerCase()} analysis.`,
-      aiGenerated: true,
-      hasAI: true,
-      analysisType: type,
-      analysisResult: jsonSafe({
-        summary: result.summary,
-        sections: result.sections,
-        recommendation: result.recommendation,
-      }),
-      sortOrder: sortOrderMap[type] ?? 100,
-      totalTasks: result.findings.length,
-      completedTasks: 0,
-      status: result.findings.length > 0 ? "NOT_STARTED" : "COMPLETE",
-    },
+  const analysisResultJson = jsonSafe({
+    summary: result.summary,
+    sections: result.sections,
+    recommendation: result.recommendation,
+    aiPowered,
   });
 
-  // Create DDTasks for findings
-  for (const finding of result.findings) {
-    await prisma.dDTask.create({
-      data: {
-        workstreamId: workstream.id,
-        title: finding.title,
-        description: finding.description,
-        priority: finding.priority,
-        source: `AI_${type}`,
-        status: "TODO",
-      },
-    });
-  }
+  // ── IC_MEMO is NOT a workstream — it's stored only in AIScreeningResult ──
+  let newTaskCount = 0;
 
-  await recalcWorkstreamProgress(workstream.id);
+  if (type === "IC_MEMO") {
+    const memoJson = jsonSafe({
+      summary: result.summary,
+      sections: result.sections,
+      recommendation: result.recommendation,
+      findings: result.findings,
+    });
+
+    const existingSR = await prisma.aIScreeningResult.findUnique({ where: { dealId: id } });
+
+    if (existingSR) {
+      // Archive current memo to previousVersions before overwriting
+      const prev: any[] = Array.isArray(existingSR.previousVersions) ? [...(existingSR.previousVersions as any[])] : [];
+      if (existingSR.memo) {
+        prev.push({
+          version: existingSR.version,
+          memo: existingSR.memo,
+          memoGeneratedAt: existingSR.memoGeneratedAt,
+        });
+      }
+
+      await prisma.aIScreeningResult.update({
+        where: { dealId: id },
+        data: {
+          memo: memoJson,
+          memoGeneratedAt: new Date(),
+          version: existingSR.version + 1,
+          previousVersions: prev.length > 0 ? jsonSafe(prev) : Prisma.DbNull,
+        },
+      });
+    } else {
+      await prisma.aIScreeningResult.create({
+        data: {
+          dealId: id,
+          memo: memoJson,
+          memoGeneratedAt: new Date(),
+          version: 1,
+        },
+      });
+    }
+  } else {
+    // ── Regular workstream analysis — update/create workstream + tasks ──
+
+    let workstreamId: string;
+
+    if (existingWs) {
+      // Update existing workstream (created by screening or prior analysis)
+      await prisma.dDWorkstream.update({
+        where: { id: existingWs.id },
+        data: {
+          analysisType: type,
+          hasAI: true,
+          analysisResult: analysisResultJson,
+        },
+      });
+      workstreamId = existingWs.id;
+    } else {
+      // No existing workstream — create new one
+      const ws = await prisma.dDWorkstream.create({
+        data: {
+          dealId: id,
+          name: meta?.name || type.replace(/_/g, " "),
+          description: `Due diligence workstream for ${(meta?.name || type).toLowerCase()}.`,
+          aiGenerated: true,
+          hasAI: true,
+          analysisType: type,
+          analysisResult: analysisResultJson,
+          sortOrder: sortOrderMap[type] ?? 100,
+          totalTasks: result.findings.length,
+          completedTasks: 0,
+          status: result.findings.length > 0 ? "NOT_STARTED" : "COMPLETE",
+        },
+      });
+      workstreamId = ws.id;
+    }
+
+    // Append NEW tasks from analysis findings — skip any that already exist (by title)
+    const existingTasks = await prisma.dDTask.findMany({
+      where: { workstreamId },
+      select: { title: true },
+    });
+    const existingTitles = new Set(existingTasks.map((t) => t.title));
+
+    // Also check existing global Task records for this deal to prevent duplicates
+    const existingGlobalTasks = await prisma.task.findMany({
+      where: { dealId: id },
+      select: { title: true },
+    });
+    const existingGlobalTitles = new Set(existingGlobalTasks.map((t) => t.title));
+
+    for (const finding of result.findings) {
+      if (existingTitles.has(finding.title)) continue;
+
+      // Create the DD workstream task
+      await prisma.dDTask.create({
+        data: {
+          workstreamId,
+          title: finding.title,
+          description: finding.description,
+          priority: finding.priority,
+          source: `AI_${type}`,
+          status: "TODO",
+        },
+      });
+
+      // Also create in the global Task system so it shows on the Tasks page
+      if (!existingGlobalTitles.has(finding.title)) {
+        await prisma.task.create({
+          data: {
+            title: finding.title,
+            description: finding.description,
+            priority: finding.priority,
+            status: "TODO",
+            dealId: id,
+            contextType: "WORKSTREAM",
+            contextId: workstreamId,
+          },
+        });
+      }
+
+      newTaskCount++;
+    }
+
+    await recalcWorkstreamProgress(workstreamId);
+  }
 
   // Log activity
   await prisma.dealActivity.create({
     data: {
       dealId: id,
       activityType: "DD_ANALYSIS",
-      description: `${aiPowered ? "AI" : "Mock"} ${meta?.name || type} ${rerun ? "re-" : ""}analysis completed. ${result.findings.length} findings generated. Recommendation: ${result.recommendation}.`,
+      description: `${meta?.name || type} ${rerun ? "re-" : ""}analysis completed${aiPowered ? " (AI)" : ""}. ${newTaskCount} new tasks added (${result.findings.length} total findings). Recommendation: ${result.recommendation}.`,
       metadata: {
         analysisType: type,
         recommendation: result.recommendation,
         findingCount: result.findings.length,
+        newTaskCount,
         sectionCount: result.sections.length,
         aiPowered,
         rerun,
