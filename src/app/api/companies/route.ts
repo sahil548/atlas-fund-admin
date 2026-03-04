@@ -21,17 +21,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const { parseBody } = await import("@/lib/api-helpers");
+  const { CreateCompanySchema } = await import("@/lib/schemas");
+  const { data, error } = await parseBody(req, CreateCompanySchema);
+  if (error) return error;
   const company = await prisma.company.create({
     data: {
-      firmId: body.firmId || "firm-1",
-      name: body.name,
-      legalName: body.legalName,
-      type: body.type || "OTHER",
-      website: body.website,
-      industry: body.industry,
-      address: body.address,
-      notes: body.notes,
+      firmId: data!.firmId,
+      name: data!.name,
+      type: data!.type || "OTHER",
+      website: data!.website,
+      industry: data!.industry,
+      notes: data!.notes,
     },
   });
   return NextResponse.json(company, { status: 201 });

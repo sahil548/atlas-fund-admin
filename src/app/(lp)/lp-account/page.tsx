@@ -1,9 +1,11 @@
 "use client";
 
-import useSWR from "swr";
+import { useState } from "react";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
-import { INVESTOR_ID } from "@/lib/constants";
+import { useInvestor } from "@/components/providers/investor-provider";
+import { useToast } from "@/components/ui/toast";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -39,14 +41,53 @@ interface CapitalAccountRecord {
 }
 
 export default function LPAccountPage() {
+  const { investorId } = useInvestor();
+  const toast = useToast();
+  const [recomputing, setRecomputing] = useState(false);
+
   const { data: accounts, isLoading } = useSWR<CapitalAccountRecord[]>(
-    `/api/investors/${INVESTOR_ID}/capital-account`,
+    investorId ? `/api/investors/${investorId}/capital-account` : null,
     fetcher
   );
-  if (isLoading || !accounts) return <div className="text-sm text-gray-400">Loading...</div>;
+  const { data: dashboard } = useSWR(
+    investorId ? `/api/lp/${investorId}/dashboard` : null,
+    fetcher
+  );
+
+  async function handleRecompute() {
+    if (!investorId || !accounts || accounts.length === 0) return;
+    setRecomputing(true);
+    try {
+      const entityId = accounts[0].entityId;
+      const res = await fetch(`/api/investors/${investorId}/capital-account/compute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entityId,
+          periodStart: "2020-01-01",
+          periodEnd: new Date().toISOString().split("T")[0],
+        }),
+      });
+      if (!res.ok) throw new Error("Computation failed");
+      toast.success("Capital account recomputed");
+      mutate(`/api/investors/${investorId}/capital-account`);
+      mutate(`/api/lp/${investorId}/dashboard`);
+    } catch {
+      toast.error("Failed to recompute capital account");
+    }
+    setRecomputing(false);
+  }
+
+  if (!investorId || isLoading || !accounts) return <div className="text-sm text-gray-400">Loading...</div>;
   if (accounts.length === 0) return <div className="text-sm text-gray-400">No capital account data available.</div>;
 
   const account = accounts[0]; // Latest period (API returns ordered by periodDate desc)
+
+  // Pull metrics from dashboard API (computed from real data)
+  const netIrr = dashboard?.irr != null ? `${(dashboard.irr * 100).toFixed(1)}%` : "—";
+  const tvpi = dashboard?.tvpi != null ? `${dashboard.tvpi.toFixed(2)}x` : "—";
+  const dpi = dashboard?.dpi != null ? `${dashboard.dpi.toFixed(2)}x` : "—";
+  const rvpi = dashboard?.rvpi != null ? `${dashboard.rvpi.toFixed(2)}x` : "—";
 
   const rows: { l: string; v: string; s?: boolean; hl?: boolean; label?: boolean; b?: boolean; inc?: boolean; cap?: boolean; neg?: boolean }[] = [
     { l: `Beginning Balance (${formatPeriod(account.periodDate)})`, v: fmtSigned(account.beginningBalance), s: true },
@@ -71,7 +112,16 @@ export default function LPAccountPage() {
             Period ending {new Date(account.periodDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
           </div>
         </div>
-        <Badge color="indigo">Computed from ledger</Badge>
+        <div className="flex items-center gap-2">
+          <Badge color="indigo">Computed from ledger</Badge>
+          <button
+            onClick={handleRecompute}
+            disabled={recomputing}
+            className="px-3 py-1 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {recomputing ? "Recomputing…" : "⟳ Recompute"}
+          </button>
+        </div>
       </div>
 
       <div className="text-sm space-y-0.5 font-mono">
@@ -107,10 +157,10 @@ export default function LPAccountPage() {
 
       <div className="mt-4 grid grid-cols-4 gap-3">
         {[
-          { l: "Net IRR", v: "\u2014" },
-          { l: "TVPI", v: "\u2014" },
-          { l: "DPI", v: "\u2014" },
-          { l: "RVPI", v: "\u2014" },
+          { l: "Net IRR", v: netIrr },
+          { l: "TVPI", v: tvpi },
+          { l: "DPI", v: dpi },
+          { l: "RVPI", v: rvpi },
         ].map((m, i) => (
           <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-xs text-gray-500">{m.l}</div>

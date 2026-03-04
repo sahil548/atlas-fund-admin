@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { xirr } from "@/lib/computations/irr";
+import { computeMetrics } from "@/lib/computations/metrics";
 
 export async function GET(
   _req: Request,
@@ -41,7 +43,6 @@ export async function GET(
   const totalPrincipal = distributionAgg._sum.returnOfCapital ?? 0;
 
   // Compute current NAV: sum of endingBalance from the latest capital account per entity
-  // First, get all capital accounts for this investor, then pick latest per entity
   const allCapitalAccounts = await prisma.capitalAccount.findMany({
     where: { investorId },
     orderBy: { periodDate: "desc" },
@@ -57,11 +58,42 @@ export async function GET(
   }
   const currentNAV = Array.from(latestByEntity.values()).reduce((s, v) => s + v, 0);
 
-  // Performance metrics
-  const tvpi = totalCalled > 0 ? (totalDistributed + currentNAV) / totalCalled : null;
-  const dpi = totalCalled > 0 ? totalDistributed / totalCalled : null;
-  const rvpi = totalCalled > 0 ? currentNAV / totalCalled : null;
-  const irr = null; // Requires complex cash-flow calculation — left as null for now
+  // ── Performance Metrics (using computation engines) ──
+  const metrics = computeMetrics(totalCalled, totalDistributed, currentNAV);
+
+  // ── IRR Calculation ──
+  // Build cash flow array from capital call and distribution line items
+  const callLineItems = await prisma.capitalCallLineItem.findMany({
+    where: { investorId },
+    include: { capitalCall: { select: { callDate: true } } },
+  });
+  const distLineItems = await prisma.distributionLineItem.findMany({
+    where: { investorId },
+    include: { distribution: { select: { distributionDate: true } } },
+  });
+
+  const cashFlows: { date: Date; amount: number }[] = [];
+
+  // Capital calls are outflows (negative)
+  for (const cli of callLineItems) {
+    if (cli.capitalCall.callDate && cli.amount > 0) {
+      cashFlows.push({ date: cli.capitalCall.callDate, amount: -cli.amount });
+    }
+  }
+
+  // Distributions are inflows (positive)
+  for (const dli of distLineItems) {
+    if (dli.distribution.distributionDate && dli.netAmount > 0) {
+      cashFlows.push({ date: dli.distribution.distributionDate, amount: dli.netAmount });
+    }
+  }
+
+  // Terminal value: current NAV as of today (positive inflow)
+  if (currentNAV > 0) {
+    cashFlows.push({ date: new Date(), amount: currentNAV });
+  }
+
+  const irr = cashFlows.length >= 2 ? xirr(cashFlows) : null;
 
   return NextResponse.json({
     investor,
@@ -71,9 +103,9 @@ export async function GET(
     totalIncome,
     totalPrincipal,
     currentNAV,
-    tvpi,
-    dpi,
-    rvpi,
+    tvpi: metrics.tvpi,
+    dpi: metrics.dpi,
+    rvpi: metrics.rvpi,
     irr,
     commitments: investor.commitments,
   });

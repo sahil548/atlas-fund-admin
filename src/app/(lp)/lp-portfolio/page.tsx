@@ -4,16 +4,20 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
 import {
-  INVESTOR_ID,
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
 } from "@/lib/constants";
+import { useInvestor } from "@/components/providers/investor-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function LPPortfolioPage() {
-  const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/portfolio`, fetcher);
-  if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
+  const { investorId } = useInvestor();
+  const { data, isLoading } = useSWR(
+    investorId ? `/api/lp/${investorId}/portfolio` : null,
+    fetcher
+  );
+  if (!investorId || isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
 
   const allAssets = data.assets || [];
 

@@ -106,6 +106,7 @@ async function main() {
   // ============================================================
   console.log("Clearing existing data...");
 
+  await prisma.investorUserAccess.deleteMany();
   await prisma.aIPromptTemplate.deleteMany();
   await prisma.aIConfiguration.deleteMany();
   await prisma.contact.deleteMany();
@@ -177,7 +178,24 @@ async function main() {
   });
 
   // ============================================================
-  // USERS (3 GP users)
+  // GP COMPANY + INTERNAL CONTACTS (must exist before Users)
+  // ============================================================
+  console.log("Creating GP company and internal contacts...");
+
+  await prisma.company.create({
+    data: { id: "company-gp", firmId: firm.id, name: "Atlas Family Office GP", type: "GP", industry: "Financial Services" },
+  });
+
+  await prisma.contact.createMany({
+    data: [
+      { id: "contact-gp-jk", firmId: firm.id, firstName: "James", lastName: "Kim", email: "james.kim@atlasgp.com", title: "Managing Partner", type: "INTERNAL", companyId: "company-gp" },
+      { id: "contact-gp-sm", firmId: firm.id, firstName: "Sarah", lastName: "Mitchell", email: "sarah.mitchell@atlasgp.com", title: "CFO", type: "INTERNAL", companyId: "company-gp" },
+      { id: "contact-gp-al", firmId: firm.id, firstName: "Alex", lastName: "Lee", email: "alex.lee@atlasgp.com", title: "VP, Investments", type: "INTERNAL", companyId: "company-gp" },
+    ],
+  });
+
+  // ============================================================
+  // USERS (3 GP + 5 LP users)
   // ============================================================
   console.log("Creating users...");
 
@@ -189,6 +207,7 @@ async function main() {
       name: "James Kim",
       role: "GP_ADMIN",
       initials: "JK",
+      contactId: "contact-gp-jk",
     },
   });
 
@@ -200,6 +219,7 @@ async function main() {
       name: "Sarah Mitchell",
       role: "GP_TEAM",
       initials: "SM",
+      contactId: "contact-gp-sm",
     },
   });
 
@@ -211,6 +231,7 @@ async function main() {
       name: "Alex Lee",
       role: "GP_TEAM",
       initials: "AL",
+      contactId: "contact-gp-al",
     },
   });
 
@@ -2408,7 +2429,7 @@ End with credit risk rating, key covenant concerns, and recommended structural p
     ],
   });
 
-  // ── Companies ──────────────────────────────────────────
+  // ── Companies (counterparties, GPs, service providers) ──
   const companies = [
     { id: "company-1", firmId: "firm-1", name: "Apex Industries Inc.", type: "COUNTERPARTY" as const, industry: "Industrials", website: "https://apexindustries.com" },
     { id: "company-2", firmId: "firm-1", name: "Beacon Healthcare Group", type: "COUNTERPARTY" as const, industry: "Healthcare", website: "https://beaconhealth.com" },
@@ -2429,9 +2450,32 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       create: c,
     });
   }
+
+  // ── LP Investor Companies ──────────────────────────────
+  const lpCompanies = [
+    { id: "company-calpers", firmId: "firm-1", name: "California Public Employees' Retirement System", type: "LP" as const, industry: "Public Pension" },
+    { id: "company-harvard", firmId: "firm-1", name: "Harvard Management Company", type: "LP" as const, industry: "Endowment" },
+    { id: "company-wellington", firmId: "firm-1", name: "Wellington Family Office", type: "LP" as const, industry: "Family Office" },
+    { id: "company-meridian", firmId: "firm-1", name: "Meridian Partners", type: "LP" as const, industry: "Fund of Funds" },
+    { id: "company-pacificrim", firmId: "firm-1", name: "Pacific Rim Sovereign Wealth Fund", type: "LP" as const, industry: "Sovereign Wealth" },
+    { id: "company-greenfield", firmId: "firm-1", name: "Greenfield Insurance Group", type: "LP" as const, industry: "Insurance" },
+  ];
+
+  for (const c of lpCompanies) {
+    await prisma.company.upsert({ where: { id: c.id }, update: c, create: c });
+  }
   console.log("✓ Companies seeded");
 
-  // ── Contacts ──────────────────────────────────────────
+  // Link existing investors to their LP companies
+  await prisma.investor.update({ where: { id: "investor-1" }, data: { companyId: "company-calpers" } });
+  await prisma.investor.update({ where: { id: "investor-2" }, data: { companyId: "company-harvard" } });
+  await prisma.investor.update({ where: { id: "investor-3" }, data: { companyId: "company-wellington" } });
+  await prisma.investor.update({ where: { id: "investor-4" }, data: { companyId: "company-meridian" } });
+  await prisma.investor.update({ where: { id: "investor-5" }, data: { companyId: "company-pacificrim" } });
+  await prisma.investor.update({ where: { id: "investor-6" }, data: { companyId: "company-greenfield" } });
+  console.log("✓ Investors linked to companies");
+
+  // ── Contacts (counterparty + service provider contacts) ──
   const contacts = [
     { id: "contact-1", firmId: "firm-1", firstName: "Robert", lastName: "Chen", email: "rchen@apexindustries.com", title: "CEO", type: "EXTERNAL" as const, companyId: "company-1" },
     { id: "contact-2", firmId: "firm-1", firstName: "Lisa", lastName: "Park", email: "lpark@beaconhealth.com", title: "CFO", type: "EXTERNAL" as const, companyId: "company-2" },
@@ -2442,13 +2486,53 @@ End with credit risk rating, key covenant concerns, and recommended structural p
   ];
 
   for (const c of contacts) {
-    await prisma.contact.upsert({
-      where: { id: c.id },
-      update: c,
-      create: c,
-    });
+    await prisma.contact.upsert({ where: { id: c.id }, update: c, create: c });
+  }
+
+  // ── LP Investor Contacts ──────────────────────────────
+  const lpContacts = [
+    { id: "contact-calpers-mc", firmId: "firm-1", firstName: "Michael", lastName: "Chen", email: "michael.chen@calpers.ca.gov", title: "Director of Private Equity", type: "EXTERNAL" as const, companyId: "company-calpers" },
+    { id: "contact-calpers-sw", firmId: "firm-1", firstName: "Sarah", lastName: "Wang", email: "sarah.wang@calpers.ca.gov", title: "Investment Analyst", type: "EXTERNAL" as const, companyId: "company-calpers" },
+    { id: "contact-harvard-dm", firmId: "firm-1", firstName: "David", lastName: "Morrison", email: "d.morrison@hmc.harvard.edu", title: "Portfolio Manager", type: "EXTERNAL" as const, companyId: "company-harvard" },
+    { id: "contact-wellington-tw", firmId: "firm-1", firstName: "Tom", lastName: "Wellington", email: "tom@wellingtonfamily.com", title: "Principal", type: "EXTERNAL" as const, companyId: "company-wellington" },
+    { id: "contact-meridian-ra", firmId: "firm-1", firstName: "Rachel", lastName: "Adams", email: "rachel@meridianpartners.com", title: "Managing Director", type: "EXTERNAL" as const, companyId: "company-meridian" },
+    { id: "contact-pacificrim-yk", firmId: "firm-1", firstName: "Yuki", lastName: "Tanaka", email: "y.tanaka@pacificrimsov.gov", title: "Head of Alternatives", type: "EXTERNAL" as const, companyId: "company-pacificrim" },
+    { id: "contact-greenfield-jb", firmId: "firm-1", firstName: "John", lastName: "Barrett", email: "jbarrett@greenfieldins.com", title: "Chief Investment Officer", type: "EXTERNAL" as const, companyId: "company-greenfield" },
+  ];
+
+  for (const c of lpContacts) {
+    await prisma.contact.upsert({ where: { id: c.id }, update: c, create: c });
   }
   console.log("✓ Contacts seeded");
+
+  // ── LP Users (portal access accounts) ──────────────────
+  console.log("Creating LP users...");
+
+  await prisma.user.createMany({
+    data: [
+      { id: "user-lp-calpers", firmId: firm.id, email: "michael.chen@calpers.ca.gov", name: "Michael Chen", role: "LP_INVESTOR", initials: "MC", contactId: "contact-calpers-mc" },
+      { id: "user-lp-calpers2", firmId: firm.id, email: "sarah.wang@calpers.ca.gov", name: "Sarah Wang", role: "LP_INVESTOR", initials: "SW", contactId: "contact-calpers-sw" },
+      { id: "user-lp-harvard", firmId: firm.id, email: "d.morrison@hmc.harvard.edu", name: "David Morrison", role: "LP_INVESTOR", initials: "DM", contactId: "contact-harvard-dm" },
+      { id: "user-lp-wellington", firmId: firm.id, email: "tom@wellingtonfamily.com", name: "Tom Wellington", role: "LP_INVESTOR", initials: "TW", contactId: "contact-wellington-tw" },
+      { id: "user-lp-consultant", firmId: firm.id, email: "rachel@meridianpartners.com", name: "Rachel Adams", role: "LP_INVESTOR", initials: "RA", contactId: "contact-meridian-ra" },
+    ],
+  });
+  console.log("✓ LP users created");
+
+  // ── Investor User Access (many-to-many portal access) ──
+  console.log("Creating investor user access records...");
+
+  await prisma.investorUserAccess.createMany({
+    data: [
+      { investorId: "investor-1", userId: "user-lp-calpers", role: "primary" },    // Michael Chen → CalPERS
+      { investorId: "investor-1", userId: "user-lp-calpers2", role: "viewer" },     // Sarah Wang → CalPERS (2 users, 1 investor)
+      { investorId: "investor-2", userId: "user-lp-harvard", role: "primary" },     // David Morrison → Harvard
+      { investorId: "investor-3", userId: "user-lp-wellington", role: "primary" },  // Tom Wellington → Wellington
+      { investorId: "investor-4", userId: "user-lp-consultant", role: "primary" },  // Rachel Adams → Meridian
+      { investorId: "investor-1", userId: "user-lp-consultant", role: "viewer" },   // Rachel Adams → CalPERS (1 user, 2 investors)
+    ],
+  });
+  console.log("✓ Investor user access seeded");
 
   // ============================================================
   // SAMPLE NOTIFICATIONS (for user-jk)

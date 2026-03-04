@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
+import { ClerkWrapper } from "@/components/providers/clerk-wrapper";
 import { AppShell } from "@/components/layout/app-shell";
 import { ToastProvider } from "@/components/ui/toast";
 import { FirmProvider } from "@/components/providers/firm-provider";
@@ -26,17 +27,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} font-sans antialiased`}>
-        <ToastProvider>
-          <FirmProvider>
+        <ClerkWrapper>
+          <ToastProvider>
             <UserProvider>
-              <GlobalDialogsProvider>
-                <CommandBarProvider>
-                  <AppShell>{children}</AppShell>
-                </CommandBarProvider>
-              </GlobalDialogsProvider>
+              <FirmProvider>
+                <GlobalDialogsProvider>
+                  <CommandBarProvider>
+                    <AppShell>{children}</AppShell>
+                  </CommandBarProvider>
+                </GlobalDialogsProvider>
+              </FirmProvider>
             </UserProvider>
-          </FirmProvider>
-        </ToastProvider>
+          </ToastProvider>
+        </ClerkWrapper>
       </body>
     </html>
   );

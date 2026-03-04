@@ -2,8 +2,7 @@
 
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
-
-import { INVESTOR_ID } from "@/lib/constants";
+import { useInvestor } from "@/components/providers/investor-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -21,8 +20,12 @@ const categoryColor: Record<string, string> = {
 };
 
 export default function LPDocumentsPage() {
-  const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/documents`, fetcher);
-  if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
+  const { investorId } = useInvestor();
+  const { data, isLoading } = useSWR(
+    investorId ? `/api/lp/${investorId}/documents` : null,
+    fetcher
+  );
+  if (!investorId || isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
 
   const docs = Array.isArray(data) ? data : [];
 

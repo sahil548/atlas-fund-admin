@@ -289,6 +289,45 @@ export const CreateIncomeEventSchema = z.object({
   isPrincipal: z.boolean().default(false),
 });
 
+// ── Companies ─────────────────────────────────────────
+
+export const CreateCompanySchema = z.object({
+  firmId: z.string().min(1, "Firm ID is required"),
+  name: z.string().min(1, "Company name is required"),
+  type: z.enum(["GP", "LP", "COUNTERPARTY", "SERVICE_PROVIDER", "OPERATING_COMPANY", "OTHER"]).default("OTHER"),
+  industry: z.string().optional(),
+  website: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// ── Contacts ──────────────────────────────────────────
+
+export const CreateContactSchema = z.object({
+  firmId: z.string().min(1, "Firm ID is required"),
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().optional(),
+  phone: z.string().optional(),
+  title: z.string().optional(),
+  type: z.enum(["INTERNAL", "EXTERNAL"]).default("EXTERNAL"),
+  companyId: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// ── Side Letters ──────────────────────────────────────
+
+export const CreateSideLetterSchema = z.object({
+  investorId: z.string().min(1, "Investor is required"),
+  entityId: z.string().min(1, "Entity is required"),
+  terms: z.string().min(1, "Terms are required"),
+});
+
+export const UpdateSideLetterSchema = z.object({
+  terms: z.string().min(1).optional(),
+  investorId: z.string().min(1).optional(),
+  entityId: z.string().min(1).optional(),
+});
+
 // ── Investors ──────────────────────────────────────────
 
 export const CreateInvestorSchema = z.object({
@@ -300,7 +339,10 @@ export const CreateInvestorSchema = z.object({
   contactPreference: z.string().default("Email"),
   contactId: z.string().optional(),
   companyId: z.string().optional(),
-});
+}).refine(
+  (data) => data.contactId || data.companyId,
+  { message: "Must link to a company or contact", path: ["companyId"] }
+);
 
 export const UpdateInvestorSchema = z.object({
   name: z.string().min(1).optional(),

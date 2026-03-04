@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
 
 const TYPES = [
+  { value: "Individual", label: "Individual" },
+  { value: "Institutional", label: "Institutional" },
   { value: "Pension", label: "Pension" },
   { value: "Endowment", label: "Endowment" },
   { value: "Family Office", label: "Family Office" },

@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       commitments: { include: { entity: { select: { id: true, name: true } } } },
       contact: { select: { id: true, firstName: true, lastName: true, email: true } },
       company: { select: { id: true, name: true, type: true } },
+      userAccess: { include: { user: { select: { id: true, name: true, email: true, role: true } } } },
     },
     orderBy: { totalCommitted: "desc" },
   });

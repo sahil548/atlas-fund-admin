@@ -154,3 +154,18 @@ try { ... } catch (e: any) {
 | Build type errors | Missing await, wrong imports | Run `npm run build` — error shows exact file:line |
 | File upload broken | Wrong component or missing FormData | Use `FileUpload` from `ui/file-upload`, upload via FormData |
 | Command bar is a modal | Old createPortal code | `command-bar-provider.tsx` must NOT use createPortal |
+
+---
+
+## Post-Change Checklist (MANDATORY)
+
+After **every** code change, follow the CLAUDE.md "After every change" checklist before declaring done:
+
+1. Explain what changed in plain English (no jargon)
+2. Give specific testing steps (what to click, what page, what to expect)
+3. Say what might break (edge cases, known limitations)
+4. Suggest improvements
+5. Suggest what to build next (check `docs/roadmap.md`)
+6. Run `npm run build` — zero errors
+
+**Never skip this.** A passing build is not the finish line — the user needs to know what to test and what to watch out for.

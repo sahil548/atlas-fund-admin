@@ -61,6 +61,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/deals/")) return "Deal Detail";
   if (pathname.startsWith("/entities/")) return "Entity Detail";
   if (pathname.startsWith("/investors/")) return "Investor Detail";
+  if (pathname.startsWith("/companies/")) return "Company Detail";
   if (pathname.startsWith("/transactions/")) return "Transaction Detail";
 
   return "Atlas";

@@ -461,10 +461,14 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Link to CRM contact record (a user IS a person)
+  contactId          String?  @unique
+  contact            Contact? @relation(fields: [contactId], references: [id])
+
   firm               Firm              @relation(fields: [firmId], references: [id])
   assignedTasks      Task[]
   icVoteRecords      ICVoteRecord[]
-  investorProfile    Investor?
+  investorAccess     InvestorUserAccess[]
   notes              Note[]
   icQuestions        ICQuestion[]      @relation("ICQuestionAuthor")
   icQuestionReplies  ICQuestionReply[] @relation("ICQuestionReplyAuthor")
@@ -703,7 +707,6 @@ model CreditPayment {
 
 model Investor {
   id               String  @id @default(cuid())
-  userId           String? @unique
   contactId        String? @unique
   companyId        String? @unique
   name             String
@@ -715,9 +718,9 @@ model Investor {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user                   User?                       @relation(fields: [userId], references: [id])
   contact                Contact?                    @relation(fields: [contactId], references: [id])
   company                Company?                    @relation(fields: [companyId], references: [id])
+  userAccess             InvestorUserAccess[]
   commitments            Commitment[]
   sideLetters            SideLetter[]
   notificationPreference InvestorNotificationPreference?
@@ -1467,10 +1470,30 @@ model Contact {
   companyId       String?
   company         Company?    @relation(fields: [companyId], references: [id])
   investorProfile Investor?
+  userAccount     User?
   notes           String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([firmId])
   @@index([companyId])
+}
+
+// ============================================================
+// INVESTOR USER ACCESS (many-to-many)
+// ============================================================
+
+model InvestorUserAccess {
+  id          String   @id @default(cuid())
+  investorId  String
+  userId      String
+  role        String   @default("viewer")  // "primary", "viewer", "admin"
+  createdAt   DateTime @default(now())
+
+  investor    Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([investorId, userId])
+  @@index([userId])
+  @@index([investorId])
 }

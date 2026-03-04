@@ -11,6 +11,7 @@ import { CreateTemplateForm } from "@/components/features/waterfall/create-templ
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { fmt } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -47,6 +48,7 @@ type Tab = "calls" | "distributions" | "waterfall";
 
 export default function TransactionsPage() {
   const { firmId } = useFirm();
+  const toast = useToast();
   const { data: capitalCalls = [] } = useSWR<CapitalCall[]>("/api/capital-calls", fetcher);
   const { data: distributions = [] } = useSWR<Distribution[]>("/api/distributions", fetcher);
   const { data: templates = [] } = useSWR<WaterfallTemplate[]>("/api/waterfall-templates", fetcher);
@@ -61,6 +63,35 @@ export default function TransactionsPage() {
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
   const [addTierFor, setAddTierFor] = useState<{ templateId: string; nextOrder: number } | null>(null);
   const [editTier, setEditTier] = useState<{ templateId: string; tier: WaterfallTier } | null>(null);
+
+  // Waterfall calculation
+  const [showCalcModal, setShowCalcModal] = useState<string | null>(null); // templateId
+  const [calcForm, setCalcForm] = useState({ entityId: "", distributableAmount: "" });
+  const [calcResults, setCalcResults] = useState<Record<string, any>>({}); // templateId -> results
+  const [calcLoading, setCalcLoading] = useState(false);
+
+  async function handleCalculateWaterfall(templateId: string) {
+    if (!calcForm.entityId || !calcForm.distributableAmount) return;
+    setCalcLoading(true);
+    try {
+      const res = await fetch(`/api/waterfall-templates/${templateId}/calculate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entityId: calcForm.entityId,
+          distributableAmount: Number(calcForm.distributableAmount),
+        }),
+      });
+      if (!res.ok) throw new Error("Calculation failed");
+      const data = await res.json();
+      setCalcResults((prev) => ({ ...prev, [templateId]: data }));
+      setShowCalcModal(null);
+      setCalcForm({ entityId: "", distributableAmount: "" });
+    } catch {
+      toast.error?.("Waterfall calculation failed");
+    }
+    setCalcLoading(false);
+  }
 
   // Stats
   const totalCalled = capitalCalls.reduce((s, c) => s + c.amount, 0);
@@ -286,12 +317,85 @@ export default function TransactionsPage() {
                           </button>
                         </div>
                       ))}
-                    <button
-                      onClick={() => setAddTierFor({ templateId: t.id, nextOrder: t.tiers.length + 1 })}
-                      className="w-full border border-dashed border-gray-300 rounded-lg py-2 text-xs text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
-                    >
-                      + Add Tier
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setAddTierFor({ templateId: t.id, nextOrder: t.tiers.length + 1 })}
+                        className="flex-1 border border-dashed border-gray-300 rounded-lg py-2 text-xs text-gray-400 hover:text-gray-600 hover:border-gray-400 transition-colors"
+                      >
+                        + Add Tier
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCalcModal(t.id);
+                          setCalcForm({ entityId: "", distributableAmount: "" });
+                        }}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
+                      >
+                        Calculate Waterfall
+                      </button>
+                    </div>
+
+                    {/* Calculation Results */}
+                    {calcResults[t.id] && (
+                      <div className="mt-3 bg-emerald-50 rounded-lg border border-emerald-200 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-semibold text-emerald-900">
+                            Waterfall Calculation — {calcResults[t.id].entityName}
+                          </h4>
+                          <button
+                            onClick={() => setCalcResults((prev) => { const next = { ...prev }; delete next[t.id]; return next; })}
+                            className="text-[10px] text-gray-400 hover:text-gray-600"
+                          >
+                            ✕ Dismiss
+                          </button>
+                        </div>
+                        <div className="text-[10px] text-emerald-700 mb-2">
+                          Distributable: {fmt(calcResults[t.id].distributableAmount)} · Contributed: {fmt(calcResults[t.id].totalContributed)} · Prior Distributions: {fmt(calcResults[t.id].totalDistributedPrior)}
+                        </div>
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b border-emerald-200">
+                              <th className="text-left py-1.5 font-semibold text-emerald-800">Tier</th>
+                              <th className="text-right py-1.5 font-semibold text-emerald-800">Allocated</th>
+                              <th className="text-right py-1.5 font-semibold text-emerald-800">LP Share</th>
+                              <th className="text-right py-1.5 font-semibold text-emerald-800">GP Share</th>
+                              <th className="text-right py-1.5 font-semibold text-emerald-800">Remaining</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(calcResults[t.id].tiers || []).map((tier: any, i: number) => (
+                              <tr key={i} className="border-b border-emerald-100">
+                                <td className="py-1.5 text-gray-900">{tier.name}</td>
+                                <td className="py-1.5 text-right font-medium">{fmt(tier.totalAllocated)}</td>
+                                <td className="py-1.5 text-right text-blue-700">{fmt(tier.allocatedLP)}</td>
+                                <td className="py-1.5 text-right text-orange-700">{fmt(tier.allocatedGP)}</td>
+                                <td className="py-1.5 text-right text-gray-500">{fmt(tier.remaining)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot>
+                            <tr className="border-t-2 border-emerald-300 font-semibold">
+                              <td className="py-2 text-emerald-900">Total</td>
+                              <td className="py-2 text-right">{fmt(calcResults[t.id].distributableAmount)}</td>
+                              <td className="py-2 text-right text-blue-800">{fmt(calcResults[t.id].totalLP || 0)}</td>
+                              <td className="py-2 text-right text-orange-800">{fmt(calcResults[t.id].totalGP || 0)}</td>
+                              <td className="py-2 text-right text-gray-400">—</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                        <div className="flex gap-4 pt-1">
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                            LP: {calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalLP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0"}%
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[10px]">
+                            <span className="w-2 h-2 rounded-full bg-orange-400" />
+                            GP: {calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalGP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0"}%
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -342,6 +446,56 @@ export default function TransactionsPage() {
             hurdleRate: editTier.tier.hurdleRate ?? undefined,
           }}
         />
+      )}
+
+      {/* Waterfall Calculate Modal */}
+      {showCalcModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCalcModal(null)}>
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900">Calculate Waterfall Distribution</h3>
+            <p className="text-xs text-gray-500">Select an entity and enter the distributable amount to run the waterfall calculation.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Entity</label>
+                <select
+                  value={calcForm.entityId}
+                  onChange={(e) => setCalcForm((f) => ({ ...f, entityId: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select entity…</option>
+                  {entities.map((e) => (
+                    <option key={e.id} value={e.id}>{e.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Distributable Amount ($)</label>
+                <input
+                  type="number"
+                  value={calcForm.distributableAmount}
+                  onChange={(e) => setCalcForm((f) => ({ ...f, distributableAmount: e.target.value }))}
+                  placeholder="e.g. 5000000"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowCalcModal(null)}
+                className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleCalculateWaterfall(showCalcModal)}
+                disabled={calcLoading || !calcForm.entityId || !calcForm.distributableAmount}
+                className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {calcLoading ? "Calculating…" : "Calculate"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

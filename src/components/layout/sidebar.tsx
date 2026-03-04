@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useFirm } from "@/components/providers/firm-provider";
+import { useUser } from "@/components/providers/user-provider";
 import { getSidebarNav } from "@/lib/routes";
+import { UserSwitcher } from "@/components/features/directory/user-switcher";
 
 export function Sidebar({
   portal,
@@ -14,7 +16,10 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const { firmId, firmName, firms, setFirmId } = useFirm();
+  const { user } = useUser();
   const nav = getSidebarNav(portal);
+
+  const isLpUser = user.role === "LP_INVESTOR";
 
   return (
     <div className="w-52 bg-slate-900 flex flex-col flex-shrink-0 h-screen sticky top-0">
@@ -37,30 +42,33 @@ export function Sidebar({
         )}
       </div>
 
-      <div className="px-3 py-3 border-b border-slate-700">
-        <div className="flex bg-slate-800 rounded-lg p-0.5">
-          <button
-            onClick={() => onPortalChange("gp")}
-            className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
-              portal === "gp"
-                ? "bg-indigo-600 text-white"
-                : "text-slate-400"
-            }`}
-          >
-            GP Admin
-          </button>
-          <button
-            onClick={() => onPortalChange("lp")}
-            className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
-              portal === "lp"
-                ? "bg-indigo-600 text-white"
-                : "text-slate-400"
-            }`}
-          >
-            LP Portal
-          </button>
+      {/* Portal toggle — hidden for LP-only users */}
+      {!isLpUser && (
+        <div className="px-3 py-3 border-b border-slate-700">
+          <div className="flex bg-slate-800 rounded-lg p-0.5">
+            <button
+              onClick={() => onPortalChange("gp")}
+              className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
+                portal === "gp"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-400"
+              }`}
+            >
+              GP Admin
+            </button>
+            <button
+              onClick={() => onPortalChange("lp")}
+              className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
+                portal === "lp"
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-400"
+              }`}
+            >
+              LP Portal
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <nav className="flex-1 py-2 overflow-y-auto">
         {nav.map((item) => {
@@ -83,19 +91,7 @@ export function Sidebar({
       </nav>
 
       <div className="p-3 border-t border-slate-700">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-            {portal === "gp" ? "JK" : "CP"}
-          </div>
-          <div>
-            <div className="text-[10px] text-white font-medium">
-              {portal === "gp" ? "James Kim" : "CalPERS"}
-            </div>
-            <div className="text-[9px] text-slate-500">
-              {portal === "gp" ? "GP Admin" : "LP Investor"}
-            </div>
-          </div>
-        </div>
+        <UserSwitcher />
       </div>
     </div>
   );

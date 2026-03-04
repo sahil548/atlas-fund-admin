@@ -10,11 +10,18 @@ export async function GET(req: NextRequest) {
   if (companyId) where.companyId = companyId;
   if (type) where.type = type;
 
+  // Filter to contacts without a user account (for user creation dropdown)
+  const unlinked = req.nextUrl.searchParams.get("unlinked");
+  if (unlinked === "true") {
+    where.userAccount = { is: null };
+  }
+
   const contacts = await prisma.contact.findMany({
     where,
     include: {
       company: { select: { id: true, name: true, type: true } },
       investorProfile: { select: { id: true, name: true, investorType: true, kycStatus: true } },
+      userAccount: { select: { id: true } },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
@@ -22,18 +29,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const { parseBody } = await import("@/lib/api-helpers");
+  const { CreateContactSchema } = await import("@/lib/schemas");
+  const { data, error } = await parseBody(req, CreateContactSchema);
+  if (error) return error;
   const contact = await prisma.contact.create({
     data: {
-      firmId: body.firmId || "firm-1",
-      firstName: body.firstName,
-      lastName: body.lastName,
-      email: body.email,
-      phone: body.phone,
-      title: body.title,
-      type: body.type || "EXTERNAL",
-      companyId: body.companyId,
-      notes: body.notes,
+      firmId: data!.firmId,
+      firstName: data!.firstName,
+      lastName: data!.lastName,
+      email: data!.email,
+      phone: data!.phone,
+      title: data!.title,
+      type: data!.type || "EXTERNAL",
+      companyId: data!.companyId,
+      notes: data!.notes,
     },
   });
   return NextResponse.json(contact, { status: 201 });

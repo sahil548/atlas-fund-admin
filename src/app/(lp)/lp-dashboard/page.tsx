@@ -3,13 +3,17 @@
 import useSWR from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { fmt } from "@/lib/utils";
-import { INVESTOR_ID } from "@/lib/constants";
+import { useInvestor } from "@/components/providers/investor-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function LPDashboardPage() {
-  const { data, isLoading } = useSWR(`/api/lp/${INVESTOR_ID}/dashboard`, fetcher);
-  if (isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
+  const { investorId } = useInvestor();
+  const { data, isLoading } = useSWR(
+    investorId ? `/api/lp/${investorId}/dashboard` : null,
+    fetcher
+  );
+  if (!investorId || isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
 
   return (
     <div className="space-y-5">

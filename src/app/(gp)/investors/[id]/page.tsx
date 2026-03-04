@@ -3,9 +3,17 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
+import { useToast } from "@/components/ui/toast";
 import { fmt } from "@/lib/utils";
+import { useFirm } from "@/components/providers/firm-provider";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -15,14 +23,23 @@ const tabs = [
   { key: "commitments", label: "Commitments" },
   { key: "activity", label: "Activity" },
   { key: "documents", label: "Documents" },
+  { key: "access", label: "Portal Access" },
 ];
 
 export default function InvestorDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { firmId } = useFirm();
   const { data: investor, isLoading } = useSWR(id ? `/api/investors/${id}` : null, fetcher);
   const { data: capitalAccount } = useSWR(id ? `/api/investors/${id}/capital-account` : null, fetcher);
   const { data: docs } = useSWR(id ? `/api/investors/${id}/documents` : null, fetcher);
+  const { data: access } = useSWR(id ? `/api/investors/${id}/access` : null, fetcher);
+  const { data: allUsers } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const [tab, setTab] = useState("overview");
+  const toast = useToast();
+
+  // Grant access modal
+  const [showGrantAccess, setShowGrantAccess] = useState(false);
+  const [grantForm, setGrantForm] = useState({ userId: "", role: "viewer" });
 
   if (isLoading || !investor) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -31,11 +48,64 @@ export default function InvestorDetailPage() {
   const totalCalled = (inv.commitments || []).reduce((s: number, c: { calledAmount: number }) => s + c.calledAmount, 0);
   const totalDistributed = (inv.distributionLineItems || []).reduce((s: number, d: { netAmount: number }) => s + d.netAmount, 0);
 
+  // Users who already have access (for filtering the grant dropdown)
+  const accessUserIds = new Set((access || []).map((a: any) => a.userId));
+  const availableUsers = (allUsers || []).filter((u: any) => !accessUserIds.has(u.id) && u.isActive);
+
+  async function handleGrantAccess() {
+    if (!grantForm.userId) { toast.error("Select a user"); return; }
+    try {
+      await fetch(`/api/investors/${id}/access`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(grantForm),
+      });
+      toast.success("Access granted");
+      mutate(`/api/investors/${id}/access`);
+      setShowGrantAccess(false);
+      setGrantForm({ userId: "", role: "viewer" });
+    } catch {
+      toast.error("Failed to grant access");
+    }
+  }
+
+  async function handleRevokeAccess(userId: string, userName: string) {
+    try {
+      await fetch(`/api/investors/${id}/access`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      toast.success(`Access revoked for ${userName}`);
+      mutate(`/api/investors/${id}/access`);
+    } catch {
+      toast.error("Failed to revoke access");
+    }
+  }
+
+  async function handleBulkGrantAccess() {
+    const lpUsers = availableUsers.filter((u: any) => u.role === "LP_INVESTOR");
+    if (lpUsers.length === 0) { toast.error("All LP users already have access"); return; }
+    let granted = 0;
+    for (const u of lpUsers) {
+      try {
+        await fetch(`/api/investors/${id}/access`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: u.id, role: "viewer" }),
+        });
+        granted++;
+      } catch { /* skip failures */ }
+    }
+    toast.success(`Granted access to ${granted} LP user${granted !== 1 ? "s" : ""}`);
+    mutate(`/api/investors/${id}/access`);
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <Link href="/investors" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">← All Investors</Link>
+        <Link href="/directory" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">&larr; All Investors</Link>
         <h2 className="text-lg font-bold">{inv.name}</h2>
         <div className="flex gap-2 mt-1">
           <Badge color="blue">{inv.investorType}</Badge>
@@ -138,7 +208,7 @@ export default function InvestorDetailPage() {
                     <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
                     <td className="px-3 py-2.5">{fmt(c.calledAmount)}</td>
                     <td className="px-3 py-2.5">{fmt(c.amount - c.calledAmount)}</td>
-                    <td className="px-3 py-2.5">{c.amount > 0 ? `${((c.calledAmount / c.amount) * 100).toFixed(0)}%` : "—"}</td>
+                    <td className="px-3 py-2.5">{c.amount > 0 ? `${((c.calledAmount / c.amount) * 100).toFixed(0)}%` : "\u2014"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -180,8 +250,8 @@ export default function InvestorDetailPage() {
                     <span className="text-sm font-bold">{fmt(item.amount)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {item.capitalCall.entity.name} · Due {new Date(item.capitalCall.dueDate).toLocaleDateString()}
-                    {item.capitalCall.purpose && ` · ${item.capitalCall.purpose}`}
+                    {item.capitalCall.entity.name} &middot; Due {new Date(item.capitalCall.dueDate).toLocaleDateString()}
+                    {item.capitalCall.purpose && ` \u00B7 ${item.capitalCall.purpose}`}
                   </div>
                 </div>
               ))}
@@ -202,7 +272,7 @@ export default function InvestorDetailPage() {
                     <span className="text-sm font-bold">{fmt(item.netAmount)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {item.distribution.entity.name} · {new Date(item.distribution.distributionDate).toLocaleDateString()}
+                    {item.distribution.entity.name} &middot; {new Date(item.distribution.distributionDate).toLocaleDateString()}
                     {item.income > 0 && <span className="text-emerald-600 ml-2">Income: {fmt(item.income)}</span>}
                     {item.returnOfCapital > 0 && <span className="text-blue-600 ml-2">ROC: {fmt(item.returnOfCapital)}</span>}
                   </div>
@@ -235,6 +305,118 @@ export default function InvestorDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Portal Access Tab */}
+      {tab === "access" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Portal Access</h3>
+              <div className="flex gap-2">
+                {availableUsers.filter((u: any) => u.role === "LP_INVESTOR").length > 0 && (
+                  <Button size="sm" variant="secondary" onClick={handleBulkGrantAccess}>Grant All LP Users</Button>
+                )}
+                <Button size="sm" onClick={() => setShowGrantAccess(true)}>+ Grant Access</Button>
+              </div>
+            </div>
+            {access && access.length > 0 ? (
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {["User", "Email", "System Role", "Access Role", "Granted", ""].map((h) => (
+                      <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {access.map((a: any) => (
+                    <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-4 py-3 font-medium">
+                        <div className="flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                            {a.user?.name?.split(" ").map((n: string) => n[0]).join("") || "?"}
+                          </span>
+                          {a.user?.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{a.user?.email}</td>
+                      <td className="px-4 py-3">
+                        <Badge color={a.user?.role === "GP_ADMIN" ? "indigo" : a.user?.role === "LP_INVESTOR" ? "green" : "blue"}>
+                          {a.user?.role?.replace(/_/g, " ")}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge color={a.role === "primary" ? "indigo" : a.role === "admin" ? "purple" : "gray"}>
+                          {a.role}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                          onClick={() => handleRevokeAccess(a.userId, a.user?.name)}
+                        >
+                          Revoke
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="p-6 text-center text-sm text-gray-400">No users have portal access to this investor.</div>
+            )}
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-500">
+            <strong>About Portal Access:</strong> Users with access can view this investor&apos;s data in the LP portal.
+            &quot;Primary&quot; users are the main point of contact. &quot;Viewer&quot; users have read-only access.
+            &quot;Admin&quot; users can manage settings for this investor.
+          </div>
+        </div>
+      )}
+
+      {/* Grant Access Modal */}
+      <Modal
+        open={showGrantAccess}
+        onClose={() => setShowGrantAccess(false)}
+        title="Grant Portal Access"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowGrantAccess(false)}>Cancel</Button>
+            <Button onClick={handleGrantAccess}>Grant Access</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label="User" required>
+            <Select
+              value={grantForm.userId}
+              onChange={(e) => setGrantForm((p) => ({ ...p, userId: e.target.value }))}
+              options={[
+                { value: "", label: "\u2014 Select a user \u2014" },
+                ...availableUsers.map((u: any) => ({
+                  value: u.id,
+                  label: `${u.name} (${u.role?.replace(/_/g, " ")})`,
+                })),
+              ]}
+            />
+          </FormField>
+          <FormField label="Access Role">
+            <Select
+              value={grantForm.role}
+              onChange={(e) => setGrantForm((p) => ({ ...p, role: e.target.value }))}
+              options={[
+                { value: "viewer", label: "Viewer (read-only)" },
+                { value: "primary", label: "Primary (main contact)" },
+                { value: "admin", label: "Admin (manage settings)" },
+              ]}
+            />
+          </FormField>
+        </div>
+      </Modal>
     </div>
   );
 }
