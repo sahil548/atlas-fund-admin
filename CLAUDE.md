@@ -21,6 +21,8 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
    - `docs/data-model-guide.md` — all 56 Prisma models by domain
    - `docs/ui-guide.md` — existing UI components and usage patterns
    - `docs/api-guide.md` — all API endpoints, what they accept/return
+   - `docs/workflows.md` — labeled step-by-step workflows for testing and verification
+   - `docs/roadmap.md` — what's built, what's not, what to build next (priority ranked)
    - `.claude/rules/coding-patterns.md` — auto-loaded, bug-preventing patterns
    - `.claude/rules/project-structure.md` — auto-loaded, file layout and checklists
 
@@ -37,7 +39,7 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 2. **Give me specific testing steps.** Not "test the feature" — tell me exactly what to click, what page to go to, what I should see.
 3. **Tell me what might break.** Be honest about edge cases or things that could go wrong.
 4. **Suggest improvements.** If you see a better way to do something, or something adjacent that should be tightened up, say so.
-5. **Suggest what to build next.** You know the codebase — recommend the logical next step.
+5. **Suggest what to build next.** Consult `docs/roadmap.md` and recommend the highest-impact unbuilt feature. Don't guess — check the roadmap.
 6. **Run `npm run build`** — zero errors before telling me you're done.
 
 ### Version workflow
@@ -51,6 +53,7 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 - **At the end of every response, report context window usage** as a short line: `Context: ~Xk this response / ~Xk total of 200k tokens used` so I can track both per-response cost and cumulative runway.
 - **When context exceeds ~100k tokens, proactively mention it** — suggest wrapping up or starting a new session if more big work is coming.
 - **When context exceeds ~150k tokens, warn clearly** — tell me what should be finished now vs saved for a new session.
+- **At ~180k tokens, auto-compact.** Run `/compact` to summarize the conversation and free up context. Don't ask — just do it.
 
 ### Continuous improvement
 
