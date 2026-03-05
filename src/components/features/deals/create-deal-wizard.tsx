@@ -165,12 +165,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
-      // Create workstreams (scaffolding) but stay in SCREENING
-      await fetch(`/api/deals/${dealId}/screen`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ advanceStage: false }),
-      });
+      // Create workstreams (scaffolding) — stays in SCREENING
+      await fetch(`/api/deals/${dealId}/screen`, { method: "POST" });
       toast.success("Deal created");
       handleClose();
       router.push(`/deals/${dealId}`);
@@ -185,18 +181,11 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
-
-      const screenRes = await fetch(`/api/deals/${dealId}/screen`, {
-        method: "POST",
-      });
-      if (!screenRes.ok) {
-        toast.success("Deal created (screening will run later)");
-      } else {
-        toast.success("Deal created & AI screening complete");
-      }
-
+      // Create workstreams — deal page auto-starts analyses via ?autoscreen=1
+      await fetch(`/api/deals/${dealId}/screen`, { method: "POST" });
+      toast.success("Deal created — AI screening starting...");
       handleClose();
-      router.push(`/deals/${dealId}`);
+      router.push(`/deals/${dealId}?autoscreen=1`);
     } catch {
       toast.error("Failed to create deal");
     } finally {

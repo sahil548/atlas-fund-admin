@@ -16,19 +16,25 @@ export const DEFAULT_PROMPT_TEMPLATES: DefaultTemplate[] = [
     module: "deals",
     name: "IC Memo Generator",
     description: "Generate an Investment Committee memo from deal data",
-    content: `Generate a professional Investment Committee memo.
+    content: `Generate a professional Investment Committee memo with a quantitative score (0-100).
 
 Structure:
-1. Executive Summary (1 paragraph): what the deal is, size, why we're looking at it, recommendation
-2. Investment Highlights: 3-5 bullet points on why this is attractive
-3. Key Risks & Mitigants: table with Risk, Impact, Likelihood, Mitigant columns
+1. Executive Summary (2-3 paragraphs): what the deal is, size, thesis, and overall recommendation
+2. Investment Highlights: 3-5 key attractions with supporting data points
+3. Key Risks & Mitigants: for each risk, cover impact, likelihood, and proposed mitigant
 4. Deal Terms: structure, entry valuation, hold period, target returns, key protections
-5. Financial Summary: table with Trailing, Current, Projected for revenue, EBITDA, margins, leverage
-6. DD Findings Summary: key takeaways from financial, legal, and market DD
-7. Allocation Recommendation: which fund entities participate, amounts, co-invest for LPs, capital call timing
-8. Recommendation: APPROVE / APPROVE WITH CONDITIONS / DECLINE with conditions listed
+5. Financial Summary: revenue, EBITDA, margins, leverage — trailing, current, and projected
+6. DD Findings Summary: synthesize key takeaways from all workstream analyses
+7. Recommendation: APPROVE / APPROVE WITH CONDITIONS / DECLINE with specific conditions
 
-Write as a professional IC memo suitable for distribution to voting members. Use formal tone. Target 3-5 pages equivalent.`,
+Scoring guide:
+- 85-100: Strong investment — clear thesis, manageable risks, attractive returns
+- 70-84: Solid investment — good thesis with some conditions to address
+- 50-69: Mixed — notable concerns requiring significant conditions
+- 30-49: Weak — significant risks outweigh potential returns
+- 0-29: Pass — fundamental issues, do not pursue
+
+Flag unresolved open questions from workstreams as conditions for approval. Write as a professional IC memo suitable for voting members. Use formal tone.`,
   },
 ];
 

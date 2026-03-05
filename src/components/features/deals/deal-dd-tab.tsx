@@ -531,78 +531,114 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                     </div>
 
                     {/* Analysis Report */}
-                    {ws.analysisResult && (
-                      <div className={`mb-3 rounded-lg border p-3 ${ws.analysisResult.aiPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100 dark:from-indigo-950 dark:to-purple-950 dark:border-indigo-800" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100 dark:from-gray-900 dark:to-amber-950 dark:border-amber-800"}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className={`text-xs font-semibold ${ws.analysisResult.aiPowered ? "text-indigo-900" : "text-gray-700"}`}>Analysis Report</div>
-                            {!ws.analysisResult.aiPowered && (
-                              <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Sample — configure AI for full analysis</span>
+                    {ws.analysisResult && (() => {
+                      const ar = ws.analysisResult;
+                      const isNewFormat = Array.isArray(ar.openQuestions);
+                      const isAIPowered = ar.aiPowered;
+                      return (
+                        <div className={`mb-3 rounded-lg border p-3 ${isAIPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100"}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className={`text-xs font-semibold ${isAIPowered ? "text-indigo-900" : "text-gray-700"}`}>
+                                {isNewFormat ? "Analysis Summary" : "Analysis Report"}
+                              </div>
+                              {!isAIPowered && (
+                                <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Sample — configure AI for full analysis</span>
+                              )}
+                            </div>
+                            {/* Legacy format: show recommendation badge */}
+                            {!isNewFormat && ar.recommendation && (
+                              <Badge
+                                color={
+                                  ar.recommendation === "GO" || ar.recommendation === "APPROVE"
+                                    ? "green"
+                                    : ar.recommendation === "NO_GO" || ar.recommendation === "DECLINE"
+                                    ? "red"
+                                    : "yellow"
+                                }
+                              >
+                                {ar.recommendation.replace(/_/g, " ")}
+                              </Badge>
                             )}
                           </div>
-                          {ws.analysisResult.recommendation && (
-                            <Badge
-                              color={
-                                ws.analysisResult.recommendation === "GO" || ws.analysisResult.recommendation === "APPROVE"
-                                  ? "green"
-                                  : ws.analysisResult.recommendation === "NO_GO" || ws.analysisResult.recommendation === "DECLINE"
-                                  ? "red"
-                                  : "yellow"
-                              }
-                            >
-                              {ws.analysisResult.recommendation.replace(/_/g, " ")}
-                            </Badge>
+
+                          {/* Summary — expandable for new format (longer text) */}
+                          {isNewFormat ? (
+                            <div>
+                              <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                {expandedAnalysis.has(ws.id)
+                                  ? ar.summary
+                                  : ar.summary?.length > 300
+                                    ? ar.summary.slice(0, 300) + "..."
+                                    : ar.summary}
+                              </p>
+                              {ar.summary?.length > 300 && (
+                                <button
+                                  onClick={() =>
+                                    setExpandedAnalysis((prev) => {
+                                      const next = new Set(prev);
+                                      next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
+                                      return next;
+                                    })
+                                  }
+                                  className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium mt-1"
+                                >
+                                  {expandedAnalysis.has(ws.id) ? "Show less" : "Read more"}
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-700 mb-2">{ar.summary}</p>
+                          )}
+
+                          {/* Legacy format: expandable sections */}
+                          {!isNewFormat && Array.isArray(ar.sections) && ar.sections.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              <button
+                                onClick={() =>
+                                  setExpandedAnalysis((prev) => {
+                                    const next = new Set(prev);
+                                    next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
+                                    return next;
+                                  })
+                                }
+                                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
+                              >
+                                {expandedAnalysis.has(ws.id) ? "Hide Report Details" : `Show Report Details (${ar.sections.length} sections)`}
+                              </button>
+                              {expandedAnalysis.has(ws.id) && (
+                                <div className="space-y-2">
+                                  {ar.sections.map((section: any, i: number) => (
+                                    <div key={i} className="bg-white rounded border border-gray-100 p-2">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-xs font-medium text-gray-800">{section.name}</span>
+                                        {section.riskLevel && (
+                                          <Badge
+                                            color={
+                                              section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
+                                            }
+                                          >
+                                            {section.riskLevel}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                      <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Open questions count */}
+                          {ws.tasks && ws.tasks.length > 0 && (
+                            <div className="mt-2 text-[10px] text-indigo-600">
+                              {ws.tasks.filter((t: any) => t.source?.startsWith("AI_")).length} AI-generated open questions
+                            </div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-700 mb-2">{ws.analysisResult.summary}</p>
-
-                        {/* Report sections — shown by default */}
-                        {Array.isArray(ws.analysisResult.sections) && ws.analysisResult.sections.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            <button
-                              onClick={() =>
-                                setExpandedAnalysis((prev) => {
-                                  const next = new Set(prev);
-                                  next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
-                                  return next;
-                                })
-                              }
-                              className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
-                            >
-                              {expandedAnalysis.has(ws.id) ? "Hide Report Details ▴" : `Show Report Details (${ws.analysisResult.sections.length} sections) ▾`}
-                            </button>
-                            {expandedAnalysis.has(ws.id) && (
-                              <div className="space-y-2">
-                                {ws.analysisResult.sections.map((section: any, i: number) => (
-                                  <div key={i} className="bg-white rounded border border-gray-100 p-2">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-xs font-medium text-gray-800">{section.name}</span>
-                                      {section.riskLevel && (
-                                        <Badge
-                                          color={
-                                            section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
-                                          }
-                                        >
-                                          {section.riskLevel}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Open questions count */}
-                        {ws.tasks && ws.tasks.length > 0 && (
-                          <div className="mt-2 text-[10px] text-indigo-600">
-                            Generated {ws.tasks.filter((t: any) => t.source?.startsWith("AI_")).length} open questions
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Open Questions & Tasks */}
                     {ws.tasks && ws.tasks.length > 0 && (
@@ -671,6 +707,8 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                                     color={
                                       task.source === "AI_SCREENING"
                                         ? "purple"
+                                        : task.source?.startsWith("AI_QUESTION_")
+                                        ? "indigo"
                                         : task.source?.startsWith("AI_")
                                         ? "indigo"
                                         : "gray"
@@ -678,12 +716,12 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                                   >
                                     {task.source === "AI_SCREENING"
                                       ? "Screening"
+                                      : task.source?.startsWith("AI_QUESTION_")
+                                      ? "AI Question"
                                       : task.source?.startsWith("AI_DD_")
                                       ? "AI DD"
                                       : task.source?.startsWith("AI_IC_")
                                       ? "AI Memo"
-                                      : task.source?.startsWith("AI_COMP")
-                                      ? "AI Comp"
                                       : task.source === "MANUAL"
                                       ? "Manual"
                                       : task.source}

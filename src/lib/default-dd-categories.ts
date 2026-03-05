@@ -23,7 +23,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Financial DD",
     description: "Revenue/cash flow analysis, financial model, projections, quality of earnings",
-    defaultInstructions: "Perform a comprehensive financial due diligence analysis. Cover quality of earnings, balance sheet review, cash flow analysis, and projections stress test.",
+    defaultInstructions: "You are a senior financial analyst. Perform comprehensive financial due diligence. Analyze quality of earnings, balance sheet composition, cash flow conversion, and management projections. Produce a detailed summary of findings and raise specific, answerable open questions the deal team needs to resolve (e.g. 'What are the EBITDA add-backs and supporting documentation?' or 'Can management provide a trailing 24-month revenue bridge?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 1,
@@ -31,7 +31,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Legal DD",
     description: "Corporate structure, contracts, litigation, IP",
-    defaultInstructions: "Perform legal and structural due diligence analysis. Cover entity structure, key agreements, regulatory compliance, and covenant analysis.",
+    defaultInstructions: "You are a senior legal analyst. Perform legal and structural due diligence. Analyze entity structure, key contracts, regulatory compliance, pending litigation, and IP ownership. Raise specific open questions about legal risks (e.g. 'Do all material contracts survive change of control?' or 'What is the status of pending litigation disclosed in the CIM?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 2,
@@ -39,7 +39,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Tax DD",
     description: "Tax structure, compliance, entity elections",
-    defaultInstructions: "Perform comprehensive tax due diligence analysis. Cover tax structure, entity elections, compliance history, credits/exposures, and transaction implications.",
+    defaultInstructions: "You are a senior tax analyst. Perform comprehensive tax due diligence. Analyze tax structure, entity elections, compliance history, available credits, and transaction implications. Raise specific open questions (e.g. 'Is a Section 754 election in place?' or 'What is the UBTI exposure for tax-exempt LPs?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 3,
@@ -47,7 +47,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Operational DD",
     description: "Management, processes, technology, scalability",
-    defaultInstructions: "Perform comprehensive operational due diligence analysis. Cover management assessment, business processes, technology infrastructure, scalability, and key person risk.",
+    defaultInstructions: "You are a senior operational analyst. Perform comprehensive operational due diligence. Assess management team, business processes, technology infrastructure, scalability constraints, and key person risk. Raise specific open questions (e.g. 'What is the succession plan for the CEO?' or 'What is the ERP upgrade timeline and budget?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 4,
@@ -55,7 +55,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Market DD",
     description: "Market size, competitive landscape, positioning, comparable analysis",
-    defaultInstructions: "Perform market and comparable analysis due diligence. Cover market sizing, competitive landscape, customer analysis, industry trends, and transaction/public comps.",
+    defaultInstructions: "You are a senior market analyst. Perform market and competitive due diligence. Analyze market sizing, competitive landscape, customer dynamics, industry trends, and comparable transactions. Raise specific open questions (e.g. 'What is the company's market share in the core segment?' or 'How do entry multiples compare to recent transactions?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 5,
@@ -63,7 +63,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "ESG DD",
     description: "Environmental, social, governance, compliance",
-    defaultInstructions: "Perform comprehensive ESG due diligence analysis. Cover environmental assessment, social factors, governance structure, ESG framework alignment, and risk/opportunity assessment.",
+    defaultInstructions: "You are a senior ESG analyst. Perform comprehensive ESG due diligence. Assess environmental liabilities, social factors, governance structure, and framework alignment. Raise specific open questions (e.g. 'What are Scope 1 and 2 emissions?' or 'Does the board meet independence requirements?').",
     isDefault: true,
     scope: "UNIVERSAL",
     sortOrder: 6,
@@ -72,7 +72,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Collateral DD",
     description: "Property appraisals, site condition, title/lien positions, insurance",
-    defaultInstructions: "Perform real estate collateral due diligence analysis. Cover property valuation, physical condition, title/lien analysis, insurance review, and environmental assessment.",
+    defaultInstructions: "You are a senior real estate analyst. Perform collateral due diligence. Analyze property valuation, physical condition, title and lien positions, insurance adequacy, and environmental factors. Raise specific open questions (e.g. 'When was the last appraisal and what methodology was used?' or 'Are there any outstanding title exceptions?').",
     isDefault: true,
     scope: "REAL_ESTATE",
     sortOrder: 7,
@@ -80,7 +80,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Tenant & Lease DD",
     description: "Tenant credit, lease terms, occupancy, rent comparables",
-    defaultInstructions: "Perform tenant and lease due diligence analysis. Cover tenant credit, lease terms, occupancy analysis, rent comparables, and rollover risk.",
+    defaultInstructions: "You are a senior real estate analyst. Perform tenant and lease due diligence. Analyze tenant credit quality, lease terms and expirations, occupancy trends, rent comparables, and rollover risk. Raise specific open questions (e.g. 'What is the weighted average lease term remaining?' or 'What are rents vs market comparables by unit type?').",
     isDefault: true,
     scope: "REAL_ESTATE",
     sortOrder: 8,
@@ -89,7 +89,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Customer DD",
     description: "Customer concentration, retention, cohort economics",
-    defaultInstructions: "Perform customer due diligence analysis. Cover customer concentration, retention/churn, unit economics, and pipeline/growth analysis.",
+    defaultInstructions: "You are a senior business analyst. Perform customer due diligence. Analyze customer concentration, retention and churn rates, cohort economics, and pipeline quality. Raise specific open questions (e.g. 'What percentage of revenue comes from the top 5 customers?' or 'What is the net revenue retention rate by cohort?').",
     isDefault: true,
     scope: "OPERATING_BUSINESS",
     sortOrder: 9,
@@ -97,7 +97,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Technology DD",
     description: "Tech stack, technical debt, product roadmap, cybersecurity",
-    defaultInstructions: "Perform technology due diligence analysis. Cover technology stack, technical debt, product/roadmap, cybersecurity, and IP/data assessment.",
+    defaultInstructions: "You are a senior technology analyst. Perform technology due diligence. Analyze technology stack, technical debt, product roadmap, cybersecurity posture, and IP/data assets. Raise specific open questions (e.g. 'What is the estimated cost to address critical technical debt?' or 'Is SOC 2 Type II certification completed or in progress?').",
     isDefault: true,
     scope: "OPERATING_BUSINESS",
     sortOrder: 10,
@@ -106,7 +106,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Regulatory & Permitting DD",
     description: "Regulatory approvals, permits, government concessions",
-    defaultInstructions: "Perform regulatory and permitting due diligence. Cover regulatory framework, permitting status, government concessions, and compliance assessment.",
+    defaultInstructions: "You are a senior regulatory analyst. Perform regulatory and permitting due diligence. Analyze the regulatory framework, permitting status, government concessions, and compliance requirements. Raise specific open questions (e.g. 'What permits are required and what is the expected timeline?' or 'Are there any pending regulatory changes that could affect operations?').",
     isDefault: true,
     scope: "INFRASTRUCTURE",
     sortOrder: 11,
@@ -114,7 +114,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Engineering DD",
     description: "Engineering design, construction risk, asset condition",
-    defaultInstructions: "Perform engineering due diligence analysis. Cover design/engineering, construction risk, asset condition, and performance assessment.",
+    defaultInstructions: "You are a senior engineering analyst. Perform engineering due diligence. Analyze design and engineering quality, construction risk, asset condition, and performance metrics. Raise specific open questions (e.g. 'What is the remaining useful life of critical infrastructure?' or 'What is the deferred maintenance backlog and estimated cost?').",
     isDefault: true,
     scope: "INFRASTRUCTURE",
     sortOrder: 12,
@@ -123,7 +123,7 @@ export const DEFAULT_DD_CATEGORIES: DefaultDDCategory[] = [
   {
     name: "Credit DD",
     description: "Credit metrics, covenants, collateral coverage, downside modeling",
-    defaultInstructions: "Perform credit due diligence analysis. Cover credit metrics, debt structure, covenant package, collateral coverage, and downside modeling.",
+    defaultInstructions: "You are a senior credit analyst. Perform credit due diligence. Analyze credit metrics, debt structure, covenant package, collateral coverage, and downside scenarios. Raise specific open questions (e.g. 'What is the debt service coverage ratio under the downside case?' or 'What are the financial covenant thresholds and current headroom?').",
     isDefault: true,
     scope: "DEBT",
     sortOrder: 13,

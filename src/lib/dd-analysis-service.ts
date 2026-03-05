@@ -3,23 +3,47 @@ import type { DealContext } from "@/lib/deal-types";
 
 // ── Types ────────────────────────────────────────────
 
+export interface DDOpenQuestion {
+  title: string;
+  description: string;
+  priority: "HIGH" | "MEDIUM" | "LOW";
+}
+
 export interface DDAnalysisSection {
   name: string;
   content: string;
   riskLevel: "HIGH" | "MEDIUM" | "LOW";
 }
 
+/**
+ * Unified analysis result. Shape depends on analysis type:
+ *
+ * WORKSTREAMS: summary + openQuestions (sections/score/recommendation empty)
+ * IC_MEMO:     score + summary + sections + recommendation (openQuestions empty)
+ *
+ * Legacy data may also have `findings` and `sections` on workstreams — the
+ * frontend checks for `openQuestions` to determine format.
+ */
+export interface DDAnalysisResult {
+  summary: string;
+  openQuestions: DDOpenQuestion[];
+  score: number;
+  sections: DDAnalysisSection[];
+  recommendation: string;
+}
+
+/** Legacy finding type — kept for backward-compat parsing of old data */
 export interface DDAnalysisFinding {
   title: string;
   description: string;
   priority: "HIGH" | "MEDIUM" | "LOW";
 }
 
-export interface DDAnalysisResult {
-  summary: string;
-  sections: DDAnalysisSection[];
-  findings: DDAnalysisFinding[];
-  recommendation: string;
+// ── Prior response for regeneration ──────────────────
+
+export interface PriorResponse {
+  question: string;
+  answer: string | null; // null = unanswered
 }
 
 // ── Analysis type metadata ───────────────────────────
@@ -100,7 +124,7 @@ export const DD_ANALYSIS_META: Record<
 
 // ── Prompt Builder ───────────────────────────────────
 
-function buildDealContextBlock(dealCtx: DealContext, compact = false): string {
+function buildDealContextBlock(dealCtx: DealContext): string {
   const docsList =
     dealCtx.documents.length > 0
       ? dealCtx.documents
@@ -108,14 +132,11 @@ function buildDealContextBlock(dealCtx: DealContext, compact = false): string {
           .join("\n")
       : "No documents uploaded yet";
 
-  // Compact mode (DD workstreams): fewer notes since screening already saw them
-  const noteLimit = compact ? 3 : 5;
-  const noteCharLimit = compact ? 200 : 300;
   const notesList =
     dealCtx.notes.length > 0
       ? dealCtx.notes
-          .slice(0, noteLimit)
-          .map((n) => `- ${n.author || "Unknown"}: ${n.content.slice(0, noteCharLimit)}`)
+          .slice(0, 5)
+          .map((n) => `- ${n.author || "Unknown"}: ${n.content.slice(0, 300)}`)
           .join("\n")
       : "No analyst notes";
 
@@ -157,65 +178,87 @@ ${notesList}
 `.trim();
 }
 
-function buildAnalysisPrompt(
+function buildWorkstreamPrompt(
   dealCtx: DealContext,
-  type: string,
   templateContent: string,
-  screeningData?: {
-    score: number;
-    recommendation: string;
-    strengths: string[];
-    risks: string[];
-    ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
-  } | null,
-  priorFindings?: { title: string; description: string; priority: string }[] | null,
+  priorResponses?: PriorResponse[] | null,
 ): string {
-  const isICMemo = type === "IC_MEMO";
-  // DD workstreams use compact context (trimmed notes) — screening already saw full context
-  const dealContextBlock = buildDealContextBlock(dealCtx, !isICMemo);
-  const recommendationOptions = isICMemo
-    ? "APPROVE | APPROVE_WITH_CONDITIONS | DECLINE"
-    : "GO | NO_GO | NEEDS_MORE_INFO";
+  const dealContextBlock = buildDealContextBlock(dealCtx);
 
-  let screeningBlock = "";
-  if (screeningData && isICMemo) {
-    screeningBlock = `
-PRIOR AI SCREENING RESULTS:
-- Score: ${screeningData.score}/100
-- Recommendation: ${screeningData.recommendation}
-- Strengths: ${screeningData.strengths.join("; ")}
-- Risks: ${screeningData.risks.join("; ")}
-`;
-    // Include detailed findings per category for IC Memo
-    if (screeningData.ddFindings) {
-      screeningBlock += `\nDETAILED SCREENING FINDINGS BY CATEGORY:\n`;
-      for (const [category, findings] of Object.entries(screeningData.ddFindings)) {
-        screeningBlock += `\n${category}:\n`;
-        for (const f of findings) {
-          screeningBlock += `  - [${f.priority}] ${f.title}: ${f.description}\n`;
-        }
+  let priorResponsesBlock = "";
+  if (priorResponses && priorResponses.length > 0) {
+    priorResponsesBlock = "\nPRIOR OPEN QUESTIONS AND USER RESPONSES:\n";
+    for (const pr of priorResponses) {
+      if (pr.answer) {
+        priorResponsesBlock += `- Q: "${pr.question}" → A: "${pr.answer}"\n`;
+      } else {
+        priorResponsesBlock += `- Q: "${pr.question}" → [UNANSWERED]\n`;
       }
-      screeningBlock += `\nReference these specific findings in the memo sections. The IC memo should synthesize and contextualize the screening findings, not repeat them verbatim.\n`;
     }
-  }
-
-  // Prior screening findings for per-workstream DD analysis (not IC Memo)
-  let priorFindingsBlock = "";
-  if (priorFindings && priorFindings.length > 0 && !isICMemo) {
-    priorFindingsBlock = `\nPRIOR SCREENING FINDINGS FOR THIS CATEGORY:\n`;
-    for (const f of priorFindings) {
-      priorFindingsBlock += `- [${f.priority}] ${f.title}: ${f.description}\n`;
-    }
-    priorFindingsBlock += `\nBuild on these findings — go deeper, validate, and add new findings the screening may have missed.\n`;
+    priorResponsesBlock += `\nIncorporate user responses into your analysis. For answered questions, use the response to refine your assessment. For unanswered questions, re-raise them if still relevant or replace with more targeted follow-ups.\n`;
   }
 
   return `${templateContent}
 
 ${dealContextBlock}
-${screeningBlock}${priorFindingsBlock}
+${priorResponsesBlock}
 You MUST respond in valid JSON with exactly this shape:
 {
-  "summary": "<2-3 sentence executive overview of this analysis>",
+  "summary": "<2-3 substantive paragraphs covering the key analysis points, specific findings, and overall assessment for this workstream. Reference specific data points from the deal materials.>",
+  "openQuestions": [
+    {
+      "title": "<Specific, answerable question — e.g. 'What is the current occupancy rate?' or 'Can management provide audited financials for FY2024?'>",
+      "description": "<Why this question matters for the investment decision and what a good answer looks like>",
+      "priority": "HIGH | MEDIUM | LOW"
+    }
+  ]
+}
+
+RULES:
+- The summary should be 2-3 detailed paragraphs, not a brief sentence. Cover key analysis points, risks, and opportunities.
+- Provide 4-8 open questions that the deal team needs to answer
+- Each question should be specific and answerable — not generic ("review financials") but targeted ("What is the trailing 12-month revenue broken down by customer segment?")
+- Priority HIGH questions should be answered before IC submission
+- Reference actual data points from the deal context when available
+- Do NOT include a recommendation — that comes from the IC memo`;
+}
+
+function buildICMemoPrompt(
+  dealCtx: DealContext,
+  templateContent: string,
+  workstreamSummaries: { name: string; summary: string; openQuestions?: { title: string; answer?: string | null }[] }[],
+): string {
+  const dealContextBlock = buildDealContextBlock(dealCtx);
+
+  let workstreamBlock = "\nWORKSTREAM ANALYSIS SUMMARIES:\n";
+  for (const ws of workstreamSummaries) {
+    workstreamBlock += `\n── ${ws.name} ──\n${ws.summary}\n`;
+    if (ws.openQuestions && ws.openQuestions.length > 0) {
+      const answered = ws.openQuestions.filter((q) => q.answer);
+      if (answered.length > 0) {
+        workstreamBlock += `\nResolved questions:\n`;
+        for (const q of answered) {
+          workstreamBlock += `  - ${q.title} → ${q.answer}\n`;
+        }
+      }
+      const unanswered = ws.openQuestions.filter((q) => !q.answer);
+      if (unanswered.length > 0) {
+        workstreamBlock += `\nOpen questions (unresolved):\n`;
+        for (const q of unanswered) {
+          workstreamBlock += `  - ${q.title}\n`;
+        }
+      }
+    }
+  }
+
+  return `${templateContent}
+
+${dealContextBlock}
+${workstreamBlock}
+You MUST respond in valid JSON with exactly this shape:
+{
+  "score": <number 0-100>,
+  "summary": "<Executive summary: what the deal is, the investment thesis, and overall recommendation in 2-3 paragraphs>",
   "sections": [
     {
       "name": "<Section Title>",
@@ -223,23 +266,30 @@ You MUST respond in valid JSON with exactly this shape:
       "riskLevel": "HIGH | MEDIUM | LOW"
     }
   ],
-  "findings": [
-    {
-      "title": "<Short finding title — becomes a DD task>",
-      "description": "<1-2 sentence actionable finding with specific next steps>",
-      "priority": "HIGH | MEDIUM | LOW"
-    }
-  ],
-  "recommendation": "${recommendationOptions}"
+  "recommendation": "APPROVE | APPROVE_WITH_CONDITIONS | DECLINE"
 }
 
+SCORING GUIDE:
+- 85-100: Strong investment — clear thesis, manageable risks, attractive returns
+- 70-84: Solid investment — good thesis with some conditions to address
+- 50-69: Mixed — notable concerns requiring significant conditions or further DD
+- 30-49: Weak — significant risks outweigh potential returns
+- 0-29: Pass — fundamental issues, do not pursue
+
+SECTIONS TO INCLUDE:
+1. Executive Summary (deal overview, thesis, recommendation)
+2. Investment Highlights (3-5 key attractions)
+3. Key Risks & Mitigants (risk, impact, likelihood, mitigant for each)
+4. Deal Terms (structure, valuation, returns, protections)
+5. Financial Summary (revenue, EBITDA, margins, leverage — trailing/current/projected)
+6. DD Findings Summary (synthesize key takeaways across all workstreams)
+7. Recommendation (APPROVE / APPROVE_WITH_CONDITIONS / DECLINE with conditions)
+
 RULES:
-- Provide 3-6 sections covering the major analytical areas
-- Provide 4-8 findings that become actionable due diligence tasks
-- Each finding should be specific to this deal, not generic boilerplate
-- Section content should reference the deal context provided above
-- Be specific about dollar amounts, percentages, and timeline estimates where possible
-- Findings with priority HIGH should be addressed before IC submission`;
+- Synthesize workstream findings — don't repeat them verbatim
+- Reference specific data points, dollar amounts, percentages
+- Flag unresolved open questions as conditions for approval
+- The memo should read as a professional IC document suitable for voting members`;
 }
 
 // ── LLM Analysis Call ────────────────────────────────
@@ -248,32 +298,29 @@ export async function runDDAnalysis(
   firmId: string,
   dealCtx: DealContext,
   type: string,
-  screeningData?: {
-    score: number;
-    recommendation: string;
-    strengths: string[];
-    risks: string[];
-    ddFindings?: Record<string, { title: string; description: string; priority: string }[]>;
-  } | null,
-  priorFindings?: { title: string; description: string; priority: string }[] | null,
-  categoryName?: string | null,
+  options?: {
+    categoryName?: string | null;
+    priorResponses?: PriorResponse[] | null;
+    workstreamSummaries?: { name: string; summary: string; openQuestions?: { title: string; answer?: string | null }[] }[];
+  },
 ): Promise<DDAnalysisResult | null> {
   const client = await createAIClient(firmId);
   if (!client) return null;
 
   const model = await getModelForFirm(firmId);
+  const isICMemo = type === "IC_MEMO";
 
   // Template resolution: IC_MEMO uses prompt template; DD types use category instructions
   let templateContent: string | null;
-  if (type === "IC_MEMO") {
+  if (isICMemo) {
     templateContent = await getPromptTemplate(firmId, type);
-  } else if (categoryName) {
-    templateContent = await getCategoryInstructions(firmId, categoryName);
+  } else if (options?.categoryName) {
+    templateContent = await getCategoryInstructions(firmId, options.categoryName);
   } else {
     templateContent = await getPromptTemplate(firmId, type);
   }
 
-  // If no custom instructions found, use a sensible default prompt
+  // Fallback to sensible default
   if (!templateContent) {
     const meta = DD_ANALYSIS_META[type];
     const analysisName = meta?.name || type.replace(/_/g, " ");
@@ -284,14 +331,17 @@ Your task is to conduct a thorough ${analysisDesc}. Analyze all available deal d
 
 Focus on:
 - Key risks and their severity
-- Material findings that could affect the investment decision
-- Specific, actionable next steps for the deal team
+- Specific, answerable questions the deal team should resolve
 - Areas where additional information is needed
+- Material observations that affect the investment decision
 
 Be specific to the deal at hand. Reference actual data points, figures, and facts from the provided materials. Avoid generic boilerplate.`;
   }
 
-  const systemPrompt = buildAnalysisPrompt(dealCtx, type, templateContent, screeningData, priorFindings);
+  // Build the appropriate prompt
+  const systemPrompt = isICMemo
+    ? buildICMemoPrompt(dealCtx, templateContent, options?.workstreamSummaries || [])
+    : buildWorkstreamPrompt(dealCtx, templateContent, options?.priorResponses);
 
   try {
     const response = await client.chat.completions.create({
@@ -300,7 +350,9 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
         { role: "system", content: systemPrompt },
         {
           role: "user",
-          content: `Run ${type.replace(/_/g, " ")} analysis for "${dealCtx.dealName}" — ${dealCtx.sector || "general"} sector, ${dealCtx.assetClass.replace(/_/g, " ")} asset class. Produce the full analysis JSON.`,
+          content: isICMemo
+            ? `Generate the IC Memo for "${dealCtx.dealName}" — synthesize all workstream analyses into a comprehensive investment committee memo with score and recommendation.`
+            : `Run ${type.replace(/_/g, " ")} analysis for "${dealCtx.dealName}" — ${dealCtx.sector || "general"} sector, ${dealCtx.assetClass.replace(/_/g, " ")} asset class. Produce the analysis JSON.`,
         },
       ],
       response_format: { type: "json_object" },
@@ -313,33 +365,52 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
 
     const validLevels = ["HIGH", "MEDIUM", "LOW"];
 
-    const sections: DDAnalysisSection[] = Array.isArray(parsed.sections)
-      ? parsed.sections.map((s: Record<string, unknown>) => ({
-          name: String(s.name || "Analysis"),
-          content: String(s.content || ""),
-          riskLevel: (validLevels.includes(String(s.riskLevel))
-            ? String(s.riskLevel)
-            : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
-        }))
-      : [];
+    if (isICMemo) {
+      // Parse IC Memo result
+      const sections: DDAnalysisSection[] = Array.isArray(parsed.sections)
+        ? parsed.sections.map((s: Record<string, unknown>) => ({
+            name: String(s.name || "Analysis"),
+            content: String(s.content || ""),
+            riskLevel: (validLevels.includes(String(s.riskLevel))
+              ? String(s.riskLevel)
+              : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+          }))
+        : [];
 
-    const findings: DDAnalysisFinding[] = Array.isArray(parsed.findings)
-      ? parsed.findings.map((f: Record<string, unknown>) => ({
-          title: String(f.title || "Review required"),
-          description: String(f.description || "Further analysis needed."),
-          priority: (validLevels.includes(String(f.priority))
-            ? String(f.priority)
-            : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
-        }))
-      : [];
+      const validRecs = ["APPROVE", "APPROVE_WITH_CONDITIONS", "DECLINE"];
+      const recommendation = validRecs.includes(parsed.recommendation)
+        ? parsed.recommendation
+        : "APPROVE_WITH_CONDITIONS";
 
-    return {
-      summary:
-        String(parsed.summary || "").slice(0, 2000) || "Analysis completed.",
-      sections,
-      findings,
-      recommendation: String(parsed.recommendation || "NEEDS_MORE_INFO"),
-    };
+      const score = Math.max(0, Math.min(100, Number(parsed.score) || 50));
+
+      return {
+        summary: String(parsed.summary || "").slice(0, 3000) || "IC Memo generated.",
+        openQuestions: [],
+        score,
+        sections,
+        recommendation,
+      };
+    } else {
+      // Parse workstream result
+      const openQuestions: DDOpenQuestion[] = Array.isArray(parsed.openQuestions)
+        ? parsed.openQuestions.map((q: Record<string, unknown>) => ({
+            title: String(q.title || "Review required"),
+            description: String(q.description || "Further investigation needed."),
+            priority: (validLevels.includes(String(q.priority))
+              ? String(q.priority)
+              : "MEDIUM") as "HIGH" | "MEDIUM" | "LOW",
+          }))
+        : [];
+
+      return {
+        summary: String(parsed.summary || "").slice(0, 5000) || "Analysis completed.",
+        openQuestions,
+        score: 0,
+        sections: [],
+        recommendation: "",
+      };
+    }
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`[DD Analysis Service] ${type} LLM call failed: ${msg}`);

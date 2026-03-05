@@ -4,30 +4,18 @@ import { CATEGORY_NAME_TO_TYPE } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { DEFAULT_DD_CATEGORIES, getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * POST /api/deals/[id]/screen
  *
- * Creates DD workstreams from category templates.
- * By default also advances the deal from SCREENING → DUE_DILIGENCE.
- * Pass { advanceStage: false } in the body to only create workstreams
- * without advancing (used by "Create Deal" to scaffold workstreams).
+ * Creates DD workstreams from category templates (idempotent — skips existing).
+ * Does NOT advance stage — stage advancement happens after IC memo is generated
+ * in the dd-analyze route.
  */
 export async function POST(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-
-  // Parse optional body flag
-  let advanceStage = true;
-  try {
-    const body = await req.json();
-    if (body?.advanceStage === false) advanceStage = false;
-  } catch {
-    /* no body = default true */
-  }
 
   const deal = await prisma.deal.findUnique({
     where: { id },
@@ -61,7 +49,6 @@ export async function POST(
     await prisma.dDCategoryTemplate.createMany({ data: defaults });
     console.log(`[screen] Auto-provisioned ${defaults.length} default DD templates for firm ${firmId}`);
 
-    // Re-fetch with scope filter
     templates = await prisma.dDCategoryTemplate.findMany({
       where: { firmId, scope: { in: scopes } },
       orderBy: { sortOrder: "asc" },
@@ -84,7 +71,6 @@ export async function POST(
     const cat = categories[i];
     if (existingNames.has(cat.name)) continue;
 
-    // Resolve analysis type from category name
     const analysisType = CATEGORY_NAME_TO_TYPE[cat.name] || "DD_CUSTOM";
 
     await prisma.dDWorkstream.create({
@@ -104,39 +90,20 @@ export async function POST(
     created++;
   }
 
-  // ── Advance stage (unless advanceStage=false) ──
-  if (advanceStage && deal.stage === "SCREENING") {
-    await prisma.deal.update({
-      where: { id },
-      data: { stage: "DUE_DILIGENCE" },
-    });
-
+  // ── Log activity ──
+  if (created > 0) {
     await prisma.dealActivity.create({
       data: {
         dealId: id,
-        activityType: "STAGE_TRANSITION",
-        description: `Deal advanced to Due Diligence — ${created} workstreams created`,
+        activityType: "DD_SETUP",
+        description: `${created} DD workstreams created from category templates.`,
         metadata: {
-          fromStage: "SCREENING",
-          toStage: "DUE_DILIGENCE",
-          workstreamsCreated: created,
+          workstreamCount: categories.length,
+          newWorkstreams: created,
         },
       },
     });
   }
-
-  // ── Log activity ──
-  await prisma.dealActivity.create({
-    data: {
-      dealId: id,
-      activityType: "DD_SETUP",
-      description: `${created} DD workstreams created from category templates.`,
-      metadata: {
-        workstreamCount: categories.length,
-        newWorkstreams: created,
-      },
-    },
-  });
 
   // ── Return full deal for SWR ──
   const updatedDeal = await prisma.deal.findUnique({

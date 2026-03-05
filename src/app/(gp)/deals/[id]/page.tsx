@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -124,6 +125,7 @@ export default function DealDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
   const { data: deal, isLoading } = useSWR(`/api/deals/${id}`, fetcher);
   const toast = useToast();
   const [tab, setTab] = useState("Overview");
@@ -145,21 +147,24 @@ export default function DealDetailPage({
   const autoStartedRef = useRef(false);
 
   // ── Auto-trigger for "Create & Screen" path ──
-  // When the deal is in DUE_DILIGENCE with workstreams but no analyses, auto-start.
+  // When ?autoscreen=1 is in the URL and workstreams exist but no analyses, auto-start.
   useEffect(() => {
     if (!deal) return;
+    if (searchParams.get("autoscreen") !== "1") return;
     const ws = (deal.workstreams || []) as any[];
     const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
     const hasAnyAnalysis = nonMemo.some((w: any) => !!w.analysisResult);
     const hasMemo = !!deal.screeningResult?.memo;
-    const needsInitial = deal.stage !== "SCREENING" && nonMemo.length > 0 && !hasAnyAnalysis && !hasMemo;
+    const needsInitial = nonMemo.length > 0 && !hasAnyAnalysis && !hasMemo;
 
     if (needsInitial && !autoStartedRef.current && !analysisProgress && !regenerating) {
       autoStartedRef.current = true;
-      runAnalysesAndMemo(nonMemo, true);
+      // Remove the query param so refreshes don't re-trigger
+      window.history.replaceState(null, "", `/deals/${id}`);
+      runAnalysesAndMemo(nonMemo, false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deal?.stage, deal?.workstreams?.length, deal?.screeningResult?.memo]);
+  }, [deal?.workstreams?.length, searchParams]);
 
   // ── Core analysis runner (survives tab switches) ──
   const runAnalysesAndMemo = useCallback(async (workstreamsList: any[], isRerun: boolean) => {
