@@ -178,8 +178,6 @@ After **every** code change, follow the CLAUDE.md "After every change" checklist
 1. Explain what changed in plain English (no jargon)
 2. Give specific testing steps (what to click, what page, what to expect)
 3. Say what might break (edge cases, known limitations)
-4. Suggest improvements
-5. Suggest what to build next (check `docs/roadmap.md`)
-6. Run `npm run build` — zero errors
+4. Run `npm run build` — zero errors
 
 **Never skip this.** A passing build is not the finish line — the user needs to know what to test and what to watch out for.

@@ -12,10 +12,10 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 
 ### Before every task
 
-1. **Confirm your understanding of what I'm asking.** Restate it in plain English so I can correct you. Do this before planning, before researching, before touching anything.
+1. **For non-trivial tasks, confirm your understanding first.** For clear, specific requests — just do it.
 2. **If ambiguous, ask as many clarifying questions as needed.** But if the request is specific and clear, just do it.
-3. **For anything touching 3+ files, enter plan mode.** Don't wait to be told. Show me the plan, get my approval, then execute. If I say "just do it," skip the plan.
-4. **Consult the reference docs** before building anything:
+3. **Always enter plan mode before writing code,** unless I say "just do it" or the change is a single obvious fix (typo, one-liner, simple rename).
+4. **Consult reference docs** when the task involves a new page, new API route, new domain feature, or schema changes. For small edits to existing code, reading the existing file is enough.
    - `docs/architecture-spec.md` — data models, entity relationships, domain features
    - `docs/deal-desk-guide.md` — deal workflow, stages, DD, IC process
    - `docs/data-model-guide.md` — all 56 Prisma models by domain
@@ -38,9 +38,7 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 1. **Explain what changed in plain English.** No jargon. Tell me what's different and why.
 2. **Give me specific testing steps.** Not "test the feature" — tell me exactly what to click, what page to go to, what I should see.
 3. **Tell me what might break.** Be honest about edge cases or things that could go wrong.
-4. **Suggest improvements.** If you see a better way to do something, or something adjacent that should be tightened up, say so.
-5. **Suggest what to build next.** Consult `docs/roadmap.md` and recommend the highest-impact unbuilt feature. Don't guess — check the roadmap.
-6. **Run `npm run build`** — zero errors before telling me you're done.
+4. **Run `npm run build`** — zero errors before telling me you're done.
 
 ### Version workflow
 
@@ -48,21 +46,10 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 - **Only commit when I say** "commit", "ship it", "push it", or explicitly ask for a commit.
 - **When I approve a version**, commit with a clear message describing all changes in that batch.
 
-### Context window awareness
-
-- **At the end of every response, report context window usage** as a short line: `Context: ~Xk this response / ~Xk total of 200k tokens used` so I can track both per-response cost and cumulative runway.
-- **When context exceeds ~100k tokens, proactively mention it** — suggest wrapping up or starting a new session if more big work is coming.
-- **When context exceeds ~150k tokens, warn clearly** — tell me what should be finished now vs saved for a new session.
-- **At ~180k tokens, auto-compact.** Run `/compact` to summarize the conversation and free up context. Don't ask — just do it.
-
 ### Continuous improvement
 
-- **When something breaks or you make a mistake**, suggest a one-line addition to `.claude/rules/coding-patterns.md` so future sessions don't repeat it. Frame it as: "Should I add this to the rules so I don't do this again?"
-- **When you discover outdated info** in any reference doc (a component renamed, an API changed, a model added), flag it and suggest the specific update. Don't silently work around stale docs.
-- **After fixing a bug**, ask: would this have been caught earlier if the docs mentioned it? If yes, suggest the doc update.
-- **When a new pattern emerges** (new component, new API convention, new workflow), suggest adding it to the appropriate reference doc.
-- **Never update reference docs without asking first.** Say what's stale and what you'd change, then wait for approval — same as code.
-- **At the end of a big session**, offer a summary of any doc updates that would help future sessions.
+- **When something breaks or you make a mistake**, suggest a one-line addition to `.claude/rules/coding-patterns.md` so future sessions don't repeat it.
+- **When you find outdated docs**, flag it and suggest the specific update. Don't silently work around stale info. Never update docs without asking first.
 
 ---
 
