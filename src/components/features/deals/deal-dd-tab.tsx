@@ -212,36 +212,67 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
-  async function runAllAnalysis() {
+  async function runAllAnalysis(onlyFailed = false) {
+    const targetWorkstreams = onlyFailed
+      ? sortedWorkstreams.filter((ws) => ws.analysisResult && !ws.analysisResult.aiPowered)
+      : sortedWorkstreams;
+
+    if (targetWorkstreams.length === 0) {
+      toast.error("No workstreams to re-analyze");
+      return;
+    }
+
     setAnalyzingAll(true);
-    const wsNames = sortedWorkstreams.map((ws) => ws.name);
-    const totalSteps = sortedWorkstreams.length + 1; // +1 for IC memo
-    const runningSet = new Set<string>(wsNames);
+    const wsNames = targetWorkstreams.map((ws) => ws.name);
+    const totalSteps = targetWorkstreams.length + 1; // +1 for IC memo
+    const runningSet = new Set<string>();
     const doneSet = new Set<string>();
     setAllProgress({ total: totalSteps, completed: 0, running: new Set(runningSet), done: new Set(doneSet), phase: "Analyzing workstreams" });
 
-    // Phase 1: Run all workstream analyses in parallel
+    const mockFallbacks: string[] = [];
+
+    // Phase 1: Run workstream analyses in batches of 3
     let completedCount = 0;
-    const results = await Promise.allSettled(
-      sortedWorkstreams.map(async (ws) => {
-        const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
-        const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type,
-            categoryName: ws.name,
-            rerun: !!ws.analysisResult,
-          }),
-        });
-        if (!res.ok) throw new Error(`${ws.name} failed`);
-        completedCount++;
-        doneSet.add(ws.name);
-        runningSet.delete(ws.name);
-        setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
-      })
-    );
-    const completed = results.filter((r) => r.status === "fulfilled").length;
+    const BATCH_SIZE = 3;
+    for (let i = 0; i < targetWorkstreams.length; i += BATCH_SIZE) {
+      const batch = targetWorkstreams.slice(i, i + BATCH_SIZE);
+      for (const w of batch) runningSet.add(w.name);
+      setAllProgress((p) => p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null);
+
+      await Promise.allSettled(
+        batch.map(async (ws) => {
+          const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
+          try {
+            const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                type,
+                categoryName: ws.name,
+                rerun: !!ws.analysisResult,
+              }),
+            });
+            if (res.ok) {
+              const data = await res.json().catch(() => null);
+              if (data) {
+                const updated = (data.workstreams || []).find((x: any) => x.name === ws.name);
+                if (updated?.analysisResult && !updated.analysisResult.aiPowered) {
+                  mockFallbacks.push(ws.name);
+                }
+              }
+            } else {
+              mockFallbacks.push(ws.name);
+            }
+          } catch {
+            mockFallbacks.push(ws.name);
+          }
+          completedCount++;
+          doneSet.add(ws.name);
+          runningSet.delete(ws.name);
+          setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
+        })
+      );
+    }
 
     // Phase 2: Auto-generate IC Memo from workstream results
     setAllProgress((p) => p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null);
@@ -251,10 +282,17 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "IC_MEMO", rerun: true }),
       });
-      toast.success(`Analysis complete (${completed}/${sortedWorkstreams.length}) — IC Memo generated`);
     } catch {
-      toast.success(`Analysis complete (${completed}/${sortedWorkstreams.length}) — IC Memo generation failed`);
+      toast.error("IC Memo generation failed");
     }
+
+    // Show results
+    if (mockFallbacks.length > 0) {
+      toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) — click Re-analyze Failed to retry`);
+    } else {
+      toast.success(`All ${targetWorkstreams.length} workstreams analyzed with AI — IC Memo generated`);
+    }
+
     setAllProgress(null);
     mutate(`/api/deals/${deal.id}`);
     setAnalyzingAll(false);
@@ -345,14 +383,32 @@ export function DealDDTab({ deal }: DealDDTabProps) {
             <span className="text-xs text-gray-500">
               {completedTasks} of {totalTasks} tasks complete
             </span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={runAllAnalysis}
-              disabled={analyzingAll || analyzingWs !== null}
-            >
-              {analyzingAll ? "Analyzing..." : "Run All Analysis"}
-            </Button>
+            <div className="flex items-center gap-2">
+              {(() => {
+                const failedCount = sortedWorkstreams.filter(
+                  (ws) => ws.analysisResult && !ws.analysisResult.aiPowered
+                ).length;
+                return failedCount > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => runAllAnalysis(true)}
+                    disabled={analyzingAll || analyzingWs !== null}
+                    className="text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100"
+                  >
+                    {analyzingAll ? "Analyzing..." : `Re-analyze ${failedCount} Failed`}
+                  </Button>
+                ) : null;
+              })()}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => runAllAnalysis()}
+                disabled={analyzingAll || analyzingWs !== null}
+              >
+                {analyzingAll ? "Analyzing..." : "Run All Analysis"}
+              </Button>
+            </div>
           </div>
         </div>
       )}

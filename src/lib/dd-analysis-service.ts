@@ -304,8 +304,19 @@ export async function runDDAnalysis(
     workstreamSummaries?: { name: string; summary: string; openQuestions?: { title: string; answer?: string | null }[] }[];
   },
 ): Promise<DDAnalysisResult | null> {
-  const client = await createAIClient(firmId);
-  if (!client) return null;
+  // Wrap client creation in try/catch — decryption failures shouldn't crash the route
+  let client;
+  try {
+    client = await createAIClient(firmId);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[DD Analysis] createAIClient failed for firm ${firmId}: ${msg}`);
+    return null;
+  }
+  if (!client) {
+    console.warn(`[DD Analysis] No AI client for firm ${firmId} — no API key configured`);
+    return null;
+  }
 
   const model = await getModelForFirm(firmId);
   const isICMemo = type === "IC_MEMO";

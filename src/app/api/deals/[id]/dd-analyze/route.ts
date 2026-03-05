@@ -13,6 +13,9 @@ import {
   type PriorResponse,
 } from "@/lib/dd-analysis-service";
 
+// Allow up to 2 minutes for LLM calls on Vercel serverless
+export const maxDuration = 120;
+
 // ── Mock generators ─────────────────────────────────
 
 function generateMockWorkstream(
@@ -197,6 +200,7 @@ export async function POST(
   // Call LLM or fallback to mock
   let result: DDAnalysisResult;
   let aiPowered = false;
+  let mockReason: string | null = null;
 
   const aiResult = await runDDAnalysis(firmId, dealCtx, type, {
     categoryName,
@@ -208,6 +212,10 @@ export async function POST(
     aiPowered = true;
   } else {
     result = isICMemo ? generateMockICMemo(deal) : generateMockWorkstream(deal, type);
+    mockReason = !firmId
+      ? "No firm context available"
+      : "AI analysis failed — this may be due to a timeout or rate limit. Try re-analyzing.";
+    console.warn(`[dd-analyze] ${type} for deal ${id}: fell back to mock data. firmId=${firmId}`);
   }
 
   // Sort order
@@ -294,6 +302,7 @@ export async function POST(
       summary: result.summary,
       openQuestions: result.openQuestions,
       aiPowered,
+      ...(mockReason ? { mockReason } : {}),
     });
 
     let workstreamId: string;

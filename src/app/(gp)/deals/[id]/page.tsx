@@ -174,37 +174,60 @@ export default function DealDetailPage({
 
     const wsNames = analyzable.map((w: any) => w.name);
     const totalSteps = analyzable.length + 1; // +1 for IC memo
-    const runningSet = new Set<string>(wsNames);
+    const runningSet = new Set<string>();
     const doneSet = new Set<string>();
     setAnalysisProgress({ total: totalSteps, completed: 0, phase: "Analyzing workstreams", workstreamNames: wsNames, running: runningSet, done: doneSet });
 
+    const mockFallbacks: string[] = [];
+
     try {
-      // Phase 1: Run all workstream analyses in parallel
+      // Phase 1: Run workstream analyses in batches of 3 to avoid rate limits / timeouts
       let completed = 0;
-      await Promise.allSettled(
-        analyzable.map(async (w: any) => {
-          const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
-          try {
-            const res = await fetch(`/api/deals/${id}/dd-analyze`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
-            });
-            if (!res.ok) {
-              const err = await res.json().catch(() => ({}));
-              console.warn(`Analysis failed for ${w.name}:`, err.error);
+      const BATCH_SIZE = 3;
+      for (let i = 0; i < analyzable.length; i += BATCH_SIZE) {
+        const batch = analyzable.slice(i, i + BATCH_SIZE);
+        // Mark batch as running
+        for (const w of batch) runningSet.add(w.name);
+        setAnalysisProgress((p) =>
+          p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null
+        );
+
+        await Promise.allSettled(
+          batch.map(async (w: any) => {
+            const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
+            try {
+              const res = await fetch(`/api/deals/${id}/dd-analyze`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
+              });
+              if (res.ok) {
+                // Check if the response used mock data
+                const data = await res.json().catch(() => null);
+                if (data) {
+                  const ws = (data.workstreams || []).find((x: any) => x.name === w.name);
+                  const ar = ws?.analysisResult;
+                  if (ar && !ar.aiPowered) {
+                    mockFallbacks.push(w.name);
+                  }
+                }
+              } else {
+                const err = await res.json().catch(() => ({}));
+                console.warn(`Analysis failed for ${w.name}:`, err.error);
+                mockFallbacks.push(w.name);
+              }
+            } catch {
+              mockFallbacks.push(w.name);
             }
-          } catch {
-            // continue with other workstreams
-          }
-          completed++;
-          doneSet.add(w.name);
-          runningSet.delete(w.name);
-          setAnalysisProgress((p) =>
-            p ? { ...p, completed, running: new Set(runningSet), done: new Set(doneSet) } : null
-          );
-        })
-      );
+            completed++;
+            doneSet.add(w.name);
+            runningSet.delete(w.name);
+            setAnalysisProgress((p) =>
+              p ? { ...p, completed, running: new Set(runningSet), done: new Set(doneSet) } : null
+            );
+          })
+        );
+      }
 
       // Phase 2: Generate IC Memo from workstream outputs
       setAnalysisProgress((p) =>
@@ -218,6 +241,11 @@ export default function DealDetailPage({
         });
       } catch {
         toast.error("IC Memo generation failed — workstream analyses are still available");
+      }
+
+      // Show warning if any workstreams fell back to mock data
+      if (mockFallbacks.length > 0) {
+        toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) — click Re-analyze to retry`);
       }
     } finally {
       setAnalysisProgress(null);
