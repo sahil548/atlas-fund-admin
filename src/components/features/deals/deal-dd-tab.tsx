@@ -233,7 +233,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
     // Phase 1: Run workstream analyses in batches of 3
     let completedCount = 0;
-    const BATCH_SIZE = 3;
+    const BATCH_SIZE = 2;
     for (let i = 0; i < targetWorkstreams.length; i += BATCH_SIZE) {
       const batch = targetWorkstreams.slice(i, i + BATCH_SIZE);
       for (const w of batch) runningSet.add(w.name);

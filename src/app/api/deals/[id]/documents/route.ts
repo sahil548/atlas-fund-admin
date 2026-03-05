@@ -5,6 +5,9 @@ import path from "path";
 import { writeFile, mkdir } from "fs/promises";
 import { extractTextFromBuffer } from "@/lib/document-extraction";
 
+// Allow time for PDF text extraction on Vercel serverless
+export const maxDuration = 60;
+
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(

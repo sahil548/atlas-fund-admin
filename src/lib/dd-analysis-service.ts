@@ -122,6 +122,29 @@ export const DD_ANALYSIS_META: Record<
   },
 };
 
+// ── Text compression for prompts ─────────────────────
+// PDF-extracted text is noisy — redundant whitespace, repeated headers/footers,
+// decoration lines. This compresses it for more efficient token usage while
+// preserving all meaningful content.
+
+function compressForPrompt(text: string): string {
+  return text
+    // Normalize line endings
+    .replace(/\r\n/g, "\n")
+    // Collapse multiple spaces/tabs to single space
+    .replace(/[ \t]{2,}/g, " ")
+    // Trim trailing whitespace per line
+    .replace(/[ \t]+$/gm, "")
+    // Remove lines that are only decoration (dashes, underscores, dots, equals)
+    .replace(/^[-_=.·•]{3,}$/gm, "")
+    // Collapse 3+ blank lines to 2
+    .replace(/\n{3,}/g, "\n\n")
+    // Remove standalone page numbers (e.g. "  12  " or "Page 3 of 10")
+    .replace(/^\s*(?:Page\s+)?\d+(?:\s+of\s+\d+)?\s*$/gim, "")
+    // Trim leading/trailing
+    .trim();
+}
+
 // ── Prompt Builder ───────────────────────────────────
 
 function buildDealContextBlock(dealCtx: DealContext): string {
@@ -140,15 +163,16 @@ function buildDealContextBlock(dealCtx: DealContext): string {
           .join("\n")
       : "No analyst notes";
 
-  // Include actual document content when available
+  // Include actual document content when available — compress for token efficiency
   let documentContentSection = "";
   if (dealCtx.documentContents && dealCtx.documentContents.length > 0) {
     documentContentSection = "\nDOCUMENT CONTENTS:\n";
     for (const doc of dealCtx.documentContents) {
-      const content = doc.content.slice(0, 10_000);
+      const compressed = compressForPrompt(doc.content);
+      const content = compressed.slice(0, 10_000);
       documentContentSection += `\n--- ${doc.name} ---\n${content}\n`;
-      if (doc.content.length > 10_000) {
-        documentContentSection += `[... truncated, ${doc.content.length.toLocaleString()} total characters ...]\n`;
+      if (compressed.length > 10_000) {
+        documentContentSection += `[... truncated, ${compressed.length.toLocaleString()} total characters ...]\n`;
       }
     }
   }
@@ -355,23 +379,35 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
     : buildWorkstreamPrompt(dealCtx, templateContent, options?.priorResponses);
 
   try {
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: isICMemo
-            ? `Generate the IC Memo for "${dealCtx.dealName}" — synthesize all workstream analyses into a comprehensive investment committee memo with score and recommendation.`
-            : `Run ${type.replace(/_/g, " ")} analysis for "${dealCtx.dealName}" — ${dealCtx.sector || "general"} sector, ${dealCtx.assetClass.replace(/_/g, " ")} asset class. Produce the analysis JSON.`,
-        },
-      ],
-      response_format: { type: "json_object" },
-      max_tokens: 6000,
-      temperature: 0.3,
-    });
+    // Retry once on failure (transient timeouts / rate limits shouldn't produce permanent mock data)
+    let response;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        response = await client.chat.completions.create({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            {
+              role: "user",
+              content: isICMemo
+                ? `Generate the IC Memo for "${dealCtx.dealName}" — synthesize all workstream analyses into a comprehensive investment committee memo with score and recommendation.`
+                : `Run ${type.replace(/_/g, " ")} analysis for "${dealCtx.dealName}" — ${dealCtx.sector || "general"} sector, ${dealCtx.assetClass.replace(/_/g, " ")} asset class. Produce the analysis JSON.`,
+            },
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 6000,
+          temperature: 0.3,
+        });
+        break; // Success — exit retry loop
+      } catch (retryErr: unknown) {
+        const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
+        if (attempt === 2) throw retryErr; // Re-throw on final attempt
+        console.warn(`[DD Analysis] ${type} attempt ${attempt} failed (${retryMsg}), retrying in 2s...`);
+        await new Promise((r) => setTimeout(r, 2000));
+      }
+    }
 
-    const raw = response.choices[0]?.message?.content || "{}";
+    const raw = response!.choices[0]?.message?.content || "{}";
     const parsed = JSON.parse(raw);
 
     const validLevels = ["HIGH", "MEDIUM", "LOW"];

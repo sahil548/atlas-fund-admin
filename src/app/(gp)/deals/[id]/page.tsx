@@ -183,7 +183,7 @@ export default function DealDetailPage({
     try {
       // Phase 1: Run workstream analyses in batches of 3 to avoid rate limits / timeouts
       let completed = 0;
-      const BATCH_SIZE = 3;
+      const BATCH_SIZE = 2;
       for (let i = 0; i < analyzable.length; i += BATCH_SIZE) {
         const batch = analyzable.slice(i, i + BATCH_SIZE);
         // Mark batch as running
@@ -229,23 +229,32 @@ export default function DealDetailPage({
         );
       }
 
-      // Phase 2: Generate IC Memo from workstream outputs
-      setAnalysisProgress((p) =>
-        p ? { ...p, current: "IC Memo", phase: "Generating IC Memo", running: new Set(["IC Memo"]), done: new Set(doneSet) } : null
-      );
-      try {
-        await fetch(`/api/deals/${id}/dd-analyze`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
-        });
-      } catch {
-        toast.error("IC Memo generation failed — workstream analyses are still available");
-      }
-
       // Show warning if any workstreams fell back to mock data
       if (mockFallbacks.length > 0) {
         toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) — click Re-analyze to retry`);
+      }
+
+      // Phase 2: Generate IC Memo from workstream outputs
+      // Skip if ALL workstreams failed — IC memo needs at least some real AI data
+      if (mockFallbacks.length === analyzable.length) {
+        toast.error("All workstreams timed out — IC memo not generated. Click Re-analyze to retry.");
+      } else {
+        setAnalysisProgress((p) =>
+          p ? { ...p, current: "IC Memo", phase: "Generating IC Memo", running: new Set(["IC Memo"]), done: new Set(doneSet) } : null
+        );
+        try {
+          const memoRes = await fetch(`/api/deals/${id}/dd-analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
+          });
+          if (!memoRes.ok) {
+            const memoErr = await memoRes.json().catch(() => ({}));
+            console.warn("IC Memo generation failed:", memoErr.error);
+          }
+        } catch {
+          toast.error("IC Memo generation failed — workstream analyses are still available");
+        }
       }
     } finally {
       setAnalysisProgress(null);

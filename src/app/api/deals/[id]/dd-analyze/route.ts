@@ -13,8 +13,8 @@ import {
   type PriorResponse,
 } from "@/lib/dd-analysis-service";
 
-// Allow up to 2 minutes for LLM calls on Vercel serverless
-export const maxDuration = 120;
+// Vercel Hobby plan caps at 60s; set explicitly to match
+export const maxDuration = 60;
 
 // ── Mock generators ─────────────────────────────────
 
@@ -164,10 +164,12 @@ export async function POST(
 
   if (isICMemo) {
     // Gather all workstream summaries + resolved questions for IC memo context
+    // IMPORTANT: Skip workstreams with mock/sample data — only include AI-powered analyses
     workstreamSummaries = [];
     for (const ws of deal.workstreams) {
       if (!ws.analysisResult || ws.analysisType === "IC_MEMO") continue;
       const ar = ws.analysisResult as Record<string, unknown>;
+      if (!ar.aiPowered) continue; // Skip mock/sample workstreams
       const summary = String(ar.summary || "");
       if (!summary) continue;
 
@@ -195,6 +197,14 @@ export async function POST(
         question: t.title,
         answer: t.resolution || null,
       }));
+  }
+
+  // Guard: refuse IC memo if no workstreams have real AI analysis
+  if (isICMemo && workstreamSummaries && workstreamSummaries.length === 0) {
+    return NextResponse.json(
+      { error: "Cannot generate IC memo — no workstreams have AI analysis yet. Run workstream analyses first, then generate the IC memo." },
+      { status: 400 },
+    );
   }
 
   // Call LLM or fallback to mock
