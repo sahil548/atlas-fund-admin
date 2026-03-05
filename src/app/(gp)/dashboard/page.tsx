@@ -10,6 +10,8 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
+  PARTICIPATION_LABELS,
+  PARTICIPATION_COLORS,
 } from "@/lib/constants";
 import { AssetAllocationChart } from "@/components/features/dashboard/asset-allocation-chart";
 
@@ -77,10 +79,15 @@ export default function DashboardPage() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-3">Top Assets by Fair Value</h3>
-          {data.topAssets?.map((a: { id: string; name: string; assetClass: string; fairValue: number; moic: number }) => (
+          {data.topAssets?.map((a: { id: string; name: string; assetClass: string; participationStructure?: string; fairValue: number; moic: number }) => (
             <a key={a.id} href={`/assets/${a.id}`} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
+                {a.participationStructure && (
+                  <Badge color={PARTICIPATION_COLORS[a.participationStructure] || "gray"}>
+                    {PARTICIPATION_LABELS[a.participationStructure] || a.participationStructure}
+                  </Badge>
+                )}
                 <span className="text-sm font-medium text-indigo-700">{a.name}</span>
               </div>
               <div className="text-right">

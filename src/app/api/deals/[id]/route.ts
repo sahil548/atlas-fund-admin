@@ -111,7 +111,15 @@ export async function PATCH(
 
   if (body.action === "CLOSE") {
     try {
-      const result = await closeDeal(id);
+      const result = await closeDeal(id, {
+        costBasis: body.costBasis,
+        fairValue: body.fairValue,
+        entryDate: body.entryDate,
+        force: body.force,
+      });
+      if ("warning" in result) {
+        return NextResponse.json({ warning: result.warning, checklistTotal: result.checklistTotal, checklistComplete: result.checklistComplete });
+      }
       return NextResponse.json(result);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";

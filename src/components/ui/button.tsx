@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const variants: Record<string, string> = {
   primary: "bg-indigo-600 text-white hover:bg-indigo-700 border-transparent",
-  secondary: "bg-white text-gray-700 hover:bg-gray-50 border-gray-200",
+  secondary: "bg-white text-gray-700 hover:bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700",
   danger: "bg-red-600 text-white hover:bg-red-700 border-transparent",
 };
 

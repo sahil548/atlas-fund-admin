@@ -18,7 +18,7 @@ export function Tabs({
           className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize ${
             active === t
               ? "bg-indigo-600 text-white"
-              : "text-gray-600 hover:bg-gray-100"
+              : "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
           }`}
         >
           {t}

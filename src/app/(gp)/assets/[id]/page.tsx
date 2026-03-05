@@ -11,6 +11,7 @@ import { LogValuationForm } from "@/components/features/assets/log-valuation-for
 import { CreateTaskForm } from "@/components/features/assets/create-task-form";
 import { UploadDocumentForm } from "@/components/features/assets/upload-document-form";
 import { LogIncomeForm } from "@/components/features/assets/log-income-form";
+import { AssetDealIntelligence } from "@/components/features/assets/asset-deal-intelligence";
 import { fmt, pct } from "@/lib/utils";
 import Link from "next/link";
 
@@ -19,6 +20,9 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
+  CAPITAL_INSTRUMENT_LABELS,
+  PARTICIPATION_LABELS,
+  PARTICIPATION_COLORS,
 } from "@/lib/constants";
 
 export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +42,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   if (a.creditDetails || a.creditAgreements?.length) allTabs.push("loan");
   if (a.realEstateDetails) allTabs.push("property");
   if (a.fundLPDetails) allTabs.push("fund");
+  if (a.deal) allTabs.push("deal intel");
   allTabs.push("valuation", "documents", "meetings", "tasks", "governance");
 
   return (
@@ -51,6 +56,16 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-bold text-gray-900">{a.name}</h2>
               <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
+              {a.capitalInstrument && (
+                <Badge color={a.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                  {CAPITAL_INSTRUMENT_LABELS[a.capitalInstrument]}
+                </Badge>
+              )}
+              {a.participationStructure && (
+                <Badge color={PARTICIPATION_COLORS[a.participationStructure] || "gray"}>
+                  {PARTICIPATION_LABELS[a.participationStructure] || a.participationStructure}
+                </Badge>
+              )}
               <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase() ?? "—"}</Badge>
               {a.hasBoardSeat && <Badge color="indigo">Board Seat</Badge>}
             </div>
@@ -398,6 +413,11 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             </table>
           ) : <div className="text-xs text-gray-400 text-center py-6">No valuations recorded</div>}
         </div>
+      )}
+
+      {/* Deal Intelligence Tab */}
+      {tab === "deal intel" && a.deal && (
+        <AssetDealIntelligence deal={a.deal} asset={a} />
       )}
 
       {/* Governance Tab */}

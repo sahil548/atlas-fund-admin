@@ -13,6 +13,9 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
+  CAPITAL_INSTRUMENT_LABELS,
+  PARTICIPATION_LABELS,
+  PARTICIPATION_COLORS,
 } from "@/lib/constants";
 
 export default function AssetsPage() {
@@ -49,18 +52,20 @@ export default function AssetsPage() {
       <table className="w-full text-xs">
         <thead className="bg-gray-50">
           <tr>
-            {["Asset", "Type", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Income", "Status", ""].map((h) => (
+            {["Asset", "Asset Class", "Instrument", "Participation", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Status", ""].map((h) => (
               <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {filtered.map((a: { id: string; name: string; assetClass: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
+          {filtered.map((a: { id: string; name: string; assetClass: string; capitalInstrument?: string; participationStructure?: string; sector: string; entityAllocations: { entity: { name: string } }[]; costBasis: number; fairValue: number; moic: number; irr: number; incomeType: string; status: string }) => {
             const ur = a.fairValue - a.costBasis;
             return (
               <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer" onClick={() => window.location.href = `/assets/${a.id}`}>
                 <td className="px-3 py-2.5 font-medium text-indigo-700">{a.name}</td>
                 <td className="px-3 py-2.5"><Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge></td>
+                <td className="px-3 py-2.5">{a.capitalInstrument ? <Badge color={a.capitalInstrument === "DEBT" ? "orange" : "blue"}>{CAPITAL_INSTRUMENT_LABELS[a.capitalInstrument]}</Badge> : <span className="text-gray-300">—</span>}</td>
+                <td className="px-3 py-2.5">{a.participationStructure ? <Badge color={PARTICIPATION_COLORS[a.participationStructure] || "gray"}>{PARTICIPATION_LABELS[a.participationStructure] || a.participationStructure}</Badge> : <span className="text-gray-300">—</span>}</td>
                 <td className="px-3 py-2.5 text-gray-600">{a.sector}</td>
                 <td className="px-3 py-2.5">
                   {a.entityAllocations?.map((ea) => (
@@ -76,7 +81,6 @@ export default function AssetsPage() {
                   {a.moic?.toFixed(2)}x
                 </td>
                 <td className="px-3 py-2.5 text-emerald-700">{a.irr ? pct(a.irr) : "—"}</td>
-                <td className="px-3 py-2.5 text-gray-600">{a.incomeType || "—"}</td>
                 <td className="px-3 py-2.5"><Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status.toLowerCase()}</Badge></td>
                 <td className="px-3 py-2.5">
                   <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setEditingAsset(a); setShowEdit(true); }}>Edit</Button>

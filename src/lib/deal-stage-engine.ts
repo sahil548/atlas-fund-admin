@@ -243,12 +243,16 @@ export async function killDeal(dealId: string) {
  * Validates all closing checklist items are COMPLETE, then transitions.
  * Also creates an Asset record from the deal data.
  */
-export async function closeDeal(dealId: string) {
+export async function closeDeal(
+  dealId: string,
+  opts?: { costBasis?: number; fairValue?: number; entryDate?: string; force?: boolean },
+) {
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: {
       closingChecklist: true,
       targetEntity: true,
+      documents: true,
     },
   });
   if (!deal) throw new Error(`Deal ${dealId} not found`);
@@ -264,13 +268,19 @@ export async function closeDeal(dealId: string) {
   if (totalItems === 0) {
     throw new Error("Initialize the closing checklist before closing the deal");
   }
-  if (completedItems < totalItems) {
-    throw new Error(
-      `${totalItems - completedItems} of ${totalItems} checklist items are not yet complete`,
-    );
+  if (completedItems < totalItems && !opts?.force) {
+    return {
+      warning: `${totalItems - completedItems} of ${totalItems} checklist items are incomplete. Close anyway?`,
+      checklistTotal: totalItems,
+      checklistComplete: completedItems,
+    };
   }
 
-  // Create asset from deal data
+  const costBasis = opts?.costBasis ?? 0;
+  const fairValue = opts?.fairValue ?? costBasis;
+  const entryDate = opts?.entryDate ? new Date(opts.entryDate) : new Date();
+
+  // Create asset from deal data with back-reference
   const asset = await prisma.asset.create({
     data: {
       name: deal.name,
@@ -279,9 +289,9 @@ export async function closeDeal(dealId: string) {
       participationStructure: deal.participationStructure,
       sector: deal.sector,
       status: "ACTIVE",
-      costBasis: 0,
-      fairValue: 0,
-      entryDate: new Date(),
+      costBasis,
+      fairValue,
+      entryDate,
     },
   });
 
@@ -292,8 +302,16 @@ export async function closeDeal(dealId: string) {
         assetId: asset.id,
         entityId: deal.entityId,
         allocationPercent: 100,
-        costBasis: 0,
+        costBasis,
       },
+    });
+  }
+
+  // Link deal documents to the new asset
+  if (deal.documents.length > 0) {
+    await prisma.document.updateMany({
+      where: { id: { in: deal.documents.map((d) => d.id) } },
+      data: { assetId: asset.id },
     });
   }
 
@@ -306,12 +324,14 @@ export async function closeDeal(dealId: string) {
     data: {
       dealId,
       activityType: "DEAL_CLOSED",
-      description: `Deal closed — asset "${asset.name}" created and booked`,
+      description: `Deal closed — asset "${asset.name}" created and booked (cost basis: $${costBasis.toLocaleString()})`,
       metadata: {
         fromStage: "CLOSING",
         toStage: "CLOSED",
         assetId: asset.id,
         assetName: asset.name,
+        costBasis,
+        fairValue,
       },
     },
   });

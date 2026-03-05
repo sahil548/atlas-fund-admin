@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CloseDealModal } from "@/components/features/deals/close-deal-modal";
 import { EditDealForm } from "@/components/features/deals/edit-deal-form";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
@@ -24,6 +25,8 @@ import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
   CAPITAL_INSTRUMENT_LABELS,
+  PARTICIPATION_LABELS,
+  PARTICIPATION_COLORS,
 } from "@/lib/constants";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -329,7 +332,7 @@ export default function DealDetailPage({
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Failed to advance");
+        toast.error(typeof data.error === "string" ? data.error : "Failed to advance");
         return;
       }
       toast.success("Deal advanced to Closing");
@@ -342,17 +345,17 @@ export default function DealDetailPage({
     }
   }
 
-  async function handleCloseDeal() {
+  async function handleCloseDeal(closeData: { costBasis: number; fairValue: number; entryDate: string }) {
     setClosingDeal(true);
     try {
       const res = await fetch(`/api/deals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CLOSE" }),
+        body: JSON.stringify({ action: "CLOSE", force: true, ...closeData }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Failed to close deal");
+        toast.error(typeof data.error === "string" ? data.error : "Failed to close deal");
         return;
       }
       toast.success("Deal closed — asset created and booked");
@@ -418,6 +421,11 @@ export default function DealDetailPage({
             {deal.capitalInstrument && (
               <Badge color={deal.capitalInstrument === "DEBT" ? "orange" : "blue"}>
                 {CAPITAL_INSTRUMENT_LABELS[deal.capitalInstrument]}
+              </Badge>
+            )}
+            {deal.participationStructure && (
+              <Badge color={PARTICIPATION_COLORS[deal.participationStructure] || "gray"}>
+                {PARTICIPATION_LABELS[deal.participationStructure] || deal.participationStructure}
               </Badge>
             )}
           </div>
@@ -523,6 +531,59 @@ export default function DealDetailPage({
         </div>
       )}
 
+      {/* Analysis Progress Banner (visible across all tabs) */}
+      {analysisProgress && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-semibold text-indigo-800">
+                {analysisProgress.phase || "Analyzing"}
+                {analysisProgress.current ? ` — ${analysisProgress.current}` : ""}
+              </span>
+            </div>
+            <span className="text-xs text-indigo-600 font-medium">
+              {analysisProgress.completed}/{analysisProgress.total}
+            </span>
+          </div>
+          <div className="bg-indigo-200 rounded-full h-1.5">
+            <div
+              className="h-1.5 rounded-full bg-indigo-500 transition-all"
+              style={{
+                width: `${analysisProgress.total > 0 ? Math.round((analysisProgress.completed / analysisProgress.total) * 100) : 0}%`,
+              }}
+            />
+          </div>
+          {analysisProgress.workstreamNames && analysisProgress.workstreamNames.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {analysisProgress.workstreamNames.map((name, i) => (
+                <span
+                  key={name}
+                  className={`text-[10px] px-1.5 py-0.5 rounded ${
+                    i < (analysisProgress.completed ?? 0)
+                      ? "bg-emerald-100 text-emerald-700"
+                      : analysisProgress.current === name
+                        ? "bg-indigo-200 text-indigo-800 font-semibold"
+                        : "bg-indigo-100 text-indigo-500"
+                  }`}
+                >
+                  {i < (analysisProgress.completed ?? 0) ? "\u2713 " : ""}{name}
+                </span>
+              ))}
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                  analysisProgress.phase === "Generating IC Memo"
+                    ? "bg-indigo-200 text-indigo-800 font-semibold"
+                    : "bg-indigo-100 text-indigo-500"
+                }`}
+              >
+                {analysisProgress.phase === "Generating IC Memo" ? "" : ""} IC Memo
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 pb-0">
         {visibleTabs.map((t) => (
@@ -607,15 +668,16 @@ export default function DealDetailPage({
         variant="primary"
         loading={advancingToClosing}
       />
-      <ConfirmDialog
+      <CloseDealModal
         open={showCloseDeal}
         onClose={() => setShowCloseDeal(false)}
         onConfirm={handleCloseDeal}
-        title="Close Deal"
-        message={`Close "${deal.name}"? This will create the asset and book it to the portfolio. All closing checklist items must be complete.`}
-        confirmLabel="Close Deal"
-        variant="primary"
+        dealName={deal.name}
+        assetClass={ASSET_CLASS_LABELS[deal.assetClass as keyof typeof ASSET_CLASS_LABELS] || deal.assetClass}
+        entityName={deal.targetEntity?.name}
         loading={closingDeal}
+        checklistTotal={deal.closingChecklist?.length ?? 0}
+        checklistComplete={deal.closingChecklist?.filter((i: any) => i.status === "COMPLETE").length ?? 0}
       />
     </div>
   );

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -54,6 +55,7 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
   const [initializing, setInitializing] = useState(false);
   const [closing, setClosing] = useState(false);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
+  const [forceCloseWarning, setForceCloseWarning] = useState<string | null>(null);
 
   const items: any[] = checklistItems || [];
   const completedCount = items.filter((i: any) => i.status === "COMPLETE").length;
@@ -90,17 +92,21 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
     }
   }
 
-  async function handleCloseDeal() {
+  async function handleCloseDeal(force = false) {
     setClosing(true);
     try {
       const res = await fetch(`/api/deals/${deal.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CLOSE" }),
+        body: JSON.stringify({ action: "CLOSE", force }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error || "Failed to close deal");
+        toast.error(typeof data.error === "string" ? data.error : "Failed to close deal");
+        return;
+      }
+      if (data.warning) {
+        setForceCloseWarning(data.warning);
         return;
       }
       toast.success("Deal closed — asset created and booked");
@@ -272,13 +278,38 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
           </div>
 
           {/* Close Deal Button */}
-          {allComplete && deal.stage === "CLOSING" && (
-            <div className="pt-2 flex justify-end">
-              <Button loading={closing} onClick={handleCloseDeal}>
-                Close Deal
+          {deal.stage === "CLOSING" && (
+            <div className="pt-2 flex items-center justify-end gap-3">
+              {!allComplete && (
+                <span className="text-xs text-amber-600 flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  {totalCount - completedCount} item{totalCount - completedCount !== 1 ? "s" : ""} incomplete
+                </span>
+              )}
+              <Button
+                loading={closing}
+                onClick={() => handleCloseDeal()}
+                className={!allComplete ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
+              >
+                {allComplete ? "Close Deal" : "Close Deal Anyway"}
               </Button>
             </div>
           )}
+
+          {/* Force close confirmation */}
+          <ConfirmDialog
+            open={!!forceCloseWarning}
+            title="Incomplete Checklist"
+            message={forceCloseWarning || ""}
+            confirmLabel="Close Anyway"
+            onConfirm={() => {
+              setForceCloseWarning(null);
+              handleCloseDeal(true);
+            }}
+            onClose={() => setForceCloseWarning(null)}
+          />
         </>
       )}
     </div>

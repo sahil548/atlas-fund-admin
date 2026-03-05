@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +14,18 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* System preference — initial load before JS hydrates */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
+}
+
+/* Class-based dark mode */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 body {
@@ -24,3 +33,92 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Global dark mode surface overrides
+   Uses attribute selectors to survive Tailwind 4 processing.
+   Covers page-level cards/text/borders without touching every file.
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Gray surfaces ── */
+html.dark [class~="bg-white"] { background-color: #111827 !important; }
+html.dark [class~="bg-gray-50"] { background-color: #0d1117 !important; }
+html.dark [class~="bg-gray-100"] { background-color: #1f2937 !important; }
+html.dark [class~="bg-gray-200"] { background-color: #374151 !important; }
+
+/* ── Colored -50 backgrounds → -950 equivalents ── */
+html.dark [class~="bg-blue-50"] { background-color: #172554 !important; }
+html.dark [class~="bg-emerald-50"] { background-color: #022c22 !important; }
+html.dark [class~="bg-amber-50"] { background-color: #451a03 !important; }
+html.dark [class~="bg-red-50"] { background-color: #450a0a !important; }
+html.dark [class~="bg-indigo-50"] { background-color: #1e1b4b !important; }
+html.dark [class~="bg-purple-50"] { background-color: #2e1065 !important; }
+html.dark [class~="bg-orange-50"] { background-color: #431407 !important; }
+html.dark [class~="bg-pink-50"] { background-color: #500724 !important; }
+html.dark [class~="bg-green-50"] { background-color: #052e16 !important; }
+html.dark [class~="bg-yellow-50"] { background-color: #422006 !important; }
+
+/* ── Colored -100 backgrounds → -900 equivalents ── */
+html.dark [class~="bg-indigo-100"] { background-color: #312e81 !important; }
+html.dark [class~="bg-emerald-100"] { background-color: #064e3b !important; }
+html.dark [class~="bg-purple-100"] { background-color: #4c1d95 !important; }
+html.dark [class~="bg-amber-100"] { background-color: #78350f !important; }
+html.dark [class~="bg-red-100"] { background-color: #7f1d1d !important; }
+html.dark [class~="bg-blue-100"] { background-color: #1e3a5f !important; }
+html.dark [class~="bg-green-100"] { background-color: #14532d !important; }
+html.dark [class~="bg-orange-100"] { background-color: #7c2d12 !important; }
+
+/* ── Gray borders ── */
+html.dark [class~="border-gray-200"] { border-color: #374151 !important; }
+html.dark [class~="border-gray-100"] { border-color: #1f2937 !important; }
+html.dark [class~="border-gray-50"] { border-color: #1f2937 !important; }
+
+/* ── Colored borders ── */
+html.dark [class~="border-blue-200"] { border-color: #1e3a5f !important; }
+html.dark [class~="border-blue-100"] { border-color: #172554 !important; }
+html.dark [class~="border-emerald-200"] { border-color: #064e3b !important; }
+html.dark [class~="border-emerald-100"] { border-color: #022c22 !important; }
+html.dark [class~="border-amber-200"] { border-color: #78350f !important; }
+html.dark [class~="border-amber-100"] { border-color: #451a03 !important; }
+html.dark [class~="border-red-200"] { border-color: #7f1d1d !important; }
+html.dark [class~="border-red-100"] { border-color: #450a0a !important; }
+html.dark [class~="border-indigo-200"] { border-color: #312e81 !important; }
+html.dark [class~="border-indigo-100"] { border-color: #1e1b4b !important; }
+html.dark [class~="border-purple-200"] { border-color: #4c1d95 !important; }
+html.dark [class~="border-orange-200"] { border-color: #7c2d12 !important; }
+
+/* ── Gray text ── */
+html.dark [class~="text-gray-900"] { color: #f3f4f6 !important; }
+html.dark [class~="text-gray-800"] { color: #e5e7eb !important; }
+html.dark [class~="text-gray-700"] { color: #d1d5db !important; }
+
+/* ── Very dark colored text → lighter equivalents ── */
+html.dark [class~="text-indigo-900"] { color: #a5b4fc !important; }
+html.dark [class~="text-emerald-900"] { color: #6ee7b7 !important; }
+html.dark [class~="text-blue-900"] { color: #93c5fd !important; }
+
+/* ── Colored text that needs slight brightening ── */
+html.dark [class~="text-indigo-700"] { color: #a5b4fc !important; }
+html.dark [class~="text-emerald-700"] { color: #6ee7b7 !important; }
+html.dark [class~="text-blue-700"] { color: #93c5fd !important; }
+html.dark [class~="text-amber-700"] { color: #fcd34d !important; }
+html.dark [class~="text-red-700"] { color: #fca5a5 !important; }
+html.dark [class~="text-purple-700"] { color: #c4b5fd !important; }
+html.dark [class~="text-orange-700"] { color: #fdba74 !important; }
+html.dark [class~="text-green-800"] { color: #86efac !important; }
+html.dark [class~="text-blue-800"] { color: #93c5fd !important; }
+
+/* ── Hover states ── */
+/* Table rows / list items use hover:bg-gray-50 everywhere — must override */
+html.dark [class~="hover:bg-gray-50"]:hover { background-color: #1f2937 !important; }
+html.dark [class~="hover:bg-gray-100"]:hover { background-color: #374151 !important; }
+html.dark [class~="hover:bg-gray-200"]:hover { background-color: #4b5563 !important; }
+html.dark [class~="hover:bg-indigo-50"]:hover { background-color: #1e1b4b !important; }
+html.dark [class~="hover:bg-indigo-100"]:hover { background-color: #312e81 !important; }
+
+/* ── Text selection ── */
+html.dark ::selection { background-color: rgba(99, 102, 241, 0.4); color: #f3f4f6; }
+
+/* ── Shadows ── */
+html.dark [class~="shadow-sm"] { box-shadow: 0 1px 2px rgba(0,0,0,0.4) !important; }
+html.dark [class~="shadow-xl"] { box-shadow: 0 20px 25px rgba(0,0,0,0.5) !important; }

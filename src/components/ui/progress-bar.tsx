@@ -7,7 +7,7 @@ export function ProgressBar({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <div className="w-16 bg-gray-100 rounded-full h-1.5">
+      <div className="w-16 bg-gray-100 dark:bg-gray-800 rounded-full h-1.5">
         <div
           className={`h-1.5 rounded-full ${
             percent === 100 ? "bg-emerald-500" : colorClass

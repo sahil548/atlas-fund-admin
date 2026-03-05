@@ -23,12 +23,45 @@ export async function GET(req: NextRequest) {
   const docsProcessed = deals.filter((d) => d.screeningResult !== null).length;
   const dealsScreened = docsProcessed;
   const passedToDD = deals.filter((d) =>
-    ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING"].includes(d.stage),
+    ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage),
   ).length;
   const passRate =
     dealsScreened > 0
-      ? `${Math.round((passedToDD / dealsScreened) * 100)}% to DD`
-      : "0% to DD";
+      ? `${Math.round((passedToDD / dealsScreened) * 100)}%`
+      : "0%";
+
+  // Pipeline analytics
+  const stageDistribution: Record<string, number> = {};
+  for (const stage of ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED", "DEAD"]) {
+    stageDistribution[stage] = deals.filter((d) => d.stage === stage).length;
+  }
+
+  function parseTargetSize(s: string | null): number {
+    if (!s) return 0;
+    const cleaned = s.replace(/[^0-9.BMKbmk]/g, "");
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return 0;
+    if (/[Bb]/.test(s)) return num * 1_000_000_000;
+    if (/[Mm]/.test(s)) return num * 1_000_000;
+    if (/[Kk]/.test(s)) return num * 1_000;
+    return num;
+  }
+
+  const valueByStage: Record<string, number> = {};
+  for (const stage of ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"]) {
+    valueByStage[stage] = deals
+      .filter((d) => d.stage === stage)
+      .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
+  }
+
+  const totalDeals = deals.length;
+  const pastScreening = deals.filter((d) => ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
+  const pastDD = deals.filter((d) => ["IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
+  const pastIC = deals.filter((d) => ["CLOSING", "CLOSED"].includes(d.stage)).length;
+
+  const screeningToDD = totalDeals > 0 ? Math.round((pastScreening / totalDeals) * 100) : 0;
+  const ddToIC = pastScreening > 0 ? Math.round((pastDD / pastScreening) * 100) : 0;
+  const icToClose = pastDD > 0 ? Math.round((pastIC / pastDD) * 100) : 0;
 
   return NextResponse.json({
     deals,
@@ -37,6 +70,14 @@ export async function GET(req: NextRequest) {
       dealsScreened,
       passedToDD,
       passRate,
+    },
+    pipelineAnalytics: {
+      stageDistribution,
+      valueByStage,
+      conversionRates: { screeningToDD, ddToIC, icToClose },
+      totalActiveDeals: deals.filter((d) => !["CLOSED", "DEAD"].includes(d.stage)).length,
+      totalClosedDeals: stageDistribution.CLOSED || 0,
+      totalDeadDeals: stageDistribution.DEAD || 0,
     },
   });
 }

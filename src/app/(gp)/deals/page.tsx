@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CreateDealWizard } from "@/components/features/deals/create-deal-wizard";
+import { Modal } from "@/components/ui/modal";
 import { useFirm } from "@/components/providers/firm-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -19,10 +20,10 @@ import {
 
 /* ── Pipeline stages (4 columns, no DEAD) ────────────── */
 const stages = [
-  { k: "SCREENING", l: "Screening", c: "bg-gray-50" },
-  { k: "DUE_DILIGENCE", l: "Due Diligence", c: "bg-blue-50" },
-  { k: "IC_REVIEW", l: "IC Review", c: "bg-amber-50" },
-  { k: "CLOSING", l: "Closing", c: "bg-emerald-50" },
+  { k: "SCREENING", l: "Screening", c: "bg-gray-50 dark:bg-gray-900" },
+  { k: "DUE_DILIGENCE", l: "Due Diligence", c: "bg-blue-50 dark:bg-blue-950" },
+  { k: "IC_REVIEW", l: "IC Review", c: "bg-amber-50 dark:bg-amber-950" },
+  { k: "CLOSING", l: "Closing", c: "bg-emerald-50 dark:bg-emerald-950" },
 ];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -43,6 +44,14 @@ export default function DealsPage() {
     passedToDD: number;
     passRate: string;
   };
+  const analytics = data.pipelineAnalytics as {
+    stageDistribution: Record<string, number>;
+    valueByStage: Record<string, number>;
+    conversionRates: { screeningToDD: number; ddToIC: number; icToClose: number };
+    totalActiveDeals: number;
+    totalClosedDeals: number;
+    totalDeadDeals: number;
+  } | undefined;
 
   return (
     <div className="space-y-5">
@@ -50,6 +59,86 @@ export default function DealsPage() {
         <h2 className="text-sm font-semibold">Deal Pipeline</h2>
         <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
       </div>
+
+      {/* Pipeline Analytics */}
+      {analytics && (
+        <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900">Pipeline Analytics</h3>
+            <span className="text-[10px] text-gray-400">{deals.length} total deals</span>
+          </div>
+
+          {/* Top-level stats */}
+          <div className="grid grid-cols-4 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="text-[10px] text-gray-500">Active Deals</div>
+              <div className="text-lg font-bold text-gray-900">{analytics.totalActiveDeals}</div>
+            </div>
+            <button onClick={() => setShowClosed(true)} className="bg-emerald-50 dark:bg-emerald-950 rounded-lg p-3 text-center hover:ring-2 hover:ring-emerald-300 transition-all cursor-pointer">
+              <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Closed</div>
+              <div className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{analytics.totalClosedDeals}</div>
+            </button>
+            <button onClick={() => setShowDead(true)} className="bg-red-50 dark:bg-red-950 rounded-lg p-3 text-center hover:ring-2 hover:ring-red-300 transition-all cursor-pointer">
+              <div className="text-[10px] text-red-500 dark:text-red-400">Dead</div>
+              <div className="text-lg font-bold text-red-600 dark:text-red-300">{analytics.totalDeadDeals}</div>
+            </button>
+            <div className="bg-indigo-50 dark:bg-indigo-950 rounded-lg p-3 text-center">
+              <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Pass Rate</div>
+              <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{stats.passRate}</div>
+            </div>
+          </div>
+
+          {/* Deal Flow Funnel */}
+          <div>
+            <div className="text-xs font-semibold text-gray-700 mb-2">Deal Flow</div>
+            <div className="space-y-1.5">
+              {[
+                { label: "Screening", count: analytics.stageDistribution.SCREENING ?? 0, color: "bg-gray-400", pct: 100 },
+                { label: "Due Diligence", count: analytics.stageDistribution.DUE_DILIGENCE ?? 0, color: "bg-blue-500", pct: analytics.conversionRates.screeningToDD },
+                { label: "IC Review", count: analytics.stageDistribution.IC_REVIEW ?? 0, color: "bg-amber-500", pct: analytics.conversionRates.ddToIC },
+                { label: "Closing", count: analytics.stageDistribution.CLOSING ?? 0, color: "bg-emerald-500", pct: analytics.conversionRates.icToClose },
+              ].map((stage) => (
+                <div key={stage.label} className="flex items-center gap-3">
+                  <span className="text-[10px] text-gray-600 w-24 text-right">{stage.label}</span>
+                  <div className="flex-1 bg-gray-100 rounded-full h-3 relative overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${stage.color} transition-all`}
+                      style={{ width: `${Math.max(stage.pct, stage.count > 0 ? 5 : 0)}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-gray-700 w-6 text-right">{stage.count}</span>
+                  <span className="text-[10px] text-gray-400 w-10">{stage.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Value by stage */}
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { label: "Screening", value: analytics.valueByStage.SCREENING ?? 0, border: "border-gray-200 dark:border-gray-700" },
+              { label: "Due Diligence", value: analytics.valueByStage.DUE_DILIGENCE ?? 0, border: "border-blue-200 dark:border-blue-800" },
+              { label: "IC Review", value: analytics.valueByStage.IC_REVIEW ?? 0, border: "border-amber-200 dark:border-amber-800" },
+              { label: "Closing", value: analytics.valueByStage.CLOSING ?? 0, border: "border-emerald-200 dark:border-emerald-800" },
+            ].map((s) => (
+              <div key={s.label} className={`border ${s.border} rounded-lg p-2 text-center`}>
+                <div className="text-[10px] text-gray-500">{s.label}</div>
+                <div className="text-xs font-semibold text-gray-900">
+                  {s.value >= 1_000_000_000
+                    ? `$${(s.value / 1_000_000_000).toFixed(1)}B`
+                    : s.value >= 1_000_000
+                    ? `$${(s.value / 1_000_000).toFixed(0)}M`
+                    : s.value >= 1_000
+                    ? `$${(s.value / 1_000).toFixed(0)}K`
+                    : s.value > 0
+                    ? `$${s.value.toLocaleString()}`
+                    : "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Kanban Pipeline — 4 columns */}
       <div className="flex gap-3 overflow-x-auto pb-2">
@@ -115,20 +204,11 @@ export default function DealsPage() {
                           </Badge>
                         )}
                         {p.participationStructure && (
-                          <span className="text-[10px] text-gray-500">
+                          <Badge color={p.participationStructure === "DIRECT_GP" ? "purple" : p.participationStructure === "CO_INVEST_JV_PARTNERSHIP" ? "indigo" : "gray"}>
                             {PARTICIPATION_LABELS[p.participationStructure] || p.participationStructure}
-                          </span>
+                          </Badge>
                         )}
                       </div>
-
-                      {/* DD Status */}
-                      {p.stage !== "SCREENING" && (
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-100 text-indigo-700">
-                            DD Active
-                          </span>
-                        </div>
-                      )}
 
                       {/* DD Progress Bar */}
                       {showDDProgress && (
@@ -163,117 +243,102 @@ export default function DealsPage() {
         })}
       </div>
 
-      {/* Closed Deals */}
-      {(() => {
-        const closedDeals = deals.filter((d: any) => d.stage === "CLOSED");
-        if (closedDeals.length === 0) return null;
-        return (
-          <div className="bg-emerald-50/50 rounded-xl border border-emerald-100">
-            <button
-              onClick={() => setShowClosed(!showClosed)}
-              className="w-full flex items-center justify-between p-3 text-xs font-semibold text-emerald-700"
-            >
-              <span>Closed Deals ({closedDeals.length})</span>
-              <span className="text-emerald-400">{showClosed ? "▲" : "▼"}</span>
-            </button>
-            {showClosed && (
-              <div className="px-3 pb-3 grid grid-cols-4 gap-2">
-                {closedDeals.map((p: any) => (
-                  <Link
-                    key={p.id}
-                    href={`/deals/${p.id}`}
-                    className="block bg-white rounded-lg p-3 shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-medium truncate pr-2">{p.name}</div>
-                      <Badge color="green">Closed</Badge>
-                    </div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
-                        {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 text-[10px] text-gray-500">{p.targetSize || ""}</div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Dead Deals */}
-      {(() => {
-        const deadDeals = deals.filter((d: any) => d.stage === "DEAD");
-        if (deadDeals.length === 0) return null;
-        return (
-          <div className="bg-red-50/50 rounded-xl border border-red-100">
-            <button
-              onClick={() => setShowDead(!showDead)}
-              className="w-full flex items-center justify-between p-3 text-xs font-semibold text-red-700"
-            >
-              <span>Dead Deals ({deadDeals.length})</span>
-              <span className="text-red-400">{showDead ? "▲" : "▼"}</span>
-            </button>
-            {showDead && (
-              <div className="px-3 pb-3 grid grid-cols-4 gap-2">
-                {deadDeals.map((p: any) => (
-                  <Link
-                    key={p.id}
-                    href={`/deals/${p.id}`}
-                    className="block bg-white rounded-lg p-3 shadow-sm border border-red-100 cursor-pointer hover:border-red-300 transition-colors opacity-70"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-sm font-medium truncate pr-2">{p.name}</div>
-                      <Badge color="red">Dead</Badge>
-                    </div>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
-                        {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
-                      </Badge>
-                    </div>
-                    <div className="mt-2 text-[10px] text-gray-500">{p.targetSize || ""}</div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* AI Pipeline Stats Banner */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-5 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold">AI Deal Pipeline</div>
-            <div className="text-xs opacity-80 mt-1">
-              Upload documents → start due diligence → AI workstream analysis → IC memo
-            </div>
-          </div>
-          <div />
-        </div>
-        <div className="mt-3 grid grid-cols-4 gap-3">
-          {[
-            { l: "Docs Processed", v: `${stats.docsProcessed} this qtr` },
-            { l: "Avg Screen Time", v: "< 3 min" },
-            { l: "Deals Screened", v: `${stats.dealsScreened} this qtr` },
-            { l: "Pass Rate", v: stats.passRate },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="bg-white/10 rounded-lg p-2 text-center"
-            >
-              <div className="text-[10px] opacity-70">{s.l}</div>
-              <div className="text-sm font-semibold">{s.v}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <CreateDealWizard
         open={showCreate}
         onClose={() => setShowCreate(false)}
       />
+
+      {/* Closed Deals Modal */}
+      <Modal
+        open={showClosed}
+        onClose={() => setShowClosed(false)}
+        title={`Closed Deals (${deals.filter((d: any) => d.stage === "CLOSED").length})`}
+        size="lg"
+      >
+        <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+          {deals.filter((d: any) => d.stage === "CLOSED").map((p: any) => (
+            <Link
+              key={p.id}
+              href={`/deals/${p.id}`}
+              onClick={() => setShowClosed(false)}
+              className="block bg-white rounded-lg p-3 shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300 transition-colors"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-medium truncate pr-2">{p.name}</div>
+                <Badge color="green">Closed</Badge>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
+                  {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
+                </Badge>
+                {p.capitalInstrument && (
+                  <Badge color={p.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                    {CAPITAL_INSTRUMENT_LABELS[p.capitalInstrument]}
+                  </Badge>
+                )}
+                {p.participationStructure && (
+                  <Badge color={p.participationStructure === "DIRECT_GP" ? "purple" : p.participationStructure === "CO_INVEST_JV_PARTNERSHIP" ? "indigo" : "gray"}>
+                    {PARTICIPATION_LABELS[p.participationStructure] || p.participationStructure}
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] text-gray-500">
+                <span>{p.targetSize || ""}</span>
+                <span>{p.counterparty || ""}</span>
+              </div>
+            </Link>
+          ))}
+          {deals.filter((d: any) => d.stage === "CLOSED").length === 0 && (
+            <div className="col-span-2 text-center py-8 text-sm text-gray-400">No closed deals yet</div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Dead Deals Modal */}
+      <Modal
+        open={showDead}
+        onClose={() => setShowDead(false)}
+        title={`Dead Deals (${deals.filter((d: any) => d.stage === "DEAD").length})`}
+        size="lg"
+      >
+        <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto">
+          {deals.filter((d: any) => d.stage === "DEAD").map((p: any) => (
+            <Link
+              key={p.id}
+              href={`/deals/${p.id}`}
+              onClick={() => setShowDead(false)}
+              className="block bg-white rounded-lg p-3 shadow-sm border border-red-100 cursor-pointer hover:border-red-300 transition-colors opacity-80"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-sm font-medium truncate pr-2">{p.name}</div>
+                <Badge color="red">Dead</Badge>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <Badge color={ASSET_CLASS_COLORS[p.assetClass] || "gray"}>
+                  {ASSET_CLASS_LABELS[p.assetClass] || p.assetClass}
+                </Badge>
+                {p.capitalInstrument && (
+                  <Badge color={p.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                    {CAPITAL_INSTRUMENT_LABELS[p.capitalInstrument]}
+                  </Badge>
+                )}
+                {p.participationStructure && (
+                  <Badge color={p.participationStructure === "DIRECT_GP" ? "purple" : p.participationStructure === "CO_INVEST_JV_PARTNERSHIP" ? "indigo" : "gray"}>
+                    {PARTICIPATION_LABELS[p.participationStructure] || p.participationStructure}
+                  </Badge>
+                )}
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] text-gray-500">
+                <span>{p.targetSize || ""}</span>
+                <span>{p.counterparty || ""}</span>
+              </div>
+            </Link>
+          ))}
+          {deals.filter((d: any) => d.stage === "DEAD").length === 0 && (
+            <div className="col-span-2 text-center py-8 text-sm text-gray-400">No dead deals</div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

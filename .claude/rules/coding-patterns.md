@@ -82,6 +82,20 @@ cn("base", isActive && "text-white")  // conditional Tailwind classes
 
 ---
 
+## Toast Error Safety — API errors can be objects, not strings
+
+```typescript
+// ❌ CRASHES — parseBody returns Zod objects as error: { formErrors, fieldErrors }
+const data = await res.json();
+toast.error(data.error || "Failed");  // React crashes: "Objects are not valid as a React child"
+
+// ✅ Always check type before passing to toast
+const msg = typeof data.error === "string" ? data.error : "Failed to do X";
+toast.error(msg);
+```
+
+---
+
 ## Anti-Patterns (NEVER do these)
 
 ```typescript

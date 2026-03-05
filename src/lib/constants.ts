@@ -32,3 +32,9 @@ export const PARTICIPATION_LABELS: Record<string, string> = {
   CO_INVEST_JV_PARTNERSHIP: "Co-Invest / JV",
   LP_STAKE_SILENT_PARTNER: "LP Stake",
 };
+
+export const PARTICIPATION_COLORS: Record<string, string> = {
+  DIRECT_GP: "purple",
+  CO_INVEST_JV_PARTNERSHIP: "indigo",
+  LP_STAKE_SILENT_PARTNER: "gray",
+};

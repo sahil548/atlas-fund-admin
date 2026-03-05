@@ -6,6 +6,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { useUser } from "@/components/providers/user-provider";
 import { getSidebarNav } from "@/lib/routes";
 import { UserSwitcher } from "@/components/features/directory/user-switcher";
+import { useTheme } from "@/components/providers/theme-provider";
 
 export function Sidebar({
   portal,
@@ -20,6 +21,7 @@ export function Sidebar({
   const nav = getSidebarNav(portal);
 
   const isLpUser = user.role === "LP_INVESTOR";
+  const { theme, setTheme } = useTheme();
 
   return (
     <div className="w-52 bg-slate-900 flex flex-col flex-shrink-0 h-screen sticky top-0">
@@ -90,7 +92,21 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="p-3 border-t border-slate-700">
+      <div className="p-3 border-t border-slate-700 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-slate-500">Theme</span>
+          <button
+            onClick={() =>
+              setTheme(
+                theme === "system" ? "dark" : theme === "dark" ? "light" : "system"
+              )
+            }
+            className="text-sm bg-slate-800 hover:bg-slate-700 rounded-md px-2 py-1 text-slate-300 transition-colors"
+            title={`Theme: ${theme}`}
+          >
+            {theme === "dark" ? "\u{1F319}" : theme === "light" ? "\u2600\uFE0F" : "\u{1F5A5}\uFE0F"}
+          </button>
+        </div>
         <UserSwitcher />
       </div>
     </div>

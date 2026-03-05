@@ -8,6 +8,7 @@ import { FirmProvider } from "@/components/providers/firm-provider";
 import { UserProvider } from "@/components/providers/user-provider";
 import { CommandBarProvider } from "@/components/features/command-bar/command-bar-provider";
 import { GlobalDialogsProvider } from "@/hooks/use-global-dialogs";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,19 +28,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} font-sans antialiased`}>
-        <ClerkWrapper>
-          <ToastProvider>
-            <UserProvider>
-              <FirmProvider>
-                <GlobalDialogsProvider>
-                  <CommandBarProvider>
-                    <AppShell>{children}</AppShell>
-                  </CommandBarProvider>
-                </GlobalDialogsProvider>
-              </FirmProvider>
-            </UserProvider>
-          </ToastProvider>
-        </ClerkWrapper>
+        <ThemeProvider>
+          <ClerkWrapper>
+            <ToastProvider>
+              <UserProvider>
+                <FirmProvider>
+                  <GlobalDialogsProvider>
+                    <CommandBarProvider>
+                      <AppShell>{children}</AppShell>
+                    </CommandBarProvider>
+                  </GlobalDialogsProvider>
+                </FirmProvider>
+              </UserProvider>
+            </ToastProvider>
+          </ClerkWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );

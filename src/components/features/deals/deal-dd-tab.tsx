@@ -7,6 +7,7 @@ import { ProgressBar } from "@/components/ui/progress-bar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
+import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { mutate } from "swr";
 import { AddWorkstreamForm } from "./add-workstream-form";
@@ -41,10 +42,14 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [showResolution, setShowResolution] = useState<
     Record<string, boolean>
   >({});
-  const [applyingTemplate, setApplyingTemplate] = useState(false);
   const [showAddWorkstream, setShowAddWorkstream] = useState(false);
   const [analyzingWs, setAnalyzingWs] = useState<string | null>(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
+  const [promptModalWs, setPromptModalWs] = useState<any>(null);
+  const [promptText, setPromptText] = useState("");
+  const [promptEditing, setPromptEditing] = useState(false);
+  const [savingInstructions, setSavingInstructions] = useState(false);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const allWorkstreams = (deal.workstreams || []) as any[];
   // IC_MEMO is not a workstream — it's an aggregated product stored in AIScreeningResult
@@ -153,23 +158,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
-  async function applyTemplate(templateId: string) {
-    setApplyingTemplate(true);
-    try {
-      await fetch(`/api/deals/${deal.id}/apply-template`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ templateId }),
-      });
-      toast.success("DD template applied");
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      toast.error("Failed to apply template");
-    } finally {
-      setApplyingTemplate(false);
-    }
-  }
-
   // ── Analysis triggers ──
 
   // Map workstream name → dd-analyze type
@@ -219,11 +207,11 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
   async function runAllAnalysis() {
     setAnalyzingAll(true);
-    let completed = 0;
-    for (const ws of sortedWorkstreams) {
-      const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
-      try {
-        await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+    // Phase 1: Run all workstream analyses in parallel
+    const results = await Promise.allSettled(
+      sortedWorkstreams.map(async (ws) => {
+        const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
+        const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -232,12 +220,22 @@ export function DealDDTab({ deal }: DealDDTabProps) {
             rerun: !!ws.analysisResult,
           }),
         });
-        completed++;
-      } catch {
-        // continue with next
-      }
+        if (!res.ok) throw new Error(`${ws.name} failed`);
+      })
+    );
+    const completed = results.filter((r) => r.status === "fulfilled").length;
+
+    // Phase 2: Auto-generate IC Memo from workstream results
+    try {
+      await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "IC_MEMO", rerun: true }),
+      });
+      toast.success(`Analysis complete (${completed}/${sortedWorkstreams.length}) — IC Memo generated`);
+    } catch {
+      toast.success(`Analysis complete (${completed}/${sortedWorkstreams.length}) — IC Memo generation failed`);
     }
-    toast.success(`Analysis complete for ${completed}/${sortedWorkstreams.length} workstreams`);
     mutate(`/api/deals/${deal.id}`);
     setAnalyzingAll(false);
   }
@@ -253,6 +251,47 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       mutate(`/api/deals/${deal.id}`);
     } catch {
       toast.error("Failed to update category");
+    }
+  }
+
+  async function openPromptModal(ws: any) {
+    setPromptModalWs(ws);
+    setPromptEditing(false);
+    if (ws.customInstructions) {
+      setPromptText(ws.customInstructions);
+    } else {
+      // Fetch from DD category template
+      setLoadingTemplate(true);
+      try {
+        const res = await fetch(`/api/dd-categories?name=${encodeURIComponent(ws.name)}`);
+        const templates = await res.json();
+        const tmpl = Array.isArray(templates) ? templates.find((t: any) => t.name === ws.name) : null;
+        setPromptText(tmpl?.defaultInstructions || "");
+      } catch {
+        setPromptText("");
+      } finally {
+        setLoadingTemplate(false);
+      }
+    }
+  }
+
+  async function savePromptInstructions() {
+    if (!promptModalWs) return;
+    setSavingInstructions(true);
+    try {
+      const text = promptText.trim() || null;
+      await fetch(`/api/deals/${deal.id}/workstreams`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: promptModalWs.id, customInstructions: text }),
+      });
+      toast.success("Analysis prompt saved");
+      mutate(`/api/deals/${deal.id}`);
+      setPromptModalWs(null);
+    } catch {
+      toast.error("Failed to save prompt");
+    } finally {
+      setSavingInstructions(false);
     }
   }
 
@@ -318,46 +357,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         </div>
       )}
 
-      {/* Template Picker */}
-      {workstreams.length === 0 && (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">
-            No workstreams yet. Apply a template to get started:
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              {
-                id: "standard-equity",
-                name: "Standard Equity DD",
-                desc: "PE / direct equity investments",
-                color: "bg-indigo-50 border-indigo-200",
-              },
-              {
-                id: "credit-dd",
-                name: "Credit DD",
-                desc: "Private credit & lending",
-                color: "bg-orange-50 border-orange-200",
-              },
-              {
-                id: "real-estate-dd",
-                name: "Real Estate DD",
-                desc: "Direct real estate",
-                color: "bg-green-50 border-green-200",
-              },
-            ].map((t) => (
-              <button
-                key={t.id}
-                onClick={() => applyTemplate(t.id)}
-                disabled={applyingTemplate}
-                className={`p-4 rounded-xl border text-left hover:shadow-md transition-shadow ${t.color}`}
-              >
-                <div className="text-sm font-semibold">{t.name}</div>
-                <div className="text-xs text-gray-500 mt-1">{t.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Category Cards */}
       {sortedWorkstreams.length > 0 && (
@@ -404,15 +403,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                     {ws.name}
                   </span>
                   <div className="flex items-center gap-2">
-                    {ws.analysisResult ? (
-                      ws.analysisResult.aiPowered ? (
-                        <Badge color="indigo">AI Analyzed</Badge>
-                      ) : (
-                        <Badge color="gray">Sample Data</Badge>
-                      )
-                    ) : ws.aiGenerated ? (
-                      <Badge color="purple">AI</Badge>
-                    ) : null}
+                    {ws.analysisResult && <Badge color="indigo">Analyzed</Badge>}
                     <button
                       onClick={(e) => { e.stopPropagation(); runWorkstreamAnalysis(ws); }}
                       disabled={analyzingWs === ws.id || analyzingAll}
@@ -453,18 +444,22 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                         {ws.description}
                       </p>
                     )}
-                    {ws.customInstructions && (
-                      <div className="mb-2">
-                        <Badge color="indigo">Custom Instructions</Badge>
-                      </div>
-                    )}
+                    {/* Analysis Prompt badge — always shows, opens modal */}
+                    <div className="mb-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); openPromptModal(ws); }}
+                        className="text-xs font-medium px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-colors inline-flex items-center gap-1"
+                      >
+                        {ws.customInstructions ? "Analysis Prompt" : "Analysis Prompt (default)"}
+                      </button>
+                    </div>
 
-                    {/* Analysis Result Panel */}
+                    {/* Analysis Report */}
                     {ws.analysisResult && (
-                      <div className={`mb-3 rounded-lg border p-3 ${ws.analysisResult.aiPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100"}`}>
+                      <div className={`mb-3 rounded-lg border p-3 ${ws.analysisResult.aiPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100 dark:from-indigo-950 dark:to-purple-950 dark:border-indigo-800" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100 dark:from-gray-900 dark:to-amber-950 dark:border-amber-800"}`}>
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <div className={`text-xs font-semibold ${ws.analysisResult.aiPowered ? "text-indigo-900" : "text-gray-700"}`}>Analysis Summary</div>
+                            <div className={`text-xs font-semibold ${ws.analysisResult.aiPowered ? "text-indigo-900" : "text-gray-700"}`}>Analysis Report</div>
                             {!ws.analysisResult.aiPowered && (
                               <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Sample — configure AI for full analysis</span>
                             )}
@@ -484,41 +479,61 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                           )}
                         </div>
                         <p className="text-xs text-gray-700 mb-2">{ws.analysisResult.summary}</p>
-                        <button
-                          onClick={() =>
-                            setExpandedAnalysis((prev) => {
-                              const next = new Set(prev);
-                              next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
-                              return next;
-                            })
-                          }
-                          className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
-                        >
-                          {expandedAnalysis.has(ws.id) ? "Hide Details ▴" : "Show Full Analysis ▾"}
-                        </button>
-                        {expandedAnalysis.has(ws.id) && Array.isArray(ws.analysisResult.sections) && (
+
+                        {/* Report sections — shown by default */}
+                        {Array.isArray(ws.analysisResult.sections) && ws.analysisResult.sections.length > 0 && (
                           <div className="mt-2 space-y-2">
-                            {ws.analysisResult.sections.map((section: any, i: number) => (
-                              <div key={i} className="bg-white rounded border border-gray-100 p-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs font-medium text-gray-800">{section.name}</span>
-                                  <Badge
-                                    color={
-                                      section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
-                                    }
-                                  >
-                                    {section.riskLevel}
-                                  </Badge>
-                                </div>
-                                <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
+                            <button
+                              onClick={() =>
+                                setExpandedAnalysis((prev) => {
+                                  const next = new Set(prev);
+                                  next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
+                                  return next;
+                                })
+                              }
+                              className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
+                            >
+                              {expandedAnalysis.has(ws.id) ? "Hide Report Details ▴" : `Show Report Details (${ws.analysisResult.sections.length} sections) ▾`}
+                            </button>
+                            {expandedAnalysis.has(ws.id) && (
+                              <div className="space-y-2">
+                                {ws.analysisResult.sections.map((section: any, i: number) => (
+                                  <div key={i} className="bg-white rounded border border-gray-100 p-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-medium text-gray-800">{section.name}</span>
+                                      {section.riskLevel && (
+                                        <Badge
+                                          color={
+                                            section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
+                                          }
+                                        >
+                                          {section.riskLevel}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            )}
+                          </div>
+                        )}
+
+                        {/* Open questions count */}
+                        {ws.tasks && ws.tasks.length > 0 && (
+                          <div className="mt-2 text-[10px] text-indigo-600">
+                            Generated {ws.tasks.filter((t: any) => t.source?.startsWith("AI_")).length} open questions
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* Tasks list */}
+                    {/* Open Questions & Tasks */}
+                    {ws.tasks && ws.tasks.length > 0 && (
+                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mt-1 mb-0.5">
+                        Open Questions &amp; Tasks ({ws.tasks.length})
+                      </div>
+                    )}
                     {ws.tasks && ws.tasks.length > 0 ? (
                       ws.tasks.map((task: any) => (
                         <div key={task.id} className="group">
@@ -791,6 +806,61 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         onClose={() => setShowAddWorkstream(false)}
         dealId={deal.id}
       />
+
+      {/* Analysis Prompt Modal */}
+      <Modal
+        open={!!promptModalWs}
+        onClose={() => { setPromptModalWs(null); setPromptEditing(false); }}
+        title={`Analysis Prompt — ${promptModalWs?.name || ""}`}
+        size="lg"
+        footer={
+          promptEditing ? (
+            <>
+              <Button variant="secondary" onClick={() => setPromptEditing(false)}>Cancel</Button>
+              <Button loading={savingInstructions} onClick={savePromptInstructions}>Save Changes</Button>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => { setPromptModalWs(null); setPromptEditing(false); }}>Close</Button>
+              <Button onClick={() => setPromptEditing(true)}>Edit Prompt</Button>
+            </>
+          )
+        }
+      >
+        {loadingTemplate ? (
+          <div className="py-8 text-center text-sm text-gray-400">Loading prompt template...</div>
+        ) : promptEditing ? (
+          <div className="space-y-3">
+            <div className="text-xs text-gray-500">
+              Edit the analysis instructions the AI uses for this workstream. Changes only affect this deal — the template in Settings stays the same.
+            </div>
+            <Textarea
+              value={promptText}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromptText(e.target.value)}
+              rows={10}
+              placeholder="Analysis instructions..."
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                {promptModalWs?.customInstructions ? "Custom Prompt (deal-specific)" : "Default Prompt (from Settings → Deal Desk)"}
+              </span>
+            </div>
+            {promptText ? (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{promptText}</p>
+              </div>
+            ) : (
+              <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
+                <p className="text-sm text-gray-400">No prompt configured for this workstream.</p>
+                <p className="text-xs text-gray-400 mt-1">Click &ldquo;Edit Prompt&rdquo; to add one, or configure it in Settings → Deal Desk.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

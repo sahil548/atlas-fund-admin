@@ -15,7 +15,7 @@ interface DealICReviewTabProps {
 
 export function DealICReviewTab({ deal }: DealICReviewTabProps) {
   const toast = useToast();
-  const { userId } = useUser();
+  const { userId, isLoading: userLoading } = useUser();
   const [icDecisionLoading, setIcDecisionLoading] = useState(false);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [postingQuestion, setPostingQuestion] = useState(false);
@@ -23,13 +23,23 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
   const [postingReply, setPostingReply] = useState<Record<string, boolean>>({});
 
   async function handleICDecision(decision: string) {
+    if (!userId) {
+      toast.error("User not loaded — please try again");
+      return;
+    }
     setIcDecisionLoading(true);
     try {
-      await fetch(`/api/deals/${deal.id}/ic-decision`, {
+      const res = await fetch(`/api/deals/${deal.id}/ic-decision`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, userId }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to record IC decision";
+        toast.error(msg);
+        return;
+      }
       toast.success(
         `IC decision: ${decision.replace(/_/g, " ")} — deal ${
           decision === "APPROVED"
@@ -143,6 +153,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
             <div className="flex gap-2">
               <Button
                 loading={icDecisionLoading}
+                disabled={userLoading || !userId}
                 onClick={() => handleICDecision("APPROVED")}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
@@ -151,6 +162,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
               <Button
                 variant="danger"
                 loading={icDecisionLoading}
+                disabled={userLoading || !userId}
                 onClick={() => handleICDecision("REJECTED")}
               >
                 Reject
@@ -158,6 +170,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
               <Button
                 variant="secondary"
                 loading={icDecisionLoading}
+                disabled={userLoading || !userId}
                 onClick={() => handleICDecision("SEND_BACK")}
               >
                 Send Back to DD

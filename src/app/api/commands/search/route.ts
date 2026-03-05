@@ -24,11 +24,14 @@ export async function GET(req: NextRequest) {
                 OR: [
                   { name: { contains: q, mode: "insensitive" } },
                   { sector: { contains: q, mode: "insensitive" } },
+                  { gpName: { contains: q, mode: "insensitive" } },
+                  { counterparty: { contains: q, mode: "insensitive" } },
+                  { description: { contains: q, mode: "insensitive" } },
                 ],
               },
             ],
           },
-          select: { id: true, name: true, stage: true, assetClass: true },
+          select: { id: true, name: true, stage: true, assetClass: true, aiScore: true, capitalInstrument: true },
           take: 3,
         }),
 
@@ -109,11 +112,14 @@ export async function GET(req: NextRequest) {
 
     // Map to SearchResult
     for (const d of deals) {
+      const parts = [d.stage.replace(/_/g, " "), d.assetClass.replace(/_/g, " ")];
+      if (d.capitalInstrument) parts.push(d.capitalInstrument);
+      if (d.aiScore != null) parts.push(`Score: ${d.aiScore}`);
       results.push({
         id: d.id,
         type: "deal",
         title: d.name,
-        subtitle: `${d.stage} · ${d.assetClass}`,
+        subtitle: parts.join(" · "),
         url: `/deals/${d.id}`,
       });
     }
