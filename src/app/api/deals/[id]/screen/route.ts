@@ -40,7 +40,7 @@ export async function POST(
   }
 
   const authUser = await getAuthUser();
-  const firmId = authUser?.firmId || deal.firmId || "firm-1";
+  const firmId = authUser?.firmId || deal.firmId || "";
 
   // ── Fetch DD category templates for this deal's asset class ──
   const scopes = ["UNIVERSAL", deal.assetClass];

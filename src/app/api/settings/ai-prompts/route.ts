@@ -6,7 +6,8 @@ import { getAuthUser } from "@/lib/auth";
 
 async function getFirmId(): Promise<string> {
   const authUser = await getAuthUser();
-  return authUser?.firmId || "firm-1";
+  if (!authUser?.firmId) throw new Error("Not authenticated");
+  return authUser.firmId;
 }
 
 // GET — returns all templates (DB rows merged with defaults for uncustomized types)

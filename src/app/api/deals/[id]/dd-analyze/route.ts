@@ -290,7 +290,7 @@ export async function POST(
 
   // Call LLM or fallback to mock
   const authUser = await getAuthUser();
-  const firmId = authUser?.firmId || deal.firmId || "firm-1";
+  const firmId = authUser?.firmId || deal.firmId || "";
   let result: DDAnalysisResult;
   let aiPowered = false;
 

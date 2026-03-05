@@ -80,7 +80,10 @@ export async function POST(req: Request) {
   const categories = (body.categories as ScreeningCategory[] | undefined) || DEFAULT_CATEGORIES;
   const customInstructions = body.customInstructions as string | undefined;
   const authUser = await getAuthUser();
-  const firmId = authUser?.firmId || deal.firmId || "firm-1";
+  const firmId = authUser?.firmId || deal.firmId || "";
+  if (!firmId) {
+    return NextResponse.json({ error: "Unable to determine firm" }, { status: 401 });
+  }
 
   const result = await screenDealWithAI(firmId, dealCtx, categories, customInstructions);
 
