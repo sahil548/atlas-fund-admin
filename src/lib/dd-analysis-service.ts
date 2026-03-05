@@ -100,7 +100,7 @@ export const DD_ANALYSIS_META: Record<
 
 // ── Prompt Builder ───────────────────────────────────
 
-function buildDealContextBlock(dealCtx: DealContext): string {
+function buildDealContextBlock(dealCtx: DealContext, compact = false): string {
   const docsList =
     dealCtx.documents.length > 0
       ? dealCtx.documents
@@ -108,11 +108,14 @@ function buildDealContextBlock(dealCtx: DealContext): string {
           .join("\n")
       : "No documents uploaded yet";
 
+  // Compact mode (DD workstreams): fewer notes since screening already saw them
+  const noteLimit = compact ? 3 : 5;
+  const noteCharLimit = compact ? 200 : 300;
   const notesList =
     dealCtx.notes.length > 0
       ? dealCtx.notes
-          .slice(0, 5)
-          .map((n) => `- ${n.author || "Unknown"}: ${n.content.slice(0, 300)}`)
+          .slice(0, noteLimit)
+          .map((n) => `- ${n.author || "Unknown"}: ${n.content.slice(0, noteCharLimit)}`)
           .join("\n")
       : "No analyst notes";
 
@@ -167,9 +170,9 @@ function buildAnalysisPrompt(
   } | null,
   priorFindings?: { title: string; description: string; priority: string }[] | null,
 ): string {
-  const dealContextBlock = buildDealContextBlock(dealCtx);
-
   const isICMemo = type === "IC_MEMO";
+  // DD workstreams use compact context (trimmed notes) — screening already saw full context
+  const dealContextBlock = buildDealContextBlock(dealCtx, !isICMemo);
   const recommendationOptions = isICMemo
     ? "APPROVE | APPROVE_WITH_CONDITIONS | DECLINE"
     : "GO | NO_GO | NEEDS_MORE_INFO";

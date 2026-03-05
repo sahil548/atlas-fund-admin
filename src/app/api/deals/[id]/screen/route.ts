@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { CATEGORY_NAME_TO_TYPE } from "@/lib/schemas";
+import { getAuthUser } from "@/lib/auth";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -38,7 +39,8 @@ export async function POST(
     return NextResponse.json({ error: "Deal not found" }, { status: 404 });
   }
 
-  const firmId = deal.firmId || "firm-1";
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || deal.firmId || "firm-1";
 
   // ── Fetch DD category templates for this deal's asset class ──
   const scopes = ["UNIVERSAL", deal.assetClass];

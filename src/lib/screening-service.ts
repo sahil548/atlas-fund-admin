@@ -24,6 +24,7 @@ export interface DealContext {
   thesisNotes?: string | null;
   documents: { name: string; category: string | null }[];
   notes: { content: string; author: string | null }[];
+  documentContents?: { name: string; content: string }[];
 }
 
 export interface ScreeningFinding {
@@ -94,6 +95,12 @@ ${dealCtx.additionalContext ? `ADDITIONAL CONTEXT:\n${dealCtx.additionalContext}
 
 ATTACHED DOCUMENTS:
 ${docsList}
+${dealCtx.documentContents && dealCtx.documentContents.length > 0
+    ? "\nDOCUMENT CONTENTS:\n" +
+      dealCtx.documentContents
+        .map((d) => `\n--- ${d.name} ---\n${d.content}${d.content.length >= 5000 ? "\n[... truncated ...]" : ""}`)
+        .join("\n")
+    : ""}
 
 ANALYST NOTES:
 ${notesList}

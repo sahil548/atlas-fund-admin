@@ -5,6 +5,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { DDAnalyzeRequestSchema } from "@/lib/schemas";
 import { recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
 import { type DealContext } from "@/lib/deal-types";
+import { getAuthUser } from "@/lib/auth";
 import {
   runDDAnalysis,
   DD_ANALYSIS_META,
@@ -214,10 +215,13 @@ export async function POST(
 
   // On rerun: we keep all existing tasks and only add NEW ones later (dedup by title)
 
-  // Build deal context with full document content
-  const documentContents = deal.documents
-    .filter((d) => d.extractedText)
-    .map((d) => ({ name: d.name, content: d.extractedText! }));
+  // Build deal context — IC_MEMO skips document content (it has DD summaries instead)
+  const isICMemo = type === "IC_MEMO";
+  const documentContents = isICMemo
+    ? []
+    : deal.documents
+        .filter((d) => d.extractedText)
+        .map((d) => ({ name: d.name, content: d.extractedText! }));
 
   const dealCtx: DealContext = {
     dealName: deal.name,
@@ -230,11 +234,13 @@ export async function POST(
     targetReturn: deal.targetReturn,
     gpName: deal.gpName,
     description: deal.description,
-    investmentRationale: deal.investmentRationale,
-    additionalContext: deal.additionalContext,
-    thesisNotes: deal.thesisNotes,
+    investmentRationale: isICMemo ? null : deal.investmentRationale,
+    additionalContext: isICMemo ? null : deal.additionalContext,
+    thesisNotes: isICMemo ? null : deal.thesisNotes,
     documents: deal.documents.map((d) => ({ name: d.name, category: d.category })),
-    notes: deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
+    notes: isICMemo
+      ? []
+      : deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
     documentContents,
   };
 
@@ -283,7 +289,8 @@ export async function POST(
   }
 
   // Call LLM or fallback to mock
-  const firmId = deal.firmId || "firm-1";
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || deal.firmId || "firm-1";
   let result: DDAnalysisResult;
   let aiPowered = false;
 

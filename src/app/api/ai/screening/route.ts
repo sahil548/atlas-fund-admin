@@ -5,6 +5,7 @@ import {
   type ScreeningCategory,
   type DealContext,
 } from "@/lib/screening-service";
+import { getAuthUser } from "@/lib/auth";
 
 const DEFAULT_CATEGORIES: ScreeningCategory[] = [
   { name: "Financial Analysis", instructions: "Analyze financial statements, projections, and key metrics", enabled: true },
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: {
-      documents: { select: { name: true, category: true } },
+      documents: { select: { name: true, category: true, extractedText: true } },
       notes: {
         orderBy: { createdAt: "desc" },
         take: 10,
@@ -51,6 +52,11 @@ export async function POST(req: Request) {
   if (!deal) {
     return NextResponse.json({ error: "Deal not found" }, { status: 404 });
   }
+
+  // Include document content (truncated to 5k per doc for screening)
+  const documentContents = deal.documents
+    .filter((d) => d.extractedText)
+    .map((d) => ({ name: d.name, content: d.extractedText!.slice(0, 5_000) }));
 
   const dealCtx: DealContext = {
     dealName: deal.name,
@@ -66,13 +72,15 @@ export async function POST(req: Request) {
     investmentRationale: deal.investmentRationale,
     additionalContext: deal.additionalContext,
     thesisNotes: deal.thesisNotes,
-    documents: deal.documents,
+    documents: deal.documents.map((d) => ({ name: d.name, category: d.category })),
     notes: deal.notes.map((n) => ({ content: n.content, author: n.author?.name || null })),
+    documentContents,
   };
 
   const categories = (body.categories as ScreeningCategory[] | undefined) || DEFAULT_CATEGORIES;
   const customInstructions = body.customInstructions as string | undefined;
-  const firmId = deal.firmId || "firm-1";
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || deal.firmId || "firm-1";
 
   const result = await screenDealWithAI(firmId, dealCtx, categories, customInstructions);
 

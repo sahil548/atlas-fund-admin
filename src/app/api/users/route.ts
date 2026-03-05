@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { z } from "zod";
+import { getAuthUser } from "@/lib/auth";
 
 const CreateUserSchema = z.object({
   contactId: z.string().min(1, "Contact is required"),
@@ -10,7 +11,8 @@ const CreateUserSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const firmId = req.nextUrl.searchParams.get("firmId");
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
   const where: Record<string, unknown> = {};
   if (firmId) where.firmId = firmId;
 

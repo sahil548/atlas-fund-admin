@@ -138,15 +138,24 @@ export function CreateDealWizard({ open, onClose }: Props) {
     if (!dealRes.ok) throw new Error("Failed to create deal");
     const deal = await dealRes.json();
 
+    let uploadFails = 0;
     for (const doc of docs) {
       const formData = new FormData();
       formData.append("name", doc.name);
       formData.append("category", mapDocCategory(doc.category));
       if (doc.file) formData.append("file", doc.file);
-      await fetch(`/api/deals/${deal.id}/documents`, {
-        method: "POST",
-        body: formData,
-      });
+      try {
+        const uploadRes = await fetch(`/api/deals/${deal.id}/documents`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) uploadFails++;
+      } catch {
+        uploadFails++;
+      }
+    }
+    if (uploadFails > 0) {
+      toast.error(`${uploadFails} of ${docs.length} document${docs.length > 1 ? "s" : ""} failed to upload`);
     }
 
     return deal.id;

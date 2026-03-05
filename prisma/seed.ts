@@ -117,6 +117,7 @@ async function main() {
   await prisma.meeting.deleteMany();
   await prisma.task.deleteMany();
   await prisma.dealActivity.deleteMany();
+  await prisma.note.deleteMany();
   await prisma.dDTask.deleteMany();
   await prisma.dDWorkstream.deleteMany();
   await prisma.closingChecklist.deleteMany();

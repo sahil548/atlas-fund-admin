@@ -149,6 +149,12 @@ class AnthropicCompat {
             })),
           });
 
+          // Log token usage for cost visibility
+          const usage = (response as any).usage;
+          if (usage) {
+            console.log(`[AI] ${params.model}: ${usage.input_tokens} in + ${usage.output_tokens} out tokens`);
+          }
+
           const textBlock = response.content.find((b: any) => b.type === "text") as any;
           let text = textBlock?.text || "";
 

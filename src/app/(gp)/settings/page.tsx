@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { AIGlobalConfig } from "@/components/features/settings/ai-global-config";
@@ -25,17 +26,22 @@ const roleColors: Record<string, string> = {
 };
 
 export default function SettingsPage() {
-  const { data: firm } = useSWR<Firm & { createdAt: string }>("/api/firms/firm-1", fetcher);
+  const { firmId } = useFirm();
+  const { data: firm } = useSWR<Firm & { createdAt: string }>(firmId ? `/api/firms/${firmId}` : null, fetcher);
   const { data: firms } = useSWR<Firm[]>("/api/firms", fetcher);
   const { data: accountingEntities } = useSWR<AccountingEntity[]>("/api/accounting/connections", fetcher);
   const { data: users } = useSWR<User[]>("/api/users", fetcher);
   const toast = useToast();
-  const { firmId } = useFirm();
 
   const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "notifications">("firm");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", legalName: "" });
   const [saving, setSaving] = useState(false);
+
+  // Invite user modal state
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviting, setInviting] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ email: "", name: "", role: "GP_TEAM" });
 
   const tabs = [
     { key: "firm" as const, label: "Firm Profile" },
@@ -57,18 +63,43 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const res = await fetch("/api/firms/firm-1", {
+      const res = await fetch(`/api/firms/${firmId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editForm.name, legalName: editForm.legalName || null }),
       });
       if (res.ok) {
-        mutate("/api/firms/firm-1");
+        mutate(`/api/firms/${firmId}`);
         mutate("/api/firms");
         setEditing(false);
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleInvite() {
+    if (!inviteForm.email) return;
+    setInviting(true);
+    try {
+      const res = await fetch("/api/users/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(inviteForm),
+      });
+      if (res.ok) {
+        toast.success(`Invited ${inviteForm.email} — they can now sign up to join your firm.`);
+        setShowInvite(false);
+        setInviteForm({ email: "", name: "", role: "GP_TEAM" });
+        mutate("/api/users");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to invite user");
+      }
+    } catch {
+      toast.error("Failed to invite user");
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -146,7 +177,7 @@ export default function SettingsPage() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="flex items-center justify-between p-4 border-b border-gray-100">
             <h3 className="text-sm font-semibold">Users & Access</h3>
-            <Button onClick={() => alert("Invite user functionality coming soon.")}>+ Invite User</Button>
+            <Button onClick={() => setShowInvite(true)}>+ Invite User</Button>
           </div>
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
@@ -278,6 +309,51 @@ export default function SettingsPage() {
           <div className="text-sm text-gray-400">Notification preferences coming soon.</div>
         </div>
       )}
+
+      {/* Invite User Modal */}
+      <Modal open={showInvite} onClose={() => setShowInvite(false)} title="Invite Team Member">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Enter your teammate&apos;s email and role. They&apos;ll be pre-registered in your firm — when they sign up via the login page, they&apos;ll automatically join your workspace.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+            <Input
+              type="email"
+              placeholder="colleague@company.com"
+              value={inviteForm.email}
+              onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Name (optional)</label>
+            <Input
+              placeholder="Full name"
+              value={inviteForm.name}
+              onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+            <select
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              value={inviteForm.role}
+              onChange={(e) => setInviteForm((f) => ({ ...f, role: e.target.value }))}
+            >
+              <option value="GP_ADMIN">GP Admin</option>
+              <option value="GP_TEAM">GP Team</option>
+              <option value="LP_INVESTOR">LP Investor</option>
+              <option value="SERVICE_PROVIDER">Service Provider</option>
+            </select>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleInvite} loading={inviting} disabled={!inviteForm.email}>
+              Send Invite
+            </Button>
+            <Button variant="secondary" onClick={() => setShowInvite(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

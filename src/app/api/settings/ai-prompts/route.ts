@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CreateAIPromptTemplateSchema } from "@/lib/schemas";
 import { DEFAULT_PROMPT_TEMPLATES } from "@/lib/default-prompt-templates";
+import { getAuthUser } from "@/lib/auth";
 
-function getFirmId(req: Request): string {
-  const url = new URL(req.url);
-  return url.searchParams.get("firmId") || "firm-1";
+async function getFirmId(): Promise<string> {
+  const authUser = await getAuthUser();
+  return authUser?.firmId || "firm-1";
 }
 
 // GET — returns all templates (DB rows merged with defaults for uncustomized types)
 export async function GET(req: Request) {
-  const firmId = getFirmId(req);
+  const firmId = await getFirmId();
   const url = new URL(req.url);
   const moduleFilter = url.searchParams.get("module");
 
@@ -56,7 +57,7 @@ export async function GET(req: Request) {
 
 // PUT — upsert a template by [firmId, type]
 export async function PUT(req: Request) {
-  const firmId = getFirmId(req);
+  const firmId = await getFirmId();
 
   let body: unknown;
   try {

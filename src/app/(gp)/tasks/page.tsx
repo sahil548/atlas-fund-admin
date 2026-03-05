@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/components/providers/user-provider";
+import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -33,8 +34,9 @@ const STATUS_CYCLE = ["TODO", "IN_PROGRESS", "DONE"];
 
 export default function TasksPage() {
   const toast = useToast();
+  const { firmId } = useFirm();
   const { data: tasks = [], isLoading } = useSWR("/api/tasks", fetcher);
-  const { data: users = [] } = useSWR("/api/users?firmId=firm-1", fetcher);
+  const { data: users = [] } = useSWR(firmId ? `/api/users?firmId=${firmId}` : null, fetcher);
   const [viewTab, setViewTab] = useState<"my" | "all" | "overdue">("all");
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);

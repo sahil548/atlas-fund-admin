@@ -724,7 +724,7 @@ export default function EntityDetailPage() {
 
 // Helper component for team user select in formation tasks
 function TeamUserSelect({ value, onChange }: { value: string; onChange: (val: string) => void }) {
-  const { data: users } = useSWR("/api/users?firmId=firm-1", fetcher);
+  const { data: users } = useSWR("/api/users", fetcher);
   return (
     <select
       value={value}

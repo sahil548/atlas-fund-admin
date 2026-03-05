@@ -2,9 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDealSchema } from "@/lib/schemas";
+import { getAuthUser, unauthorized } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const firmId = req.nextUrl.searchParams.get("firmId");
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
   const where: Record<string, unknown> = {};
   if (firmId) where.firmId = firmId;
 
@@ -84,6 +86,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+
   const { data, error } = await parseBody(req, CreateDealSchema);
   if (error) return error;
 
@@ -92,6 +97,6 @@ export async function POST(req: Request) {
   if (!cleaned.dealLeadId) cleaned.dealLeadId = undefined;
   if (!cleaned.entityId) cleaned.entityId = undefined;
 
-  const deal = await prisma.deal.create({ data: { ...cleaned, firmId: "firm-1" } });
+  const deal = await prisma.deal.create({ data: { ...cleaned, firmId: authUser.firmId } });
   return NextResponse.json(deal, { status: 201 });
 }

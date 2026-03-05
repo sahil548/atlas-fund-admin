@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateAIConfigSchema } from "@/lib/schemas";
 import { encryptApiKey } from "@/lib/ai-config";
+import { getAuthUser } from "@/lib/auth";
 
-function getFirmId(req: Request): string {
-  const url = new URL(req.url);
-  return url.searchParams.get("firmId") || "firm-1";
+async function getFirmId(): Promise<string> {
+  const authUser = await getAuthUser();
+  return authUser?.firmId || "firm-1";
 }
 
 function configResponse(config: {
@@ -32,7 +33,7 @@ function configResponse(config: {
 }
 
 export async function GET(req: Request) {
-  const firmId = getFirmId(req);
+  const firmId = await getFirmId();
 
   const config = await prisma.aIConfiguration.findUnique({
     where: { firmId },
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const firmId = getFirmId(req);
+  const firmId = await getFirmId();
 
   let body: unknown;
   try {

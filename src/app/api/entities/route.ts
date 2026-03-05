@@ -2,9 +2,11 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateEntitySchema } from "@/lib/schemas";
+import { getAuthUser, unauthorized } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const firmId = req.nextUrl.searchParams.get("firmId");
+  const authUser = await getAuthUser();
+  const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
   const where: Record<string, unknown> = {};
   if (firmId) where.firmId = firmId;
 
@@ -38,10 +40,13 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+
   const { data, error } = await parseBody(req, CreateEntitySchema);
   if (error) return error;
   const { startFormation, ...entityData } = data!;
-  const entity = await prisma.entity.create({ data: { ...entityData, firmId: "firm-1" } });
+  const entity = await prisma.entity.create({ data: { ...entityData, firmId: authUser.firmId } });
 
   if (startFormation) {
     const { FORMATION_CHECKLIST_TEMPLATES } = await import("@/lib/formation-templates");
