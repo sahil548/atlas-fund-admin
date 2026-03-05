@@ -244,7 +244,8 @@ RULES:
 - Each question should be specific and answerable — not generic ("review financials") but targeted ("What is the trailing 12-month revenue broken down by customer segment?")
 - Priority HIGH questions should be answered before IC submission
 - Reference actual data points from the deal context when available
-- Do NOT include a recommendation — that comes from the IC memo`;
+- Do NOT include a recommendation — that comes from the IC memo
+- CRITICAL JSON FORMATTING: Never use unescaped double-quote characters (") inside JSON string values. Use single quotes (') for any inline quotations within text. All JSON string values must be properly escaped.`;
 }
 
 function buildICMemoPrompt(
@@ -313,7 +314,86 @@ RULES:
 - Synthesize workstream findings — don't repeat them verbatim
 - Reference specific data points, dollar amounts, percentages
 - Flag unresolved open questions as conditions for approval
-- The memo should read as a professional IC document suitable for voting members`;
+- The memo should read as a professional IC document suitable for voting members
+- CRITICAL JSON FORMATTING: Never use unescaped double-quote characters (") inside JSON string values. Use single quotes (') for any inline quotations within text. All JSON string values must be properly escaped.`;
+}
+
+// ── JSON Repair Helper ────────────────────────────────
+
+/**
+ * Repair common LLM JSON output issues:
+ * 1. Unescaped double-quote characters inside string values (most common issue)
+ * 2. Unescaped control characters (newlines, tabs, carriage returns)
+ * 3. Trailing commas before } or ]
+ * 4. Missing commas between properties
+ *
+ * Strategy: First try a targeted regex fix for the most common pattern
+ * (unescaped quotes like `."` inside strings), then fall back to
+ * character-by-character repair for control characters.
+ */
+function repairLLMJson(raw: string): string {
+  // Phase 1: Fix unescaped double quotes inside JSON string values.
+  // The most common LLM pattern is prose containing typographic quotes like:
+  //   "summary": "...some text ending with a quote."", "next": ...
+  //   "summary": "...some text ending with a quote."\n  "next": ...
+  // We fix this by escaping quotes that appear inside string values.
+  // Strategy: use known JSON structure — find property boundaries via key names
+  // and escape any unescaped " within the value portion.
+
+  // Phase 1a: Fix the pattern: ." followed by ", (content quote before real delimiter)
+  // This handles: ...regulations."",  →  ...regulations.\"",
+  let fixed = raw.replace(/([.!?;])"("(?:\s*,|\s*\n\s*"))/g, '$1\\"$2');
+
+  // Phase 1b: Fix missing comma — ." followed by newline + "key":
+  // This handles: ...expiration."\n  "openQuestions":  →  ...expiration.",\n  "openQuestions":
+  fixed = fixed.replace(/"(\s*\n\s*)"(\w+)"\s*:/g, '",\n  "$2":');
+
+  // Phase 2: Character walk for control characters
+  let result = "";
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < fixed.length; i++) {
+    const ch = fixed[i];
+
+    if (escaped) {
+      result += ch;
+      escaped = false;
+      continue;
+    }
+
+    if (ch === "\\" && inString) {
+      result += ch;
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      result += ch;
+      continue;
+    }
+
+    if (inString) {
+      // Replace unescaped control characters with their JSON escape sequences
+      if (ch === "\n") { result += "\\n"; continue; }
+      if (ch === "\r") { result += "\\r"; continue; }
+      if (ch === "\t") { result += "\\t"; continue; }
+      // Handle other control characters (ASCII 0-31)
+      const code = ch.charCodeAt(0);
+      if (code < 32) {
+        result += "\\u" + code.toString(16).padStart(4, "0");
+        continue;
+      }
+    }
+
+    result += ch;
+  }
+
+  // Phase 3: Remove trailing commas before } or ]
+  result = result.replace(/,\s*([\]}])/g, "$1");
+
+  return result;
 }
 
 // ── LLM Analysis Call ────────────────────────────────
@@ -407,8 +487,37 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
       }
     }
 
-    const raw = response!.choices[0]?.message?.content || "{}";
-    const parsed = JSON.parse(raw);
+    let raw = response!.choices[0]?.message?.content || "{}";
+
+    // Sanitize common LLM JSON issues before parsing
+    // Strip markdown code fences if still present
+    raw = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+    // Remove trailing commas before } or ] (common LLM mistake)
+    raw = raw.replace(/,\s*([\]}])/g, "$1");
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (firstErr) {
+      // JSON parse failed — try repairing common LLM issues
+      console.warn(`[DD Analysis] ${type} initial JSON parse failed, attempting repair...`);
+
+      const repaired = repairLLMJson(raw);
+      try {
+        parsed = JSON.parse(repaired);
+        console.log(`[DD Analysis] ${type} JSON repaired successfully`);
+      } catch {
+        // Last resort: extract JSON object from surrounding text and repair
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const cleaned = repairLLMJson(jsonMatch[0]);
+          parsed = JSON.parse(cleaned); // Let this throw if it also fails
+          console.log(`[DD Analysis] ${type} JSON repaired via extraction`);
+        } else {
+          throw firstErr;
+        }
+      }
+    }
 
     const validLevels = ["HIGH", "MEDIUM", "LOW"];
 

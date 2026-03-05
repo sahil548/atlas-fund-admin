@@ -279,9 +279,11 @@ export default function DealDetailPage({
       // Run all analyses + generate IC memo
       const ws = (updatedDeal.workstreams || []) as any[];
       const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
+      // Use rerun=true if workstreams already have (mock) analysis results
+      const hasExistingResults = nonMemo.some((w: any) => !!w.analysisResult);
       if (nonMemo.length > 0) {
         autoStartedRef.current = true; // prevent useEffect double-trigger
-        await runAnalysesAndMemo(nonMemo, false);
+        await runAnalysesAndMemo(nonMemo, hasExistingResults);
       }
 
       toast.success("Screening complete — IC Memo generated");
