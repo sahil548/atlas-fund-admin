@@ -6,6 +6,7 @@ import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
 import { getPageTitle } from "@/lib/routes";
 import { useUser } from "@/components/providers/user-provider";
+import { OnboardingModal } from "@/components/features/onboarding/onboarding-modal";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -64,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <TopBar title={title} />
         <div className="p-6">{children}</div>
       </div>
+      <OnboardingModal />
     </div>
   );
 }
