@@ -109,8 +109,8 @@ function ClerkUserProviderInner({ children }: { children: ReactNode }) {
     for (const u of allUsersArray) {
       allUsersRecord[u.id] = {
         id: u.id,
-        name: u.name,
-        initials: u.initials || u.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
+        name: u.name || u.email || "Unknown User",
+        initials: u.initials || (u.name || "").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
         role: u.role,
         firmId: u.firmId,
       };
@@ -120,8 +120,8 @@ function ClerkUserProviderInner({ children }: { children: ReactNode }) {
   const realUser: UserInfo = dbUser
     ? {
         id: dbUser.id,
-        name: dbUser.name,
-        initials: dbUser.initials || dbUser.name.split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
+        name: dbUser.name || dbUser.email || "Unknown User",
+        initials: dbUser.initials || (dbUser.name || "").split(" ").map((w: string) => w[0]).join("").toUpperCase().slice(0, 2),
         role: dbUser.role,
         firmId: dbUser.firmId,
       }

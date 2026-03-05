@@ -42,11 +42,11 @@ export default function DealsPage() {
     docsProcessed: number;
     dealsScreened: number;
     passedToDD: number;
-    passRate: string;
   };
   const analytics = data.pipelineAnalytics as {
     stageDistribution: Record<string, number>;
     valueByStage: Record<string, number>;
+    pipelineValue: number;
     conversionRates: { screeningToDD: number; ddToIC: number; icToClose: number };
     totalActiveDeals: number;
     totalClosedDeals: number;
@@ -83,8 +83,16 @@ export default function DealsPage() {
               <div className="text-lg font-bold text-red-600 dark:text-red-300">{analytics.totalDeadDeals}</div>
             </button>
             <div className="bg-indigo-50 dark:bg-indigo-950 rounded-lg p-3 text-center">
-              <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Pass Rate</div>
-              <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{stats.passRate}</div>
+              <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Pipeline Value</div>
+              <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
+                {analytics.pipelineValue >= 1_000_000_000
+                  ? `$${(analytics.pipelineValue / 1_000_000_000).toFixed(1)}B`
+                  : analytics.pipelineValue >= 1_000_000
+                  ? `$${(analytics.pipelineValue / 1_000_000).toFixed(0)}M`
+                  : analytics.pipelineValue > 0
+                  ? `$${(analytics.pipelineValue / 1_000).toFixed(0)}K`
+                  : "—"}
+              </div>
             </div>
           </div>
 

@@ -216,7 +216,10 @@ export function CreateDealWizard({ open, onClose }: Props) {
           {step < 2 ? (
             <Button
               onClick={() => {
-                if (!validateStep1()) return;
+                if (!validateStep1()) {
+                  toast.error("Please fill in all required fields");
+                  return;
+                }
                 setStep(2);
               }}
             >
@@ -264,19 +267,18 @@ export function CreateDealWizard({ open, onClose }: Props) {
       {/* Step 1: Deal Identity */}
       {step === 1 && (
         <div className="space-y-3">
-          <FormField label="Deal Name" required error={errors.name}>
+          <FormField label="Deal Name" required>
             <Input
               value={identity.name}
               onChange={(e) =>
                 setIdentity((p) => ({ ...p, name: e.target.value }))
               }
-              error={!!errors.name}
               placeholder="e.g. Apex Manufacturing Acquisition"
             />
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Asset Class" required error={errors.assetClass}>
+            <FormField label="Asset Class" required>
               <Select
                 value={identity.assetClass}
                 onChange={(e) =>

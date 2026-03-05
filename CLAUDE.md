@@ -13,7 +13,7 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 ### Before every task
 
 1. **Confirm your understanding of what I'm asking.** Restate it in plain English so I can correct you. Do this before planning, before researching, before touching anything.
-2. **If ambiguous, ask one clarifying question.** Not five — one focused question. But if the request is specific and clear, just do it.
+2. **If ambiguous, ask as many clarifying questions as needed.** But if the request is specific and clear, just do it.
 3. **For anything touching 3+ files, enter plan mode.** Don't wait to be told. Show me the plan, get my approval, then execute. If I say "just do it," skip the plan.
 4. **Consult the reference docs** before building anything:
    - `docs/architecture-spec.md` — data models, entity relationships, domain features

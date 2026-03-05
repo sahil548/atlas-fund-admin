@@ -399,7 +399,7 @@ export async function POST(
           sortOrder: sortOrderMap[type] ?? 100,
           totalTasks: result.findings.length,
           completedTasks: 0,
-          status: result.findings.length > 0 ? "NOT_STARTED" : "COMPLETE",
+          status: result.findings.length > 0 ? "IN_PROGRESS" : "COMPLETE",
         },
       });
       workstreamId = ws.id;

@@ -112,6 +112,10 @@ export interface AnalysisProgress {
   phase?: string;
   /** Names of the workstreams being analyzed (for dynamic display) */
   workstreamNames?: string[];
+  /** Set of workstream names currently running in parallel */
+  running?: Set<string>;
+  /** Set of workstream names that have completed */
+  done?: Set<string>;
 }
 
 export default function DealDetailPage({
@@ -165,52 +169,55 @@ export default function DealDetailPage({
 
     const wsNames = analyzable.map((w: any) => w.name);
     const totalSteps = analyzable.length + 1; // +1 for IC memo
-    setAnalysisProgress({ total: totalSteps, completed: 0, phase: "Analyzing workstreams", workstreamNames: wsNames });
+    const runningSet = new Set<string>(wsNames);
+    const doneSet = new Set<string>();
+    setAnalysisProgress({ total: totalSteps, completed: 0, phase: "Analyzing workstreams", workstreamNames: wsNames, running: runningSet, done: doneSet });
 
-    // Phase 1: Run all workstream analyses in parallel
-    let completed = 0;
-    await Promise.allSettled(
-      analyzable.map(async (w: any) => {
-        const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
-        setAnalysisProgress((p) =>
-          p ? { ...p, current: w.name } : null
-        );
-        try {
-          const res = await fetch(`/api/deals/${id}/dd-analyze`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            console.warn(`Analysis failed for ${w.name}:`, err.error);
-          }
-        } catch {
-          // continue with other workstreams
-        }
-        completed++;
-        setAnalysisProgress((p) =>
-          p ? { ...p, completed } : null
-        );
-      })
-    );
-
-    // Phase 2: Generate IC Memo from workstream outputs
-    setAnalysisProgress((p) =>
-      p ? { ...p, current: "IC Memo", phase: "Generating IC Memo" } : null
-    );
     try {
-      await fetch(`/api/deals/${id}/dd-analyze`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
-      });
-    } catch {
-      toast.error("IC Memo generation failed — workstream analyses are still available");
+      // Phase 1: Run all workstream analyses in parallel
+      let completed = 0;
+      await Promise.allSettled(
+        analyzable.map(async (w: any) => {
+          const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
+          try {
+            const res = await fetch(`/api/deals/${id}/dd-analyze`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              console.warn(`Analysis failed for ${w.name}:`, err.error);
+            }
+          } catch {
+            // continue with other workstreams
+          }
+          completed++;
+          doneSet.add(w.name);
+          runningSet.delete(w.name);
+          setAnalysisProgress((p) =>
+            p ? { ...p, completed, running: new Set(runningSet), done: new Set(doneSet) } : null
+          );
+        })
+      );
+
+      // Phase 2: Generate IC Memo from workstream outputs
+      setAnalysisProgress((p) =>
+        p ? { ...p, current: "IC Memo", phase: "Generating IC Memo", running: new Set(["IC Memo"]), done: new Set(doneSet) } : null
+      );
+      try {
+        await fetch(`/api/deals/${id}/dd-analyze`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
+        });
+      } catch {
+        toast.error("IC Memo generation failed — workstream analyses are still available");
+      }
+    } finally {
+      setAnalysisProgress(null);
+      mutate(`/api/deals/${id}`);
     }
-    setAnalysisProgress((p) =>
-      p ? { ...p, completed: totalSteps } : null
-    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -538,12 +545,13 @@ export default function DealDetailPage({
             <div className="flex items-center gap-2">
               <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               <span className="text-xs font-semibold text-indigo-800">
-                {analysisProgress.phase || "Analyzing"}
-                {analysisProgress.current ? ` — ${analysisProgress.current}` : ""}
+                {analysisProgress.phase === "Generating IC Memo"
+                  ? "Generating IC Memo"
+                  : `Running ${analysisProgress.running?.size ?? 0} workstreams in parallel`}
               </span>
             </div>
             <span className="text-xs text-indigo-600 font-medium">
-              {analysisProgress.completed}/{analysisProgress.total}
+              {analysisProgress.completed}/{analysisProgress.total} complete
             </span>
           </div>
           <div className="bg-indigo-200 rounded-full h-1.5">
@@ -556,28 +564,34 @@ export default function DealDetailPage({
           </div>
           {analysisProgress.workstreamNames && analysisProgress.workstreamNames.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {analysisProgress.workstreamNames.map((name, i) => (
-                <span
-                  key={name}
-                  className={`text-[10px] px-1.5 py-0.5 rounded ${
-                    i < (analysisProgress.completed ?? 0)
-                      ? "bg-emerald-100 text-emerald-700"
-                      : analysisProgress.current === name
-                        ? "bg-indigo-200 text-indigo-800 font-semibold"
-                        : "bg-indigo-100 text-indigo-500"
-                  }`}
-                >
-                  {i < (analysisProgress.completed ?? 0) ? "\u2713 " : ""}{name}
-                </span>
-              ))}
+              {analysisProgress.workstreamNames.map((name) => {
+                const isDone = analysisProgress.done?.has(name);
+                const isRunning = analysisProgress.running?.has(name);
+                return (
+                  <span
+                    key={name}
+                    className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                      isDone
+                        ? "bg-emerald-100 text-emerald-700"
+                        : isRunning
+                          ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
+                          : "bg-indigo-100 text-indigo-500"
+                    }`}
+                  >
+                    {isDone ? "\u2713 " : isRunning ? "\u25CF " : ""}{name}
+                  </span>
+                );
+              })}
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded ${
-                  analysisProgress.phase === "Generating IC Memo"
-                    ? "bg-indigo-200 text-indigo-800 font-semibold"
-                    : "bg-indigo-100 text-indigo-500"
+                className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                  analysisProgress.running?.has("IC Memo")
+                    ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
+                    : analysisProgress.done?.has("IC Memo")
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-indigo-100 text-indigo-500"
                 }`}
               >
-                {analysisProgress.phase === "Generating IC Memo" ? "" : ""} IC Memo
+                {analysisProgress.done?.has("IC Memo") ? "\u2713 " : analysisProgress.running?.has("IC Memo") ? "\u25CF " : ""}IC Memo
               </span>
             </div>
           )}

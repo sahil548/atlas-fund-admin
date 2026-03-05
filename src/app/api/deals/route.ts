@@ -19,16 +19,12 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  // Compute AI screening stats from real data
+  // Compute screening stats from real data
   const docsProcessed = deals.filter((d) => d.screeningResult !== null).length;
-  const dealsScreened = docsProcessed;
+  const dealsScreened = deals.length;
   const passedToDD = deals.filter((d) =>
     ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage),
   ).length;
-  const passRate =
-    dealsScreened > 0
-      ? `${Math.round((passedToDD / dealsScreened) * 100)}%`
-      : "0%";
 
   // Pipeline analytics
   const stageDistribution: Record<string, number> = {};
@@ -54,6 +50,11 @@ export async function GET(req: NextRequest) {
       .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
   }
 
+  // Total pipeline value (active deals only)
+  const pipelineValue = deals
+    .filter((d) => !["CLOSED", "DEAD"].includes(d.stage))
+    .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
+
   const totalDeals = deals.length;
   const pastScreening = deals.filter((d) => ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
   const pastDD = deals.filter((d) => ["IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
@@ -69,11 +70,11 @@ export async function GET(req: NextRequest) {
       docsProcessed,
       dealsScreened,
       passedToDD,
-      passRate,
     },
     pipelineAnalytics: {
       stageDistribution,
       valueByStage,
+      pipelineValue,
       conversionRates: { screeningToDD, ddToIC, icToClose },
       totalActiveDeals: deals.filter((d) => !["CLOSED", "DEAD"].includes(d.stage)).length,
       totalClosedDeals: stageDistribution.CLOSED || 0,

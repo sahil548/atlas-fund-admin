@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 
@@ -108,20 +109,76 @@ export async function getAIConfig(firmId: string): Promise<AIConfig> {
   };
 }
 
+// ── Anthropic → OpenAI compatibility wrapper ──────────
+// Wraps the Anthropic SDK in an OpenAI-compatible interface so all
+// existing callers (screening, DD analysis, agents, etc.) work unchanged.
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+class AnthropicCompat {
+  private client: Anthropic;
+
+  constructor(apiKey: string) {
+    this.client = new Anthropic({ apiKey });
+  }
+
+  get chat() {
+    const client = this.client;
+    return {
+      completions: {
+        create: async (params: any) => {
+          const systemMsg = params.messages?.find((m: any) => m.role === "system");
+          const nonSystemMsgs = (params.messages || []).filter(
+            (m: any) => m.role !== "system",
+          );
+
+          // If JSON mode requested, add instruction to system prompt
+          let systemText = systemMsg?.content || "";
+          const isJsonMode = params.response_format?.type === "json_object";
+          if (isJsonMode) {
+            systemText += "\n\nIMPORTANT: You must respond with ONLY the raw JSON object. Do NOT wrap it in ```json or any markdown code fences. No explanation, no extra text — output the JSON object directly starting with {.";
+          }
+
+          const response = await client.messages.create({
+            model: params.model,
+            max_tokens: params.max_tokens || 4096,
+            ...(params.temperature != null ? { temperature: params.temperature } : {}),
+            ...(systemText ? { system: systemText } : {}),
+            messages: nonSystemMsgs.map((m: any) => ({
+              role: m.role === "assistant" ? "assistant" : "user",
+              content: m.content,
+            })),
+          });
+
+          const textBlock = response.content.find((b: any) => b.type === "text") as any;
+          let text = textBlock?.text || "";
+
+          // Strip markdown code fences if Claude wraps JSON in them
+          if (isJsonMode && text) {
+            text = text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+          }
+
+          return {
+            choices: [
+              { message: { content: text } },
+            ],
+          };
+        },
+      },
+    };
+  }
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
+
 // ── Client factory ─────────────────────────────────────
 
 export async function createAIClient(
-  firmId: string
-): Promise<OpenAI | null> {
+  firmId: string,
+): Promise<OpenAI | AnthropicCompat | null> {
   const config = await getAIConfig(firmId);
   if (!config.apiKey) return null;
 
   if (config.provider === "anthropic") {
-    return new OpenAI({
-      apiKey: config.apiKey,
-      baseURL:
-        config.baseUrl || "https://api.anthropic.com/v1/",
-    });
+    return new AnthropicCompat(config.apiKey);
   }
 
   return new OpenAI({
@@ -182,22 +239,24 @@ export async function testConnection(
   baseUrl?: string
 ): Promise<{ connected: boolean; error?: string }> {
   try {
-    const client = new OpenAI({
-      apiKey,
-      ...(provider === "anthropic"
-        ? { baseURL: baseUrl || "https://api.anthropic.com/v1/" }
-        : baseUrl
-          ? { baseURL: baseUrl }
-          : {}),
-    });
-
-    // Lightweight test: list models (works for both OpenAI and Anthropic-compat)
-    const model = provider === "anthropic" ? "claude-sonnet-4-20250514" : "gpt-4o";
-    await client.chat.completions.create({
-      model,
-      messages: [{ role: "user", content: "Say hello in one word." }],
-      max_tokens: 5,
-    });
+    if (provider === "anthropic") {
+      const client = new Anthropic({ apiKey });
+      await client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 10,
+        messages: [{ role: "user", content: "Say hello in one word." }],
+      });
+    } else {
+      const client = new OpenAI({
+        apiKey,
+        ...(baseUrl ? { baseURL: baseUrl } : {}),
+      });
+      await client.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "Say hello in one word." }],
+        max_tokens: 5,
+      });
+    }
 
     return { connected: true };
   } catch (err: unknown) {

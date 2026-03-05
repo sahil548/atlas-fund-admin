@@ -45,6 +45,13 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [showAddWorkstream, setShowAddWorkstream] = useState(false);
   const [analyzingWs, setAnalyzingWs] = useState<string | null>(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
+  const [allProgress, setAllProgress] = useState<{
+    total: number;
+    completed: number;
+    running: Set<string>;
+    done: Set<string>;
+    phase: string;
+  } | null>(null);
   const [promptModalWs, setPromptModalWs] = useState<any>(null);
   const [promptText, setPromptText] = useState("");
   const [promptEditing, setPromptEditing] = useState(false);
@@ -207,7 +214,14 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
   async function runAllAnalysis() {
     setAnalyzingAll(true);
+    const wsNames = sortedWorkstreams.map((ws) => ws.name);
+    const totalSteps = sortedWorkstreams.length + 1; // +1 for IC memo
+    const runningSet = new Set<string>(wsNames);
+    const doneSet = new Set<string>();
+    setAllProgress({ total: totalSteps, completed: 0, running: new Set(runningSet), done: new Set(doneSet), phase: "Analyzing workstreams" });
+
     // Phase 1: Run all workstream analyses in parallel
+    let completedCount = 0;
     const results = await Promise.allSettled(
       sortedWorkstreams.map(async (ws) => {
         const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
@@ -221,11 +235,16 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           }),
         });
         if (!res.ok) throw new Error(`${ws.name} failed`);
+        completedCount++;
+        doneSet.add(ws.name);
+        runningSet.delete(ws.name);
+        setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
       })
     );
     const completed = results.filter((r) => r.status === "fulfilled").length;
 
     // Phase 2: Auto-generate IC Memo from workstream results
+    setAllProgress((p) => p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null);
     try {
       await fetch(`/api/deals/${deal.id}/dd-analyze`, {
         method: "POST",
@@ -236,6 +255,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     } catch {
       toast.success(`Analysis complete (${completed}/${sortedWorkstreams.length}) — IC Memo generation failed`);
     }
+    setAllProgress(null);
     mutate(`/api/deals/${deal.id}`);
     setAnalyzingAll(false);
   }
@@ -333,6 +353,62 @@ export function DealDDTab({ deal }: DealDDTabProps) {
             >
               {analyzingAll ? "Analyzing..." : "Run All Analysis"}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Parallel Analysis Progress Banner */}
+      {allProgress && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 animate-in fade-in">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-semibold text-indigo-800">
+                {allProgress.phase === "Generating IC Memo"
+                  ? "Generating IC Memo…"
+                  : `Running ${allProgress.running.size} workstream${allProgress.running.size !== 1 ? "s" : ""} in parallel`}
+              </span>
+            </div>
+            <span className="text-xs text-indigo-600 font-medium">
+              {allProgress.completed}/{allProgress.total} complete
+            </span>
+          </div>
+          <div className="bg-indigo-200 rounded-full h-1.5 mb-2">
+            <div
+              className="h-1.5 rounded-full bg-indigo-500 transition-all duration-500"
+              style={{ width: `${allProgress.total > 0 ? Math.round((allProgress.completed / allProgress.total) * 100) : 0}%` }}
+            />
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {sortedWorkstreams.map((ws) => {
+              const isDone = allProgress.done.has(ws.name);
+              const isRunning = allProgress.running.has(ws.name);
+              return (
+                <span
+                  key={ws.id}
+                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors duration-300 ${
+                    isDone
+                      ? "bg-emerald-100 text-emerald-700"
+                      : isRunning
+                        ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
+                        : "bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  {isDone ? "\u2713 " : isRunning ? "\u25CF " : ""}{ws.name}
+                </span>
+              );
+            })}
+            <span
+              className={`text-[10px] px-1.5 py-0.5 rounded transition-colors duration-300 ${
+                allProgress.running.has("IC Memo")
+                  ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
+                  : allProgress.done.has("IC Memo")
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              {allProgress.done.has("IC Memo") ? "\u2713 " : allProgress.running.has("IC Memo") ? "\u25CF " : ""}IC Memo
+            </span>
           </div>
         </div>
       )}

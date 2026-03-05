@@ -337,8 +337,9 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
       findings,
       recommendation: String(parsed.recommendation || "NEEDS_MORE_INFO"),
     };
-  } catch (error) {
-    console.error(`[DD Analysis Service] ${type} LLM call failed:`, error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`[DD Analysis Service] ${type} LLM call failed: ${msg}`);
     return null;
   }
 }
