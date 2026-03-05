@@ -231,48 +231,53 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
     const mockFallbacks: string[] = [];
 
-    // Phase 1: Run workstream analyses in parallel batches
+    // Phase 1: Run workstream analyses with sliding-window concurrency
+    // As soon as one finishes, the next one starts — no waiting for a full batch.
     let completedCount = 0;
-    const BATCH_SIZE = 4;
-    for (let i = 0; i < targetWorkstreams.length; i += BATCH_SIZE) {
-      const batch = targetWorkstreams.slice(i, i + BATCH_SIZE);
-      for (const w of batch) runningSet.add(w.name);
-      setAllProgress((p) => p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null);
+    const CONCURRENCY = 4;
+    let nextIdx = 0;
 
-      await Promise.allSettled(
-        batch.map(async (ws) => {
-          const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
-          try {
-            const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                type,
-                categoryName: ws.name,
-                rerun: !!ws.analysisResult,
-              }),
-            });
-            if (res.ok) {
-              const data = await res.json().catch(() => null);
-              if (data) {
-                const updated = (data.workstreams || []).find((x: any) => x.name === ws.name);
-                if (updated?.analysisResult && !updated.analysisResult.aiPowered) {
-                  mockFallbacks.push(ws.name);
-                }
+    const runOne = async () => {
+      while (nextIdx < targetWorkstreams.length) {
+        const ws = targetWorkstreams[nextIdx++];
+        runningSet.add(ws.name);
+        setAllProgress((p) => p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null);
+        const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
+        try {
+          const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              type,
+              categoryName: ws.name,
+              rerun: !!ws.analysisResult,
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data) {
+              const updated = (data.workstreams || []).find((x: any) => x.name === ws.name);
+              if (updated?.analysisResult && !updated.analysisResult.aiPowered) {
+                mockFallbacks.push(ws.name);
               }
-            } else {
-              mockFallbacks.push(ws.name);
             }
-          } catch {
+          } else {
             mockFallbacks.push(ws.name);
           }
-          completedCount++;
-          doneSet.add(ws.name);
-          runningSet.delete(ws.name);
-          setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
-        })
-      );
-    }
+        } catch {
+          mockFallbacks.push(ws.name);
+        }
+        completedCount++;
+        doneSet.add(ws.name);
+        runningSet.delete(ws.name);
+        setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
+      }
+    };
+
+    // Spin up N workers — each pulls the next item as soon as it's free
+    await Promise.allSettled(
+      Array.from({ length: Math.min(CONCURRENCY, targetWorkstreams.length) }, () => runOne())
+    );
 
     // Phase 2: Auto-generate IC Memo from workstream results
     setAllProgress((p) => p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null);

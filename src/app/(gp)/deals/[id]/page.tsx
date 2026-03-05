@@ -181,53 +181,56 @@ export default function DealDetailPage({
     const mockFallbacks: string[] = [];
 
     try {
-      // Phase 1: Run workstream analyses in parallel batches
+      // Phase 1: Run workstream analyses with sliding-window concurrency
+      // As soon as one finishes, the next one starts — no waiting for a full batch.
       let completed = 0;
-      const BATCH_SIZE = 4;
-      for (let i = 0; i < analyzable.length; i += BATCH_SIZE) {
-        const batch = analyzable.slice(i, i + BATCH_SIZE);
-        // Mark batch as running
-        for (const w of batch) runningSet.add(w.name);
-        setAnalysisProgress((p) =>
-          p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null
-        );
+      const CONCURRENCY = 4;
+      let nextIdx = 0;
 
-        await Promise.allSettled(
-          batch.map(async (w: any) => {
-            const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
-            try {
-              const res = await fetch(`/api/deals/${id}/dd-analyze`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
-              });
-              if (res.ok) {
-                // Check if the response used mock data
-                const data = await res.json().catch(() => null);
-                if (data) {
-                  const ws = (data.workstreams || []).find((x: any) => x.name === w.name);
-                  const ar = ws?.analysisResult;
-                  if (ar && !ar.aiPowered) {
-                    mockFallbacks.push(w.name);
-                  }
+      const runOne = async () => {
+        while (nextIdx < analyzable.length) {
+          const w = analyzable[nextIdx++];
+          runningSet.add(w.name);
+          setAnalysisProgress((p) =>
+            p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null
+          );
+          const type = w.analysisType || NAME_TO_TYPE[w.name] || "DD_CUSTOM";
+          try {
+            const res = await fetch(`/api/deals/${id}/dd-analyze`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type, categoryName: w.name, rerun: isRerun }),
+            });
+            if (res.ok) {
+              const data = await res.json().catch(() => null);
+              if (data) {
+                const ws = (data.workstreams || []).find((x: any) => x.name === w.name);
+                const ar = ws?.analysisResult;
+                if (ar && !ar.aiPowered) {
+                  mockFallbacks.push(w.name);
                 }
-              } else {
-                const err = await res.json().catch(() => ({}));
-                console.warn(`Analysis failed for ${w.name}:`, err.error);
-                mockFallbacks.push(w.name);
               }
-            } catch {
+            } else {
+              const err = await res.json().catch(() => ({}));
+              console.warn(`Analysis failed for ${w.name}:`, err.error);
               mockFallbacks.push(w.name);
             }
-            completed++;
-            doneSet.add(w.name);
-            runningSet.delete(w.name);
-            setAnalysisProgress((p) =>
-              p ? { ...p, completed, running: new Set(runningSet), done: new Set(doneSet) } : null
-            );
-          })
-        );
-      }
+          } catch {
+            mockFallbacks.push(w.name);
+          }
+          completed++;
+          doneSet.add(w.name);
+          runningSet.delete(w.name);
+          setAnalysisProgress((p) =>
+            p ? { ...p, completed, running: new Set(runningSet), done: new Set(doneSet) } : null
+          );
+        }
+      };
+
+      // Spin up N workers — each pulls the next item as soon as it's free
+      await Promise.allSettled(
+        Array.from({ length: Math.min(CONCURRENCY, analyzable.length) }, () => runOne())
+      );
 
       // Show warning if any workstreams fell back to mock data
       if (mockFallbacks.length > 0) {

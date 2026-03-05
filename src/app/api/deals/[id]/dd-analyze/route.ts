@@ -10,6 +10,7 @@ import {
   runDDAnalysis,
   DD_ANALYSIS_META,
   type DDAnalysisResult,
+  type DDAnalysisReturn,
   type PriorResponse,
 } from "@/lib/dd-analysis-service";
 
@@ -214,20 +215,18 @@ export async function POST(
   let mockReason: string | null = null;
   const dbSetupMs = performance.now() - routeStart;
 
-  const aiResult = await runDDAnalysis(firmId, dealCtx, type, {
+  const aiReturn = await runDDAnalysis(firmId, dealCtx, type, {
     categoryName,
     priorResponses,
     workstreamSummaries,
   });
-  if (aiResult) {
-    result = aiResult;
+  if (aiReturn.result) {
+    result = aiReturn.result;
     aiPowered = true;
   } else {
     result = isICMemo ? generateMockICMemo(deal) : generateMockWorkstream(deal, type);
-    mockReason = !firmId
-      ? "No firm context available"
-      : "AI analysis failed — this may be due to a timeout or rate limit. Try re-analyzing.";
-    console.warn(`[dd-analyze] ${type} for deal ${id}: fell back to mock data. firmId=${firmId}`);
+    mockReason = aiReturn.errorReason || "AI analysis failed — try re-analyzing.";
+    console.warn(`[dd-analyze] ${type} for deal ${id}: fell back to mock data. firmId=${firmId} reason=${mockReason}`);
   }
 
   // Sort order

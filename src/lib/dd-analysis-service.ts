@@ -1,5 +1,6 @@
 import { createAIClient, getModelForFirm, getPromptTemplate, getCategoryInstructions } from "@/lib/ai-config";
 import type { DealContext } from "@/lib/deal-types";
+import { jsonrepair } from "jsonrepair";
 
 // ── Types ────────────────────────────────────────────
 
@@ -398,6 +399,8 @@ function repairLLMJson(raw: string): string {
 
 // ── LLM Analysis Call ────────────────────────────────
 
+export type DDAnalysisReturn = { result: DDAnalysisResult; errorReason?: undefined } | { result: null; errorReason: string };
+
 export async function runDDAnalysis(
   firmId: string,
   dealCtx: DealContext,
@@ -407,7 +410,7 @@ export async function runDDAnalysis(
     priorResponses?: PriorResponse[] | null;
     workstreamSummaries?: { name: string; summary: string; openQuestions?: { title: string; answer?: string | null }[] }[];
   },
-): Promise<DDAnalysisResult | null> {
+): Promise<DDAnalysisReturn> {
   const t0 = performance.now();
   const timings: Record<string, number> = {};
 
@@ -418,11 +421,11 @@ export async function runDDAnalysis(
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[DD Analysis] createAIClient failed for firm ${firmId}: ${msg}`);
-    return null;
+    return { result: null, errorReason: `AI client initialization failed: ${msg}` };
   }
   if (!client) {
     console.warn(`[DD Analysis] No AI client for firm ${firmId} — no API key configured`);
-    return null;
+    return { result: null, errorReason: "No AI API key configured. Go to Settings → AI Configuration to add one." };
   }
   timings.clientInit = performance.now() - t0;
 
@@ -511,24 +514,33 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
     try {
       parsed = JSON.parse(raw);
     } catch (firstErr) {
-      // JSON parse failed — try repairing common LLM issues
       console.warn(`[DD Analysis] ${type} initial JSON parse failed, attempting repair...`);
 
-      const repaired = repairLLMJson(raw);
-      try {
-        parsed = JSON.parse(repaired);
-        console.log(`[DD Analysis] ${type} JSON repaired successfully`);
-      } catch {
-        // Last resort: extract JSON object from surrounding text and repair
-        const jsonMatch = raw.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const cleaned = repairLLMJson(jsonMatch[0]);
-          parsed = JSON.parse(cleaned); // Let this throw if it also fails
-          console.log(`[DD Analysis] ${type} JSON repaired via extraction`);
-        } else {
-          throw firstErr;
-        }
+      // Try multiple repair strategies in order of robustness
+      const extracted = raw.match(/\{[\s\S]*\}/)?.[0];
+      const strategies: Array<[string, () => string]> = [
+        ["jsonrepair(raw)", () => jsonrepair(raw)],
+        ["repairLLMJson(raw)", () => repairLLMJson(raw)],
+        ...(extracted
+          ? ([
+              ["jsonrepair(extracted)", () => jsonrepair(extracted)],
+              ["repairLLMJson(extracted)", () => repairLLMJson(extracted)],
+            ] as Array<[string, () => string]>)
+          : []),
+      ];
+
+      let repaired: Record<string, unknown> | null = null;
+      for (const [label, fn] of strategies) {
+        try {
+          const fixed = fn();
+          repaired = JSON.parse(fixed);
+          console.log(`[DD Analysis] ${type} JSON repaired via ${label}`);
+          break;
+        } catch { /* try next strategy */ }
       }
+
+      if (!repaired) throw firstErr;
+      parsed = repaired;
     }
 
     timings.jsonParse = performance.now() - t0 - (timings.llmCall + timings.promptBuild);
@@ -562,19 +574,19 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
         : [];
 
       const validRecs = ["APPROVE", "APPROVE_WITH_CONDITIONS", "DECLINE"];
-      const recommendation = validRecs.includes(parsed.recommendation)
-        ? parsed.recommendation
+      const recommendation = validRecs.includes(String(parsed.recommendation))
+        ? String(parsed.recommendation)
         : "APPROVE_WITH_CONDITIONS";
 
       const score = Math.max(0, Math.min(100, Number(parsed.score) || 50));
 
-      return {
+      return { result: {
         summary: String(parsed.summary || "").slice(0, 3000) || "IC Memo generated.",
         openQuestions: [],
         score,
         sections,
         recommendation,
-      };
+      } };
     } else {
       // Parse workstream result
       const openQuestions: DDOpenQuestion[] = Array.isArray(parsed.openQuestions)
@@ -587,18 +599,29 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
           }))
         : [];
 
-      return {
+      return { result: {
         summary: String(parsed.summary || "").slice(0, 5000) || "Analysis completed.",
         openQuestions,
         score: 0,
         sections: [],
         recommendation: "",
-      };
+      } };
     }
   } catch (error: unknown) {
     const totalMs = performance.now() - t0;
     const msg = error instanceof Error ? error.message : String(error);
     console.error(`[DD Analysis Service] ${type} LLM call failed after ${(totalMs / 1000).toFixed(1)}s: ${msg}`);
-    return null;
+    // Extract specific error reasons for UI surfacing
+    let errorReason = "AI analysis failed — try re-analyzing.";
+    if (msg.includes("credit balance is too low")) {
+      errorReason = "Anthropic API credits exhausted. Please add credits at console.anthropic.com.";
+    } else if (msg.includes("rate limit") || msg.includes("429")) {
+      errorReason = "API rate limit hit — wait a moment and try re-analyzing.";
+    } else if (msg.includes("timeout") || msg.includes("ETIMEDOUT") || msg.includes("ECONNABORTED")) {
+      errorReason = "AI request timed out — try re-analyzing.";
+    } else if (msg.includes("401") || msg.includes("authentication") || msg.includes("invalid.*key")) {
+      errorReason = "AI API key is invalid. Check Settings → AI Configuration.";
+    }
+    return { result: null, errorReason };
   }
 }

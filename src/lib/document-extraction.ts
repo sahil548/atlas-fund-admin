@@ -18,10 +18,16 @@ export async function extractTextFromBuffer(
       mimeType === "application/pdf" ||
       fileName.toLowerCase().endsWith(".pdf")
     ) {
-      // pdf-parse exports PDFParse as named export (not default)
-      const { PDFParse } = await import("pdf-parse");
-      const data = await PDFParse(buffer);
-      return (data.text || "").slice(0, MAX_EXTRACTED_CHARS);
+      // pdf-parse v2 exports PDFParse as a class (not a callable function)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { PDFParse } = await import("pdf-parse") as any;
+      const parser = new PDFParse({ data: buffer });
+      try {
+        const result = await parser.getText();
+        return (result.text || "").slice(0, MAX_EXTRACTED_CHARS);
+      } finally {
+        await parser.destroy();
+      }
     }
 
     // Excel
