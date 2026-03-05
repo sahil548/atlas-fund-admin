@@ -53,10 +53,11 @@ export async function POST(req: Request) {
       if (USE_BLOB) {
         // ── Vercel Blob (production) ──
         const blob = await put(`documents/${fileName}`, buffer, {
-          access: "public",
+          access: "private",
           contentType: mimeType,
         });
-        fileUrl = blob.url;
+        // Serve via proxy route (works with both private and public blob stores)
+        fileUrl = `/api/documents/serve?url=${encodeURIComponent(blob.url)}`;
       } else {
         // ── Local filesystem (development) ──
         const uploadDir = path.join(process.cwd(), "data", "uploads");
