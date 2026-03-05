@@ -1,23 +1,16 @@
-import fs from "fs";
-import path from "path";
-
 const MAX_EXTRACTED_CHARS = 50_000;
 
 /**
- * Extract text content from an uploaded file.
+ * Extract text content from an uploaded file buffer.
  * Supports: PDF, Excel (.xlsx/.xls), CSV, plain text.
  * Returns empty string for unsupported formats.
  */
-export async function extractTextFromFile(
+export async function extractTextFromBuffer(
+  buffer: Buffer,
   fileName: string,
   mimeType: string | null,
 ): Promise<string> {
-  const uploadDir = path.join(process.cwd(), "data", "uploads");
-  const filePath = path.join(uploadDir, fileName);
-
-  if (!fs.existsSync(filePath)) return "";
-
-  const buffer = fs.readFileSync(filePath);
+  if (!buffer || buffer.length === 0) return "";
 
   try {
     // PDF

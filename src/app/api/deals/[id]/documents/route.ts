@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
-import { extractTextFromFile } from "@/lib/document-extraction";
+import { extractTextFromBuffer } from "@/lib/document-extraction";
+
+const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(
   _req: Request,
@@ -27,26 +30,39 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     let fileUrl: string | null = null;
     let fileSize: number | null = null;
     let mimeType: string | null = null;
-    let diskFileName: string | null = null;
+    let buffer: Buffer | null = null;
+    let originalFileName: string | null = null;
 
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const uploadDir = path.join(process.cwd(), "data", "uploads");
-      await mkdir(uploadDir, { recursive: true });
-      diskFileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-      const filePath = path.join(uploadDir, diskFileName);
-      await writeFile(filePath, buffer);
-      fileUrl = `/api/documents/download/${diskFileName}`;
-      fileSize = buffer.length;
+      buffer = Buffer.from(bytes);
+      const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+      originalFileName = file.name;
       mimeType = file.type || "application/octet-stream";
+      fileSize = buffer.length;
+
+      if (USE_BLOB) {
+        // ── Vercel Blob (production) ──
+        const blob = await put(`documents/${fileName}`, buffer, {
+          access: "public",
+          contentType: mimeType,
+        });
+        fileUrl = blob.url;
+      } else {
+        // ── Local filesystem (development) ──
+        const uploadDir = path.join(process.cwd(), "data", "uploads");
+        await mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, fileName);
+        await writeFile(filePath, buffer);
+        fileUrl = `/api/documents/download/${fileName}`;
+      }
     }
 
-    // Extract text content (non-blocking — store even if extraction fails)
+    // Extract text content from in-memory buffer
     let extractedText: string | null = null;
-    if (diskFileName && mimeType) {
+    if (buffer && originalFileName && mimeType) {
       try {
-        const text = await extractTextFromFile(diskFileName, mimeType);
+        const text = await extractTextFromBuffer(buffer, originalFileName, mimeType);
         if (text.length > 0) extractedText = text;
       } catch (err) {
         console.error("[documents] Text extraction failed:", err);
