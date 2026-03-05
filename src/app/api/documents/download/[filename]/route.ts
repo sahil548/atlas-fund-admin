@@ -15,6 +15,13 @@ const MIME_TYPES: Record<string, string> = {
   ".json": "application/json",
 };
 
+/**
+ * GET /api/documents/download/[filename]
+ *
+ * Serves locally-stored files (dev mode).
+ * In production, documents are stored in Vercel Blob and the fileUrl
+ * points directly to the blob URL — this route is only used for dev.
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ filename: string }> }

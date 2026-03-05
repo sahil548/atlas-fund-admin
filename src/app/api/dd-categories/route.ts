@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
+
+/**
+ * Ensures default DD category templates exist for a firm.
+ * If none exist, auto-provisions them (handles firms created before
+ * this feature was added, or after a DB reset).
+ */
+async function ensureDefaultTemplates(firmId: string) {
+  const count = await prisma.dDCategoryTemplate.count({ where: { firmId } });
+  if (count === 0) {
+    const defaults = getDefaultDDCategoriesForFirm(firmId);
+    await prisma.dDCategoryTemplate.createMany({ data: defaults });
+    console.log(`[dd-categories] Auto-provisioned ${defaults.length} default templates for firm ${firmId}`);
+  }
+}
 
 /**
  * GET /api/dd-categories
@@ -7,6 +22,11 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(req: NextRequest) {
   const firmId = req.nextUrl.searchParams.get("firmId");
+
+  // Auto-provision defaults for the firm if none exist
+  if (firmId) {
+    await ensureDefaultTemplates(firmId);
+  }
 
   const templates = await prisma.dDCategoryTemplate.findMany({
     where: firmId

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { CATEGORY_NAME_TO_TYPE } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { DEFAULT_DD_CATEGORIES, getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -46,7 +47,7 @@ export async function POST(
   const scopes = ["UNIVERSAL", deal.assetClass];
   if (deal.capitalInstrument === "DEBT") scopes.push("DEBT");
 
-  const templates = await prisma.dDCategoryTemplate.findMany({
+  let templates = await prisma.dDCategoryTemplate.findMany({
     where: {
       OR: [{ firmId }, { firmId: null, isDefault: true }],
       scope: { in: scopes },
@@ -54,15 +55,26 @@ export async function POST(
     orderBy: { sortOrder: "asc" },
   });
 
-  // Fallback if no templates exist
+  // Auto-provision defaults if no templates exist for this firm
+  if (templates.length === 0 && firmId) {
+    const defaults = getDefaultDDCategoriesForFirm(firmId);
+    await prisma.dDCategoryTemplate.createMany({ data: defaults });
+    console.log(`[screen] Auto-provisioned ${defaults.length} default DD templates for firm ${firmId}`);
+
+    // Re-fetch with scope filter
+    templates = await prisma.dDCategoryTemplate.findMany({
+      where: { firmId, scope: { in: scopes } },
+      orderBy: { sortOrder: "asc" },
+    });
+  }
+
+  // Map to categories (use built-in defaults as last resort)
   const categories =
     templates.length > 0
       ? templates.map((t) => ({ name: t.name, instructions: t.defaultInstructions }))
-      : [
-          { name: "Financial DD", instructions: "" },
-          { name: "Legal DD", instructions: "" },
-          { name: "Operational DD", instructions: "" },
-        ];
+      : DEFAULT_DD_CATEGORIES
+          .filter((d) => scopes.includes(d.scope))
+          .map((d) => ({ name: d.name, instructions: d.defaultInstructions }));
 
   // ── Create workstreams (skip existing) ──
   const existingNames = new Set(deal.workstreams.map((w) => w.name));

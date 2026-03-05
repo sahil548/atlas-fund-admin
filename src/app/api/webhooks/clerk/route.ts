@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { prisma } from "@/lib/prisma";
+import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
 
 /**
  * POST /api/webhooks/clerk
@@ -97,7 +98,7 @@ async function handleUserCreated(data: Record<string, unknown>) {
     return NextResponse.json({ action: "linked", userId: existingUser.id, firmId: existingUser.firmId });
   }
 
-  // New user: create Firm + User
+  // New user: create Firm + User + default DD category templates
   const firm = await prisma.firm.create({
     data: { name: `${firstName || fullName}'s Organization` },
   });
@@ -112,7 +113,11 @@ async function handleUserCreated(data: Record<string, unknown>) {
     },
   });
 
-  console.log(`[clerk-webhook] Created firm ${firm.id} + user ${user.id} for ${email}`);
+  // Provision default DD category templates for the new firm
+  const defaultCategories = getDefaultDDCategoriesForFirm(firm.id);
+  await prisma.dDCategoryTemplate.createMany({ data: defaultCategories });
+
+  console.log(`[clerk-webhook] Created firm ${firm.id} + user ${user.id} + ${defaultCategories.length} DD templates for ${email}`);
   return NextResponse.json({ action: "created", userId: user.id, firmId: firm.id });
 }
 

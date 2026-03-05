@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
+
+const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(req: NextRequest) {
   const firmId = req.nextUrl.searchParams.get("firmId");
@@ -43,14 +46,25 @@ export async function POST(req: Request) {
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const uploadDir = path.join(process.cwd(), "data", "uploads");
-      await mkdir(uploadDir, { recursive: true });
       const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-      const filePath = path.join(uploadDir, fileName);
-      await writeFile(filePath, buffer);
-      fileUrl = `/api/documents/download/${fileName}`;
-      fileSize = buffer.length;
       mimeType = file.type || "application/octet-stream";
+      fileSize = buffer.length;
+
+      if (USE_BLOB) {
+        // ── Vercel Blob (production) ──
+        const blob = await put(`documents/${fileName}`, buffer, {
+          access: "public",
+          contentType: mimeType,
+        });
+        fileUrl = blob.url;
+      } else {
+        // ── Local filesystem (development) ──
+        const uploadDir = path.join(process.cwd(), "data", "uploads");
+        await mkdir(uploadDir, { recursive: true });
+        const filePath = path.join(uploadDir, fileName);
+        await writeFile(filePath, buffer);
+        fileUrl = `/api/documents/download/${fileName}`;
+      }
     }
 
     const doc = await prisma.document.create({
