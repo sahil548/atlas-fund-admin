@@ -18,10 +18,9 @@ export async function extractTextFromBuffer(
       mimeType === "application/pdf" ||
       fileName.toLowerCase().endsWith(".pdf")
     ) {
-      // pdf-parse has no default export in some builds — handle both
-      const mod = await import("pdf-parse");
-      const pdfParse = typeof mod === "function" ? mod : mod.default;
-      const data = await pdfParse(buffer);
+      // pdf-parse exports PDFParse as named export (not default)
+      const { PDFParse } = await import("pdf-parse");
+      const data = await PDFParse(buffer);
       return (data.text || "").slice(0, MAX_EXTRACTED_CHARS);
     }
 

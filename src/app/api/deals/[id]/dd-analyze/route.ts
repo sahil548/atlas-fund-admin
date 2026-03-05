@@ -62,6 +62,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const routeStart = performance.now();
   const { id } = await params;
 
   const { data, error } = await parseBody(req, DDAnalyzeRequestSchema);
@@ -211,6 +212,7 @@ export async function POST(
   let result: DDAnalysisResult;
   let aiPowered = false;
   let mockReason: string | null = null;
+  const dbSetupMs = performance.now() - routeStart;
 
   const aiResult = await runDDAnalysis(firmId, dealCtx, type, {
     categoryName,
@@ -413,6 +415,8 @@ export async function POST(
     },
   });
 
+  const dbWriteMs = performance.now() - routeStart - dbSetupMs;
+
   // Return updated deal
   const updatedDeal = await prisma.deal.findUnique({
     where: { id },
@@ -435,6 +439,16 @@ export async function POST(
       dealLead: { select: { id: true, name: true, initials: true } },
     },
   });
+
+  const totalRouteMs = performance.now() - routeStart;
+  const label = rawCategoryName || type;
+  console.log(
+    `[dd-analyze] ${label} for deal ${id}: ` +
+    `total=${(totalRouteMs / 1000).toFixed(1)}s | ` +
+    `dbSetup=${(dbSetupMs / 1000).toFixed(1)}s llm+parse=${((totalRouteMs - dbSetupMs - dbWriteMs) / 1000).toFixed(1)}s ` +
+    `dbWrite=${(dbWriteMs / 1000).toFixed(1)}s | ` +
+    `ai=${aiPowered ? "yes" : "mock"}`
+  );
 
   return NextResponse.json(updatedDeal);
 }

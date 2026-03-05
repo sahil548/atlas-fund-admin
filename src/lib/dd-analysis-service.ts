@@ -408,6 +408,9 @@ export async function runDDAnalysis(
     workstreamSummaries?: { name: string; summary: string; openQuestions?: { title: string; answer?: string | null }[] }[];
   },
 ): Promise<DDAnalysisResult | null> {
+  const t0 = performance.now();
+  const timings: Record<string, number> = {};
+
   // Wrap client creation in try/catch — decryption failures shouldn't crash the route
   let client;
   try {
@@ -421,9 +424,11 @@ export async function runDDAnalysis(
     console.warn(`[DD Analysis] No AI client for firm ${firmId} — no API key configured`);
     return null;
   }
+  timings.clientInit = performance.now() - t0;
 
   const model = await getModelForFirm(firmId);
   const isICMemo = type === "IC_MEMO";
+  timings.configLookup = performance.now() - t0;
 
   // Template resolution: IC_MEMO uses prompt template; DD types use category instructions
   let templateContent: string | null;
@@ -434,6 +439,8 @@ export async function runDDAnalysis(
   } else {
     templateContent = await getPromptTemplate(firmId, type);
   }
+
+  timings.templateResolve = performance.now() - t0;
 
   // Fallback to sensible default
   if (!templateContent) {
@@ -457,10 +464,14 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
   const systemPrompt = isICMemo
     ? buildICMemoPrompt(dealCtx, templateContent, options?.workstreamSummaries || [])
     : buildWorkstreamPrompt(dealCtx, templateContent, options?.priorResponses);
+  timings.promptBuild = performance.now() - t0;
+
+  const promptTokenEstimate = Math.ceil(systemPrompt.length / 4); // rough estimate
 
   try {
     // Retry once on failure (transient timeouts / rate limits shouldn't produce permanent mock data)
     let response;
+    const llmStart = performance.now();
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         response = await client.chat.completions.create({
@@ -486,6 +497,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
         await new Promise((r) => setTimeout(r, 2000));
       }
     }
+    timings.llmCall = performance.now() - llmStart;
 
     let raw = response!.choices[0]?.message?.content || "{}";
 
@@ -519,7 +531,23 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
       }
     }
 
+    timings.jsonParse = performance.now() - t0 - (timings.llmCall + timings.promptBuild);
+
     const validLevels = ["HIGH", "MEDIUM", "LOW"];
+    const totalMs = performance.now() - t0;
+    timings.total = totalMs;
+
+    // Log comprehensive timing report
+    const label = options?.categoryName || type;
+    const outputTokens = raw.length / 4; // rough estimate
+    console.log(
+      `[DD Timing] ${label}: total=${(totalMs / 1000).toFixed(1)}s | ` +
+      `init=${timings.clientInit.toFixed(0)}ms config=${(timings.configLookup - timings.clientInit).toFixed(0)}ms ` +
+      `template=${((timings.templateResolve || 0) - (timings.configLookup || 0)).toFixed(0)}ms ` +
+      `prompt=${((timings.promptBuild || 0) - (timings.templateResolve || 0)).toFixed(0)}ms ` +
+      `llm=${(timings.llmCall / 1000).toFixed(1)}s parse=${timings.jsonParse.toFixed(0)}ms | ` +
+      `~${promptTokenEstimate} prompt tokens, ~${Math.ceil(outputTokens)} output tokens`
+    );
 
     if (isICMemo) {
       // Parse IC Memo result
@@ -568,8 +596,9 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
       };
     }
   } catch (error: unknown) {
+    const totalMs = performance.now() - t0;
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[DD Analysis Service] ${type} LLM call failed: ${msg}`);
+    console.error(`[DD Analysis Service] ${type} LLM call failed after ${(totalMs / 1000).toFixed(1)}s: ${msg}`);
     return null;
   }
 }

@@ -231,9 +231,9 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
     const mockFallbacks: string[] = [];
 
-    // Phase 1: Run workstream analyses in batches of 3
+    // Phase 1: Run workstream analyses in parallel batches
     let completedCount = 0;
-    const BATCH_SIZE = 2;
+    const BATCH_SIZE = 4;
     for (let i = 0; i < targetWorkstreams.length; i += BATCH_SIZE) {
       const batch = targetWorkstreams.slice(i, i + BATCH_SIZE);
       for (const w of batch) runningSet.add(w.name);

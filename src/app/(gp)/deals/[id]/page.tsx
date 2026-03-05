@@ -181,9 +181,9 @@ export default function DealDetailPage({
     const mockFallbacks: string[] = [];
 
     try {
-      // Phase 1: Run workstream analyses in batches of 3 to avoid rate limits / timeouts
+      // Phase 1: Run workstream analyses in parallel batches
       let completed = 0;
-      const BATCH_SIZE = 2;
+      const BATCH_SIZE = 4;
       for (let i = 0; i < analyzable.length; i += BATCH_SIZE) {
         const batch = analyzable.slice(i, i + BATCH_SIZE);
         // Mark batch as running
