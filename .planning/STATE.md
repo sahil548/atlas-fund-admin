@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: unknown
-stopped_at: Phase 2 context gathered
-last_updated: "2026-03-06T05:26:01.785Z"
+current_plan: 02-02
+status: in-progress
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-06T06:15:30Z"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 10
+  completed_plans: 4
 ---
 
 # Atlas — GSD State
@@ -21,15 +21,15 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 1 of 7 (Verify & Stabilize) — COMPLETE
-- **Phase status:** Complete — all 3 plans done, GROUND-TRUTH.md approved by user
-- **Current Plan:** Not started
-- **Active plan:** none (ready to start Phase 2)
+- **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
+- **Phase status:** Plan 01 complete, 6 plans remaining
+- **Current Plan:** 02-02 (next to execute)
+- **Active plan:** none (ready for 02-02)
 
 ## Performance Metrics
-- Plans completed: 3
-- Plans total: 19
-- Phases completed: 0
+- Plans completed: 4
+- Plans total: 10 (3 Phase 1 + 7 Phase 2)
+- Phases completed: 1
 
 ## Accumulated Context
 
@@ -91,8 +91,19 @@ progress:
 - **2026-03-05 (01-03):** Capital/distribution line item endpoints missing — HIGH severity gap; Phase 2 must build CapitalCallLineItem and DistributionLineItem create/update APIs
 - **2026-03-05 (01-03):** NAV proxy values (5%/0.5%/2%) are intentional approximations — documented, not changed (no cash balance field in data model)
 - **2026-03-05 (01-03):** Slack integration structurally complete — all DB fields present, security hardened; "UNTESTABLE" status is workspace setup gap, not a code defect
+- **2026-03-06 (02-01):** Kept existing Deal.entityId for backward compatibility alongside new DealEntity junction table
+- **2026-03-06 (02-01):** Expanded KillDealSchema to require killReason (was just action: KILL) — schema was unused, safe expansion
+- **2026-03-06 (02-01):** Replaced DD-focused closing templates with transactional mechanics — DD belongs in workstreams, not closing checklist
+
+### Phase 2 Schema Foundation (Plan 02-01)
+- All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
+- 5 new models: DealEntity, DDWorkstreamComment, DDWorkstreamAttachment, DecisionStructure, DecisionMember
+- 13 new fields across Deal, ClosingChecklist, Asset, DDWorkstream, ICVoteRecord, Entity
+- DealEntity CRUD API at /api/deals/[id]/entities with firm-matching validation
+- Updated Zod schemas: AddDealEntitySchema, KillDealSchema (with killReason), AddCustomClosingItemSchema
+- Transactional closing templates (8 items focused on execution mechanics)
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T05:26:01.782Z
-- **Stopped at:** Phase 2 context gathered
+- **Last session:** 2026-03-06T06:15:30Z
+- **Stopped at:** Completed 02-01-PLAN.md
