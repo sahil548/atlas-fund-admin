@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -128,6 +128,7 @@ export default function DealDetailPage({
 }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { data: deal, isLoading } = useSWR(`/api/deals/${id}`, fetcher);
   const toast = useToast();
   const { firmId } = useFirm();
@@ -470,10 +471,15 @@ export default function DealDetailPage({
         toast.error(typeof data.error === "string" ? data.error : "Failed to close deal");
         return;
       }
-      toast.success("Deal closed — asset created and booked");
+      toast.success("Deal closed -- redirecting to asset...");
       mutate(`/api/deals/${id}`);
       mutate("/api/deals");
       setShowCloseDeal(false);
+
+      // Auto-redirect to the new asset page
+      if (data.asset?.id) {
+        router.push(`/assets/${data.asset.id}`);
+      }
     } catch {
       toast.error("Failed to close deal");
     } finally {
@@ -810,6 +816,7 @@ export default function DealDetailPage({
         open={showCloseDeal}
         onClose={() => setShowCloseDeal(false)}
         onConfirm={handleCloseDeal}
+        dealId={deal.id}
         dealName={deal.name}
         assetClass={ASSET_CLASS_LABELS[deal.assetClass as keyof typeof ASSET_CLASS_LABELS] || deal.assetClass}
         firmId={firmId}

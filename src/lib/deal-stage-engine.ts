@@ -363,7 +363,7 @@ export async function closeDeal(
   const fairValue = opts.fairValue ?? costBasis;
   const entryDate = opts.entryDate ? new Date(opts.entryDate) : new Date();
 
-  // Create asset from deal data
+  // Create asset from deal data with full metadata carryover
   const asset = await prisma.asset.create({
     data: {
       name: deal.name,
@@ -375,6 +375,7 @@ export async function closeDeal(
       costBasis,
       fairValue,
       entryDate,
+      sourceDealId: dealId,
     },
   });
 

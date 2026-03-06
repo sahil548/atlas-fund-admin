@@ -41,6 +41,7 @@ interface CloseDealModalProps {
     entryDate: string;
     allocations: AllocationRow[];
   }) => void;
+  dealId: string;
   dealName: string;
   assetClass: string;
   firmId: string;
@@ -54,6 +55,7 @@ export function CloseDealModal({
   open,
   onClose,
   onConfirm,
+  dealId,
   dealName,
   assetClass,
   firmId,
@@ -89,6 +91,15 @@ export function CloseDealModal({
     fetcher,
   );
 
+  // Fetch DealEntity junction records for pre-population
+  const { data: dealEntities } = useSWR<any[]>(
+    open && dealId ? `/api/deals/${dealId}/entities` : null,
+    fetcher,
+  );
+
+  // Track whether we've pre-populated from junction records
+  const [prePopulated, setPrePopulated] = useState(false);
+
   // Reset state on modal close
   useEffect(() => {
     if (!open) {
@@ -101,18 +112,50 @@ export function CloseDealModal({
       setShowEntityPicker(false);
       setShowCreateEntity(false);
       setNewEntityForm({ name: "", entityType: "SPV", vehicleStructure: "LLC" });
+      setPrePopulated(false);
     }
   }, [open]);
 
-  // Pre-populate from deal's existing entity
+  // Pre-populate from DealEntity junction records (preferred) or fallback to initialEntityId
   useEffect(() => {
-    if (open && initialEntityId && allocations.length === 0 && entities) {
+    if (!open || prePopulated || allocations.length > 0) return;
+
+    // Try junction table first
+    if (dealEntities && dealEntities.length > 0 && entities) {
+      const junctionAllocations: AllocationRow[] = dealEntities
+        .filter((de: any) => entities.some((e: any) => e.id === de.entityId))
+        .map((de: any) => ({
+          entityId: de.entityId,
+          allocationPercent: de.allocationPercent ?? (100 / dealEntities.length),
+        }));
+
+      if (junctionAllocations.length > 0) {
+        // Normalize to 100% if no allocations were set
+        const total = junctionAllocations.reduce((s, a) => s + a.allocationPercent, 0);
+        if (Math.abs(total - 100) > 0.01 && junctionAllocations.every(a => a.allocationPercent === junctionAllocations[0].allocationPercent)) {
+          // All equal (default) - split evenly
+          const share = parseFloat((100 / junctionAllocations.length).toFixed(2));
+          junctionAllocations.forEach((a, i) => {
+            a.allocationPercent = i === junctionAllocations.length - 1
+              ? Math.round((100 - share * (junctionAllocations.length - 1)) * 100) / 100
+              : share;
+          });
+        }
+        setAllocations(junctionAllocations);
+        setPrePopulated(true);
+        return;
+      }
+    }
+
+    // Fallback to legacy initialEntityId
+    if (initialEntityId && entities) {
       const exists = entities.some((e: any) => e.id === initialEntityId);
       if (exists) {
         setAllocations([{ entityId: initialEntityId, allocationPercent: 100 }]);
+        setPrePopulated(true);
       }
     }
-  }, [open, initialEntityId, entities, allocations.length]);
+  }, [open, initialEntityId, entities, dealEntities, allocations.length, prePopulated]);
 
   // Parsed cost basis for calculations
   const parsedCostBasis = parseFloat(costBasis.replace(/[^0-9.]/g, "")) || 0;

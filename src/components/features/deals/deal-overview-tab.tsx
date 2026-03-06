@@ -250,7 +250,7 @@ export function DealOverviewTab({
           </div>
 
           {/* Investment Vehicle */}
-          <DealEntitySection dealId={deal.id} targetEntity={deal.targetEntity} />
+          <DealEntitySection dealId={deal.id} />
         </>
       )}
 
@@ -596,7 +596,7 @@ export function DealOverviewTab({
           </div>
 
           {/* Investment Vehicle */}
-          <DealEntitySection dealId={deal.id} targetEntity={deal.targetEntity} />
+          <DealEntitySection dealId={deal.id} />
         </>
       )}
     </div>
