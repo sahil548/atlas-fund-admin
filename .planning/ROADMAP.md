@@ -62,7 +62,7 @@ Plans:
 - [x] 02-02-PLAN.md — Wave 2: Deal wizard validation + inline edit + kill/revive
 - [x] 02-03-PLAN.md — Wave 3: Closing workflow + deal-to-asset + multi-entity (depends on 02-02)
 - [x] 02-04-PLAN.md — Wave 2: Deal overview dashboard + AI metadata extraction
-- [ ] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
+- [x] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
 - [ ] 02-06-PLAN.md — Wave 3: IC Review decision structures + in-app voting (depends on 02-02)
 - [ ] 02-07-PLAN.md — Wave 4: Asset detail polish + pipeline analytics (depends on 02-02, 02-03, 02-04)
 

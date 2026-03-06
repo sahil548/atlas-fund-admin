@@ -3,14 +3,13 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ProgressBar } from "@/components/ui/progress-bar";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { mutate } from "swr";
 import { AddWorkstreamForm } from "./add-workstream-form";
+import { WorkstreamDetailPanel } from "./workstream-detail-panel";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -20,28 +19,7 @@ interface DealDDTabProps {
 
 export function DealDDTab({ deal }: DealDDTabProps) {
   const toast = useToast();
-  const [expandedWorkstreams, setExpandedWorkstreams] = useState<Set<string>>(
-    new Set()
-  );
-  const [expandedAnalysis, setExpandedAnalysis] = useState<Set<string>>(
-    new Set()
-  );
-  const [newTaskTitles, setNewTaskTitles] = useState<Record<string, string>>(
-    {}
-  );
-  const [newTaskDescs, setNewTaskDescs] = useState<Record<string, string>>({});
-  const [newTaskPriorities, setNewTaskPriorities] = useState<
-    Record<string, string>
-  >({});
-  const [showAddTaskForm, setShowAddTaskForm] = useState<
-    Record<string, boolean>
-  >({});
-  const [resolutionTexts, setResolutionTexts] = useState<
-    Record<string, string>
-  >({});
-  const [showResolution, setShowResolution] = useState<
-    Record<string, boolean>
-  >({});
+  const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [showAddWorkstream, setShowAddWorkstream] = useState(false);
   const [analyzingWs, setAnalyzingWs] = useState<string | null>(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
@@ -59,27 +37,39 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [loadingTemplate, setLoadingTemplate] = useState(false);
 
   const allWorkstreams = (deal.workstreams || []) as any[];
-  // IC_MEMO is not a workstream — it's an aggregated product stored in AIScreeningResult
+  // IC_MEMO is not a workstream - it's in AIScreeningResult
   const workstreams = allWorkstreams.filter((w: any) => w.analysisType !== "IC_MEMO");
   const sortedWorkstreams = [...workstreams].sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
+  // Extract team members for assignee dropdown (from the deal or from workstream assignees)
+  const teamMembers: { id: string; name: string; initials: string }[] = [];
+  const seenIds = new Set<string>();
+  if (deal.dealLead && !seenIds.has(deal.dealLead.id)) {
+    teamMembers.push(deal.dealLead);
+    seenIds.add(deal.dealLead.id);
+  }
+  for (const ws of allWorkstreams) {
+    if (ws.assignee && !seenIds.has(ws.assignee.id)) {
+      teamMembers.push(ws.assignee);
+      seenIds.add(ws.assignee.id);
+    }
+  }
 
   // Overall progress
   const totalTasks = workstreams.reduce(
     (sum: number, ws: any) => sum + (ws.totalTasks ?? 0),
-    0
+    0,
   );
   const completedTasks = workstreams.reduce(
     (sum: number, ws: any) => sum + (ws.completedTasks ?? 0),
-    0
+    0,
   );
   const completeCategories = workstreams.filter(
-    (ws: any) => ws.status === "COMPLETE"
+    (ws: any) => ws.status === "COMPLETE",
   ).length;
-  // BUG-01 fix: when no tasks exist, fall back to workstream-status-based progress.
-  // Deals past DD stage often have COMPLETE workstreams but zero tasks (AI analysis
-  // ran but no individual tasks were created). Show workstream completion in that case.
+  // BUG-01 fix: fall back to workstream-status-based progress when no tasks.
   const overallPct =
     totalTasks > 0
       ? Math.round((completedTasks / totalTasks) * 100)
@@ -88,94 +78,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         : 0;
   const progressBasis = totalTasks > 0 ? "tasks" : "workstreams";
 
-  function toggleWorkstream(wsId: string) {
-    setExpandedWorkstreams((prev) => {
-      const next = new Set(prev);
-      if (next.has(wsId)) next.delete(wsId);
-      else next.add(wsId);
-      return next;
-    });
-  }
-
-  async function toggleTask(taskId: string, currentStatus: string) {
-    const newStatus = currentStatus === "DONE" ? "TODO" : "DONE";
-    if (newStatus === "DONE") {
-      setShowResolution((p) => ({ ...p, [taskId]: true }));
-      return;
-    }
-    try {
-      await fetch(`/api/deals/${deal.id}/tasks`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId, status: newStatus }),
-      });
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      /* silent */
-    }
-  }
-
-  async function markTaskDone(taskId: string) {
-    const resolution = resolutionTexts[taskId] || "";
-    try {
-      await fetch(`/api/deals/${deal.id}/tasks`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          status: "DONE",
-          resolution: resolution || undefined,
-        }),
-      });
-      setShowResolution((p) => ({ ...p, [taskId]: false }));
-      setResolutionTexts((p) => ({ ...p, [taskId]: "" }));
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      /* silent */
-    }
-  }
-
-  async function addTask(workstreamId: string) {
-    const title = newTaskTitles[workstreamId]?.trim();
-    if (!title) return;
-    try {
-      await fetch(`/api/deals/${deal.id}/tasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          workstreamId,
-          title,
-          description: newTaskDescs[workstreamId] || undefined,
-          priority: newTaskPriorities[workstreamId] || "MEDIUM",
-          source: "MANUAL",
-        }),
-      });
-      setNewTaskTitles((p) => ({ ...p, [workstreamId]: "" }));
-      setNewTaskDescs((p) => ({ ...p, [workstreamId]: "" }));
-      setNewTaskPriorities((p) => ({ ...p, [workstreamId]: "MEDIUM" }));
-      setShowAddTaskForm((p) => ({ ...p, [workstreamId]: false }));
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      /* silent */
-    }
-  }
-
-  async function deleteTask(taskId: string) {
-    try {
-      await fetch(`/api/deals/${deal.id}/tasks`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: taskId }),
-      });
-      mutate(`/api/deals/${deal.id}`);
-    } catch {
-      /* silent */
-    }
-  }
-
-  // ── Analysis triggers ──
-
-  // Map workstream name → dd-analyze type
+  // ---- Analysis triggers ----
   const NAME_TO_TYPE: Record<string, string> = {
     "Financial DD": "DD_FINANCIAL",
     "Legal DD": "DD_LEGAL",
@@ -211,10 +114,27 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         const err = await res.json();
         throw new Error(err.error || "Analysis failed");
       }
-      toast.success(`${ws.name} analysis complete`);
+      // After analysis, trigger IC Memo re-generation if memo exists
+      if (deal.screeningResult?.memo) {
+        try {
+          await fetch(`/api/deals/${deal.id}/dd-analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "IC_MEMO", rerun: true }),
+          });
+          const sr = deal.screeningResult;
+          const newVersion = (sr.version || 1) + 1;
+          toast.success(`${ws.name} re-analyzed. IC Memo updated to v${newVersion}.`);
+        } catch {
+          toast.success(`${ws.name} re-analyzed. IC Memo update failed.`);
+        }
+      } else {
+        toast.success(`${ws.name} analysis complete`);
+      }
       mutate(`/api/deals/${deal.id}`);
     } catch (err: any) {
-      toast.error(err.message || "Analysis failed");
+      const msg = typeof err.message === "string" ? err.message : "Analysis failed";
+      toast.error(msg);
     } finally {
       setAnalyzingWs(null);
     }
@@ -231,16 +151,18 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
 
     setAnalyzingAll(true);
-    const wsNames = targetWorkstreams.map((ws) => ws.name);
-    const totalSteps = targetWorkstreams.length + 1; // +1 for IC memo
+    const totalSteps = targetWorkstreams.length + 1;
     const runningSet = new Set<string>();
     const doneSet = new Set<string>();
-    setAllProgress({ total: totalSteps, completed: 0, running: new Set(runningSet), done: new Set(doneSet), phase: "Analyzing workstreams" });
+    setAllProgress({
+      total: totalSteps,
+      completed: 0,
+      running: new Set(runningSet),
+      done: new Set(doneSet),
+      phase: "Analyzing workstreams",
+    });
 
     const mockFallbacks: string[] = [];
-
-    // Phase 1: Run workstream analyses with sliding-window concurrency
-    // As soon as one finishes, the next one starts — no waiting for a full batch.
     let completedCount = 0;
     const CONCURRENCY = 4;
     let nextIdx = 0;
@@ -249,7 +171,9 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       while (nextIdx < targetWorkstreams.length) {
         const ws = targetWorkstreams[nextIdx++];
         runningSet.add(ws.name);
-        setAllProgress((p) => p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null);
+        setAllProgress((p) =>
+          p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null,
+        );
         const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
         try {
           const res = await fetch(`/api/deals/${deal.id}/dd-analyze`, {
@@ -264,7 +188,9 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           if (res.ok) {
             const data = await res.json().catch(() => null);
             if (data) {
-              const updated = (data.workstreams || []).find((x: any) => x.name === ws.name);
+              const updated = (data.workstreams || []).find(
+                (x: any) => x.name === ws.name,
+              );
               if (updated?.analysisResult && !updated.analysisResult.aiPowered) {
                 mockFallbacks.push(ws.name);
               }
@@ -278,17 +204,29 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         completedCount++;
         doneSet.add(ws.name);
         runningSet.delete(ws.name);
-        setAllProgress((p) => p ? { ...p, completed: completedCount, running: new Set(runningSet), done: new Set(doneSet) } : null);
+        setAllProgress((p) =>
+          p
+            ? {
+                ...p,
+                completed: completedCount,
+                running: new Set(runningSet),
+                done: new Set(doneSet),
+              }
+            : null,
+        );
       }
     };
 
-    // Spin up N workers — each pulls the next item as soon as it's free
     await Promise.allSettled(
-      Array.from({ length: Math.min(CONCURRENCY, targetWorkstreams.length) }, () => runOne())
+      Array.from({ length: Math.min(CONCURRENCY, targetWorkstreams.length) }, () =>
+        runOne(),
+      ),
     );
 
-    // Phase 2: Auto-generate IC Memo from workstream results
-    setAllProgress((p) => p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null);
+    // Phase 2: Auto-generate IC Memo
+    setAllProgress((p) =>
+      p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null,
+    );
     try {
       await fetch(`/api/deals/${deal.id}/dd-analyze`, {
         method: "POST",
@@ -299,11 +237,14 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       toast.error("IC Memo generation failed");
     }
 
-    // Show results
     if (mockFallbacks.length > 0) {
-      toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) — click Re-analyze Failed to retry`);
+      toast.error(
+        `${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) -- click Re-analyze Failed to retry`,
+      );
     } else {
-      toast.success(`All ${targetWorkstreams.length} workstreams analyzed with AI — IC Memo generated`);
+      toast.success(
+        `All ${targetWorkstreams.length} workstreams analyzed with AI -- IC Memo generated`,
+      );
     }
 
     setAllProgress(null);
@@ -311,17 +252,22 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     setAnalyzingAll(false);
   }
 
-  async function markCategoryComplete(workstreamId: string) {
+  async function patchWorkstream(wsId: string, updates: Record<string, unknown>) {
     try {
-      await fetch(`/api/deals/${deal.id}/workstreams`, {
+      const res = await fetch(`/api/deals/${deal.id}/workstreams/${wsId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: workstreamId, status: "COMPLETE" }),
+        body: JSON.stringify(updates),
       });
-      toast.success("Category marked complete");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to update";
+        toast.error(msg);
+        return;
+      }
       mutate(`/api/deals/${deal.id}`);
     } catch {
-      toast.error("Failed to update category");
+      toast.error("Failed to update workstream");
     }
   }
 
@@ -331,12 +277,15 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     if (ws.customInstructions) {
       setPromptText(ws.customInstructions);
     } else {
-      // Fetch from DD category template
       setLoadingTemplate(true);
       try {
-        const res = await fetch(`/api/dd-categories?name=${encodeURIComponent(ws.name)}`);
+        const res = await fetch(
+          `/api/dd-categories?name=${encodeURIComponent(ws.name)}`,
+        );
         const templates = await res.json();
-        const tmpl = Array.isArray(templates) ? templates.find((t: any) => t.name === ws.name) : null;
+        const tmpl = Array.isArray(templates)
+          ? templates.find((t: any) => t.name === ws.name)
+          : null;
         setPromptText(tmpl?.defaultInstructions || "");
       } catch {
         setPromptText("");
@@ -366,17 +315,35 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     }
   }
 
+  // Status colors for the dot indicator
+  function statusDot(status: string) {
+    if (status === "COMPLETE") return "bg-emerald-400";
+    if (status === "IN_PROGRESS") return "bg-blue-400";
+    return "bg-gray-300";
+  }
+
+  // Priority badge color
+  function priorityColor(priority: string | null) {
+    if (priority === "HIGH") return "red";
+    if (priority === "LOW") return "green";
+    return "yellow";
+  }
+
+  // Check if date is overdue
+  function isOverdue(date: string | null) {
+    if (!date) return false;
+    return new Date(date) < new Date();
+  }
+
   return (
     <div className="space-y-4">
       {/* DD Progress Summary */}
       {workstreams.length > 0 && (
         <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
-            <div className="text-xs font-semibold text-gray-700">
-              DD Progress
-            </div>
+            <div className="text-xs font-semibold text-gray-700">DD Progress</div>
             <span className="text-xs text-gray-500">
-              {completeCategories} of {workstreams.length} categories complete
+              {completeCategories} of {workstreams.length} workstreams complete
             </span>
           </div>
           <div className="flex items-center gap-3">
@@ -401,7 +368,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
             <div className="flex items-center gap-2">
               {(() => {
                 const failedCount = sortedWorkstreams.filter(
-                  (ws) => ws.analysisResult && !ws.analysisResult.aiPowered
+                  (ws) => ws.analysisResult && !ws.analysisResult.aiPowered,
                 ).length;
                 return failedCount > 0 ? (
                   <Button
@@ -436,7 +403,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
               <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
               <span className="text-xs font-semibold text-indigo-800">
                 {allProgress.phase === "Generating IC Memo"
-                  ? "Generating IC Memo…"
+                  ? "Generating IC Memo..."
                   : `Running ${allProgress.running.size} workstream${allProgress.running.size !== 1 ? "s" : ""} in parallel`}
               </span>
             </div>
@@ -447,7 +414,9 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           <div className="bg-indigo-200 rounded-full h-1.5 mb-2">
             <div
               className="h-1.5 rounded-full bg-indigo-500 transition-all duration-500"
-              style={{ width: `${allProgress.total > 0 ? Math.round((allProgress.completed / allProgress.total) * 100) : 0}%` }}
+              style={{
+                width: `${allProgress.total > 0 ? Math.round((allProgress.completed / allProgress.total) * 100) : 0}%`,
+              }}
             />
           </div>
           <div className="flex flex-wrap gap-1">
@@ -465,7 +434,8 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                         : "bg-gray-100 text-gray-400"
                   }`}
                 >
-                  {isDone ? "\u2713 " : isRunning ? "\u25CF " : ""}{ws.name}
+                  {isDone ? "\u2713 " : isRunning ? "\u25CF " : ""}
+                  {ws.name}
                 </span>
               );
             })}
@@ -478,7 +448,12 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                     : "bg-gray-100 text-gray-400"
               }`}
             >
-              {allProgress.done.has("IC Memo") ? "\u2713 " : allProgress.running.has("IC Memo") ? "\u25CF " : ""}IC Memo
+              {allProgress.done.has("IC Memo")
+                ? "\u2713 "
+                : allProgress.running.has("IC Memo")
+                  ? "\u25CF "
+                  : ""}
+              IC Memo
             </span>
           </div>
         </div>
@@ -488,490 +463,281 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       {deal.stage === "SCREENING" && workstreams.length === 0 && (
         <div className="py-12 text-center">
           <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              className="w-6 h-6 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
           </div>
-          <div className="text-sm font-semibold text-gray-700">Due Diligence Workstreams</div>
+          <div className="text-sm font-semibold text-gray-700">
+            Due Diligence Workstreams
+          </div>
           <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
-            Workstreams will be created when you start Due Diligence from the Overview tab. You can also manually add workstreams below.
+            Workstreams will be created when you start Due Diligence from the Overview
+            tab. You can also manually add workstreams below.
           </p>
           <div className="mt-4">
-            <Button variant="secondary" size="sm" onClick={() => setShowAddWorkstream(true)}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowAddWorkstream(true)}
+            >
               + Add Workstream Manually
             </Button>
           </div>
         </div>
       )}
 
-
-      {/* Category Cards */}
+      {/* PM-Style Workstream List + Detail Panel */}
       {sortedWorkstreams.length > 0 && (
-        <div className="space-y-2">
-          {sortedWorkstreams.map((ws: any) => {
-            const pct =
-              ws.totalTasks > 0
-                ? Math.round((ws.completedTasks / ws.totalTasks) * 100)
-                : 0;
-            const isExpanded = expandedWorkstreams.has(ws.id);
-            const allDone =
-              ws.totalTasks > 0 && ws.completedTasks === ws.totalTasks;
+        <div className="flex gap-0 border border-gray-200 rounded-xl overflow-hidden">
+          {/* Left: Workstream List */}
+          <div
+            className={`${selectedWsId ? "w-1/2" : "w-full"} transition-all duration-200`}
+          >
+            {/* Table header */}
+            <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex items-center gap-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
+              <div className="w-5" />
+              <div className="flex-1">Workstream</div>
+              <div className="w-20 text-center">Assignee</div>
+              <div className="w-16 text-center">Priority</div>
+              <div className="w-20 text-center">Due</div>
+              <div className="w-8 text-center" title="Comments">
+                <svg className="w-3.5 h-3.5 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <div className="w-8 text-center" title="Attachments">
+                <svg className="w-3.5 h-3.5 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </div>
+              <div className="w-24 text-center">Status</div>
+              <div className="w-24 text-center">Actions</div>
+            </div>
 
-            return (
-              <div
-                key={ws.id}
-                className="border border-gray-200 rounded-lg overflow-hidden"
-              >
-                {/* Header row */}
-                <div
-                  role="button"
-                  tabIndex={0}
-                  className="w-full flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
-                  onClick={() => toggleWorkstream(ws.id)}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") toggleWorkstream(ws.id); }}
-                >
-                  <span
-                    className={`text-xs transition-transform ${
-                      isExpanded ? "rotate-90" : ""
+            {/* Workstream rows */}
+            <div className="divide-y divide-gray-100">
+              {sortedWorkstreams.map((ws: any) => {
+                const commentCount = ws._count?.comments ?? 0;
+                const attachmentCount = ws._count?.attachments ?? 0;
+                const isSelected = selectedWsId === ws.id;
+
+                return (
+                  <div
+                    key={ws.id}
+                    className={`flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer ${
+                      isSelected ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""
                     }`}
+                    onClick={() =>
+                      setSelectedWsId(isSelected ? null : ws.id)
+                    }
                   >
-                    &#9654;
-                  </span>
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      ws.status === "COMPLETE"
-                        ? "bg-emerald-400"
-                        : ws.status === "IN_PROGRESS"
-                        ? "bg-amber-400"
-                        : "bg-gray-300"
-                    }`}
-                  />
-                  <span className="text-xs font-medium flex-1 text-left">
-                    {ws.name}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {ws.analysisResult && <Badge color="indigo">Analyzed</Badge>}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); runWorkstreamAnalysis(ws); }}
-                      disabled={analyzingWs === ws.id || analyzingAll}
-                      className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {analyzingWs === ws.id ? "Analyzing..." : ws.analysisResult ? "Re-analyze" : "Run Analysis"}
-                    </button>
-                    <Badge
-                      color={
-                        ws.status === "COMPLETE"
-                          ? "green"
-                          : ws.status === "IN_PROGRESS"
-                          ? "yellow"
-                          : "gray"
-                      }
-                    >
-                      {ws.status?.replace(/_/g, " ")}
-                    </Badge>
-                    <ProgressBar
-                      percent={pct}
-                      colorClass={
-                        ws.status === "COMPLETE"
-                          ? "bg-emerald-400"
-                          : "bg-amber-400"
-                      }
-                    />
-                    <span className="text-[10px] text-gray-500 w-12 text-right">
-                      {ws.completedTasks}/{ws.totalTasks}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Expanded section */}
-                {isExpanded && (
-                  <div className="p-3 space-y-2 border-t border-gray-200">
-                    {ws.description && (
-                      <p className="text-xs text-gray-500 mb-2">
-                        {ws.description}
-                      </p>
-                    )}
-                    {/* Analysis Prompt badge — always shows, opens modal */}
-                    <div className="mb-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); openPromptModal(ws); }}
-                        className="text-xs font-medium px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100 transition-colors inline-flex items-center gap-1"
-                      >
-                        {ws.customInstructions ? "Analysis Prompt" : "Analysis Prompt (default)"}
-                      </button>
+                    {/* Status dot */}
+                    <div className="w-5 flex justify-center">
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full ${statusDot(ws.status)}`}
+                      />
                     </div>
 
-                    {/* Analysis Report */}
-                    {ws.analysisResult && (() => {
-                      const ar = ws.analysisResult;
-                      const isNewFormat = Array.isArray(ar.openQuestions);
-                      const isAIPowered = ar.aiPowered;
-                      return (
-                        <div className={`mb-3 rounded-lg border p-3 ${isAIPowered ? "bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100" : "bg-gradient-to-r from-gray-50 to-amber-50 border-amber-100"}`}>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className={`text-xs font-semibold ${isAIPowered ? "text-indigo-900" : "text-gray-700"}`}>
-                                {isNewFormat ? "Analysis Summary" : "Analysis Report"}
-                              </div>
-                              {!isAIPowered && (
-                                <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">Sample — configure AI for full analysis</span>
-                              )}
-                            </div>
-                            {/* Legacy format: show recommendation badge */}
-                            {!isNewFormat && ar.recommendation && (
-                              <Badge
-                                color={
-                                  ar.recommendation === "GO" || ar.recommendation === "APPROVE"
-                                    ? "green"
-                                    : ar.recommendation === "NO_GO" || ar.recommendation === "DECLINE"
-                                    ? "red"
-                                    : "yellow"
-                                }
-                              >
-                                {ar.recommendation.replace(/_/g, " ")}
-                              </Badge>
-                            )}
-                          </div>
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium text-gray-800 truncate block">
+                        {ws.name}
+                      </span>
+                      {ws.analysisResult && (
+                        <span className="text-[10px] text-indigo-500">
+                          {ws.analysisResult.aiPowered ? "AI analyzed" : "Sample data"}
+                        </span>
+                      )}
+                    </div>
 
-                          {/* Summary — expandable for new format (longer text) */}
-                          {isNewFormat ? (
-                            <div>
-                              <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed">
-                                {expandedAnalysis.has(ws.id)
-                                  ? ar.summary
-                                  : ar.summary?.length > 300
-                                    ? ar.summary.slice(0, 300) + "..."
-                                    : ar.summary}
-                              </p>
-                              {ar.summary?.length > 300 && (
-                                <button
-                                  onClick={() =>
-                                    setExpandedAnalysis((prev) => {
-                                      const next = new Set(prev);
-                                      next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
-                                      return next;
-                                    })
-                                  }
-                                  className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium mt-1"
-                                >
-                                  {expandedAnalysis.has(ws.id) ? "Show less" : "Read more"}
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-700 mb-2">{ar.summary}</p>
-                          )}
-
-                          {/* Legacy format: expandable sections */}
-                          {!isNewFormat && Array.isArray(ar.sections) && ar.sections.length > 0 && (
-                            <div className="mt-2 space-y-2">
-                              <button
-                                onClick={() =>
-                                  setExpandedAnalysis((prev) => {
-                                    const next = new Set(prev);
-                                    next.has(ws.id) ? next.delete(ws.id) : next.add(ws.id);
-                                    return next;
-                                  })
-                                }
-                                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
-                              >
-                                {expandedAnalysis.has(ws.id) ? "Hide Report Details" : `Show Report Details (${ar.sections.length} sections)`}
-                              </button>
-                              {expandedAnalysis.has(ws.id) && (
-                                <div className="space-y-2">
-                                  {ar.sections.map((section: any, i: number) => (
-                                    <div key={i} className="bg-white rounded border border-gray-100 p-2">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs font-medium text-gray-800">{section.name}</span>
-                                        {section.riskLevel && (
-                                          <Badge
-                                            color={
-                                              section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"
-                                            }
-                                          >
-                                            {section.riskLevel}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      <p className="text-[11px] text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Open questions count */}
-                          {ws.tasks && ws.tasks.length > 0 && (
-                            <div className="mt-2 text-[10px] text-indigo-600">
-                              {ws.tasks.filter((t: any) => t.source?.startsWith("AI_")).length} AI-generated open questions
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-
-                    {/* Open Questions & Tasks */}
-                    {ws.tasks && ws.tasks.length > 0 && (
-                      <div className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide mt-1 mb-0.5">
-                        Open Questions &amp; Tasks ({ws.tasks.length})
-                      </div>
-                    )}
-                    {ws.tasks && ws.tasks.length > 0 ? (
-                      ws.tasks.map((task: any) => (
-                        <div key={task.id} className="group">
-                          <div className="flex items-start gap-2">
-                            <button
-                              onClick={() =>
-                                task.status === "DONE"
-                                  ? toggleTask(task.id, task.status)
-                                  : toggleTask(task.id, task.status)
-                              }
-                              className={`w-4 h-4 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors mt-0.5 ${
-                                task.status === "DONE"
-                                  ? "bg-emerald-500 border-emerald-500 text-white"
-                                  : "border-gray-300 hover:border-indigo-400"
-                              }`}
-                            >
-                              {task.status === "DONE" && (
-                                <svg
-                                  className="w-2.5 h-2.5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={3}
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              )}
-                            </button>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`text-xs flex-1 ${
-                                    task.status === "DONE"
-                                      ? "line-through text-gray-400"
-                                      : "text-gray-700"
-                                  }`}
-                                >
-                                  {task.title}
-                                </span>
-                                {task.priority && (
-                                  <Badge
-                                    color={
-                                      task.priority === "HIGH"
-                                        ? "red"
-                                        : task.priority === "MEDIUM"
-                                        ? "yellow"
-                                        : "gray"
-                                    }
-                                  >
-                                    {task.priority}
-                                  </Badge>
-                                )}
-                                {task.source && (
-                                  <Badge
-                                    color={
-                                      task.source === "AI_SCREENING"
-                                        ? "purple"
-                                        : task.source?.startsWith("AI_QUESTION_")
-                                        ? "indigo"
-                                        : task.source?.startsWith("AI_")
-                                        ? "indigo"
-                                        : "gray"
-                                    }
-                                  >
-                                    {task.source === "AI_SCREENING"
-                                      ? "Screening"
-                                      : task.source?.startsWith("AI_QUESTION_")
-                                      ? "AI Question"
-                                      : task.source?.startsWith("AI_DD_")
-                                      ? "AI DD"
-                                      : task.source?.startsWith("AI_IC_")
-                                      ? "AI Memo"
-                                      : task.source === "MANUAL"
-                                      ? "Manual"
-                                      : task.source}
-                                  </Badge>
-                                )}
-                                {task.assignee && (
-                                  <span className="text-[10px] text-gray-400">
-                                    {task.assignee}
-                                  </span>
-                                )}
-                                <button
-                                  onClick={() => deleteTask(task.id)}
-                                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 text-xs"
-                                >
-                                  &times;
-                                </button>
-                              </div>
-                              {task.description && (
-                                <p className="text-[11px] text-gray-400 mt-0.5">
-                                  {task.description}
-                                </p>
-                              )}
-                              {/* Resolution for DONE tasks */}
-                              {task.status === "DONE" && task.resolution && (
-                                <div className="mt-1 bg-emerald-50 border border-emerald-100 rounded p-2">
-                                  <div className="text-[10px] font-medium text-emerald-700">
-                                    Resolution
-                                  </div>
-                                  <p className="text-[11px] text-emerald-600">
-                                    {task.resolution}
-                                  </p>
-                                  {task.resolvedAt && (
-                                    <div className="text-[10px] text-emerald-400 mt-0.5">
-                                      {new Date(
-                                        task.resolvedAt
-                                      ).toLocaleDateString()}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Inline resolution textarea when marking as DONE */}
-                          {showResolution[task.id] && (
-                            <div className="ml-6 mt-2 space-y-2">
-                              <Textarea
-                                value={resolutionTexts[task.id] || ""}
-                                onChange={(e) =>
-                                  setResolutionTexts((p) => ({
-                                    ...p,
-                                    [task.id]: e.target.value,
-                                  }))
-                                }
-                                placeholder="Resolution notes (optional)..."
-                                rows={2}
-                                className="text-xs"
-                              />
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => markTaskDone(task.id)}
-                                >
-                                  Mark Done
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={() =>
-                                    setShowResolution((p) => ({
-                                      ...p,
-                                      [task.id]: false,
-                                    }))
-                                  }
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-xs text-gray-400 text-center py-2">
-                        No tasks yet.
-                      </div>
-                    )}
-
-                    {/* Add Finding inline form */}
-                    {showAddTaskForm[ws.id] ? (
-                      <div className="mt-2 pt-2 border-t border-gray-100 space-y-2">
-                        <Input
-                          value={newTaskTitles[ws.id] || ""}
-                          onChange={(e) =>
-                            setNewTaskTitles((p) => ({
-                              ...p,
-                              [ws.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Finding title..."
-                          className="text-xs"
-                        />
-                        <Textarea
-                          value={newTaskDescs[ws.id] || ""}
-                          onChange={(e) =>
-                            setNewTaskDescs((p) => ({
-                              ...p,
-                              [ws.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Description (optional)..."
-                          rows={2}
-                          className="text-xs"
-                        />
-                        <Select
-                          value={newTaskPriorities[ws.id] || "MEDIUM"}
-                          onChange={(e) =>
-                            setNewTaskPriorities((p) => ({
-                              ...p,
-                              [ws.id]: e.target.value,
-                            }))
-                          }
-                          options={[
-                            { value: "HIGH", label: "High" },
-                            { value: "MEDIUM", label: "Medium" },
-                            { value: "LOW", label: "Low" },
-                          ]}
-                          className="text-xs w-32"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => addTask(ws.id)}
-                            disabled={!newTaskTitles[ws.id]?.trim()}
-                          >
-                            Add
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() =>
-                              setShowAddTaskForm((p) => ({
-                                ...p,
-                                [ws.id]: false,
-                              }))
-                            }
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                        <button
-                          onClick={() =>
-                            setShowAddTaskForm((p) => ({
-                              ...p,
-                              [ws.id]: true,
-                            }))
-                          }
-                          className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                    {/* Assignee */}
+                    <div
+                      className="w-20 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {ws.assignee ? (
+                        <div
+                          className="inline-flex items-center gap-1 text-[10px] text-gray-600 cursor-default"
+                          title={ws.assignee.name}
                         >
-                          + Add Finding
+                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold">
+                            {ws.assignee.initials}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Use the first team member as a quick-assign, or open panel
+                            setSelectedWsId(ws.id);
+                          }}
+                          className="text-[10px] text-gray-400 hover:text-indigo-600"
+                        >
+                          --
                         </button>
-                        {allDone && ws.status !== "COMPLETE" && (
-                          <Button
-                            size="sm"
-                            onClick={() => markCategoryComplete(ws.id)}
-                          >
-                            Mark Category Complete
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
+
+                    {/* Priority */}
+                    <div
+                      className="w-16 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <select
+                        value={ws.priority || "MEDIUM"}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          patchWorkstream(ws.id, { priority: e.target.value });
+                        }}
+                        className="text-[10px] border-0 bg-transparent cursor-pointer font-medium text-center p-0"
+                        style={{
+                          color:
+                            ws.priority === "HIGH"
+                              ? "#dc2626"
+                              : ws.priority === "LOW"
+                                ? "#16a34a"
+                                : "#ca8a04",
+                        }}
+                      >
+                        <option value="HIGH">High</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="LOW">Low</option>
+                      </select>
+                    </div>
+
+                    {/* Due Date */}
+                    <div
+                      className="w-20 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {ws.dueDate ? (
+                        <span
+                          className={`text-[10px] ${
+                            isOverdue(ws.dueDate) && ws.status !== "COMPLETE"
+                              ? "text-red-600 font-semibold"
+                              : "text-gray-500"
+                          }`}
+                        >
+                          {new Date(ws.dueDate).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-gray-300">--</span>
+                      )}
+                    </div>
+
+                    {/* Comment count */}
+                    <div className="w-8 text-center">
+                      {commentCount > 0 ? (
+                        <span className="text-[10px] text-gray-500 font-medium">
+                          {commentCount}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-gray-300">--</span>
+                      )}
+                    </div>
+
+                    {/* Attachment count */}
+                    <div className="w-8 text-center">
+                      {attachmentCount > 0 ? (
+                        <span className="text-[10px] text-gray-500 font-medium">
+                          {attachmentCount}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-gray-300">--</span>
+                      )}
+                    </div>
+
+                    {/* Status dropdown */}
+                    <div
+                      className="w-24 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <select
+                        value={ws.status}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          patchWorkstream(ws.id, { status: e.target.value });
+                        }}
+                        className={`text-[10px] border border-gray-200 rounded px-1 py-0.5 font-medium cursor-pointer ${
+                          ws.status === "COMPLETE"
+                            ? "text-emerald-700 bg-emerald-50"
+                            : ws.status === "IN_PROGRESS"
+                              ? "text-blue-700 bg-blue-50"
+                              : "text-gray-500 bg-gray-50"
+                        }`}
+                      >
+                        <option value="NOT_STARTED">Not Started</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETE">Complete</option>
+                      </select>
+                    </div>
+
+                    {/* Actions */}
+                    <div
+                      className="w-24 text-center flex items-center justify-center gap-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {ws.hasAI && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            runWorkstreamAnalysis(ws);
+                          }}
+                          disabled={analyzingWs === ws.id || analyzingAll}
+                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {analyzingWs === ws.id
+                            ? "..."
+                            : ws.analysisResult
+                              ? "Re-analyze"
+                              : "Analyze"}
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openPromptModal(ws);
+                        }}
+                        className="text-[10px] text-gray-400 hover:text-gray-600"
+                        title="Analysis Prompt"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Detail Panel */}
+          {selectedWsId && (
+            <div className="w-1/2">
+              <WorkstreamDetailPanel
+                dealId={deal.id}
+                workstreamId={selectedWsId}
+                onClose={() => setSelectedWsId(null)}
+                onWorkstreamUpdate={() => mutate(`/api/deals/${deal.id}`)}
+                teamMembers={teamMembers}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -995,33 +761,56 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       {/* Analysis Prompt Modal */}
       <Modal
         open={!!promptModalWs}
-        onClose={() => { setPromptModalWs(null); setPromptEditing(false); }}
-        title={`Analysis Prompt — ${promptModalWs?.name || ""}`}
+        onClose={() => {
+          setPromptModalWs(null);
+          setPromptEditing(false);
+        }}
+        title={`Analysis Prompt -- ${promptModalWs?.name || ""}`}
         size="lg"
         footer={
           promptEditing ? (
             <>
-              <Button variant="secondary" onClick={() => setPromptEditing(false)}>Cancel</Button>
-              <Button loading={savingInstructions} onClick={savePromptInstructions}>Save Changes</Button>
+              <Button
+                variant="secondary"
+                onClick={() => setPromptEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button loading={savingInstructions} onClick={savePromptInstructions}>
+                Save Changes
+              </Button>
             </>
           ) : (
             <>
-              <Button variant="secondary" onClick={() => { setPromptModalWs(null); setPromptEditing(false); }}>Close</Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPromptModalWs(null);
+                  setPromptEditing(false);
+                }}
+              >
+                Close
+              </Button>
               <Button onClick={() => setPromptEditing(true)}>Edit Prompt</Button>
             </>
           )
         }
       >
         {loadingTemplate ? (
-          <div className="py-8 text-center text-sm text-gray-400">Loading prompt template...</div>
+          <div className="py-8 text-center text-sm text-gray-400">
+            Loading prompt template...
+          </div>
         ) : promptEditing ? (
           <div className="space-y-3">
             <div className="text-xs text-gray-500">
-              Edit the analysis instructions the AI uses for this workstream. Changes only affect this deal — the template in Settings stays the same.
+              Edit the analysis instructions the AI uses for this workstream. Changes
+              only affect this deal -- the template in Settings stays the same.
             </div>
             <Textarea
               value={promptText}
-              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setPromptText(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+                setPromptText(e.target.value)
+              }
               rows={10}
               placeholder="Analysis instructions..."
             />
@@ -1030,17 +819,26 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                {promptModalWs?.customInstructions ? "Custom Prompt (deal-specific)" : "Default Prompt (from Settings → Deal Desk)"}
+                {promptModalWs?.customInstructions
+                  ? "Custom Prompt (deal-specific)"
+                  : "Default Prompt (from Settings)"}
               </span>
             </div>
             {promptText ? (
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{promptText}</p>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {promptText}
+                </p>
               </div>
             ) : (
               <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
-                <p className="text-sm text-gray-400">No prompt configured for this workstream.</p>
-                <p className="text-xs text-gray-400 mt-1">Click &ldquo;Edit Prompt&rdquo; to add one, or configure it in Settings → Deal Desk.</p>
+                <p className="text-sm text-gray-400">
+                  No prompt configured for this workstream.
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Click &ldquo;Edit Prompt&rdquo; to add one, or configure it in
+                  Settings.
+                </p>
               </div>
             )}
           </div>
