@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** 2 (Deal Desk End-to-End) — Phase 1 complete
+**Current phase:** 3 (Capital Activity) — Phases 1-2 complete
 
 ---
 
@@ -84,12 +84,12 @@ Plans:
 - [ ] MOIC consistently computed from cost basis and fair value
 - [ ] Management fees and carried interest calculated per entity rules
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | Wire computation engines to UI (replace seeded display values) | Not started |
-| 2 | Fee calculation engine | Not started |
-| 3 | Return metrics (TVPI, DPI, RVPI, MOIC) wired end-to-end | Not started |
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
+- [ ] 03-02-PLAN.md — Wave 2: Waterfall enhancement (configurable carry, pref return, clawback, GP co-invest) + fee calculation engine (depends on 03-01)
+- [ ] 03-03-PLAN.md — Wave 2: Metrics wiring to entity detail + GP dashboard + capital account ledger + NAV refinement (depends on 03-01)
 
 **Progress:** 0/3 plans complete
 
