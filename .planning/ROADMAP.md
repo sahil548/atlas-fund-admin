@@ -20,7 +20,7 @@
 **Success Criteria:**
 - [ ] Financial computation engines (IRR, waterfall, capital accounts) tested against known-good inputs — verified correct or bugs identified and fixed
 - [ ] Slack IC voting tested with real Slack workspace — verified working or issues documented
-- [ ] Full deal pipeline tested end-to-end (screen → DD → IC → close → asset creation) — all stages work
+- [ ] Full deal pipeline tested end-to-end (screen -> DD -> IC -> close -> asset creation) — all stages work
 - [ ] Capital call and distribution workflows tested — create, save, verify data flows correctly
 - [ ] 3 known bugs re-checked: DD tab %, pass rate 300%, IC Memo spinner — fixed if still present
 - [ ] Ground truth document created: what works, what's broken, what's missing
@@ -97,7 +97,7 @@ Plans:
 
 ## Phase 4: Asset & Entity Polish
 
-**Goal:** Asset management, entity management, and core infrastructure hardened for daily GP use.
+**Goal:** Asset management, entity management, and core infrastructure hardened for daily GP use. Dashboard redesigned as a "morning briefing" with entity cards, portfolio aggregates, and LP comparison. Side letter rules applied to fees. Role-based access enforced. All lists paginated with search and filters.
 
 **Requirements:** FIN-07, FIN-08, FIN-09, FIN-10, ASSET-02, CORE-02, CORE-03, CORE-04, CORE-05, CORE-06
 
@@ -110,14 +110,16 @@ Plans:
 - [ ] Error boundaries prevent full-page crashes
 - [ ] AI endpoints have rate limiting
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | Side letter rules + performance aggregation | Not started |
-| 2 | Role enforcement + infrastructure hardening | Not started |
-| 3 | Cross-entity NAV dashboard | Not started |
+**Plans:** 5 plans
 
-**Progress:** 0/3 plans complete
+Plans:
+- [ ] 04-01-PLAN.md — Wave 1: Side letter structured rules + fee adjustment engine + MFN detection (FIN-07)
+- [ ] 04-02-PLAN.md — Wave 1: Role-based access enforcement + service provider scoping + audit logging (CORE-02, CORE-03)
+- [ ] 04-03-PLAN.md — Wave 1: Pagination + search/filters + error boundaries + rate limiting (CORE-04, CORE-05, CORE-06)
+- [ ] 04-04-PLAN.md — Wave 2: Dashboard redesign + cross-entity NAV + performance aggregation + LP comparison (FIN-08, FIN-09, ASSET-02)
+- [ ] 04-05-PLAN.md — Wave 2: Deal-level performance attribution with projected vs actual (FIN-10)
+
+**Progress:** 0/5 plans complete
 
 ---
 
@@ -200,10 +202,10 @@ Plans:
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
 | 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
 | 3 | Capital Activity | 6 | 3 | Not started |
-| 4 | Asset & Entity Polish | 10 | 3 | Not started |
+| 4 | Asset & Entity Polish | 10 | 5 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
 | 6 | LP Portal | 3 | 2 | Not started |
 | 7 | Notifications & Reports | 14 | 3 | Not started |
-| **Total** | | **58** | **23** | |
+| **Total** | | **58** | **25** | |
 
-**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE — not in any phase. Zero orphans.
+**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Zero orphans.
