@@ -247,21 +247,32 @@ export default function DealDetailPage({
         setAnalysisProgress((p) =>
           p ? { ...p, current: "IC Memo", phase: "Generating IC Memo", running: new Set(["IC Memo"]), done: new Set(doneSet) } : null
         );
+        // BUG-03 fix: 90-second timeout prevents the "Generating..." spinner from sticking
+        // forever if the IC Memo API call hangs (no response, network drop, server stall).
+        const memoTimeout = new Promise<Response>((_, reject) =>
+          setTimeout(() => reject(new Error("IC Memo generation timed out after 90 seconds")), 90_000)
+        );
         try {
-          const memoRes = await fetch(`/api/deals/${id}/dd-analyze`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
-          });
+          const memoRes = await Promise.race([
+            fetch(`/api/deals/${id}/dd-analyze`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type: "IC_MEMO", rerun: isRerun || !!deal?.screeningResult?.memo }),
+            }),
+            memoTimeout,
+          ]);
           if (!memoRes.ok) {
             const memoErr = await memoRes.json().catch(() => ({}));
             console.warn("IC Memo generation failed:", memoErr.error);
           }
-        } catch {
-          toast.error("IC Memo generation failed — workstream analyses are still available");
+        } catch (memoErr: unknown) {
+          const msg = memoErr instanceof Error ? memoErr.message : "IC Memo generation failed";
+          toast.error(`${msg} — workstream analyses are still available`);
         }
       }
     } finally {
+      // Always clear the spinner — this finally block ensures analysisProgress is
+      // never left in a truthy state regardless of what happened above.
       setAnalysisProgress(null);
       mutate(`/api/deals/${id}`);
     }

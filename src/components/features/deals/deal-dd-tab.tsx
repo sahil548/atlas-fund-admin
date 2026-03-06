@@ -74,11 +74,19 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     (sum: number, ws: any) => sum + (ws.completedTasks ?? 0),
     0
   );
-  const overallPct =
-    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   const completeCategories = workstreams.filter(
     (ws: any) => ws.status === "COMPLETE"
   ).length;
+  // BUG-01 fix: when no tasks exist, fall back to workstream-status-based progress.
+  // Deals past DD stage often have COMPLETE workstreams but zero tasks (AI analysis
+  // ran but no individual tasks were created). Show workstream completion in that case.
+  const overallPct =
+    totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : workstreams.length > 0
+        ? Math.round((completeCategories / workstreams.length) * 100)
+        : 0;
+  const progressBasis = totalTasks > 0 ? "tasks" : "workstreams";
 
   function toggleWorkstream(wsId: string) {
     setExpandedWorkstreams((prev) => {
@@ -386,7 +394,9 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-xs text-gray-500">
-              {completedTasks} of {totalTasks} tasks complete
+              {progressBasis === "tasks"
+                ? `${completedTasks} of ${totalTasks} tasks complete`
+                : `${completeCategories} of ${workstreams.length} workstreams complete`}
             </span>
             <div className="flex items-center gap-2">
               {(() => {

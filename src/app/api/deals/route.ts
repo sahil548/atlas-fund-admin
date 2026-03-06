@@ -62,9 +62,12 @@ export async function GET(req: NextRequest) {
   const pastDD = deals.filter((d) => ["IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
   const pastIC = deals.filter((d) => ["CLOSING", "CLOSED"].includes(d.stage)).length;
 
-  const screeningToDD = totalDeals > 0 ? Math.round((pastScreening / totalDeals) * 100) : 0;
-  const ddToIC = pastScreening > 0 ? Math.round((pastDD / pastScreening) * 100) : 0;
-  const icToClose = pastDD > 0 ? Math.round((pastIC / pastDD) * 100) : 0;
+  // BUG-02 fix: add Math.min(100, ...) safety cap — mathematically these can never exceed 100%
+  // since pastIC <= pastDD <= pastScreening <= totalDeals, but defensive guard prevents edge cases
+  // with data anomalies (e.g. DEAD deals miscounted) from ever showing >100% in the UI.
+  const screeningToDD = totalDeals > 0 ? Math.min(100, Math.round((pastScreening / totalDeals) * 100)) : 0;
+  const ddToIC = pastScreening > 0 ? Math.min(100, Math.round((pastDD / pastScreening) * 100)) : 0;
+  const icToClose = pastDD > 0 ? Math.min(100, Math.round((pastIC / pastDD) * 100)) : 0;
 
   return NextResponse.json({
     deals,
