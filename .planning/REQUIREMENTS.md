@@ -41,6 +41,11 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | DEAL-03 | Deal-to-asset auto-creation when deal closes | High | Close action exists, asset auto-creation not verified |
 | DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | Formation workflow exists but not linked to deal closing |
 | DEAL-05 | Deal edit inline fields save reliably | Medium | InlineEditField component exists, edge cases untested |
+| DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | Overview tab exists but is a flat form — needs 4-section dashboard redesign with AI metadata extraction |
+| DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
+| DEAL-08 | IC Review with configurable decision-making structures | High | IC tab exists with basic voting — needs settings page for structures, in-app voting, Send Back flow |
+| DEAL-09 | Kill/revive deal flow with required reasons | Medium | killDeal() exists but no reason required, no revive, no dead deals view |
+| DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | Basic conversion rates exist — needs pipeline value by stage, time-in-stage, velocity metrics |
 
 ---
 
@@ -148,7 +153,7 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | Phase | Requirements |
 |-------|-------------|
 | 1: Verify & Stabilize | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04, VERIFY-05, BUG-01, BUG-02, BUG-03 |
-| 2: Deal Desk End-to-End | DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, ASSET-01 |
+| 2: Deal Desk End-to-End | DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, DEAL-06, DEAL-07, DEAL-08, DEAL-09, DEAL-10, ASSET-01 |
 | 3: Capital Activity | FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06 |
 | 4: Asset & Entity Polish | FIN-07, FIN-08, FIN-09, FIN-10, ASSET-02, CORE-02, CORE-03, CORE-04, CORE-05, CORE-06 |
 | 5: QBO/Xero Integration | ACCT-01, ACCT-02, ACCT-03, ACCT-04, ACCT-05, ASSET-03 |

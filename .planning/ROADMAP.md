@@ -40,7 +40,7 @@ Plans:
 
 **Goal:** Perfect the full deal lifecycle from screening through closing and deal-to-asset transition. This is the GP team's primary daily workflow. Includes: deal creation with validation, AI-powered overview dashboard, interactive DD workstreams, decision-making structures (IC), closing checklist with attachments, multi-entity deal participation, entity formation at any stage, deal-to-asset transition with data carry-over, pipeline analytics, kill/revive deal flow.
 
-**Requirements:** DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, ASSET-01
+**Requirements:** DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, DEAL-06, DEAL-07, DEAL-08, DEAL-09, DEAL-10, ASSET-01
 
 **Success Criteria:**
 - [ ] Deal creation wizard shows validation errors when required fields are missing
@@ -58,13 +58,13 @@ Plans:
 **Plans:** 7 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Schema consolidation: all data model changes for Phase 2
-- [ ] 02-02-PLAN.md — Deal creation wizard validation + inline edit + kill/revive
-- [ ] 02-03-PLAN.md — Closing workflow + deal-to-asset transition + multi-entity deals
-- [ ] 02-04-PLAN.md — Deal overview dashboard redesign + AI metadata extraction
-- [ ] 02-05-PLAN.md — DD workstreams interactive PM-style redesign
-- [ ] 02-06-PLAN.md — IC Review configurable decision structures + in-app voting
-- [ ] 02-07-PLAN.md — Asset detail polish + pipeline analytics
+- [ ] 02-01-PLAN.md — Wave 1: Schema consolidation (all data model changes for Phase 2)
+- [ ] 02-02-PLAN.md — Wave 2: Deal wizard validation + inline edit + kill/revive
+- [ ] 02-03-PLAN.md — Wave 3: Closing workflow + deal-to-asset + multi-entity (depends on 02-02)
+- [ ] 02-04-PLAN.md — Wave 2: Deal overview dashboard + AI metadata extraction
+- [ ] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
+- [ ] 02-06-PLAN.md — Wave 3: IC Review decision structures + in-app voting (depends on 02-02)
+- [ ] 02-07-PLAN.md — Wave 4: Asset detail polish + pipeline analytics (depends on 02-02, 02-03, 02-04)
 
 **Progress:** 0/7 plans complete
 
@@ -198,12 +198,12 @@ Plans:
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
-| 2 | Deal Desk End-to-End | 6 | 7 | Not started |
+| 2 | Deal Desk End-to-End | 11 | 7 | Not started |
 | 3 | Capital Activity | 6 | 3 | Not started |
 | 4 | Asset & Entity Polish | 10 | 3 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
 | 6 | LP Portal | 3 | 2 | Not started |
 | 7 | Notifications & Reports | 14 | 3 | Not started |
-| **Total** | | **53** | **23** | |
+| **Total** | | **58** | **23** | |
 
 **Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE — not in any phase. Zero orphans.
