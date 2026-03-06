@@ -12,7 +12,8 @@ import { CreateTaskForm } from "@/components/features/assets/create-task-form";
 import { UploadDocumentForm } from "@/components/features/assets/upload-document-form";
 import { LogIncomeForm } from "@/components/features/assets/log-income-form";
 import { AssetDealIntelligence } from "@/components/features/assets/asset-deal-intelligence";
-import { fmt, pct } from "@/lib/utils";
+import { AssetOriginatedFrom } from "@/components/features/assets/asset-originated-from";
+import { fmt, pct, cn } from "@/lib/utils";
 import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -25,6 +26,20 @@ import {
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+const SCORE_COLORS: Record<string, string> = {
+  high: "text-emerald-700 bg-emerald-50 border-emerald-200",
+  medium: "text-amber-700 bg-amber-50 border-amber-200",
+  low: "text-red-700 bg-red-50 border-red-200",
+};
+
+function getScoreLevel(score: number): string {
+  if (score >= 70) return "high";
+  if (score >= 40) return "medium";
+  return "low";
+}
+
 export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: a, isLoading } = useSWR(`/api/assets/${id}`, fetcher);
@@ -34,20 +49,30 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [showLogIncome, setShowLogIncome] = useState(false);
+  const [aiIntelExpanded, setAiIntelExpanded] = useState(false);
 
   if (isLoading || !a) return <div className="text-sm text-gray-400">Loading...</div>;
 
   const ur = a.fairValue - a.costBasis;
+  const deal = a.sourceDeal;
+  const screening = deal?.screeningResult;
+
   const allTabs = ["overview"];
   if (a.creditDetails || a.creditAgreements?.length) allTabs.push("loan");
   if (a.realEstateDetails) allTabs.push("property");
+  if (a.equityDetails) allTabs.push("equity");
   if (a.fundLPDetails) allTabs.push("fund");
-  if (a.deal) allTabs.push("deal intel");
+  if (deal) allTabs.push("deal intel");
   allTabs.push("valuation", "documents", "meetings", "tasks", "governance");
 
   return (
     <div className="space-y-4">
       <Link href="/assets" className="text-xs text-indigo-600 hover:underline">&larr; Back to Assets</Link>
+
+      {/* Originated from banner */}
+      {deal && (
+        <AssetOriginatedFrom dealId={deal.id} dealName={deal.name} />
+      )}
 
       {/* Header */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -66,11 +91,11 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                   {PARTICIPATION_LABELS[a.participationStructure] || a.participationStructure}
                 </Badge>
               )}
-              <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase() ?? "—"}</Badge>
+              <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase() ?? "---"}</Badge>
               {a.hasBoardSeat && <Badge color="indigo">Board Seat</Badge>}
             </div>
             <div className="text-xs text-gray-500">
-              {a.sector} · Entered {a.entryDate ? new Date(a.entryDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "—"} ·{" "}
+              {a.sector} · Entered {a.entryDate ? new Date(a.entryDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "---"} ·{" "}
               {a.entityAllocations?.map((ea: { entity: { name: string } }) => ea.entity.name).join(", ")}
             </div>
           </div>
@@ -84,8 +109,8 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             { l: "Cost Basis", v: fmt(a.costBasis) },
             { l: "Unrealized", v: `${ur > 0 ? "+" : ""}${fmt(ur)}`, c: ur > 0 ? "text-emerald-700" : "text-red-600" },
             { l: "MOIC", v: `${(a.moic || 0).toFixed(2)}x`, c: (a.moic || 0) >= 2 ? "text-emerald-700" : "" },
-            { l: "Gross IRR", v: a.irr ? pct(a.irr) : "—", c: "text-emerald-700" },
-            { l: "Income", v: a.incomeType || "—" },
+            { l: "Gross IRR", v: a.irr ? pct(a.irr) : "---", c: "text-emerald-700" },
+            { l: "Income", v: a.incomeType || "---" },
           ].map((s, i) => (
             <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
               <div className="text-[10px] text-gray-500 uppercase">{s.l}</div>
@@ -99,218 +124,392 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Overview Tab */}
       {tab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {a.equityDetails && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold mb-3">Company Dashboard</h3>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                {Object.entries({
-                  Instrument: a.equityDetails.instrument,
-                  Ownership: a.equityDetails.ownership,
-                  Revenue: a.equityDetails.revenue,
-                  EBITDA: a.equityDetails.ebitda,
-                  Growth: a.equityDetails.growth,
-                  Employees: a.equityDetails.employees,
-                }).map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-1 border-b border-gray-50">
-                    <span className="text-gray-500">{k}</span>
-                    <span className="font-medium">{v}</span>
+        <div className="space-y-4">
+          {/* AI Deal Intelligence section (collapsed by default) */}
+          {screening && (
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setAiIntelExpanded(!aiIntelExpanded)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className={cn("transition-transform inline-block text-xs", aiIntelExpanded && "rotate-90")}>&#9654;</span>
+                  <span className="text-sm font-semibold text-gray-900">AI Deal Intelligence</span>
+                  {screening.score != null && (
+                    <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full border", SCORE_COLORS[getScoreLevel(screening.score)])}>
+                      Score: {screening.score}/100
+                    </span>
+                  )}
+                  {screening.recommendation && (
+                    <Badge color={screening.recommendation === "GO" || screening.recommendation === "APPROVE" ? "green" : screening.recommendation === "NO_GO" || screening.recommendation === "DECLINE" ? "red" : "yellow"}>
+                      {screening.recommendation.replace(/_/g, " ")}
+                    </Badge>
+                  )}
+                </div>
+                <Link
+                  href={`/deals/${deal.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs text-indigo-600 hover:underline"
+                >
+                  View deal for full analysis
+                </Link>
+              </button>
+
+              {aiIntelExpanded && (
+                <div className="p-4 space-y-3 bg-white">
+                  {/* Executive Summary */}
+                  {screening.summary && (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Executive Summary</div>
+                      <p className="text-sm text-gray-700 leading-relaxed">
+                        {screening.summary.length > 500
+                          ? screening.summary.slice(0, 500) + "..."
+                          : screening.summary}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {/* Strengths */}
+                    {Array.isArray(screening.strengths) && screening.strengths.length > 0 && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                        <div className="text-xs font-semibold text-emerald-800 mb-1.5">Key Strengths</div>
+                        <ul className="space-y-1">
+                          {(screening.strengths as string[]).slice(0, 5).map((s: string, i: number) => (
+                            <li key={i} className="text-xs text-emerald-700 flex items-start gap-1.5">
+                              <span className="mt-0.5 flex-shrink-0">+</span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Risks */}
+                    {Array.isArray(screening.risks) && screening.risks.length > 0 && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div className="text-xs font-semibold text-red-800 mb-1.5">Key Risks</div>
+                        <ul className="space-y-1">
+                          {(screening.risks as string[]).slice(0, 5).map((r: string, i: number) => (
+                            <li key={i} className="text-xs text-red-700 flex items-start gap-1.5">
+                              <span className="mt-0.5 flex-shrink-0">!</span>
+                              <span>{r}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Existing overview content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Entity Allocations */}
+            {a.entityAllocations?.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold mb-3">Entity Allocations</h3>
+                <div className="space-y-2">
+                  {a.entityAllocations.map((ea: { entity: { id: string; name: string; type: string }; allocationPercent: number; costBasis: number | null }) => (
+                    <div key={ea.entity.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">{ea.entity.name}</span>
+                        <Badge color="gray">{ea.entity.type}</Badge>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-gray-500">{ea.allocationPercent}%</span>
+                        {ea.costBasis != null && <span className="font-medium">{fmt(ea.costBasis)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {a.equityDetails && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold mb-3">Company Dashboard</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {Object.entries({
+                    Instrument: a.equityDetails.instrument,
+                    Ownership: a.equityDetails.ownership,
+                    Revenue: a.equityDetails.revenue,
+                    EBITDA: a.equityDetails.ebitda,
+                    Growth: a.equityDetails.growth,
+                    Employees: a.equityDetails.employees,
+                  }).map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-1 border-b border-gray-50">
+                      <span className="text-gray-500">{k}</span>
+                      <span className="font-medium">{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {a.valuations?.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold mb-3">Valuation History</h3>
+                {a.valuations.map((v: { id: string; valuationDate: string; method: string; fairValue: number; moic: number; status: string }) => (
+                  <div key={v.id} className="flex items-center gap-3 mb-2">
+                    <span className="text-xs text-gray-400 w-20">{new Date(v.valuationDate).toLocaleDateString()}</span>
+                    <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                      <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${(v.fairValue / a.valuations[0].fairValue) * 100}%` }} />
+                    </div>
+                    <span className="text-xs font-medium w-16 text-right">{fmt(v.fairValue)}</span>
+                    <Badge color={v.status === "APPROVED" ? "green" : "yellow"}>{v.status}</Badge>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {a.valuations?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold mb-3">Valuation History</h3>
-              {a.valuations.map((v: { id: string; valuationDate: string; method: string; fairValue: number; moic: number; status: string }, i: number) => (
-                <div key={v.id} className="flex items-center gap-3 mb-2">
-                  <span className="text-xs text-gray-400 w-20">{new Date(v.valuationDate).toLocaleDateString()}</span>
-                  <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
-                    <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${(v.fairValue / a.valuations[0].fairValue) * 100}%` }} />
-                  </div>
-                  <span className="text-xs font-medium w-16 text-right">{fmt(v.fairValue)}</span>
-                  <Badge color={v.status === "APPROVED" ? "green" : "yellow"}>{v.status}</Badge>
+            {a.incomeEvents?.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-semibold">Cash Flows</h3>
+                  <Button variant="secondary" size="sm" onClick={() => setShowLogIncome(true)}>+ Income</Button>
                 </div>
-              ))}
-            </div>
-          )}
-
-          {a.incomeEvents?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-semibold">Cash Flows</h3>
-                <Button variant="secondary" size="sm" onClick={() => setShowLogIncome(true)}>+ Income</Button>
+                {a.incomeEvents.map((cf: { id: string; date: string; incomeType: string; amount: number; isPrincipal: boolean }) => (
+                  <div key={cf.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${cf.isPrincipal ? "bg-blue-400" : "bg-emerald-400"}`} />
+                      <span className="text-xs text-gray-600">{new Date(cf.date).toLocaleDateString()}</span>
+                      <span className="text-xs">{cf.incomeType}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-medium ${cf.amount > 0 ? "text-emerald-700" : ""}`}>
+                        {cf.amount > 0 ? "+" : ""}{fmt(cf.amount)}
+                      </span>
+                      <Badge color={cf.isPrincipal ? "blue" : "green"}>{cf.isPrincipal ? "Principal" : "Income"}</Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
-              {a.incomeEvents.map((cf: { id: string; date: string; incomeType: string; amount: number; isPrincipal: boolean }) => (
-                <div key={cf.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full ${cf.isPrincipal ? "bg-blue-400" : "bg-emerald-400"}`} />
-                    <span className="text-xs text-gray-600">{new Date(cf.date).toLocaleDateString()}</span>
-                    <span className="text-xs">{cf.incomeType}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs font-medium ${cf.amount > 0 ? "text-emerald-700" : ""}`}>
-                      {cf.amount > 0 ? "+" : ""}{fmt(cf.amount)}
-                    </span>
-                    <Badge color={cf.isPrincipal ? "blue" : "green"}>{cf.isPrincipal ? "Principal" : "Income"}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+            )}
 
-          {a.activityEvents?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
-              <h3 className="text-sm font-semibold mb-3">Activity Timeline</h3>
-              {a.activityEvents.map((e: { id: string; eventDate: string; description: string; eventType: string }) => (
-                <div key={e.id} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                  <span className="text-[10px] text-gray-400 w-16">{new Date(e.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                  <Badge color={e.eventType === "meeting" ? "purple" : e.eventType === "task" ? "green" : e.eventType === "document" ? "blue" : "orange"}>
-                    {e.eventType}
-                  </Badge>
-                  <span className="text-xs text-gray-700">{e.description}</span>
-                </div>
-              ))}
-            </div>
-          )}
+            {a.activityEvents?.length > 0 && (
+              <div className="bg-white rounded-xl border border-gray-200 p-5 lg:col-span-2">
+                <h3 className="text-sm font-semibold mb-3">Activity Timeline</h3>
+                {a.activityEvents.map((e: { id: string; eventDate: string; description: string; eventType: string }) => (
+                  <div key={e.id} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
+                    <span className="text-[10px] text-gray-400 w-16">{new Date(e.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                    <Badge color={e.eventType === "meeting" ? "purple" : e.eventType === "task" ? "green" : e.eventType === "document" ? "blue" : "orange"}>
+                      {e.eventType}
+                    </Badge>
+                    <span className="text-xs text-gray-700">{e.description}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* Loan Tab */}
-      {tab === "loan" && a.creditDetails && (
+      {tab === "loan" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <StatCard label="Principal" value={a.creditDetails.principal || "—"} small />
-            <StatCard label="Rate" value={a.creditDetails.rate || "—"} small />
-            <StatCard label="Maturity" value={a.creditDetails.maturity || "—"} small />
-            <StatCard label="Accrued" value={a.creditDetails.accruedInterest || "—"} small />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold mb-3">Covenant Monitor</h3>
-              {a.creditAgreements?.flatMap((ag: { covenants: { id: string; name: string; thresholdOperator: string; thresholdValue: number; lastTestedValue: string; currentStatus: string }[] }) => ag.covenants).map((c: { id: string; name: string; thresholdOperator: string; thresholdValue: number; lastTestedValue: string; currentStatus: string }) => (
-                <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-                  <div>
-                    <div className="text-sm font-medium">{c.name}</div>
-                    <div className="text-xs text-gray-500">Threshold: {c.thresholdOperator} {c.thresholdValue}</div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold">{c.lastTestedValue}</span>
-                    <Badge color={c.currentStatus === "COMPLIANT" ? "green" : "red"}>
-                      {c.currentStatus === "COMPLIANT" ? "Compliant" : "Breach"}
-                    </Badge>
-                  </div>
+          {a.creditDetails ? (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                <StatCard label="Principal" value={a.creditDetails.principal || "---"} small />
+                <StatCard label="Rate" value={a.creditDetails.rate || "---"} small />
+                <StatCard label="Maturity" value={a.creditDetails.maturity || "---"} small />
+                <StatCard label="Accrued" value={a.creditDetails.accruedInterest || "---"} small />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <h3 className="text-sm font-semibold mb-3">Covenant Monitor</h3>
+                  {a.creditAgreements?.flatMap((ag: { covenants: { id: string; name: string; thresholdOperator: string; thresholdValue: number; lastTestedValue: string; currentStatus: string }[] }) => ag.covenants).map((c: { id: string; name: string; thresholdOperator: string; thresholdValue: number; lastTestedValue: string; currentStatus: string }) => (
+                    <div key={c.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                      <div>
+                        <div className="text-sm font-medium">{c.name}</div>
+                        <div className="text-xs text-gray-500">Threshold: {c.thresholdOperator} {c.thresholdValue}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{c.lastTestedValue}</span>
+                        <Badge color={c.currentStatus === "COMPLIANT" ? "green" : "red"}>
+                          {c.currentStatus === "COMPLIANT" ? "Compliant" : "Breach"}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold mb-3">Payment Schedule</h3>
-              {a.creditAgreements?.flatMap((ag: { payments: { id: string; date: string; paymentType: string; amount: number; status: string }[] }) => ag.payments).map((p: { id: string; date: string; paymentType: string; amount: number; status: string }) => (
-                <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{new Date(p.date).toLocaleDateString()}</span>
-                    <span className="text-xs">{p.paymentType}</span>
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <h3 className="text-sm font-semibold mb-3">Payment Schedule</h3>
+                  {a.creditAgreements?.flatMap((ag: { payments: { id: string; date: string; paymentType: string; amount: number; status: string }[] }) => ag.payments).map((p: { id: string; date: string; paymentType: string; amount: number; status: string }) => (
+                    <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">{new Date(p.date).toLocaleDateString()}</span>
+                        <span className="text-xs">{p.paymentType}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">{fmt(p.amount)}</span>
+                        <Badge color={p.status === "Received" ? "green" : "yellow"}>{p.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <div className="text-[10px] text-gray-500">LTV</div>
+                      <div className="text-sm font-semibold">{a.creditDetails.ltv}</div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-2 text-center">
+                      <div className="text-[10px] text-gray-500">DSCR</div>
+                      <div className="text-sm font-semibold">{a.creditDetails.dscr}</div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium">{fmt(p.amount)}</span>
-                    <Badge color={p.status === "Received" ? "green" : "yellow"}>{p.status}</Badge>
-                  </div>
-                </div>
-              ))}
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="bg-gray-50 rounded-lg p-2 text-center">
-                  <div className="text-[10px] text-gray-500">LTV</div>
-                  <div className="text-sm font-semibold">{a.creditDetails.ltv}</div>
-                </div>
-                <div className="bg-gray-50 rounded-lg p-2 text-center">
-                  <div className="text-[10px] text-gray-500">DSCR</div>
-                  <div className="text-sm font-semibold">{a.creditDetails.dscr}</div>
                 </div>
               </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="text-sm text-gray-400">No credit details available.</div>
+              <div className="text-xs text-gray-300 mt-1">Credit agreements and covenants will display here.</div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Property Tab */}
-      {tab === "property" && a.realEstateDetails && (
+      {tab === "property" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <StatCard label="NOI" value={a.realEstateDetails.noi || "—"} sub="Annual" small />
-            <StatCard label="Occupancy" value={a.realEstateDetails.occupancy || "—"} small />
-            <StatCard label="Cap Rate" value={a.realEstateDetails.capRate || "—"} small />
-            <StatCard label="Debt" value={a.realEstateDetails.debt || "—"} small />
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold mb-3">Tenant Roll — Contract Detail</h3>
-            <table className="w-full text-xs">
-              <thead className="bg-gray-50">
-                <tr>
-                  {["Tenant", "Sq Ft", "Annual Rent", "Lease Term", "% of Rent"].map((h) => (
-                    <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+          {a.realEstateDetails ? (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                <StatCard label="Property Type" value={a.realEstateDetails.propertyType || "---"} small />
+                <StatCard label="Sq Ft" value={a.realEstateDetails.squareFeet || "---"} small />
+                <StatCard label="Occupancy" value={a.realEstateDetails.occupancy || "---"} small />
+                <StatCard label="Cap Rate" value={a.realEstateDetails.capRate || "---"} small />
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                <StatCard label="NOI" value={a.realEstateDetails.noi || "---"} sub="Annual" small />
+                <StatCard label="Rent/SqFt" value={a.realEstateDetails.rentPerSqft || "---"} small />
+                <StatCard label="Debt" value={a.realEstateDetails.debt || "---"} small />
+                <StatCard label="DSCR" value={a.realEstateDetails.debtDscr || "---"} small />
+              </div>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold mb-3">Tenant Roll -- Contract Detail</h3>
+                {a.leases?.length > 0 ? (
+                  <table className="w-full text-xs">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {["Tenant", "Sq Ft", "Annual Rent", "Lease Term", "% of Rent"].map((h) => (
+                          <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {a.leases.map((t: { id: string; tenantName: string; squareFootage: string; baseRentAnnual: number; leaseStartDate: string; leaseEndDate: string; rentPercentOfTotal: string; currentStatus: string }) => (
+                        <tr key={t.id} className="border-t border-gray-50">
+                          <td className={`px-3 py-2.5 font-medium ${t.currentStatus === "TERMINATED" || t.tenantName === "Vacant" ? "text-red-600" : ""}`}>{t.tenantName}</td>
+                          <td className="px-3 py-2.5">{t.squareFootage}</td>
+                          <td className="px-3 py-2.5">{t.baseRentAnnual ? fmt(t.baseRentAnnual) : "---"}</td>
+                          <td className="px-3 py-2.5">
+                            {t.leaseStartDate && t.leaseEndDate
+                              ? `${new Date(t.leaseStartDate).getFullYear()}-${new Date(t.leaseEndDate).getFullYear()}`
+                              : "---"}
+                          </td>
+                          <td className="px-3 py-2.5">{t.rentPercentOfTotal || "---"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="text-xs text-gray-400 text-center py-4">No leases recorded</div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="text-sm text-gray-400">No real estate details available.</div>
+              <div className="text-xs text-gray-300 mt-1">Property metrics and tenant roll will display here.</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Equity Tab */}
+      {tab === "equity" && (
+        <div className="space-y-4">
+          {a.equityDetails ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold mb-3">Company Dashboard</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 text-sm">
+                  {Object.entries({
+                    Instrument: a.equityDetails.instrument,
+                    Ownership: a.equityDetails.ownership,
+                    Revenue: a.equityDetails.revenue,
+                    EBITDA: a.equityDetails.ebitda,
+                    Growth: a.equityDetails.growth,
+                    Employees: a.equityDetails.employees,
+                  }).map(([k, v]) => (
+                    <div key={k} className="flex justify-between py-1.5 border-b border-gray-50">
+                      <span className="text-gray-500">{k}</span>
+                      <span className="font-medium">{v || "---"}</span>
+                    </div>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {a.leases?.map((t: { id: string; tenantName: string; squareFootage: string; baseRentAnnual: number; leaseStartDate: string; leaseEndDate: string; rentPercentOfTotal: string; currentStatus: string }) => (
-                  <tr key={t.id} className="border-t border-gray-50">
-                    <td className={`px-3 py-2.5 font-medium ${t.currentStatus === "TERMINATED" || t.tenantName === "Vacant" ? "text-red-600" : ""}`}>{t.tenantName}</td>
-                    <td className="px-3 py-2.5">{t.squareFootage}</td>
-                    <td className="px-3 py-2.5">{t.baseRentAnnual ? fmt(t.baseRentAnnual) : "—"}</td>
-                    <td className="px-3 py-2.5">
-                      {t.leaseStartDate && t.leaseEndDate
-                        ? `${new Date(t.leaseStartDate).getFullYear()}-${new Date(t.leaseEndDate).getFullYear()}`
-                        : "—"}
-                    </td>
-                    <td className="px-3 py-2.5">{t.rentPercentOfTotal || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="text-sm text-gray-400">No equity details available.</div>
+              <div className="text-xs text-gray-300 mt-1">Company metrics will display here.</div>
+            </div>
+          )}
         </div>
       )}
 
       {/* Fund LP Tab */}
-      {tab === "fund" && a.fundLPDetails && (
+      {tab === "fund" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
-            <StatCard label="Commitment" value={a.fundLPDetails.commitment || "—"} sub={`Called: ${a.fundLPDetails.calledAmount}`} small />
-            <StatCard label="GP-Reported NAV" value={fmt(a.fairValue)} sub={`As of ${a.fundLPDetails.navDate}`} small />
-            <StatCard label="Distributions" value={a.fundLPDetails.distributions || "—"} small />
-            <StatCard label="Uncalled" value={a.fundLPDetails.uncalledAmount || "—"} small />
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold mb-3">GP Summary — {a.fundLPDetails.gpName}</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 text-sm">
-                {[
-                  ["Strategy", a.fundLPDetails.strategy],
-                  ["Vintage", a.fundLPDetails.vintage],
-                  ["GP IRR", a.fundLPDetails.gpIrr],
-                  ["GP TVPI", a.fundLPDetails.gpTvpi],
-                ].map(([k, v], i) => (
-                  <div key={i} className="flex justify-between py-1">
-                    <span className="text-gray-500">{k}</span>
-                    <span className="font-medium">{v}</span>
-                  </div>
-                ))}
+          {a.fundLPDetails ? (
+            <>
+              <div className="grid grid-cols-4 gap-3">
+                <StatCard label="Commitment" value={a.fundLPDetails.commitment || "---"} sub={`Called: ${a.fundLPDetails.calledAmount || "---"}`} small />
+                <StatCard label="GP-Reported NAV" value={fmt(a.fairValue)} sub={`As of ${a.fundLPDetails.navDate || "---"}`} small />
+                <StatCard label="Distributions" value={a.fundLPDetails.distributions || "---"} small />
+                <StatCard label="Uncalled" value={a.fundLPDetails.uncalledAmount || "---"} small />
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="text-xs font-semibold text-amber-800">Valuation Note</div>
-                <div className="text-xs text-amber-700 mt-1">
-                  Fair value = GP-reported NAV. Last statement: {a.fundLPDetails.navDate}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold mb-3">GP Summary -- {a.fundLPDetails.gpName || "Unknown"}</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2 text-sm">
+                    {[
+                      ["Strategy", a.fundLPDetails.strategy],
+                      ["Vintage", a.fundLPDetails.vintage],
+                      ["GP IRR", a.fundLPDetails.gpIrr],
+                      ["GP TVPI", a.fundLPDetails.gpTvpi],
+                    ].map(([k, v], i) => (
+                      <div key={i} className="flex justify-between py-1">
+                        <span className="text-gray-500">{k}</span>
+                        <span className="font-medium">{v || "---"}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="text-xs font-semibold text-amber-800">Valuation Note</div>
+                    <div className="text-xs text-amber-700 mt-1">
+                      Fair value = GP-reported NAV. Last statement: {a.fundLPDetails.navDate || "---"}
+                    </div>
+                    {a.nextReview && (
+                      <div className="text-xs text-amber-600 mt-2">
+                        Next review: {new Date(a.nextReview).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {a.nextReview && (
-                  <div className="text-xs text-amber-600 mt-2">
-                    Next review: {new Date(a.nextReview).toLocaleDateString()}
-                  </div>
-                )}
               </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="text-sm text-gray-400">No fund LP details available.</div>
+              <div className="text-xs text-gray-300 mt-1">GP name, commitment, and distributions will display here.</div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -350,7 +549,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 </span>
                 <div>
                   <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
-                  <div className="text-[10px] text-gray-500">Due: {t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "—"} · {t.assigneeName}</div>
+                  <div className="text-[10px] text-gray-500">Due: {t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "---"} · {t.assigneeName}</div>
                 </div>
               </div>
               <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
@@ -371,7 +570,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           {a.documents?.length > 0 ? a.documents.map((d: { id: string; name: string; uploadDate: string; category: string }) => (
             <div key={d.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2 hover:bg-gray-100 cursor-pointer">
               <div className="flex items-center gap-3">
-                <span className="text-gray-400">📄</span>
+                <span className="text-gray-400">&#128196;</span>
                 <div>
                   <div className="text-sm">{d.name}</div>
                   <div className="text-[10px] text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</div>
@@ -416,8 +615,8 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* Deal Intelligence Tab */}
-      {tab === "deal intel" && a.deal && (
-        <AssetDealIntelligence deal={a.deal} asset={a} />
+      {tab === "deal intel" && deal && (
+        <AssetDealIntelligence deal={deal} asset={a} />
       )}
 
       {/* Governance Tab */}
@@ -426,7 +625,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
           <h3 className="text-sm font-semibold mb-3">Governance & Rights</h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {[
-              ["Board Seat", a.hasBoardSeat ? "Yes — JK represents" : "None"],
+              ["Board Seat", a.hasBoardSeat ? "Yes -- JK represents" : "None"],
               ["Information Rights", "Quarterly financials + annual audit"],
               ["Review Schedule", a.nextReview ? new Date(a.nextReview).toLocaleDateString() : "Not scheduled"],
               ["Asset Class", ASSET_CLASS_LABELS[a.assetClass] || a.assetClass?.replace(/_/g, " ")],
