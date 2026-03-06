@@ -565,3 +565,33 @@ export const UpdateAIPromptTemplateSchema = z.object({
   isActive: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
 });
+
+// ── Decision Structures ─────────────────────────────
+
+export const CreateDecisionStructureSchema = z.object({
+  firmId: z.string().min(1, "Firm ID is required"),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  quorumRequired: z.number().int().min(1).default(1),
+  approvalThreshold: z.number().int().min(1).default(1),
+});
+
+export const UpdateDecisionStructureSchema = z.object({
+  name: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  quorumRequired: z.number().int().min(1).optional(),
+  approvalThreshold: z.number().int().min(1).optional(),
+});
+
+export const AddDecisionMemberSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  role: z.string().default("VOTER"),
+});
+
+// ── IC Voting ───────────────────────────────────────
+
+export const CastICVoteSchema = z.object({
+  vote: z.enum(["APPROVE", "REJECT", "SEND_BACK"]),
+  conditions: z.string().optional(),
+  userId: z.string().min(1, "User ID is required"),
+});

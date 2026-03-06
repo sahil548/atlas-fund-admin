@@ -37,13 +37,13 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
 | DEAL-01 | Screening stage polish (UX, validation errors shown to user) | High | DONE (02-02): Wizard shows inline red error text per field + toast summary on submit |
-| DEAL-02 | Closing workflow reliable and complete end-to-end | High | DONE (02-03): Custom items, file attachments, warn-on-incomplete, close-anyway override |
-| DEAL-03 | Deal-to-asset auto-creation when deal closes | High | DONE (02-03): Asset created with sourceDealId, auto-redirect to /assets/[id] |
-| DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | DONE (02-03): Multi-entity via junction table, entity creation at any stage, formation status visible |
+| DEAL-02 | Closing workflow reliable and complete end-to-end | High | Closing tab exists but untested with real workflow |
+| DEAL-03 | Deal-to-asset auto-creation when deal closes | High | Close action exists, asset auto-creation not verified |
+| DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | Formation workflow exists but not linked to deal closing |
 | DEAL-05 | Deal edit inline fields save reliably | Medium | DONE (02-02): Double-save prevention (savingRef+justSavedRef), error toast, textarea newline support |
 | DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | DONE (02-04): 4-section dashboard (header, metrics, IC memo, terms) + AI extraction endpoint |
-| DEAL-07 | DD workstreams as interactive PM-style tasks | High | DONE (02-05): PM-style list view with assignee, priority, due date, split-view detail panel with threaded comments and file attachments |
-| DEAL-08 | IC Review with configurable decision-making structures | High | IC tab exists with basic voting — needs settings page for structures, in-app voting, Send Back flow |
+| DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
+| DEAL-08 | IC Review with configurable decision-making structures | High | DONE (02-06): Decision structures CRUD API + settings tab, in-app voting with conditions, Send Back flow |
 | DEAL-09 | Kill/revive deal flow with required reasons | Medium | DONE (02-02): KillDealModal with reason dropdown, reviveDeal() restores to previous stage, dead deal badges on pipeline |
 | DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | Basic conversion rates exist — needs pipeline value by stage, time-in-stage, velocity metrics |
 

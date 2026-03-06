@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-06
+current_plan: 02-07
 status: in-progress
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-03-06T06:40:00Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-03-06T06:41:00Z"
 progress:
   total_phases: 7
   completed_phases: 1
@@ -22,9 +22,9 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
-- **Phase status:** Plans 01-02 + 04-05 complete, 4 plans remaining (03, 06, 07)
-- **Current Plan:** 02-06 (next to execute)
-- **Active plan:** none (ready for 02-06)
+- **Phase status:** Plans 01-04, 06 complete, 2 plans remaining (03, 05, 07)
+- **Current Plan:** 02-07 (next to execute)
+- **Active plan:** none (ready for 02-07)
 
 ## Performance Metrics
 - Plans completed: 7
@@ -34,7 +34,7 @@ progress:
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 02    | 02   | 5min     | 3     | 8     |
-| 02    | 05   | 6min     | 2     | 6     |
+| 02    | 06   | 8min     | 2     | 9     |
 
 ## Accumulated Context
 
@@ -104,10 +104,9 @@ progress:
 - **2026-03-06 (02-02):** InlineEditField keeps edit mode open on save failure — prevents losing typed input on API errors
 - **2026-03-06 (02-02):** Textarea Enter inserts newline, Ctrl+Enter or blur saves — natural text editing behavior
 - **2026-03-06 (02-02):** Revive deal falls back to SCREENING if no previousStage — handles edge case of pre-existing dead deals
-- **2026-03-06 (02-05):** Split-view layout for workstream detail (50/50 split) instead of slide-over modal — keeps workstream list visible for context
-- **2026-03-06 (02-05):** Workstream PATCH uses dedicated /workstreams/[workstreamId] route instead of bulk PATCH — cleaner separation of individual vs bulk updates
-- **2026-03-06 (02-05):** Re-analyze triggers IC Memo auto-versioning with version number in toast feedback
-- **2026-03-06 (02-05):** Deal GET includes _count for workstream comments/attachments — avoids N+1 in list view
+- **2026-03-06 (02-06):** Separated in-app voting (individual votes) from final IC decision — both endpoints coexist, votes don't auto-advance deal
+- **2026-03-06 (02-06):** Delete protection on decision structures — returns 409 with linked entity names instead of cascading
+- **2026-03-06 (02-06):** SEND_BACK vote auto-triggers sendBackToDueDiligence — APPROVE/REJECT only update counts (final decision via ic-decision endpoint)
 
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
@@ -124,14 +123,15 @@ progress:
 - reviveDeal(): restores deal to previous stage, clears kill metadata
 - Pipeline: closing checklist progress % on Closing cards, kill reason badges on dead deal cards
 
-### Phase 2 DD Workstreams PM-Style (Plan 02-05)
-- DD tab redesigned as PM-style list view with assignee, priority, due date, status columns
-- Split-view detail panel on right with threaded comments and file attachments
-- New API routes: /api/deals/[id]/workstreams/[workstreamId] (GET, PATCH), /comments (GET, POST), /attachments (GET, POST, DELETE)
-- Inline editing: status and priority dropdowns trigger immediate PATCH
-- Re-analyze per-workstream triggers IC Memo auto-versioning
+### Phase 2 Decision Structures & IC Voting (Plan 02-06)
+- Decision structures CRUD API: 3 route files (structures, [id], [id]/members)
+- Settings page "Decision Structures" tab with create/edit/delete, expandable member management
+- In-app voting endpoint: POST /api/deals/[id]/ic/vote with duplicate check, conditions, SEND_BACK trigger
+- sendBackToDueDiligence function in deal-stage-engine: stage change + activity log + ICProcess status
+- Enhanced IC Review tab: voting panel, conditions textarea, structure info banner, vote display with conditions
+- Zod schemas: CreateDecisionStructureSchema, UpdateDecisionStructureSchema, AddDecisionMemberSchema, CastICVoteSchema
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:40:00Z
-- **Stopped at:** Completed 02-05-PLAN.md
+- **Last session:** 2026-03-06T06:41:00Z
+- **Stopped at:** Completed 02-06-PLAN.md

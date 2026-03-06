@@ -297,6 +297,59 @@ export async function reviveDeal(dealId: string) {
 }
 
 /**
+ * Send a deal back to DUE_DILIGENCE from IC_REVIEW.
+ * Used when an IC voter casts a SEND_BACK vote.
+ * Updates the ICProcess status and logs the reason.
+ */
+export async function sendBackToDueDiligence(dealId: string, reason: string) {
+  const deal = await prisma.deal.findUnique({
+    where: { id: dealId },
+    include: { icProcess: true },
+  });
+
+  if (!deal) throw new Error(`Deal ${dealId} not found`);
+  if (deal.stage !== "IC_REVIEW") {
+    throw new Error(`Deal must be in IC_REVIEW to send back (currently ${deal.stage})`);
+  }
+
+  // Update deal stage
+  const updatedDeal = await prisma.deal.update({
+    where: { id: dealId },
+    data: { stage: "DUE_DILIGENCE" },
+  });
+
+  // Update IC process status
+  if (deal.icProcess) {
+    await prisma.iCProcess.update({
+      where: { id: deal.icProcess.id },
+      data: { status: "sent_back" },
+    });
+  }
+
+  // Log activity with reason
+  await prisma.dealActivity.create({
+    data: {
+      dealId,
+      activityType: "DEAL_SENT_BACK",
+      description: `Deal sent back to DUE_DILIGENCE — ${reason}`,
+      metadata: {
+        fromStage: "IC_REVIEW",
+        toStage: "DUE_DILIGENCE",
+        reason,
+      },
+    },
+  });
+
+  // Non-blocking notification
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} sent back to Due Diligence`,
+  }).catch(() => {});
+
+  return updatedDeal;
+}
+
+/**
  * Close a deal — CLOSING -> CLOSED
  * Validates all closing checklist items are COMPLETE, then transitions.
  * Also creates an Asset record from the deal data.
