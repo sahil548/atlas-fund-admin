@@ -41,7 +41,7 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | DEAL-03 | Deal-to-asset auto-creation when deal closes | High | Close action exists, asset auto-creation not verified |
 | DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | Formation workflow exists but not linked to deal closing |
 | DEAL-05 | Deal edit inline fields save reliably | Medium | InlineEditField component exists, edge cases untested |
-| DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | Overview tab exists but is a flat form — needs 4-section dashboard redesign with AI metadata extraction |
+| DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | DONE (02-04): 4-section dashboard (header, metrics, IC memo summary, deal terms), AI extraction endpoint, asset-class-specific fields |
 | DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
 | DEAL-08 | IC Review with configurable decision-making structures | High | IC tab exists with basic voting — needs settings page for structures, in-app voting, Send Back flow |
 | DEAL-09 | Kill/revive deal flow with required reasons | Medium | killDeal() exists but no reason required, no revive, no dead deals view |

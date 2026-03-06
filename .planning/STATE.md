@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-02
+current_plan: 02-05
 status: in-progress
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-06T06:15:30Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-03-06T06:24:09Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Atlas — GSD State
@@ -22,14 +22,18 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
-- **Phase status:** Plan 01 complete, 6 plans remaining
-- **Current Plan:** 02-02 (next to execute)
-- **Active plan:** none (ready for 02-02)
+- **Phase status:** Plans 01, 04 complete; 5 plans remaining
+- **Current Plan:** 02-05 (next to execute)
+- **Active plan:** none (ready for 02-05)
 
 ## Performance Metrics
-- Plans completed: 4
+- Plans completed: 5
 - Plans total: 10 (3 Phase 1 + 7 Phase 2)
 - Phases completed: 1
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 02    | 04   | 5min     | 2     | 4     |
 
 ## Accumulated Context
 
@@ -95,6 +99,10 @@ progress:
 - **2026-03-06 (02-01):** Expanded KillDealSchema to require killReason (was just action: KILL) — schema was unused, safe expansion
 - **2026-03-06 (02-01):** Replaced DD-focused closing templates with transactional mechanics — DD belongs in workstreams, not closing checklist
 
+- **2026-03-06 (02-04):** Metadata fields use MetadataField component (not InlineEditField) — saves to JSON blob, not individual columns
+- **2026-03-06 (02-04):** Debt instruments always use debt-specific fields regardless of asset class
+- **2026-03-06 (02-04):** 30k char limit on document text sent to AI for metadata extraction — avoids token limits
+
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
 - 5 new models: DealEntity, DDWorkstreamComment, DDWorkstreamAttachment, DecisionStructure, DecisionMember
@@ -103,7 +111,17 @@ progress:
 - Updated Zod schemas: AddDealEntitySchema, KillDealSchema (with killReason), AddCustomClosingItemSchema
 - Transactional closing templates (8 items focused on execution mechanics)
 
+### Phase 2 Deal Overview Dashboard (Plan 02-04)
+- Deal overview tab redesigned as 4-section dashboard (post-screening stage)
+- Header card: deal name, AI score badge, stage/asset/instrument badges, deal lead
+- Key metrics row: target return, check size, deal size, projected cash flow
+- IC Memo summary: truncated excerpt (300 chars) with version selector
+- Deal Terms: asset-class-specific fields (RE, Infra, OpBiz, PublicSec, Debt)
+- AI metadata extraction: POST /api/deals/[id]/extract-metadata
+- dealMetadata field editable via inline MetadataField component
+- Screening stage layout unchanged (CTA + review details)
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:15:30Z
-- **Stopped at:** Completed 02-01-PLAN.md
+- **Last session:** 2026-03-06T06:24:09Z
+- **Stopped at:** Completed 02-04-PLAN.md
