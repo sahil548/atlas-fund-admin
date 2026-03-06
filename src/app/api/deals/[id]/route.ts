@@ -13,7 +13,11 @@ export async function GET(
     where: { id },
     include: {
       workstreams: {
-        include: { tasks: { orderBy: { createdAt: "asc" } } },
+        include: {
+          tasks: { orderBy: { createdAt: "asc" } },
+          assignee: { select: { id: true, name: true, initials: true } },
+          _count: { select: { comments: true, attachments: true } },
+        },
         orderBy: { name: "asc" },
       },
       screeningResult: true,
