@@ -41,7 +41,34 @@ export async function GET(
       notes: { orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" } },
       dealLead: { select: { id: true, name: true, initials: true } },
-      targetEntity: { select: { id: true, name: true, entityType: true, vehicleStructure: true, status: true } },
+      targetEntity: {
+        select: {
+          id: true, name: true, entityType: true, vehicleStructure: true, status: true,
+          decisionStructure: {
+            include: {
+              members: {
+                include: { user: { select: { id: true, name: true, initials: true } } },
+              },
+            },
+          },
+        },
+      },
+      dealEntities: {
+        include: {
+          entity: {
+            select: {
+              id: true, name: true,
+              decisionStructure: {
+                include: {
+                  members: {
+                    include: { user: { select: { id: true, name: true, initials: true } } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   });
   if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });

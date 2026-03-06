@@ -17,14 +17,34 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
   const toast = useToast();
   const { userId, isLoading: userLoading } = useUser();
   const [icDecisionLoading, setIcDecisionLoading] = useState(false);
+  const [votingLoading, setVotingLoading] = useState(false);
+  const [showConditions, setShowConditions] = useState(false);
+  const [conditionsText, setConditionsText] = useState("");
   const [newQuestionText, setNewQuestionText] = useState("");
   const [postingQuestion, setPostingQuestion] = useState(false);
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
   const [postingReply, setPostingReply] = useState<Record<string, boolean>>({});
 
+  // Get the decision structure from deal's entity
+  const decisionStructure =
+    deal.targetEntity?.decisionStructure ||
+    deal.dealEntities?.[0]?.entity?.decisionStructure ||
+    null;
+
+  // Check if current user has already voted
+  const userHasVoted = deal.icProcess?.votes?.some(
+    (v: any) => v.userId === userId,
+  );
+
+  // Vote counts
+  const votes = deal.icProcess?.votes || [];
+  const approveCount = votes.filter((v: any) => v.vote === "APPROVE").length;
+  const rejectCount = votes.filter((v: any) => v.vote === "REJECT").length;
+  const sendBackCount = votes.filter((v: any) => v.vote === "SEND_BACK").length;
+
   async function handleICDecision(decision: string) {
     if (!userId) {
-      toast.error("User not loaded — please try again");
+      toast.error("User not loaded -- please try again");
       return;
     }
     setIcDecisionLoading(true);
@@ -41,7 +61,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
         return;
       }
       toast.success(
-        `IC decision: ${decision.replace(/_/g, " ")} — deal ${
+        `IC decision: ${decision.replace(/_/g, " ")} -- deal ${
           decision === "APPROVED"
             ? "moves to Closing"
             : decision === "REJECTED"
@@ -54,6 +74,43 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
       toast.error("Failed to record IC decision");
     } finally {
       setIcDecisionLoading(false);
+    }
+  }
+
+  async function handleVote(vote: "APPROVE" | "REJECT" | "SEND_BACK") {
+    if (!userId) {
+      toast.error("User not loaded -- please try again");
+      return;
+    }
+    setVotingLoading(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/ic/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vote,
+          conditions: conditionsText.trim() || undefined,
+          userId,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to cast vote";
+        toast.error(msg);
+        return;
+      }
+      toast.success(
+        `Vote cast: ${vote.replace(/_/g, " ")}${
+          conditionsText.trim() ? " (with conditions)" : ""
+        }`
+      );
+      setConditionsText("");
+      setShowConditions(false);
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Failed to cast vote");
+    } finally {
+      setVotingLoading(false);
     }
   }
 
@@ -115,10 +172,41 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
 
   return (
     <div className="space-y-4">
-      {/* ── IC Decision & Voting ── */}
+      {/* Decision Structure Info */}
+      {decisionStructure && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold text-indigo-800">
+                Decision Structure: {decisionStructure.name}
+              </div>
+              <div className="text-[11px] text-indigo-600 mt-0.5">
+                {decisionStructure.quorumRequired} of{" "}
+                {decisionStructure.members?.filter(
+                  (m: any) => m.role === "VOTER" || !m.role,
+                ).length || 0}{" "}
+                votes required | {decisionStructure.approvalThreshold} approval
+                {decisionStructure.approvalThreshold > 1 ? "s" : ""} needed
+              </div>
+            </div>
+            {deal.icProcess && (
+              <div className="text-right">
+                <div className="text-xs text-indigo-700 font-medium">
+                  {votes.length} vote{votes.length !== 1 ? "s" : ""} cast
+                </div>
+                <div className="text-[10px] text-indigo-500">
+                  {approveCount} approve | {rejectCount} reject | {sendBackCount} send back
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* IC Decision & Voting */}
       {deal.icProcess ? (
         <div className="space-y-4">
-          {/* Decision panel */}
+          {/* Final Decision panel */}
           {deal.icProcess.finalDecision ? (
             <div
               className={`p-4 rounded-xl border ${
@@ -150,31 +238,109 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
               )}
             </div>
           ) : deal.stage === "IC_REVIEW" ? (
-            <div className="flex gap-2">
-              <Button
-                loading={icDecisionLoading}
-                disabled={userLoading || !userId}
-                onClick={() => handleICDecision("APPROVED")}
-                className="bg-emerald-600 hover:bg-emerald-700"
-              >
-                Approve
-              </Button>
-              <Button
-                variant="danger"
-                loading={icDecisionLoading}
-                disabled={userLoading || !userId}
-                onClick={() => handleICDecision("REJECTED")}
-              >
-                Reject
-              </Button>
-              <Button
-                variant="secondary"
-                loading={icDecisionLoading}
-                disabled={userLoading || !userId}
-                onClick={() => handleICDecision("SEND_BACK")}
-              >
-                Send Back to DD
-              </Button>
+            <div className="space-y-3">
+              {/* In-app Voting Panel — visible if user hasn't voted */}
+              {!userHasVoted && !userLoading && userId ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                  <div className="text-xs font-semibold text-gray-700 mb-3">Cast Your Vote</div>
+                  <div className="flex gap-2 mb-3">
+                    <Button
+                      loading={votingLoading}
+                      disabled={userLoading || !userId}
+                      onClick={() => handleVote("APPROVE")}
+                      className="bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="danger"
+                      loading={votingLoading}
+                      disabled={userLoading || !userId}
+                      onClick={() => handleVote("REJECT")}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      loading={votingLoading}
+                      disabled={userLoading || !userId}
+                      onClick={() => handleVote("SEND_BACK")}
+                    >
+                      Send Back to DD
+                    </Button>
+                  </div>
+
+                  {/* Conditions toggle */}
+                  {!showConditions ? (
+                    <button
+                      className="text-xs text-indigo-600 hover:underline"
+                      onClick={() => setShowConditions(true)}
+                    >
+                      + Add conditions
+                    </button>
+                  ) : (
+                    <div className="space-y-2">
+                      <label className="block text-xs font-medium text-gray-600">
+                        Conditions (optional)
+                      </label>
+                      <textarea
+                        className="w-full border border-gray-200 rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        rows={2}
+                        placeholder="e.g., Contingent on side letter review"
+                        value={conditionsText}
+                        onChange={(e) => setConditionsText(e.target.value)}
+                      />
+                      <button
+                        className="text-xs text-gray-500 hover:underline"
+                        onClick={() => {
+                          setShowConditions(false);
+                          setConditionsText("");
+                        }}
+                      >
+                        Cancel conditions
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : userHasVoted ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+                  You have already voted on this deal.
+                </div>
+              ) : null}
+
+              {/* Final Decision buttons (for deal lead / admin) */}
+              <div className="border border-gray-200 rounded-xl p-4">
+                <div className="text-xs font-semibold text-gray-700 mb-2">Final IC Decision</div>
+                <p className="text-[11px] text-gray-500 mb-3">
+                  Record the final decision to advance the deal. This moves the deal to the next stage.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    loading={icDecisionLoading}
+                    disabled={userLoading || !userId}
+                    onClick={() => handleICDecision("APPROVED")}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Approve (Final)
+                  </Button>
+                  <Button
+                    variant="danger"
+                    loading={icDecisionLoading}
+                    disabled={userLoading || !userId}
+                    onClick={() => handleICDecision("REJECTED")}
+                  >
+                    Reject (Final)
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    loading={icDecisionLoading}
+                    disabled={userLoading || !userId}
+                    onClick={() => handleICDecision("SEND_BACK")}
+                  >
+                    Send Back (Final)
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : null}
 
@@ -201,43 +367,48 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
           )}
 
           {/* Vote records */}
-          {deal.icProcess.votes && deal.icProcess.votes.length > 0 && (
+          {votes.length > 0 && (
             <div>
               <div className="text-xs font-semibold text-gray-700 mb-2">
-                Vote Records ({deal.icProcess.votes.length})
+                Vote Records ({votes.length})
               </div>
-              <table className="w-full text-xs">
-                <thead className="bg-gray-50">
-                  <tr>
-                    {["Member", "Vote", "Voted At", "Notes"].map((h) => (
-                      <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(deal.icProcess.votes as any[]).map((v: any) => (
-                    <tr key={v.id} className="border-t border-gray-50">
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center">
-                            {v.user?.initials || v.user?.name?.charAt(0) || "?"}
-                          </span>
-                          <span className="font-medium">{v.user?.name || "Unknown"}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <Badge color={v.vote === "APPROVE" ? "green" : v.vote === "REJECT" ? "red" : "yellow"}>
-                          {v.vote}
+              <div className="space-y-2">
+                {votes.map((v: any) => (
+                  <div
+                    key={v.id}
+                    className="flex items-start gap-3 p-3 bg-white border border-gray-100 rounded-lg"
+                  >
+                    <span className="w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {v.user?.initials || v.user?.name?.charAt(0) || "?"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium">{v.user?.name || "Unknown"}</span>
+                        <Badge
+                          color={
+                            v.vote === "APPROVE"
+                              ? "green"
+                              : v.vote === "REJECT"
+                              ? "red"
+                              : "yellow"
+                          }
+                        >
+                          {v.vote.replace(/_/g, " ")}
                         </Badge>
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-500">
-                        {new Date(v.votedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-3 py-2.5 text-gray-500">{v.notes || "---"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(v.votedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {(v.conditions || v.notes) && (
+                        <div className="mt-1 text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
+                          <span className="font-medium text-gray-600">Conditions: </span>
+                          {v.conditions || v.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -247,7 +418,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
         </div>
       )}
 
-      {/* ── IC Questions ── */}
+      {/* IC Questions */}
       <div className="border-t border-gray-200 pt-4">
         <h4 className="text-sm font-semibold mb-3">
           Questions ({(deal.icQuestions || []).length})
