@@ -315,6 +315,7 @@ model Firm {
   contacts   Contact[]
   aiConfiguration AIConfiguration?
   aiPromptTemplates AIPromptTemplate[]
+  decisionStructures DecisionStructure[]
 }
 
 model AIConfiguration {
@@ -411,6 +412,9 @@ model Entity {
   esignaturePackages   ESignaturePackage[]
   fundraisingRounds    FundraisingRound[]
   formationStatus      FormationStatus    @default(FORMED)
+  dealEntities         DealEntity[]
+  decisionStructureId  String?
+  decisionStructure    DecisionStructure? @relation("EntityDecisionStructure", fields: [decisionStructureId], references: [id])
 }
 
 model AccountingConnection {
@@ -476,6 +480,9 @@ model User {
   dealsLead          Deal[]            @relation("DealLead")
   closingAssignments ClosingChecklist[] @relation("ClosingAssignments")
   notifications      Notification[]    @relation("UserNotifications")
+  assignedWorkstreams DDWorkstream[]   @relation("WorkstreamAssignee")
+  workstreamComments  DDWorkstreamComment[] @relation("WorkstreamCommentAuthor")
+  decisionMemberships DecisionMember[]
 }
 
 // ============================================================
@@ -497,11 +504,13 @@ model Asset {
   incomeType  String?
   hasBoardSeat Boolean    @default(false)
   entryDate   DateTime?
+  sourceDealId String?    // Links back to the originating deal
   nextReview  DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  sourceDeal         Deal?                 @relation("AssetSourceDeal", fields: [sourceDealId], references: [id])
   entityAllocations  AssetEntityAllocation[]
   equityDetails      AssetEquityDetails?
   creditDetails      AssetCreditDetails?
@@ -1016,6 +1025,13 @@ model Deal {
   gpName              String?
   investmentRationale String?
   additionalContext   String?
+
+  // Kill/Revive fields
+  killReason     String?      // Pricing, Risk, Timing, Sponsor, Other
+  killReasonText String?      // Free text explanation
+  previousStage  DealStage?   // Stage before kill (for revive)
+  dealMetadata   Json?        // AI-extracted structured data (size, target return, terms, structure)
+
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -1033,6 +1049,8 @@ model Deal {
   esignaturePackages ESignaturePackage[]
   activities         DealActivity[]
   tasks              Task[]
+  dealEntities       DealEntity[]
+  sourceAssets       Asset[]        @relation("AssetSourceDeal")
 
   @@index([stage])
   @@index([firmId])
@@ -1065,6 +1083,7 @@ model ICVoteRecord {
   vote        String
   votedAt     DateTime @default(now())
   notes       String?
+  conditions  String?  // Text note for conditional votes (e.g., "contingent on side letter review")
 
   icProcess ICProcess @relation(fields: [icProcessId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
@@ -1084,11 +1103,20 @@ model DDWorkstream {
   sortOrder          Int                @default(0)
   analysisType       String?            // e.g. "DD_FINANCIAL", "DD_LEGAL", "IC_MEMO"
   analysisResult     Json?              // Full AI analysis output (summary, sections, recommendation)
+
+  // PM enhancements
+  assigneeId         String?
+  priority           String?            @default("MEDIUM") // High/Medium/Low
+  dueDate            DateTime?
+
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  deal  Deal     @relation(fields: [dealId], references: [id])
-  tasks DDTask[]
+  deal        Deal                    @relation(fields: [dealId], references: [id])
+  tasks       DDTask[]
+  assignee    User?                   @relation("WorkstreamAssignee", fields: [assigneeId], references: [id])
+  comments    DDWorkstreamComment[]
+  attachments DDWorkstreamAttachment[]
 }
 
 model DDTask {
@@ -1171,6 +1199,9 @@ model ClosingChecklist {
   dueDate    DateTime?
   notes      String?
   order      Int                   @default(0)
+  fileUrl    String?               // Vercel Blob URL for attached file
+  fileName   String?               // Display name of attached file
+  isCustom   Boolean               @default(false) // Distinguishes template vs custom items
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @updatedAt
 
@@ -1189,6 +1220,83 @@ model DealActivity {
   deal Deal @relation(fields: [dealId], references: [id])
 
   @@index([dealId])
+}
+
+model DealEntity {
+  id                String   @id @default(cuid())
+  dealId            String
+  entityId          String
+  allocationPercent Float?
+  role              String?  // "Lead Entity", "Co-Investor"
+  createdAt         DateTime @default(now())
+
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  entity Entity @relation(fields: [entityId], references: [id])
+
+  @@unique([dealId, entityId])
+  @@index([dealId])
+  @@index([entityId])
+}
+
+model DDWorkstreamComment {
+  id           String   @id @default(cuid())
+  workstreamId String
+  authorId     String
+  content      String
+  parentId     String?  // for threading
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workstream DDWorkstream        @relation(fields: [workstreamId], references: [id], onDelete: Cascade)
+  author     User                @relation("WorkstreamCommentAuthor", fields: [authorId], references: [id])
+  parent     DDWorkstreamComment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies    DDWorkstreamComment[] @relation("CommentThread")
+
+  @@index([workstreamId])
+}
+
+model DDWorkstreamAttachment {
+  id           String   @id @default(cuid())
+  workstreamId String
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  workstream DDWorkstream @relation(fields: [workstreamId], references: [id], onDelete: Cascade)
+
+  @@index([workstreamId])
+}
+
+model DecisionStructure {
+  id                String   @id @default(cuid())
+  firmId            String
+  name              String
+  description       String?
+  quorumRequired    Int      @default(1)
+  approvalThreshold Int      @default(1)  // votes needed for approval
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  firm     Firm               @relation(fields: [firmId], references: [id])
+  members  DecisionMember[]
+  entities Entity[]           @relation("EntityDecisionStructure")
+
+  @@index([firmId])
+}
+
+model DecisionMember {
+  id          String   @id @default(cuid())
+  structureId String
+  userId      String
+  role        String?  @default("VOTER")  // VOTER, OBSERVER
+  createdAt   DateTime @default(now())
+
+  structure DecisionStructure @relation(fields: [structureId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id])
+
+  @@unique([structureId, userId])
 }
 
 model DDCategoryTemplate {
