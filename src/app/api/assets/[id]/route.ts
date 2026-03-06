@@ -11,6 +11,38 @@ export async function GET(
   const asset = await prisma.asset.findUnique({
     where: { id },
     include: {
+      sourceDeal: {
+        select: {
+          id: true,
+          name: true,
+          assetClass: true,
+          stage: true,
+          targetSize: true,
+          targetReturn: true,
+          counterparty: true,
+          dealMetadata: true,
+          dealLeadId: true,
+          dealLead: { select: { id: true, name: true, initials: true } },
+          screeningResult: {
+            select: {
+              score: true,
+              summary: true,
+              strengths: true,
+              risks: true,
+              recommendation: true,
+              memo: true,
+              memoGeneratedAt: true,
+              ddFindings: true,
+            },
+          },
+          workstreams: {
+            include: {
+              tasks: true,
+            },
+          },
+          icProcess: { include: { votes: true } },
+        },
+      },
       entityAllocations: { include: { entity: true } },
       equityDetails: true,
       creditDetails: true,
