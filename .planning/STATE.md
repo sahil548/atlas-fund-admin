@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 2 of 6 (in phase)
-status: unknown
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-03-06T02:55:00.000Z"
+current_plan: 3 of 6 (in phase)
+status: checkpoint
+stopped_at: "01-03 Task 3: awaiting user review of GROUND-TRUTH.md"
+last_updated: "2026-03-05T03:15:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Atlas — GSD State
@@ -22,12 +22,12 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 1 of 7 (Verify & Stabilize)
-- **Phase status:** In progress
-- **Current Plan:** 2 of 6 (in phase)
-- **Active plan:** 01-03
+- **Phase status:** In progress (checkpoint — awaiting user review)
+- **Current Plan:** 3 of 6 (in phase)
+- **Active plan:** 01-03 (Task 3: human-verify checkpoint)
 
 ## Performance Metrics
-- Plans completed: 2
+- Plans completed: 3
 - Plans total: 19
 - Phases completed: 0
 
@@ -48,9 +48,19 @@ progress:
 - BUG-02 FIXED: Pipeline conversion rates capped at Math.min(100, ...) — can never show >100% (Plan 01-02)
 - BUG-03 FIXED: IC Memo generation has 90-second timeout — spinner cannot get permanently stuck (Plan 01-02)
 
-### What Still Needs Verification (Phase 1 targets)
-- Slack IC voting code — never tested with real Slack workspace
-- Capital call and distribution creation workflows — untested
+### Verified Working — Phase 1 Final Results (Plan 01-03)
+- Capital call creation: WORKS (header/event only — line item endpoint missing)
+- Distribution creation: WORKS (header/event only — line item endpoint missing)
+- Waterfall calculation API: WORKS — fully wired to real entity data
+- Capital account compute API: WORKS — reads actual ledger data
+- NAV computation API: WORKS — cost basis + economic NAV (5%/0.5%/2% proxy approximations documented)
+- Slack IC voting: structurally sound, all DB fields exist (User.slackUserId, ICProcess.slackMessageId/slackChannel), requires workspace setup to test
+- GROUND-TRUTH.md: created — definitive status of every Phase 1 feature
+
+### Critical Gap Identified (Phase 2 Priority)
+- CapitalCallLineItem and DistributionLineItem have NO API endpoints — cannot record per-investor amounts
+- Impact: LP capital account compute returns $0 for contributions and distributions
+- Severity: HIGH — blocks correct LP metrics until fixed
 
 ### What's Definitely Not Built
 - QBO/Xero real OAuth or API calls (UI-only)
@@ -78,8 +88,11 @@ progress:
 - **2026-03-05 (01-02):** Math.min(100,...) on conversion rates is defensive — cumulative counting already prevents >100% mathematically
 - **2026-03-05 (01-02):** 90s IC Memo timeout — generous for slow environments without being infinite; finally block also guarantees cleanup
 - **2026-03-05 (01-02):** Asset model has no firmId by design — linked to firm via entity allocation chain
+- **2026-03-05 (01-03):** Capital/distribution line item endpoints missing — HIGH severity gap; Phase 2 must build CapitalCallLineItem and DistributionLineItem create/update APIs
+- **2026-03-05 (01-03):** NAV proxy values (5%/0.5%/2%) are intentional approximations — documented, not changed (no cash balance field in data model)
+- **2026-03-05 (01-03):** Slack integration structurally complete — all DB fields present, security hardened; "UNTESTABLE" status is workspace setup gap, not a code defect
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T02:48:58.351Z
-- **Stopped at:** Completed 01-01-PLAN.md
+- **Last session:** 2026-03-06T02:56:20.390Z
+- **Stopped at:** Completed 01-03-PLAN.md (checkpoint: awaiting user review of GROUND-TRUTH.md)

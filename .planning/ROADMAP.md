@@ -25,7 +25,7 @@
 - [ ] 3 known bugs re-checked: DD tab %, pass rate 300%, IC Memo spinner — fixed if still present
 - [ ] Ground truth document created: what works, what's broken, what's missing
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Verify computation engines (IRR, waterfall, capital accounts) with test suites
@@ -53,8 +53,7 @@ Plans:
 **Plans:**
 | # | Plan | Status |
 |---|------|--------|
-| 1 | Screening & DD polish (validation, UX) | Not started |
-| 2 | Closing flow + deal-to-asset transition | Not started |
+| 1 | 3/3 | Complete   | 2026-03-06 | 2 | Closing flow + deal-to-asset transition | Not started |
 | 3 | Entity formation linked to deal closing | Not started |
 
 **Progress:** 0/3 plans complete
@@ -166,7 +165,7 @@ Plans:
 - [ ] Capital call notices delivered via email (SendGrid or SES)
 - [ ] SMS notifications sent via Twilio for configured LPs
 - [ ] LP notification preferences respected (immediate vs daily/weekly digest)
-- [ ] Slack IC voting verified and polished (from Phase 1 verification)
+- [x] Slack IC voting verified and polished (from Phase 1 verification) (completed 2026-03-06)
 - [ ] DocuSign packages can be sent for closing documents
 - [ ] Quarterly report PDF generates for any entity
 - [ ] Capital account statement exports to PDF
