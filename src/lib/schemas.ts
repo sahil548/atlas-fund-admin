@@ -240,6 +240,7 @@ export const CreateClosingChecklistItemSchema = z.object({
 
 export const UpdateClosingChecklistItemSchema = z.object({
   id: z.string().min(1),
+  action: z.string().optional(),
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETE"]).optional(),
   assigneeId: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),

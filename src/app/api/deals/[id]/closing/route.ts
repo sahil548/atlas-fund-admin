@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateClosingChecklistItemSchema } from "@/lib/schemas";
 import { CLOSING_CHECKLIST_TEMPLATES } from "@/lib/closing-templates";
+import { put } from "@vercel/blob";
+
+const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(
   _req: Request,
@@ -49,7 +52,37 @@ export async function POST(
     return NextResponse.json(items, { status: 201 });
   }
 
-  // Single item creation
+  // Add custom checklist item
+  if (body.action === "ADD_CUSTOM") {
+    if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
+      return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    }
+
+    // Get max existing order
+    const maxOrderItem = await prisma.closingChecklist.findFirst({
+      where: { dealId: id },
+      orderBy: { order: "desc" },
+      select: { order: true },
+    });
+    const nextOrder = (maxOrderItem?.order ?? 0) + 1;
+
+    const item = await prisma.closingChecklist.create({
+      data: {
+        dealId: id,
+        title: body.title.trim(),
+        status: "NOT_STARTED",
+        order: nextOrder,
+        isCustom: true,
+      },
+      include: {
+        assignedTo: { select: { id: true, name: true, initials: true } },
+      },
+    });
+
+    return NextResponse.json(item, { status: 201 });
+  }
+
+  // Single item creation (legacy)
   const item = await prisma.closingChecklist.create({
     data: {
       dealId: id,
@@ -63,9 +96,97 @@ export async function POST(
   return NextResponse.json(item, { status: 201 });
 }
 
-export async function PATCH(req: Request) {
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  // Check content type to determine if this is a file upload (FormData) or JSON update
+  const contentType = req.headers.get("content-type") || "";
+
+  // Handle file attachment via FormData
+  if (contentType.includes("multipart/form-data")) {
+    try {
+      const formData = await req.formData();
+      const action = formData.get("action") as string;
+      const itemId = formData.get("id") as string;
+
+      if (!itemId) {
+        return NextResponse.json({ error: "Item ID is required" }, { status: 400 });
+      }
+
+      // Verify item belongs to this deal
+      const existingItem = await prisma.closingChecklist.findFirst({
+        where: { id: itemId, dealId: id },
+      });
+      if (!existingItem) {
+        return NextResponse.json({ error: "Checklist item not found" }, { status: 404 });
+      }
+
+      if (action === "ATTACH_FILE") {
+        const file = formData.get("file") as File | null;
+        if (!file || file.size === 0) {
+          return NextResponse.json({ error: "File is required" }, { status: 400 });
+        }
+
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        const safeFileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+        const mimeType = file.type || "application/octet-stream";
+
+        let fileUrl: string;
+        if (USE_BLOB) {
+          const blob = await put(`closing-attachments/${safeFileName}`, buffer, {
+            access: "private",
+            contentType: mimeType,
+          });
+          fileUrl = `/api/documents/serve?url=${encodeURIComponent(blob.url)}`;
+        } else {
+          // Local dev: store in data/uploads and serve via download route
+          const fs = await import("fs/promises");
+          const path = await import("path");
+          const uploadDir = path.join(process.cwd(), "data", "uploads");
+          await fs.mkdir(uploadDir, { recursive: true });
+          const filePath = path.join(uploadDir, safeFileName);
+          await fs.writeFile(filePath, buffer);
+          fileUrl = `/api/documents/download/${safeFileName}`;
+        }
+
+        const updated = await prisma.closingChecklist.update({
+          where: { id: itemId },
+          data: { fileUrl, fileName: file.name },
+          include: {
+            assignedTo: { select: { id: true, name: true, initials: true } },
+          },
+        });
+
+        return NextResponse.json(updated);
+      }
+
+      return NextResponse.json({ error: "Unknown action" }, { status: 400 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "File upload failed";
+      console.error("[closing PATCH] File upload error:", message);
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
+  }
+
+  // Handle JSON body (standard updates + REMOVE_FILE)
   const { data, error } = await parseBody(req, UpdateClosingChecklistItemSchema);
   if (error) return error;
+
+  // Handle REMOVE_FILE action
+  if (data!.action === "REMOVE_FILE") {
+    const item = await prisma.closingChecklist.update({
+      where: { id: data!.id },
+      data: { fileUrl: null, fileName: null },
+      include: {
+        assignedTo: { select: { id: true, name: true, initials: true } },
+      },
+    });
+    return NextResponse.json(item);
+  }
 
   const updateData: Record<string, unknown> = {};
   if (data!.status !== undefined) updateData.status = data!.status;

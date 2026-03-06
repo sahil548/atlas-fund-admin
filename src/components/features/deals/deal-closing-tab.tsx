@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,14 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
   const [initializing, setInitializing] = useState(false);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
+  // Custom item state
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [newItemTitle, setNewItemTitle] = useState("");
+  const [addingItem, setAddingItem] = useState(false);
+
+  // File upload refs
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const items: any[] = checklistItems || [];
   const completedCount = items.filter((i: any) => i.status === "COMPLETE").length;
   const totalCount = items.length;
@@ -87,6 +95,70 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
       mutate(`/api/deals/${deal.id}/closing`);
     } catch {
       toast.error("Failed to update item");
+    }
+  }
+
+  async function handleAddCustomItem() {
+    if (!newItemTitle.trim()) return;
+    setAddingItem(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/closing`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ADD_CUSTOM", title: newItemTitle.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to add item";
+        toast.error(msg);
+        return;
+      }
+      toast.success("Custom item added");
+      setNewItemTitle("");
+      setShowAddItem(false);
+      mutate(`/api/deals/${deal.id}/closing`);
+    } catch {
+      toast.error("Failed to add custom item");
+    } finally {
+      setAddingItem(false);
+    }
+  }
+
+  async function handleFileUpload(itemId: string, file: File) {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("id", itemId);
+      formData.append("action", "ATTACH_FILE");
+
+      const res = await fetch(`/api/deals/${deal.id}/closing`, {
+        method: "PATCH",
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to attach file";
+        toast.error(msg);
+        return;
+      }
+      toast.success("File attached");
+      mutate(`/api/deals/${deal.id}/closing`);
+    } catch {
+      toast.error("Failed to upload file");
+    }
+  }
+
+  async function handleRemoveFile(itemId: string) {
+    try {
+      await fetch(`/api/deals/${deal.id}/closing`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: itemId, action: "REMOVE_FILE" }),
+      });
+      toast.success("File removed");
+      mutate(`/api/deals/${deal.id}/closing`);
+    } catch {
+      toast.error("Failed to remove file");
     }
   }
 
@@ -169,7 +241,20 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
                   {/* Title */}
                   <span className={`flex-1 text-sm ${item.status === "COMPLETE" ? "line-through text-gray-400" : "text-gray-700"}`}>
                     {item.title}
+                    {item.isCustom && (
+                      <span className="ml-1.5 text-[9px] bg-purple-50 text-purple-600 px-1 py-0.5 rounded font-medium">Custom</span>
+                    )}
                   </span>
+
+                  {/* File attachment indicator */}
+                  {item.fileUrl && (
+                    <span className="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded flex items-center gap-1">
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      File
+                    </span>
+                  )}
 
                   {/* Assignee badge */}
                   {item.assignedTo && (
@@ -190,7 +275,7 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
                     {STATUS_LABELS[item.status] || item.status}
                   </Badge>
 
-                  <span className="text-gray-400 text-xs">{expandedItem === item.id ? "▲" : "▼"}</span>
+                  <span className="text-gray-400 text-xs">{expandedItem === item.id ? "\u25B2" : "\u25BC"}</span>
                 </div>
 
                 {/* Expanded Section */}
@@ -242,10 +327,108 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
                         className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
                       />
                     </div>
+
+                    {/* File Attachment Section */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-gray-500 uppercase block mb-1">Attachment</label>
+                      {item.fileUrl ? (
+                        <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
+                          <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                          </svg>
+                          <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-700 hover:underline font-medium flex-1 truncate"
+                          >
+                            {item.fileName || "Attached file"}
+                          </a>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleRemoveFile(item.id); }}
+                            className="text-xs text-red-500 hover:text-red-700 font-medium flex-shrink-0"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <input
+                            ref={(el) => { fileInputRefs.current[item.id] = el; }}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                handleFileUpload(item.id, file);
+                                e.target.value = "";
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              fileInputRefs.current[item.id]?.click();
+                            }}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            Attach file
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Add Custom Item */}
+          <div className="pt-1">
+            {showAddItem ? (
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                <input
+                  type="text"
+                  value={newItemTitle}
+                  onChange={(e) => setNewItemTitle(e.target.value)}
+                  placeholder="Custom checklist item title..."
+                  className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newItemTitle.trim()) handleAddCustomItem();
+                    if (e.key === "Escape") { setShowAddItem(false); setNewItemTitle(""); }
+                  }}
+                  autoFocus
+                />
+                <Button
+                  size="sm"
+                  onClick={handleAddCustomItem}
+                  disabled={!newItemTitle.trim() || addingItem}
+                  loading={addingItem}
+                >
+                  Add
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => { setShowAddItem(false); setNewItemTitle(""); }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddItem(true)}
+                className="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Item
+              </button>
+            )}
           </div>
 
           {/* Close Deal Button */}
