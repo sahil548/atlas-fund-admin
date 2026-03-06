@@ -65,7 +65,12 @@ export default function DealsPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900">Pipeline Analytics</h3>
-            <span className="text-[10px] text-gray-400">{deals.length} total deals</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-gray-400">{deals.length} total deals</span>
+              <Link href="/analytics" className="text-xs text-indigo-600 hover:underline font-medium">
+                View Full Analytics &rarr;
+              </Link>
+            </div>
           </div>
 
           {/* Top-level stats */}
