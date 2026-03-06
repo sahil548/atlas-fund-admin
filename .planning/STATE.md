@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-03
+current_plan: 02-05
 status: in-progress
-stopped_at: Wave 2 complete (02-02 + 02-04)
-last_updated: "2026-03-06T06:30:00Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-03-06T06:41:19Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Atlas — GSD State
@@ -22,18 +22,19 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
-- **Phase status:** Plans 01-02 complete, 5 plans remaining
-- **Current Plan:** 02-03 (next to execute)
-- **Active plan:** none (ready for 02-03)
+- **Phase status:** Plans 01-04 complete, 3 plans remaining
+- **Current Plan:** 02-05 (next to execute)
+- **Active plan:** none (ready for 02-05)
 
 ## Performance Metrics
-- Plans completed: 5
+- Plans completed: 7
 - Plans total: 10 (3 Phase 1 + 7 Phase 2)
 - Phases completed: 1
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 02    | 02   | 5min     | 3     | 8     |
+| 02    | 03   | 9min     | 2     | 8     |
 
 ## Accumulated Context
 
@@ -103,6 +104,10 @@ progress:
 - **2026-03-06 (02-02):** InlineEditField keeps edit mode open on save failure — prevents losing typed input on API errors
 - **2026-03-06 (02-02):** Textarea Enter inserts newline, Ctrl+Enter or blur saves — natural text editing behavior
 - **2026-03-06 (02-02):** Revive deal falls back to SCREENING if no previousStage — handles edge case of pre-existing dead deals
+- **2026-03-06 (02-03):** File attachments on closing items use same Vercel Blob pattern as deal documents (private access + proxy serve)
+- **2026-03-06 (02-03):** PATCH route uses content-type detection to handle both FormData (file upload) and JSON (standard updates)
+- **2026-03-06 (02-03):** CloseDealModal pre-populates from DealEntity junction records first, falls back to legacy initialEntityId
+- **2026-03-06 (02-03):** DealEntitySection always visible at every deal stage (rendered in both screening and post-screening overview sections)
 
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
@@ -119,7 +124,17 @@ progress:
 - reviveDeal(): restores deal to previous stage, clears kill metadata
 - Pipeline: closing checklist progress % on Closing cards, kill reason badges on dead deal cards
 
+### Phase 2 Closing, Deal-to-Asset, Multi-Entity (Plan 02-03)
+- Closing checklist: custom items via "Add Item" button, per-item file attachments (upload + display + remove)
+- Custom items tagged with "Custom" badge, ordered after template items, isCustom flag in DB
+- closeDeal() now sets sourceDealId on created Asset for provenance tracking
+- DealEntitySection rewritten: uses DealEntity junction table API (GET/POST/DELETE /api/deals/[id]/entities)
+- Multi-entity list: entity name, type badge, formation status badge, allocation %, remove button
+- Entity creation/linking available at every deal stage (DealEntitySection always visible)
+- CloseDealModal pre-populates from junction records with allocationPercent values, falls back to legacy entityId
+- Auto-redirect to /assets/[newAssetId] after successful deal close
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:25:23Z
-- **Stopped at:** Completed 02-02-PLAN.md
+- **Last session:** 2026-03-06T06:41:19Z
+- **Stopped at:** Completed 02-03-PLAN.md
