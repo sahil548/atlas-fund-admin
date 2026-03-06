@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
       screeningResult: true,
       icProcess: { include: { votes: true } },
       dealLead: { select: { id: true, name: true, initials: true } },
+      closingChecklist: { select: { id: true, status: true } },
     },
     orderBy: { createdAt: "desc" },
   });

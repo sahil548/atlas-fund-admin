@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
-import { UpdateDealSchema, CloseDealSchema } from "@/lib/schemas";
-import { killDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
+import { UpdateDealSchema, CloseDealSchema, KillDealSchema } from "@/lib/schemas";
+import { killDeal, reviveDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
 
 export async function GET(
   _req: Request,
@@ -90,8 +90,22 @@ export async function PATCH(
   const body = await req.json();
 
   if (body.action === "KILL") {
+    const parsed = KillDealSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
     try {
-      const deal = await killDeal(id);
+      const deal = await killDeal(id, parsed.data.killReason, parsed.data.killReasonText);
+      return NextResponse.json(deal);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+  }
+
+  if (body.action === "REVIVE") {
+    try {
+      const deal = await reviveDeal(id);
       return NextResponse.json(deal);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";

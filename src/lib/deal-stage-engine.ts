@@ -201,8 +201,13 @@ export async function sendToICReview(
 
 /**
  * Kill a deal — moves any stage -> DEAD
+ * Stores kill reason, optional free text, and previous stage (for revive).
  */
-export async function killDeal(dealId: string) {
+export async function killDeal(
+  dealId: string,
+  killReason: string,
+  killReasonText?: string,
+) {
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) throw new Error(`Deal ${dealId} not found`);
   if (deal.stage === "DEAD") {
@@ -213,7 +218,12 @@ export async function killDeal(dealId: string) {
 
   const updatedDeal = await prisma.deal.update({
     where: { id: dealId },
-    data: { stage: "DEAD" },
+    data: {
+      stage: "DEAD",
+      killReason,
+      killReasonText: killReasonText || null,
+      previousStage,
+    },
   });
 
   // Log the kill activity
@@ -221,10 +231,12 @@ export async function killDeal(dealId: string) {
     data: {
       dealId,
       activityType: "DEAL_KILLED",
-      description: `Deal killed (was in ${previousStage})`,
+      description: `Deal killed (was in ${previousStage}) — Reason: ${killReason}${killReasonText ? ` — ${killReasonText}` : ""}`,
       metadata: {
         fromStage: previousStage,
         toStage: "DEAD",
+        killReason,
+        killReasonText: killReasonText || null,
       },
     },
   });
@@ -233,6 +245,52 @@ export async function killDeal(dealId: string) {
   notifyGPTeam({
     type: "STAGE_CHANGE",
     subject: `${deal.name} has been killed`,
+  }).catch(() => {});
+
+  return updatedDeal;
+}
+
+/**
+ * Revive a deal — DEAD -> previous stage
+ * Restores the stage from before the deal was killed.
+ */
+export async function reviveDeal(dealId: string) {
+  const deal = await prisma.deal.findUnique({ where: { id: dealId } });
+  if (!deal) throw new Error(`Deal ${dealId} not found`);
+  if (deal.stage !== "DEAD") {
+    throw new Error("Deal is not dead — cannot revive");
+  }
+
+  const revivedToStage = deal.previousStage || "SCREENING";
+
+  const updatedDeal = await prisma.deal.update({
+    where: { id: dealId },
+    data: {
+      stage: revivedToStage,
+      killReason: null,
+      killReasonText: null,
+      previousStage: null,
+    },
+  });
+
+  // Log the revive activity
+  await prisma.dealActivity.create({
+    data: {
+      dealId,
+      activityType: "DEAL_REVIVED",
+      description: `Deal revived — restored to ${revivedToStage}`,
+      metadata: {
+        fromStage: "DEAD",
+        toStage: revivedToStage,
+        revivedToStage,
+      },
+    },
+  });
+
+  // Non-blocking notification
+  notifyGPTeam({
+    type: "STAGE_CHANGE",
+    subject: `${deal.name} has been revived`,
   }).catch(() => {});
 
   return updatedDeal;
