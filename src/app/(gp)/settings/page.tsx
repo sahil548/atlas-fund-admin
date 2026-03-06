@@ -16,6 +16,16 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 interface Firm { id: string; name: string; legalName: string | null }
 interface AccountingEntity { id: string; name: string; accountingConnection?: { provider: string; syncStatus: string; lastSyncAt: string | null } | null }
 interface User { id: string; name: string; email: string; role: string; isActive: boolean; initials: string | null; createdAt: string }
+interface DecisionMember { id: string; userId: string; role: string | null; user: { id: string; name: string; initials: string | null } }
+interface DecisionStructure {
+  id: string;
+  name: string;
+  description: string | null;
+  quorumRequired: number;
+  approvalThreshold: number;
+  members: DecisionMember[];
+  entities: { id: string; name: string }[];
+}
 
 const roleColors: Record<string, string> = {
   ADMIN: "purple",
@@ -31,9 +41,13 @@ export default function SettingsPage() {
   const { data: firms } = useSWR<Firm[]>("/api/firms", fetcher);
   const { data: accountingEntities } = useSWR<AccountingEntity[]>("/api/accounting/connections", fetcher);
   const { data: users } = useSWR<User[]>("/api/users", fetcher);
+  const { data: structures } = useSWR<DecisionStructure[]>(
+    firmId ? `/api/decision-structures?firmId=${firmId}` : null,
+    fetcher,
+  );
   const toast = useToast();
 
-  const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "notifications">("firm");
+  const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "decisions" | "notifications">("firm");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", legalName: "" });
   const [saving, setSaving] = useState(false);
@@ -43,6 +57,19 @@ export default function SettingsPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", name: "", role: "GP_TEAM" });
 
+  // Decision structure state
+  const [showCreateStructure, setShowCreateStructure] = useState(false);
+  const [creatingStructure, setCreatingStructure] = useState(false);
+  const [structureForm, setStructureForm] = useState({ name: "", description: "", quorumRequired: 1, approvalThreshold: 1 });
+  const [expandedStructure, setExpandedStructure] = useState<string | null>(null);
+  const [editingStructure, setEditingStructure] = useState<string | null>(null);
+  const [editStructureForm, setEditStructureForm] = useState({ name: "", description: "", quorumRequired: 1, approvalThreshold: 1 });
+  const [savingStructure, setSavingStructure] = useState(false);
+  const [addMemberStructureId, setAddMemberStructureId] = useState<string | null>(null);
+  const [addMemberUserId, setAddMemberUserId] = useState("");
+  const [addMemberRole, setAddMemberRole] = useState("VOTER");
+  const [addingMember, setAddingMember] = useState(false);
+
   const tabs = [
     { key: "firm" as const, label: "Firm Profile" },
     { key: "users" as const, label: "Users & Access" },
@@ -50,6 +77,7 @@ export default function SettingsPage() {
     { key: "gp" as const, label: "GP Management" },
     { key: "ai" as const, label: "AI Configuration" },
     { key: "dealdesk" as const, label: "Deal Desk" },
+    { key: "decisions" as const, label: "Decision Structures" },
     { key: "notifications" as const, label: "Notifications" },
   ];
 
@@ -94,13 +122,137 @@ export default function SettingsPage() {
         mutate("/api/users");
       } else {
         const data = await res.json();
-        toast.error(data.error || "Failed to invite user");
+        const msg = typeof data.error === "string" ? data.error : "Failed to invite user";
+        toast.error(msg);
       }
     } catch {
       toast.error("Failed to invite user");
     } finally {
       setInviting(false);
     }
+  }
+
+  // ── Decision Structure handlers ──
+
+  async function handleCreateStructure() {
+    if (!structureForm.name) return;
+    setCreatingStructure(true);
+    try {
+      const res = await fetch("/api/decision-structures", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...structureForm, firmId }),
+      });
+      if (res.ok) {
+        toast.success(`Created decision structure "${structureForm.name}"`);
+        setShowCreateStructure(false);
+        setStructureForm({ name: "", description: "", quorumRequired: 1, approvalThreshold: 1 });
+        mutate(`/api/decision-structures?firmId=${firmId}`);
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to create structure";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to create structure");
+    } finally {
+      setCreatingStructure(false);
+    }
+  }
+
+  async function handleUpdateStructure(id: string) {
+    setSavingStructure(true);
+    try {
+      const res = await fetch(`/api/decision-structures/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editStructureForm),
+      });
+      if (res.ok) {
+        toast.success("Structure updated");
+        setEditingStructure(null);
+        mutate(`/api/decision-structures?firmId=${firmId}`);
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to update structure";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to update structure");
+    } finally {
+      setSavingStructure(false);
+    }
+  }
+
+  async function handleDeleteStructure(id: string, name: string) {
+    if (!confirm(`Delete decision structure "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/decision-structures/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Structure deleted");
+        mutate(`/api/decision-structures?firmId=${firmId}`);
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to delete structure";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to delete structure");
+    }
+  }
+
+  async function handleAddMember(structureId: string) {
+    if (!addMemberUserId) return;
+    setAddingMember(true);
+    try {
+      const res = await fetch(`/api/decision-structures/${structureId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: addMemberUserId, role: addMemberRole }),
+      });
+      if (res.ok) {
+        toast.success("Member added");
+        setAddMemberStructureId(null);
+        setAddMemberUserId("");
+        setAddMemberRole("VOTER");
+        mutate(`/api/decision-structures?firmId=${firmId}`);
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to add member";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to add member");
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
+  async function handleRemoveMember(structureId: string, userId: string, userName: string) {
+    if (!confirm(`Remove ${userName} from this structure?`)) return;
+    try {
+      const res = await fetch(`/api/decision-structures/${structureId}/members?userId=${userId}`, { method: "DELETE" });
+      if (res.ok) {
+        toast.success("Member removed");
+        mutate(`/api/decision-structures?firmId=${firmId}`);
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to remove member";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to remove member");
+    }
+  }
+
+  function startEditStructure(s: DecisionStructure) {
+    setEditStructureForm({
+      name: s.name,
+      description: s.description || "",
+      quorumRequired: s.quorumRequired,
+      approvalThreshold: s.approvalThreshold,
+    });
+    setEditingStructure(s.id);
   }
 
   return (
@@ -302,7 +454,216 @@ export default function SettingsPage() {
       {/* Tab 6: Deal Desk — pipeline configuration */}
       {tab === "dealdesk" && <DealPipelineEditor firmId={firmId} />}
 
-      {/* Tab 7: Notifications (stub) */}
+      {/* Tab 7: Decision Structures */}
+      {tab === "decisions" && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <div>
+              <h3 className="text-sm font-semibold">Decision Structures</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Configure how investment decisions are made per entity. Structures define who votes, quorum, and approval thresholds.
+              </p>
+            </div>
+            <Button onClick={() => setShowCreateStructure(true)}>+ Create Structure</Button>
+          </div>
+
+          {structures && structures.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {structures.map((s) => (
+                <div key={s.id} className="p-4">
+                  {editingStructure === s.id ? (
+                    /* Edit mode */
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+                          <Input
+                            value={editStructureForm.name}
+                            onChange={(e) => setEditStructureForm((f) => ({ ...f, name: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                          <Input
+                            value={editStructureForm.description}
+                            onChange={(e) => setEditStructureForm((f) => ({ ...f, description: e.target.value }))}
+                            placeholder="Optional"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Quorum Required</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={editStructureForm.quorumRequired}
+                            onChange={(e) => setEditStructureForm((f) => ({ ...f, quorumRequired: parseInt(e.target.value) || 1 }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">Approval Threshold</label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={editStructureForm.approvalThreshold}
+                            onChange={(e) => setEditStructureForm((f) => ({ ...f, approvalThreshold: parseInt(e.target.value) || 1 }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button onClick={() => handleUpdateStructure(s.id)} loading={savingStructure} disabled={!editStructureForm.name}>Save</Button>
+                        <Button variant="secondary" onClick={() => setEditingStructure(null)}>Cancel</Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* View mode */
+                    <>
+                      <div className="flex items-center justify-between">
+                        <div
+                          className="flex-1 cursor-pointer"
+                          onClick={() => setExpandedStructure(expandedStructure === s.id ? null : s.id)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-semibold">{s.name}</span>
+                            <Badge color="blue">{s.members.filter((m) => m.role === "VOTER").length} voters</Badge>
+                            <span className="text-xs text-gray-500">
+                              Quorum: {s.quorumRequired} | Threshold: {s.approvalThreshold}
+                            </span>
+                          </div>
+                          {s.description && (
+                            <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>
+                          )}
+                          {s.entities.length > 0 && (
+                            <div className="flex gap-1 mt-1">
+                              <span className="text-[10px] text-gray-400">Linked to:</span>
+                              {s.entities.map((e) => (
+                                <Badge key={e.id} color="gray">{e.name}</Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            className="text-indigo-600 hover:underline text-xs"
+                            onClick={() => startEditStructure(s)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="text-red-600 hover:underline text-xs"
+                            onClick={() => handleDeleteStructure(s.id, s.name)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Expanded: show members */}
+                      {expandedStructure === s.id && (
+                        <div className="mt-3 border-t border-gray-100 pt-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-semibold text-gray-700">Members ({s.members.length})</span>
+                            <button
+                              className="text-xs text-indigo-600 hover:underline"
+                              onClick={() => {
+                                setAddMemberStructureId(s.id);
+                                setAddMemberUserId("");
+                                setAddMemberRole("VOTER");
+                              }}
+                            >
+                              + Add Member
+                            </button>
+                          </div>
+
+                          {/* Add member inline form */}
+                          {addMemberStructureId === s.id && (
+                            <div className="flex items-end gap-2 mb-3 p-2 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <label className="block text-[10px] font-medium text-gray-500 mb-1">Team Member</label>
+                                <select
+                                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-xs"
+                                  value={addMemberUserId}
+                                  onChange={(e) => setAddMemberUserId(e.target.value)}
+                                >
+                                  <option value="">Select a user...</option>
+                                  {users?.filter((u) => !s.members.some((m) => m.userId === u.id)).map((u) => (
+                                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-medium text-gray-500 mb-1">Role</label>
+                                <select
+                                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs"
+                                  value={addMemberRole}
+                                  onChange={(e) => setAddMemberRole(e.target.value)}
+                                >
+                                  <option value="VOTER">Voter</option>
+                                  <option value="OBSERVER">Observer</option>
+                                </select>
+                              </div>
+                              <Button
+                                size="sm"
+                                onClick={() => handleAddMember(s.id)}
+                                loading={addingMember}
+                                disabled={!addMemberUserId}
+                              >
+                                Add
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => setAddMemberStructureId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          )}
+
+                          {s.members.length > 0 ? (
+                            <div className="space-y-1">
+                              {s.members.map((m) => (
+                                <div key={m.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">
+                                      {m.user.initials || m.user.name.slice(0, 2).toUpperCase()}
+                                    </div>
+                                    <span className="text-xs font-medium">{m.user.name}</span>
+                                    <Badge color={m.role === "VOTER" ? "blue" : "gray"}>
+                                      {m.role || "VOTER"}
+                                    </Badge>
+                                  </div>
+                                  <button
+                                    className="text-red-500 hover:text-red-700 text-[10px]"
+                                    onClick={() => handleRemoveMember(s.id, m.userId, m.user.name)}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-400 text-center py-2">
+                              No members yet. Add voters and observers.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center text-sm text-gray-400">
+              No decision structures configured. Create one to define how investment decisions are made.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tab 8: Notifications (stub) */}
       {tab === "notifications" && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-4">Notifications</h3>
@@ -351,6 +712,59 @@ export default function SettingsPage() {
               Send Invite
             </Button>
             <Button variant="secondary" onClick={() => setShowInvite(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Create Decision Structure Modal */}
+      <Modal open={showCreateStructure} onClose={() => setShowCreateStructure(false)} title="Create Decision Structure">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Define a decision-making structure for investment decisions. Link it to entities to enforce voting rules during IC Review.
+          </p>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+            <Input
+              placeholder="e.g., Fund I Investment Committee"
+              value={structureForm.name}
+              onChange={(e) => setStructureForm((f) => ({ ...f, name: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+            <Input
+              placeholder="Optional description of the structure"
+              value={structureForm.description}
+              onChange={(e) => setStructureForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Quorum Required</label>
+              <Input
+                type="number"
+                min={1}
+                value={structureForm.quorumRequired}
+                onChange={(e) => setStructureForm((f) => ({ ...f, quorumRequired: parseInt(e.target.value) || 1 }))}
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5">Minimum votes needed to make a decision</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Approval Threshold</label>
+              <Input
+                type="number"
+                min={1}
+                value={structureForm.approvalThreshold}
+                onChange={(e) => setStructureForm((f) => ({ ...f, approvalThreshold: parseInt(e.target.value) || 1 }))}
+              />
+              <p className="text-[10px] text-gray-400 mt-0.5">Approve votes needed for approval</p>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleCreateStructure} loading={creatingStructure} disabled={!structureForm.name}>
+              Create Structure
+            </Button>
+            <Button variant="secondary" onClick={() => setShowCreateStructure(false)}>Cancel</Button>
           </div>
         </div>
       </Modal>
