@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
@@ -11,7 +11,8 @@ import { FileUpload } from "@/components/ui/file-upload";
 import { useToast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { useFirm } from "@/components/providers/firm-provider";
-import useSWR from "swr";
+import { useUser } from "@/components/providers/user-provider";
+import useSWR, { mutate as swrMutate } from "swr";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -28,6 +29,12 @@ const ASSET_CLASS_OPTIONS = [
 const CAPITAL_INSTRUMENT_OPTIONS = [
   { value: "DEBT", label: "Debt" },
   { value: "EQUITY", label: "Equity" },
+];
+
+const PARTICIPATION_STRUCTURE_OPTIONS = [
+  { value: "DIRECT_GP", label: "GP / Direct" },
+  { value: "LP_STAKE_SILENT_PARTNER", label: "LP / Passive" },
+  { value: "CO_INVEST_JV_PARTNERSHIP", label: "Co-GP / Co-Invest / JV" },
 ];
 
 const DOC_CATEGORIES = [
@@ -57,6 +64,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
   const toast = useToast();
   const router = useRouter();
   const { firmId } = useFirm();
+  const { user } = useUser();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
@@ -68,6 +76,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
     name: "",
     assetClass: "REAL_ESTATE",
     capitalInstrument: "",
+    participationStructure: "",
     targetCheckSize: "",
     dealLeadId: "",
     gpName: "",
@@ -84,11 +93,27 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Counterparty inline creation state
+  const [showNewCompany, setShowNewCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [creatingCompany, setCreatingCompany] = useState(false);
+
+  // Default deal lead to current user when users load and no lead is selected
+  useEffect(() => {
+    if (users && Array.isArray(users) && users.length > 0 && !identity.dealLeadId && user?.id) {
+      const currentUserExists = users.some((u: any) => u.id === user.id);
+      if (currentUserExists) {
+        setIdentity((p) => ({ ...p, dealLeadId: user.id }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users, user?.id]);
+
   function resetForm() {
     setStep(1);
     setIdentity({
       name: "", assetClass: "REAL_ESTATE", capitalInstrument: "",
-      targetCheckSize: "", dealLeadId: "", gpName: "",
+      participationStructure: "", targetCheckSize: "", dealLeadId: "", gpName: "",
       counterparty: "", source: "", entityId: "",
     });
     setDocs([]);
@@ -96,6 +121,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setPendingCategory("CIM");
     setAdditionalContext("");
     setErrors({});
+    setShowNewCompany(false);
+    setNewCompanyName("");
   }
 
   function handleClose() {
@@ -108,7 +135,23 @@ export function CreateDealWizard({ open, onClose }: Props) {
     if (!identity.name.trim()) errs.name = "Deal name is required";
     if (!identity.assetClass) errs.assetClass = "Asset class is required";
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    if (Object.keys(errs).length > 0) {
+      const missing = Object.values(errs).join(", ");
+      toast.error(`Missing required fields: ${missing}`);
+      return false;
+    }
+    return true;
+  }
+
+  /** Clear individual field error when user interacts */
+  function clearFieldError(field: string) {
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   }
 
   function addDoc() {
@@ -125,7 +168,54 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setDocs((prev) => prev.filter((_, i) => i !== index));
   }
 
-  /** Shared: create deal + upload docs → returns deal ID */
+  /** Validate Step 2: require at least 1 document */
+  function validateStep2(): boolean {
+    if (docs.length === 0) {
+      toast.error("At least one document is required");
+      return false;
+    }
+    return true;
+  }
+
+  /** Create new counterparty company inline */
+  async function handleCreateCompany() {
+    if (!newCompanyName.trim()) {
+      toast.error("Company name is required");
+      return;
+    }
+    setCreatingCompany(true);
+    try {
+      const res = await fetch("/api/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firmId,
+          name: newCompanyName.trim(),
+          type: "COUNTERPARTY",
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to create company";
+        toast.error(msg);
+        return;
+      }
+      const company = await res.json();
+      // Revalidate companies list so the new one shows up
+      swrMutate(`/api/companies?firmId=${firmId}`);
+      // Auto-select the new company as counterparty
+      setIdentity((p) => ({ ...p, counterparty: company.name }));
+      setShowNewCompany(false);
+      setNewCompanyName("");
+      toast.success(`Created "${company.name}"`);
+    } catch {
+      toast.error("Failed to create company");
+    } finally {
+      setCreatingCompany(false);
+    }
+  }
+
+  /** Shared: create deal + upload docs -> returns deal ID */
   async function createDealAndUploadDocs(): Promise<string> {
     const dealRes = await fetch("/api/deals", {
       method: "POST",
@@ -162,10 +252,11 @@ export function CreateDealWizard({ open, onClose }: Props) {
   }
 
   async function handleCreateDeal() {
+    if (!validateStep2()) return;
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
-      // Create workstreams (scaffolding) — stays in SCREENING
+      // Create workstreams (scaffolding) -- stays in SCREENING
       await fetch(`/api/deals/${dealId}/screen`, { method: "POST" });
       toast.success("Deal created");
       handleClose();
@@ -178,10 +269,11 @@ export function CreateDealWizard({ open, onClose }: Props) {
   }
 
   async function handleCreateAndScreen() {
+    if (!validateStep2()) return;
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
-      // Create workstreams — deal page auto-starts analyses via ?autoscreen=1
+      // Create workstreams -- deal page auto-starts analyses via ?autoscreen=1
       await fetch(`/api/deals/${dealId}/screen`, { method: "POST" });
       toast.success("Deal created — AI screening starting...");
       handleClose();
@@ -214,10 +306,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
           {step < 2 ? (
             <Button
               onClick={() => {
-                if (!validateStep1()) {
-                  toast.error("Please fill in all required fields");
-                  return;
-                }
+                if (!validateStep1()) return;
                 setStep(2);
               }}
             >
@@ -268,22 +357,30 @@ export function CreateDealWizard({ open, onClose }: Props) {
           <FormField label="Deal Name" required>
             <Input
               value={identity.name}
-              onChange={(e) =>
-                setIdentity((p) => ({ ...p, name: e.target.value }))
-              }
+              onChange={(e) => {
+                setIdentity((p) => ({ ...p, name: e.target.value }));
+                clearFieldError("name");
+              }}
               placeholder="e.g. Apex Manufacturing Acquisition"
             />
+            {errors.name && (
+              <p className="text-xs text-red-600 mt-1">{errors.name}</p>
+            )}
           </FormField>
 
           <div className="grid grid-cols-2 gap-3">
             <FormField label="Asset Class" required>
               <Select
                 value={identity.assetClass}
-                onChange={(e) =>
-                  setIdentity((p) => ({ ...p, assetClass: e.target.value }))
-                }
+                onChange={(e) => {
+                  setIdentity((p) => ({ ...p, assetClass: e.target.value }));
+                  clearFieldError("assetClass");
+                }}
                 options={ASSET_CLASS_OPTIONS}
               />
+              {errors.assetClass && (
+                <p className="text-xs text-red-600 mt-1">{errors.assetClass}</p>
+              )}
             </FormField>
             <FormField label="Capital Instrument">
               <Select
@@ -297,6 +394,15 @@ export function CreateDealWizard({ open, onClose }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <FormField label="Participation Structure">
+              <Select
+                value={identity.participationStructure}
+                onChange={(e) =>
+                  setIdentity((p) => ({ ...p, participationStructure: e.target.value }))
+                }
+                options={[{ value: "", label: "\u2014 Select \u2014" }, ...PARTICIPATION_STRUCTURE_OPTIONS]}
+              />
+            </FormField>
             <FormField label="Target Check Size">
               <Input
                 value={identity.targetCheckSize}
@@ -306,6 +412,9 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 placeholder="e.g. $5-10M"
               />
             </FormField>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
             <FormField label="Deal Lead">
               <Select
                 value={identity.dealLeadId}
@@ -318,9 +427,6 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <FormField label="GP / Sponsor">
               <Select
                 value={identity.gpName}
@@ -334,22 +440,59 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
-            <FormField label="Counterparty">
-              <Select
-                value={identity.counterparty}
-                onChange={(e) =>
-                  setIdentity((p) => ({ ...p, counterparty: e.target.value }))
-                }
-                options={[
-                  { value: "", label: "\u2014 Select \u2014" },
-                  ...(companies || []).filter((c: any) => ["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
-                  ...(companies || []).filter((c: any) => !["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
-                ]}
-              />
-            </FormField>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            <FormField label="Counterparty">
+              {!showNewCompany ? (
+                <>
+                  <Select
+                    value={identity.counterparty}
+                    onChange={(e) => {
+                      if (e.target.value === "__NEW__") {
+                        setShowNewCompany(true);
+                        return;
+                      }
+                      setIdentity((p) => ({ ...p, counterparty: e.target.value }));
+                    }}
+                    options={[
+                      { value: "", label: "\u2014 Select \u2014" },
+                      ...(companies || []).filter((c: any) => ["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
+                      ...(companies || []).filter((c: any) => !["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)).map((c: any) => ({ value: c.name, label: c.name })),
+                      { value: "__NEW__", label: "+ Add New Company" },
+                    ]}
+                  />
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Input
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder="Company name"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleCreateCompany}
+                      loading={creatingCompany}
+                    >
+                      Create
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        setShowNewCompany(false);
+                        setNewCompanyName("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </FormField>
             <FormField label="Source">
               <Select
                 value={identity.source}
@@ -368,19 +511,20 @@ export function CreateDealWizard({ open, onClose }: Props) {
                 ]}
               />
             </FormField>
-            <FormField label="Entity Link">
-              <Select
-                value={identity.entityId}
-                onChange={(e) =>
-                  setIdentity((p) => ({ ...p, entityId: e.target.value }))
-                }
-                options={[
-                  { value: "", label: "\u2014 None \u2014" },
-                  ...(entities || []).map((e: any) => ({ value: e.id, label: e.name })),
-                ]}
-              />
-            </FormField>
           </div>
+
+          <FormField label="Entity Link">
+            <Select
+              value={identity.entityId}
+              onChange={(e) =>
+                setIdentity((p) => ({ ...p, entityId: e.target.value }))
+              }
+              options={[
+                { value: "", label: "\u2014 None \u2014" },
+                ...(entities || []).map((e: any) => ({ value: e.id, label: e.name })),
+              ]}
+            />
+          </FormField>
         </div>
       )}
 
@@ -390,7 +534,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
           {/* File upload */}
           <div className="space-y-3">
             <p className="text-xs text-gray-500">
-              Upload documents for AI screening. Drag & drop or browse to select files.
+              Upload documents for AI screening. At least one document is required.
             </p>
             <FormField label="Select File">
               <FileUpload
@@ -416,8 +560,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
           {/* Queued docs */}
           {docs.length === 0 ? (
-            <div className="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
-              No documents queued. You can add them now or later from the deal page.
+            <div className="text-center py-4 text-red-400 text-sm border-2 border-dashed border-red-200 rounded-lg">
+              No documents queued. At least one document is required to create a deal.
             </div>
           ) : (
             <div className="space-y-1.5">
@@ -427,7 +571,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm shrink-0">📄</span>
+                    <span className="text-sm shrink-0">&#128196;</span>
                     <span className="text-sm font-medium truncate">{doc.name}</span>
                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full shrink-0">
                       {doc.category}
@@ -492,6 +636,14 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   <span className="text-gray-500">Instrument:</span>{" "}
                   <span className="font-medium">
                     {CAPITAL_INSTRUMENT_OPTIONS.find((c) => c.value === identity.capitalInstrument)?.label}
+                  </span>
+                </div>
+              )}
+              {identity.participationStructure && (
+                <div>
+                  <span className="text-gray-500">Participation:</span>{" "}
+                  <span className="font-medium">
+                    {PARTICIPATION_STRUCTURE_OPTIONS.find((c) => c.value === identity.participationStructure)?.label}
                   </span>
                 </div>
               )}
