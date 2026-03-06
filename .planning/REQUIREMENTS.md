@@ -43,7 +43,7 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | DEAL-05 | Deal edit inline fields save reliably | Medium | DONE (02-02): Double-save prevention (savingRef+justSavedRef), error toast, textarea newline support |
 | DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | DONE (02-04): 4-section dashboard (header, metrics, IC memo, terms) + AI extraction endpoint |
 | DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
-| DEAL-08 | IC Review with configurable decision-making structures | High | IC tab exists with basic voting — needs settings page for structures, in-app voting, Send Back flow |
+| DEAL-08 | IC Review with configurable decision-making structures | High | DONE (02-06): Decision structures CRUD API + settings tab, in-app voting with conditions, Send Back flow |
 | DEAL-09 | Kill/revive deal flow with required reasons | Medium | DONE (02-02): KillDealModal with reason dropdown, reviveDeal() restores to previous stage, dead deal badges on pipeline |
 | DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | Basic conversion rates exist — needs pipeline value by stage, time-in-stage, velocity metrics |
 
