@@ -38,26 +38,35 @@ Plans:
 
 ## Phase 2: Deal Desk End-to-End
 
-**Goal:** Perfect the full deal lifecycle from screening through closing and deal-to-asset transition. This is the GP team's primary daily workflow.
+**Goal:** Perfect the full deal lifecycle from screening through closing and deal-to-asset transition. This is the GP team's primary daily workflow. Includes: deal creation with validation, AI-powered overview dashboard, interactive DD workstreams, decision-making structures (IC), closing checklist with attachments, multi-entity deal participation, entity formation at any stage, deal-to-asset transition with data carry-over, pipeline analytics, kill/revive deal flow.
 
 **Requirements:** DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, ASSET-01
 
 **Success Criteria:**
 - [ ] Deal creation wizard shows validation errors when required fields are missing
-- [ ] A deal can be moved from Screening through Closing and automatically creates an Asset on close
-- [ ] Closing checklist works end-to-end (create items, assign, track, complete, close deal)
-- [ ] Entity formation can be triggered from deal closing flow (new fund/SPV for the deal)
-- [ ] Inline edit fields on deal detail save reliably on blur/Enter
-- [ ] Asset detail pages polished after deal-to-asset flow works
+- [ ] Deal overview tab displays as a 4-section dashboard with AI-extracted metadata
+- [ ] DD workstreams function as PM-style tasks with assignees, comments, attachments
+- [ ] IC Review has in-app voting with configurable decision structures
+- [ ] Closing checklist works end-to-end with custom items, file attachments, warn-on-incomplete
+- [ ] Entity formation can be triggered from deal at any stage (multi-entity via junction table)
+- [ ] Deal close creates asset with full metadata carryover and auto-redirect
+- [ ] Inline edit fields save reliably on blur/Enter
+- [ ] Kill/revive deal flow with required reasons
+- [ ] Asset detail pages polished with source deal attribution and AI intelligence
+- [ ] Pipeline analytics page with value-by-stage, time-in-stage, velocity metrics
 
-**Plans:** 3 plans
+**Plans:** 7 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Deal creation wizard validation + inline edit reliability + kill/revive flow
-- [ ] 02-02-PLAN.md — Closing workflow + deal-to-asset transition + multi-entity deals
-- [ ] 02-03-PLAN.md — Asset detail polish after deal-to-asset flow
+- [ ] 02-01-PLAN.md — Schema consolidation: all data model changes for Phase 2
+- [ ] 02-02-PLAN.md — Deal creation wizard validation + inline edit + kill/revive
+- [ ] 02-03-PLAN.md — Closing workflow + deal-to-asset transition + multi-entity deals
+- [ ] 02-04-PLAN.md — Deal overview dashboard redesign + AI metadata extraction
+- [ ] 02-05-PLAN.md — DD workstreams interactive PM-style redesign
+- [ ] 02-06-PLAN.md — IC Review configurable decision structures + in-app voting
+- [ ] 02-07-PLAN.md — Asset detail polish + pipeline analytics
 
-**Progress:** 0/3 plans complete
+**Progress:** 0/7 plans complete
 
 ---
 
@@ -189,12 +198,12 @@ Plans:
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
-| 2 | Deal Desk End-to-End | 6 | 3 | Not started |
+| 2 | Deal Desk End-to-End | 6 | 7 | Not started |
 | 3 | Capital Activity | 6 | 3 | Not started |
 | 4 | Asset & Entity Polish | 10 | 3 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
 | 6 | LP Portal | 3 | 2 | Not started |
 | 7 | Notifications & Reports | 14 | 3 | Not started |
-| **Total** | | **53** | **19** | |
+| **Total** | | **53** | **23** | |
 
 **Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE — not in any phase. Zero orphans.
