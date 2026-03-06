@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/toast";
 import { mutate } from "swr";
 
 interface InlineEditFieldProps {
@@ -22,10 +23,16 @@ export function InlineEditField({
   type = "text",
   placeholder,
 }: InlineEditFieldProps) {
+  const toast = useToast();
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState(value ?? "");
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  // Prevent double-save: guard against concurrent save calls
+  const savingRef = useRef(false);
+  // Prevent blur-after-Enter double-save
+  const justSavedRef = useRef(false);
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -42,25 +49,57 @@ export function InlineEditField({
     setEditing(true);
   }
 
-  async function save() {
+  async function handleSave() {
+    // Guard: skip if already saving (prevents double-save)
+    if (savingRef.current) return;
+
     if (editValue === (value ?? "")) {
       setEditing(false);
       return;
     }
+
+    savingRef.current = true;
+    justSavedRef.current = true;
     setSaving(true);
+
     try {
-      await fetch(`/api/deals/${dealId}`, {
+      const res = await fetch(`/api/deals/${dealId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [field]: editValue || null }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to save";
+        toast.error(msg);
+        // Keep edit mode open so user doesn't lose input
+        return;
+      }
       mutate(`/api/deals/${dealId}`);
+      setEditing(false);
     } catch {
-      // silent
+      toast.error("Failed to save");
+      // Keep edit mode open
     } finally {
       setSaving(false);
-      setEditing(false);
+      savingRef.current = false;
+      // Clear justSaved flag after a short delay so blur handler can check it
+      setTimeout(() => {
+        justSavedRef.current = false;
+      }, 100);
     }
+  }
+
+  function handleBlur() {
+    // If Enter just triggered a save, skip the blur-triggered save
+    if (justSavedRef.current) {
+      // Still exit edit mode if save already completed successfully
+      if (!savingRef.current && !saving) {
+        setEditing(false);
+      }
+      return;
+    }
+    handleSave();
   }
 
   function cancel() {
@@ -72,8 +111,20 @@ export function InlineEditField({
     if (e.key === "Escape") {
       cancel();
     }
-    if (e.key === "Enter" && type === "text") {
-      save();
+    // For text inputs, Enter saves
+    // For textarea, Enter inserts newline (only blur saves); Ctrl+Enter saves
+    if (e.key === "Enter") {
+      if (type === "textarea") {
+        // Ctrl+Enter saves for textarea
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          handleSave();
+        }
+        // Regular Enter: do nothing (default newline behavior)
+      } else {
+        e.preventDefault();
+        handleSave();
+      }
     }
   }
 
@@ -89,7 +140,7 @@ export function InlineEditField({
               ref={inputRef as React.Ref<HTMLTextAreaElement>}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              onBlur={save}
+              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               rows={3}
@@ -100,7 +151,7 @@ export function InlineEditField({
               ref={inputRef as React.Ref<HTMLInputElement>}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
-              onBlur={save}
+              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
               className="text-sm"
@@ -130,6 +181,11 @@ export function InlineEditField({
             </div>
           )}
         </div>
+        {type === "textarea" && (
+          <p className="text-[10px] text-gray-400 mt-0.5">
+            Press Ctrl+Enter to save, Escape to cancel
+          </p>
+        )}
       </div>
     );
   }

@@ -184,6 +184,13 @@ export default function DealsPage() {
                       p.stage,
                     ) && totalTasks > 0;
 
+                  // Compute closing checklist progress for Closing column
+                  const closingItems = p.closingChecklist || [];
+                  const closingTotal = closingItems.length;
+                  const closingComplete = closingItems.filter((ci: any) => ci.status === "COMPLETE").length;
+                  const closingPct = closingTotal > 0 ? Math.round((closingComplete / closingTotal) * 100) : 0;
+                  const showClosingProgress = p.stage === "CLOSING" && closingTotal > 0;
+
                   return (
                     <Link
                       key={p.id}
@@ -233,6 +240,25 @@ export default function DealsPage() {
                           </div>
                           <span className="text-[10px] text-gray-500">
                             {ddPct}%
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Closing Checklist Progress */}
+                      {showClosingProgress && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                closingPct === 100
+                                  ? "bg-emerald-400"
+                                  : "bg-indigo-400"
+                              }`}
+                              style={{ width: `${closingPct}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-gray-500">
+                            {closingPct}% closing
                           </span>
                         </div>
                       )}
@@ -335,7 +361,13 @@ export default function DealsPage() {
                     {PARTICIPATION_LABELS[p.participationStructure] || p.participationStructure}
                   </Badge>
                 )}
+                {p.killReason && (
+                  <Badge color="red">{p.killReason}</Badge>
+                )}
               </div>
+              {p.killReasonText && (
+                <div className="mt-1 text-[10px] text-red-500 line-clamp-2">{p.killReasonText}</div>
+              )}
               <div className="mt-2 flex justify-between text-[10px] text-gray-500">
                 <span>{p.targetSize || ""}</span>
                 <span>{p.counterparty || ""}</span>

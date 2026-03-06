@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CloseDealModal } from "@/components/features/deals/close-deal-modal";
 import { EditDealForm } from "@/components/features/deals/edit-deal-form";
+import { KillDealModal } from "@/components/features/deals/kill-deal-modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
@@ -141,6 +142,7 @@ export default function DealDetailPage({
   const [showCloseDeal, setShowCloseDeal] = useState(false);
   const [advancingToClosing, setAdvancingToClosing] = useState(false);
   const [closingDeal, setClosingDeal] = useState(false);
+  const [revivingDeal, setRevivingDeal] = useState(false);
 
   // ── Analysis orchestration state (lives here so tab switches don't kill it) ──
   const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | null>(null);
@@ -347,21 +349,52 @@ export default function DealDetailPage({
 
   /* ── Header Actions ────────────────────────────── */
 
-  async function handleKillDeal() {
+  async function handleKillDeal(killReason: string, killReasonText: string) {
     setKillingDeal(true);
     try {
-      await fetch(`/api/deals/${id}`, {
+      const res = await fetch(`/api/deals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "KILL" }),
+        body: JSON.stringify({ action: "KILL", killReason, killReasonText: killReasonText || undefined }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to kill deal";
+        toast.error(msg);
+        return;
+      }
       toast.success("Deal marked as dead");
       mutate(`/api/deals/${id}`);
+      mutate(`/api/deals?firmId=${firmId}`);
       setShowKillConfirm(false);
     } catch {
       toast.error("Failed to kill deal");
     } finally {
       setKillingDeal(false);
+    }
+  }
+
+  async function handleReviveDeal() {
+    setRevivingDeal(true);
+    try {
+      const res = await fetch(`/api/deals/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "REVIVE" }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Failed to revive deal";
+        toast.error(msg);
+        return;
+      }
+      toast.success("Deal revived");
+      mutate(`/api/deals/${id}`);
+      mutate(`/api/deals?firmId=${firmId}`);
+    } catch {
+      toast.error("Failed to revive deal");
+    } finally {
+      setRevivingDeal(false);
     }
   }
 
@@ -599,8 +632,30 @@ export default function DealDetailPage({
       )}
 
       {isDead && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 font-medium">
-          This deal has been killed and is no longer active.
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-sm text-red-700 font-medium">
+                This deal has been killed and is no longer active.
+              </div>
+              {deal.killReason && (
+                <div className="text-xs text-red-600 mt-1">
+                  <span className="font-semibold">Reason:</span> {deal.killReason}
+                  {deal.killReasonText && (
+                    <span> &mdash; {deal.killReasonText}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleReviveDeal}
+              loading={revivingDeal}
+            >
+              Revive Deal
+            </Button>
+          </div>
         </div>
       )}
 
@@ -716,14 +771,11 @@ export default function DealDetailPage({
           additionalContext: deal.additionalContext,
         }}
       />
-      <ConfirmDialog
+      <KillDealModal
         open={showKillConfirm}
         onClose={() => setShowKillConfirm(false)}
         onConfirm={handleKillDeal}
-        title="Kill Deal"
-        message={`Are you sure you want to kill "${deal.name}"? This will move it to the DEAD stage.`}
-        confirmLabel="Kill Deal"
-        variant="danger"
+        dealName={deal.name}
         loading={killingDeal}
       />
       <ConfirmDialog
