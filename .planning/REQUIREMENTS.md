@@ -45,7 +45,7 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
 | DEAL-08 | IC Review with configurable decision-making structures | High | DONE (02-06): Decision structures CRUD API + settings tab, in-app voting with conditions, Send Back flow |
 | DEAL-09 | Kill/revive deal flow with required reasons | Medium | DONE (02-02): KillDealModal with reason dropdown, reviveDeal() restores to previous stage, dead deal badges on pipeline |
-| DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | Basic conversion rates exist — needs pipeline value by stage, time-in-stage, velocity metrics |
+| DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | DONE (02-07): Dedicated /analytics page with Recharts charts (pipeline value by stage, time-in-stage, deal velocity, conversion funnel), analytics API, route registered in sidebar |
 
 ---
 
@@ -85,7 +85,7 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| ASSET-01 | Asset detail pages polished after deal-to-asset flow works | Medium | Depends on DEAL-03 |
+| ASSET-01 | Asset detail pages polished after deal-to-asset flow works | Medium | DONE (02-07): Originated-from banner with source deal link, collapsible AI intelligence section (score/strengths/risks), equity tab, entity allocations card, type-specific placeholders |
 | ASSET-02 | Cross-entity NAV dashboard showing all entities | Medium | Entity detail shows NAV but no cross-entity view |
 | ASSET-03 | Account mapping UI for QBO/Xero chart of accounts | Medium | AccountMapping model exists, no UI |
 

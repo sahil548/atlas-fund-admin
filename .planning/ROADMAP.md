@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** 2 (Deal Desk End-to-End) — Phase 1 complete
+**Current phase:** 3 (Capital Activity) — Phases 1-2 complete
 
 ---
 
@@ -63,10 +63,10 @@ Plans:
 - [x] 02-03-PLAN.md — Wave 3: Closing workflow + deal-to-asset + multi-entity (depends on 02-02)
 - [x] 02-04-PLAN.md — Wave 2: Deal overview dashboard + AI metadata extraction
 - [x] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
-- [ ] 02-06-PLAN.md — Wave 3: IC Review decision structures + in-app voting (depends on 02-02)
-- [ ] 02-07-PLAN.md — Wave 4: Asset detail polish + pipeline analytics (depends on 02-02, 02-03, 02-04)
+- [x] 02-06-PLAN.md — Wave 3: IC Review decision structures + in-app voting (depends on 02-02)
+- [x] 02-07-PLAN.md — Wave 4: Asset detail polish + pipeline analytics (depends on 02-02, 02-03, 02-04)
 
-**Progress:** 4/7 plans complete
+**Progress:** 7/7 plans complete — PHASE COMPLETE
 
 ---
 
@@ -84,12 +84,12 @@ Plans:
 - [ ] MOIC consistently computed from cost basis and fair value
 - [ ] Management fees and carried interest calculated per entity rules
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | Wire computation engines to UI (replace seeded display values) | Not started |
-| 2 | Fee calculation engine | Not started |
-| 3 | Return metrics (TVPI, DPI, RVPI, MOIC) wired end-to-end | Not started |
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
+- [ ] 03-02-PLAN.md — Wave 2: Waterfall enhancement (configurable carry, pref return, clawback, GP co-invest) + fee calculation engine (depends on 03-01)
+- [ ] 03-03-PLAN.md — Wave 2: Metrics wiring to entity detail + GP dashboard + capital account ledger + NAV refinement (depends on 03-01)
 
 **Progress:** 0/3 plans complete
 
@@ -198,7 +198,7 @@ Plans:
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
-| 2 | Deal Desk End-to-End | 11 | 7 | In progress (4/7 plans done) |
+| 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
 | 3 | Capital Activity | 6 | 3 | Not started |
 | 4 | Asset & Entity Polish | 10 | 3 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |

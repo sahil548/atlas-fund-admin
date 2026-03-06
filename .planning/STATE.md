@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-07 (next to execute)
-status: unknown
-stopped_at: Phase 4 context gathered
-last_updated: "2026-03-06T06:48:18.368Z"
+current_plan: 02-07 (complete)
+status: phase-complete
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-03-06T06:58:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
+  completed_plans: 10
 ---
 
 # Atlas — GSD State
@@ -21,20 +21,21 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
-- **Phase status:** Plans 01-04, 06 complete, 2 plans remaining (03, 05, 07)
-- **Current Plan:** 02-07 (next to execute)
-- **Active plan:** none (ready for 02-07)
+- **Phase:** 2 of 7 (Deal Desk End-to-End) — COMPLETE
+- **Phase status:** All 7 plans complete (01-07)
+- **Current Plan:** Phase 2 complete, ready for Phase 3
+- **Active plan:** none
 
 ## Performance Metrics
-- Plans completed: 7
+- Plans completed: 10
 - Plans total: 10 (3 Phase 1 + 7 Phase 2)
-- Phases completed: 1
+- Phases completed: 2
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 02    | 02   | 5min     | 3     | 8     |
 | 02    | 06   | 8min     | 2     | 9     |
+| 02    | 07   | 7min     | 2     | 7     |
 
 ## Accumulated Context
 
@@ -123,6 +124,11 @@ progress:
 - reviveDeal(): restores deal to previous stage, clears kill metadata
 - Pipeline: closing checklist progress % on Closing cards, kill reason badges on dead deal cards
 
+- **2026-03-06 (02-07):** sourceDeal include fetches screeningResult, workstreams, icProcess, dealMetadata, dealLead for comprehensive deal intelligence on asset pages
+- **2026-03-06 (02-07):** AI Deal Intelligence section defaults collapsed on asset overview -- avoids overwhelming the page while keeping data accessible
+- **2026-03-06 (02-07):** Analytics route at priority 81 between Accounting (82) and Meetings (80) for natural sidebar placement
+- **2026-03-06 (02-07):** Time-in-stage uses DealActivity STAGE_CHANGE metadata with fallback to deal createdAt
+
 ### Phase 2 Decision Structures & IC Voting (Plan 02-06)
 - Decision structures CRUD API: 3 route files (structures, [id], [id]/members)
 - Settings page "Decision Structures" tab with create/edit/delete, expandable member management
@@ -131,7 +137,14 @@ progress:
 - Enhanced IC Review tab: voting panel, conditions textarea, structure info banner, vote display with conditions
 - Zod schemas: CreateDecisionStructureSchema, UpdateDecisionStructureSchema, AddDecisionMemberSchema, CastICVoteSchema
 
+### Phase 2 Asset Detail & Analytics (Plan 02-07)
+- Asset detail page: "Originated from" banner with source deal link, collapsible AI intelligence section (score, strengths, risks)
+- New equity tab + entity allocations card on overview + type-specific placeholders
+- Dedicated /analytics page: 4 Recharts panels (pipeline value by stage, time-in-stage, deal velocity, conversion funnel) + throughput chart
+- GET /api/analytics/pipeline: pipeline value, time-in-stage, velocity, conversion, throughput metrics
+- Analytics registered in routes.ts (sidebar, command bar, AI prompt auto-updated)
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:48:18.365Z
-- **Stopped at:** Phase 4 context gathered
+- **Last session:** 2026-03-06T06:58:00.000Z
+- **Stopped at:** Completed 02-07-PLAN.md (Phase 2 complete)
