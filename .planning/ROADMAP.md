@@ -62,11 +62,11 @@ Plans:
 - [x] 02-02-PLAN.md — Wave 2: Deal wizard validation + inline edit + kill/revive
 - [ ] 02-03-PLAN.md — Wave 3: Closing workflow + deal-to-asset + multi-entity (depends on 02-02)
 - [x] 02-04-PLAN.md — Wave 2: Deal overview dashboard + AI metadata extraction
-- [ ] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
+- [x] 02-05-PLAN.md — Wave 3: DD workstreams interactive PM-style redesign
 - [ ] 02-06-PLAN.md — Wave 3: IC Review decision structures + in-app voting (depends on 02-02)
 - [ ] 02-07-PLAN.md — Wave 4: Asset detail polish + pipeline analytics (depends on 02-02, 02-03, 02-04)
 
-**Progress:** 3/7 plans complete
+**Progress:** 4/7 plans complete
 
 ---
 
@@ -198,7 +198,7 @@ Plans:
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
-| 2 | Deal Desk End-to-End | 11 | 7 | In progress (2/7 plans done) |
+| 2 | Deal Desk End-to-End | 11 | 7 | In progress (4/7 plans done) |
 | 3 | Capital Activity | 6 | 3 | Not started |
 | 4 | Asset & Entity Polish | 10 | 3 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
