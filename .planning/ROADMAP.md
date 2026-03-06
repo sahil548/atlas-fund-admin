@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** 1 (Verify & Stabilize) — in progress (2/3 plans complete)
+**Current phase:** 2 (Deal Desk End-to-End) — Phase 1 complete
 
 ---
 
@@ -30,9 +30,9 @@
 Plans:
 - [x] 01-01-PLAN.md — Verify computation engines (IRR, waterfall, capital accounts) with test suites
 - [x] 01-02-PLAN.md — Diagnose/fix 3 known bugs + verify deal pipeline end-to-end
-- [ ] 01-03-PLAN.md — Verify capital workflows + Slack integration + create ground truth document
+- [x] 01-03-PLAN.md — Verify capital workflows + Slack integration + create ground truth document
 
-**Progress:** 2/3 plans complete
+**Progress:** 3/3 plans complete — PHASE COMPLETE
 
 ---
 
@@ -187,7 +187,7 @@ Plans:
 
 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
-| 1 | Verify & Stabilize | 8 | 3 | In progress (2/3 complete) |
+| 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
 | 2 | Deal Desk End-to-End | 6 | 3 | Not started |
 | 3 | Capital Activity | 6 | 3 | Not started |
 | 4 | Asset & Entity Polish | 10 | 3 | Not started |

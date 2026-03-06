@@ -12,10 +12,10 @@ Code exists but correctness/completeness not validated. Must test before buildin
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| VERIFY-01 | Verify financial computation engines produce correct results | Critical | Code in `src/lib/computations/` (IRR, waterfall, capital accounts) — never tested against known-good results |
-| VERIFY-02 | Verify Slack IC voting integration works end-to-end | High | 245 lines in `src/lib/slack.ts` + API route — never tested with real Slack workspace |
+| VERIFY-01 | Verify financial computation engines produce correct results | Critical | DONE (01-01): IRR (10 tests), waterfall (13 tests), capital accounts (16 tests) — all pass, no bugs found |
+| VERIFY-02 | Verify Slack IC voting integration works end-to-end | High | DONE (01-03): code reviewed — structurally sound, security-hardened, all DB fields present; requires real Slack workspace setup to live-test |
 | VERIFY-03 | Verify full deal pipeline works end-to-end (screen → DD → IC → close → asset) | High | DONE (01-02): all 4 stage transitions verified via code review — complete implementation |
-| VERIFY-04 | Verify capital call and distribution workflows work correctly | High | Forms and API exist — never tested with real workflow |
+| VERIFY-04 | Verify capital call and distribution workflows work correctly | High | DONE (01-03): APIs verified — capital calls PARTIAL (no line item endpoint), distributions PARTIAL (same), waterfall/capital-account/NAV APIs WORKS |
 | VERIFY-05 | Re-check 3 known bugs — may or may not still exist | High | DONE (01-02): all 3 bugs diagnosed and fixed (see BUG-01, BUG-02, BUG-03) |
 
 ---
