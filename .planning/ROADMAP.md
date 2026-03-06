@@ -50,11 +50,12 @@ Plans:
 - [ ] Inline edit fields on deal detail save reliably on blur/Enter
 - [ ] Asset detail pages polished after deal-to-asset flow works
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | 3/3 | Complete   | 2026-03-06 | 2 | Closing flow + deal-to-asset transition | Not started |
-| 3 | Entity formation linked to deal closing | Not started |
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Deal creation wizard validation + inline edit reliability + kill/revive flow
+- [ ] 02-02-PLAN.md — Closing workflow + deal-to-asset transition + multi-entity deals
+- [ ] 02-03-PLAN.md — Asset detail polish after deal-to-asset flow
 
 **Progress:** 0/3 plans complete
 
