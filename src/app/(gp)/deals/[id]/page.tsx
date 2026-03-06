@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CloseDealModal } from "@/components/features/deals/close-deal-modal";
 import { EditDealForm } from "@/components/features/deals/edit-deal-form";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
 
 // Tab components
@@ -128,6 +129,7 @@ export default function DealDetailPage({
   const searchParams = useSearchParams();
   const { data: deal, isLoading } = useSWR(`/api/deals/${id}`, fetcher);
   const toast = useToast();
+  const { firmId } = useFirm();
   const [tab, setTab] = useState("Overview");
   const [showEdit, setShowEdit] = useState(false);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
@@ -399,13 +401,25 @@ export default function DealDetailPage({
     }
   }
 
-  async function handleCloseDeal(closeData: { costBasis: number; fairValue: number; entryDate: string }) {
+  async function handleCloseDeal(closeData: {
+    costBasis: number;
+    fairValue: number;
+    entryDate: string;
+    allocations: { entityId: string; allocationPercent: number }[];
+  }) {
     setClosingDeal(true);
     try {
       const res = await fetch(`/api/deals/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CLOSE", force: true, ...closeData }),
+        body: JSON.stringify({
+          action: "CLOSE",
+          force: true,
+          costBasis: closeData.costBasis,
+          fairValue: closeData.fairValue,
+          entryDate: closeData.entryDate,
+          allocations: closeData.allocations,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -449,7 +463,7 @@ export default function DealDetailPage({
       case "IC Review":
         return <DealICReviewTab deal={deal} />;
       case "Closing":
-        return <DealClosingTab deal={deal} />;
+        return <DealClosingTab deal={deal} onCloseDeal={() => setShowCloseDeal(true)} />;
       default:
         return null;
     }
@@ -735,7 +749,8 @@ export default function DealDetailPage({
         onConfirm={handleCloseDeal}
         dealName={deal.name}
         assetClass={ASSET_CLASS_LABELS[deal.assetClass as keyof typeof ASSET_CLASS_LABELS] || deal.assetClass}
-        entityName={deal.targetEntity?.name}
+        firmId={firmId}
+        initialEntityId={deal.entityId || undefined}
         loading={closingDeal}
         checklistTotal={deal.closingChecklist?.length ?? 0}
         checklistComplete={deal.closingChecklist?.filter((i: any) => i.status === "COMPLETE").length ?? 0}

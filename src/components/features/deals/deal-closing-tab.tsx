@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -42,9 +41,10 @@ const STATUS_LABELS: Record<string, string> = {
 
 interface DealClosingTabProps {
   deal: any;
+  onCloseDeal: () => void;
 }
 
-export function DealClosingTab({ deal }: DealClosingTabProps) {
+export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
   const toast = useToast();
   const { firmId } = useFirm();
   const { data: checklistItems, isLoading } = useSWR(
@@ -53,9 +53,7 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
   );
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const [initializing, setInitializing] = useState(false);
-  const [closing, setClosing] = useState(false);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
-  const [forceCloseWarning, setForceCloseWarning] = useState<string | null>(null);
 
   const items: any[] = checklistItems || [];
   const completedCount = items.filter((i: any) => i.status === "COMPLETE").length;
@@ -92,47 +90,20 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
     }
   }
 
-  async function handleCloseDeal(force = false) {
-    setClosing(true);
-    try {
-      const res = await fetch(`/api/deals/${deal.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "CLOSE", force }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(typeof data.error === "string" ? data.error : "Failed to close deal");
-        return;
-      }
-      if (data.warning) {
-        setForceCloseWarning(data.warning);
-        return;
-      }
-      toast.success("Deal closed — asset created and booked");
-      mutate(`/api/deals/${deal.id}`);
-      mutate("/api/deals");
-    } catch {
-      toast.error("Failed to close deal");
-    } finally {
-      setClosing(false);
-    }
-  }
-
   return (
     <div className="space-y-4">
-      {/* Entity Warning or Card */}
+      {/* Entity Info or Informational Note */}
       {!deal.targetEntity ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg className="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+            <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div className="flex-1">
-            <div className="text-sm font-semibold text-amber-900">No investment vehicle linked</div>
-            <p className="text-sm text-amber-700 mt-1">
-              Link or create an entity before closing. Go to the Overview tab to link an investment vehicle.
+            <div className="text-sm font-semibold text-blue-900">No investment vehicle pre-linked</div>
+            <p className="text-sm text-blue-700 mt-1">
+              You&apos;ll assign entities and allocation percentages when you close the deal.
             </p>
           </div>
         </div>
@@ -289,27 +260,13 @@ export function DealClosingTab({ deal }: DealClosingTabProps) {
                 </span>
               )}
               <Button
-                loading={closing}
-                onClick={() => handleCloseDeal()}
+                onClick={onCloseDeal}
                 className={!allComplete ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}
               >
                 {allComplete ? "Close Deal" : "Close Deal Anyway"}
               </Button>
             </div>
           )}
-
-          {/* Force close confirmation */}
-          <ConfirmDialog
-            open={!!forceCloseWarning}
-            title="Incomplete Checklist"
-            message={forceCloseWarning || ""}
-            confirmLabel="Close Anyway"
-            onConfirm={() => {
-              setForceCloseWarning(null);
-              handleCloseDeal(true);
-            }}
-            onClose={() => setForceCloseWarning(null)}
-          />
         </>
       )}
     </div>

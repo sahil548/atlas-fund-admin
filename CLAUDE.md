@@ -40,6 +40,11 @@ Atlas is a family office operating system replacing spreadsheets, portals, and e
 3. **Tell me what might break.** Be honest about edge cases or things that could go wrong.
 4. **Run `npm run build`** — zero errors before telling me you're done.
 
+### Testing
+
+- **When testing, use localhost in a browser when possible.** Don't just check build output — actually open the page and interact with it.
+- **Test using real workflows as a user would.** Click through the actual UI flow end-to-end, not just verify individual components in isolation.
+
 ### Version workflow
 
 - **Do NOT commit or push after every change.** Batch your work.

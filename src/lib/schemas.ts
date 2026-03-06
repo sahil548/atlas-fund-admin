@@ -239,6 +239,32 @@ export const InitializeClosingSchema = z.object({
 
 export const CloseDealSchema = z.object({
   action: z.literal("CLOSE"),
+  costBasis: z.number().positive("Cost basis must be positive"),
+  fairValue: z.number().positive().optional(),
+  entryDate: z.string().optional(),
+  force: z.boolean().optional(),
+  allocations: z
+    .array(
+      z.object({
+        entityId: z.string().min(1, "Entity ID is required"),
+        allocationPercent: z.number().min(0.01).max(100),
+      }),
+    )
+    .min(1, "At least one entity allocation is required")
+    .refine(
+      (allocations) => {
+        const total = allocations.reduce((sum, a) => sum + a.allocationPercent, 0);
+        return Math.abs(total - 100) < 0.01;
+      },
+      { message: "Allocation percentages must total 100%" },
+    )
+    .refine(
+      (allocations) => {
+        const ids = allocations.map((a) => a.entityId);
+        return new Set(ids).size === ids.length;
+      },
+      { message: "Duplicate entity allocations are not allowed" },
+    ),
 });
 
 // ── Assets ─────────────────────────────────────────────

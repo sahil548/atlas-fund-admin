@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
-import { UpdateDealSchema } from "@/lib/schemas";
+import { UpdateDealSchema, CloseDealSchema } from "@/lib/schemas";
 import { killDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
 
 export async function GET(
@@ -110,12 +110,17 @@ export async function PATCH(
   }
 
   if (body.action === "CLOSE") {
+    const parsed = CloseDealSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
     try {
       const result = await closeDeal(id, {
-        costBasis: body.costBasis,
-        fairValue: body.fairValue,
-        entryDate: body.entryDate,
-        force: body.force,
+        costBasis: parsed.data.costBasis,
+        fairValue: parsed.data.fairValue,
+        entryDate: parsed.data.entryDate,
+        force: parsed.data.force,
+        allocations: parsed.data.allocations,
       });
       if ("warning" in result) {
         return NextResponse.json({ warning: result.warning, checklistTotal: result.checklistTotal, checklistComplete: result.checklistComplete });

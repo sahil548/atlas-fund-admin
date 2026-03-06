@@ -243,15 +243,25 @@ export async function killDeal(dealId: string) {
  * Validates all closing checklist items are COMPLETE, then transitions.
  * Also creates an Asset record from the deal data.
  */
+interface CloseAllocation {
+  entityId: string;
+  allocationPercent: number;
+}
+
 export async function closeDeal(
   dealId: string,
-  opts?: { costBasis?: number; fairValue?: number; entryDate?: string; force?: boolean },
+  opts: {
+    costBasis: number;
+    fairValue?: number;
+    entryDate?: string;
+    force?: boolean;
+    allocations: CloseAllocation[];
+  },
 ) {
   const deal = await prisma.deal.findUnique({
     where: { id: dealId },
     include: {
       closingChecklist: true,
-      targetEntity: true,
       documents: true,
     },
   });
@@ -259,16 +269,21 @@ export async function closeDeal(
   if (deal.stage !== "CLOSING") {
     throw new Error(`Deal must be in CLOSING to close (currently ${deal.stage})`);
   }
+  if (!deal.firmId) throw new Error("Deal has no firm associated");
 
   const totalItems = deal.closingChecklist.length;
   const completedItems = deal.closingChecklist.filter(
     (item) => item.status === "COMPLETE",
   ).length;
 
-  if (totalItems === 0) {
-    throw new Error("Initialize the closing checklist before closing the deal");
+  if (totalItems === 0 && !opts.force) {
+    return {
+      warning: "Closing checklist has not been initialized. Close anyway?",
+      checklistTotal: 0,
+      checklistComplete: 0,
+    };
   }
-  if (completedItems < totalItems && !opts?.force) {
+  if (totalItems > 0 && completedItems < totalItems && !opts.force) {
     return {
       warning: `${totalItems - completedItems} of ${totalItems} checklist items are incomplete. Close anyway?`,
       checklistTotal: totalItems,
@@ -276,11 +291,21 @@ export async function closeDeal(
     };
   }
 
-  const costBasis = opts?.costBasis ?? 0;
-  const fairValue = opts?.fairValue ?? costBasis;
-  const entryDate = opts?.entryDate ? new Date(opts.entryDate) : new Date();
+  // Validate all entity IDs belong to the same firm
+  const entityIds = opts.allocations.map((a) => a.entityId);
+  const entities = await prisma.entity.findMany({
+    where: { id: { in: entityIds }, firmId: deal.firmId },
+    select: { id: true },
+  });
+  if (entities.length !== entityIds.length) {
+    throw new Error("One or more entity IDs are invalid or do not belong to this firm");
+  }
 
-  // Create asset from deal data with back-reference
+  const costBasis = opts.costBasis;
+  const fairValue = opts.fairValue ?? costBasis;
+  const entryDate = opts.entryDate ? new Date(opts.entryDate) : new Date();
+
+  // Create asset from deal data
   const asset = await prisma.asset.create({
     data: {
       name: deal.name,
@@ -295,14 +320,14 @@ export async function closeDeal(
     },
   });
 
-  // Link asset to entity if deal has one
-  if (deal.entityId) {
+  // Create entity allocations
+  for (const alloc of opts.allocations) {
     await prisma.assetEntityAllocation.create({
       data: {
         assetId: asset.id,
-        entityId: deal.entityId,
-        allocationPercent: 100,
-        costBasis,
+        entityId: alloc.entityId,
+        allocationPercent: alloc.allocationPercent,
+        costBasis: costBasis * (alloc.allocationPercent / 100),
       },
     });
   }
@@ -332,6 +357,11 @@ export async function closeDeal(
         assetName: asset.name,
         costBasis,
         fairValue,
+        allocations: opts.allocations.map((a) => ({
+          entityId: a.entityId,
+          allocationPercent: a.allocationPercent,
+          costBasis: costBasis * (a.allocationPercent / 100),
+        })),
       },
     },
   });
