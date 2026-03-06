@@ -72,6 +72,18 @@ export const UpdateDealSchema = z.object({
 
 export const KillDealSchema = z.object({
   action: z.literal("KILL"),
+  killReason: z.string().min(1, "Kill reason is required"),
+  killReasonText: z.string().optional(),
+});
+
+export const AddDealEntitySchema = z.object({
+  entityId: z.string().min(1, "Entity ID is required"),
+  allocationPercent: z.number().min(0).max(100).optional(),
+  role: z.string().optional(),
+});
+
+export const AddCustomClosingItemSchema = z.object({
+  title: z.string().min(1, "Title is required"),
 });
 
 export const CreateDDWorkstreamSchema = z.object({

@@ -1,14 +1,15 @@
 /**
  * Default closing checklist templates for deal execution.
- * These represent the steps to close an asset deal (investment/acquisition).
+ * These represent the transactional steps to close an asset deal (investment/acquisition).
+ * DD-focused items belong in the DD workstreams, not the closing checklist.
  */
 export const CLOSING_CHECKLIST_TEMPLATES = [
   {
-    title: "Purchase / Investment Agreement Execution",
+    title: "Execute Purchase / Sale Agreement",
     order: 1,
   },
   {
-    title: "Legal Due Diligence Completion",
+    title: "Legal Opinion & Closing Deliverables",
     order: 2,
   },
   {
@@ -16,15 +17,15 @@ export const CLOSING_CHECKLIST_TEMPLATES = [
     order: 3,
   },
   {
-    title: "Title / Ownership Transfer",
+    title: "Transfer of Title / Ownership",
     order: 4,
   },
   {
-    title: "Insurance Binding",
+    title: "Insurance Certificates & Binding",
     order: 5,
   },
   {
-    title: "Escrow Setup & Funding",
+    title: "Entity Operating Agreement Execution",
     order: 6,
   },
   {
@@ -32,7 +33,7 @@ export const CLOSING_CHECKLIST_TEMPLATES = [
     order: 7,
   },
   {
-    title: "Post-Close Confirmation & Booking",
+    title: "Post-Closing Deliverables & Booking",
     order: 8,
   },
 ];
