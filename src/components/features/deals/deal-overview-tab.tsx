@@ -4,9 +4,18 @@ import { useState } from "react";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/toast";
 import { InlineEditField } from "./inline-edit-field";
 import { DealEntitySection } from "./deal-entity-section";
+import { mutate } from "swr";
 import type { AnalysisProgress } from "@/app/(gp)/deals/[id]/page";
+import {
+  ASSET_CLASS_LABELS,
+  ASSET_CLASS_COLORS,
+  CAPITAL_INSTRUMENT_LABELS,
+  PARTICIPATION_LABELS,
+  PARTICIPATION_COLORS,
+} from "@/lib/constants";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -15,7 +24,17 @@ const stageLabel: Record<string, string> = {
   DUE_DILIGENCE: "Due Diligence",
   IC_REVIEW: "IC Review",
   CLOSING: "Closing",
+  CLOSED: "Closed",
   DEAD: "Dead",
+};
+
+const stageColor: Record<string, string> = {
+  SCREENING: "yellow",
+  DUE_DILIGENCE: "blue",
+  IC_REVIEW: "purple",
+  CLOSING: "indigo",
+  CLOSED: "green",
+  DEAD: "red",
 };
 
 const REC_COLORS: Record<string, string> = {
@@ -26,6 +45,44 @@ const REC_COLORS: Record<string, string> = {
   NO_GO: "red",
   NEEDS_MORE_INFO: "yellow",
 };
+
+// Asset-class-specific field definitions for deal terms
+const ASSET_CLASS_FIELDS: Record<string, { key: string; label: string }[]> = {
+  REAL_ESTATE: [
+    { key: "propertyType", label: "Property Type" },
+    { key: "location", label: "Location" },
+    { key: "capRate", label: "Cap Rate" },
+    { key: "noi", label: "NOI" },
+    { key: "squareFootage", label: "Square Footage" },
+  ],
+  INFRASTRUCTURE: [
+    { key: "projectType", label: "Project Type" },
+    { key: "location", label: "Location" },
+    { key: "contractLength", label: "Contract Length" },
+    { key: "regulatoryStatus", label: "Regulatory Status" },
+  ],
+  OPERATING_BUSINESS: [
+    { key: "revenue", label: "Revenue" },
+    { key: "ebitda", label: "EBITDA" },
+    { key: "ownershipPercent", label: "Ownership %" },
+    { key: "growthRate", label: "Growth Rate" },
+  ],
+  PUBLIC_SECURITIES: [
+    { key: "ticker", label: "Ticker" },
+    { key: "marketCap", label: "Market Cap" },
+    { key: "sector", label: "Sector" },
+    { key: "peRatio", label: "P/E Ratio" },
+  ],
+};
+
+// For debt instruments, use these fields regardless of asset class
+const DEBT_FIELDS = [
+  { key: "principal", label: "Principal" },
+  { key: "interestRate", label: "Interest Rate" },
+  { key: "maturityDate", label: "Maturity Date" },
+  { key: "ltv", label: "LTV" },
+  { key: "covenants", label: "Covenants Summary" },
+];
 
 interface DealOverviewTabProps {
   deal: any;
@@ -47,6 +104,8 @@ export function DealOverviewTab({
   const [sourceDataOpen, setSourceDataOpen] = useState(false);
   const [memoExpanded, setMemoExpanded] = useState(true);
   const [selectedMemoVersion, setSelectedMemoVersion] = useState<number | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const toast = useToast();
 
   const isScreening = deal.stage === "SCREENING";
   const workstreams = ((deal.workstreams || []) as any[]).filter(
@@ -67,6 +126,57 @@ export function DealOverviewTab({
     selectedMemoVersion != null
       ? previousMemoVersions.find((v: any) => v.version === selectedMemoVersion)?.memo
       : sr?.memo;
+
+  // Deal metadata from AI extraction
+  const metadata: Record<string, any> = deal.dealMetadata && typeof deal.dealMetadata === "object"
+    ? deal.dealMetadata
+    : {};
+  const hasMetadata = Object.keys(metadata).length > 0;
+
+  // Get the appropriate fields for this deal's asset class
+  function getTermFields(): { key: string; label: string }[] {
+    if (deal.capitalInstrument === "DEBT") {
+      return DEBT_FIELDS;
+    }
+    return ASSET_CLASS_FIELDS[deal.assetClass] || [];
+  }
+
+  // Trigger AI metadata extraction
+  async function extractMetadata() {
+    setExtracting(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/extract-metadata`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = typeof err.error === "string" ? err.error : "Failed to extract metadata";
+        toast.error(msg);
+        return;
+      }
+      toast.success("Deal terms extracted from documents");
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Failed to extract metadata");
+    } finally {
+      setExtracting(false);
+    }
+  }
+
+  // Save a single metadata field
+  async function saveMetadataField(key: string, value: string) {
+    const updated = { ...metadata, [key]: value || null };
+    try {
+      await fetch(`/api/deals/${deal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dealMetadata: updated }),
+      });
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Failed to save field");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -139,185 +249,323 @@ export function DealOverviewTab({
             </div>
           </div>
 
-          {/* Investment Vehicle — standalone section */}
+          {/* Investment Vehicle */}
           <DealEntitySection dealId={deal.id} targetEntity={deal.targetEntity} />
         </>
       )}
 
-      {/* ── Post-screening ── */}
+      {/* ── Post-screening: 4-Section Dashboard ── */}
       {!isScreening && (
         <>
-          {/* IC Memo with integrated AI Score */}
-          <div className="border border-gray-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setMemoExpanded(!memoExpanded)} className="text-xs text-gray-500">
-                  <span className={`transition-transform inline-block ${memoExpanded ? "rotate-90" : ""}`}>&#9654;</span>
-                </button>
+          {/* ═══ SECTION 1: Header Card ═══ */}
+          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-5 text-white">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h2 className="text-xl font-bold truncate">{deal.name}</h2>
+                  {deal.aiScore != null && (
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                      deal.aiScore >= 70 ? "bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-400/40" :
+                      deal.aiScore >= 50 ? "bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/40" :
+                      "bg-red-400/20 text-red-300 ring-1 ring-red-400/40"
+                    }`}>
+                      {deal.aiScore}
+                    </div>
+                  )}
+                </div>
 
-                {/* Integrated Score Circle */}
-                {deal.aiScore != null && (
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                    deal.aiScore >= 70 ? "bg-emerald-100 text-emerald-700" :
-                    deal.aiScore >= 40 ? "bg-amber-100 text-amber-700" :
-                    "bg-red-100 text-red-700"
-                  }`}>
-                    {deal.aiScore}
-                  </div>
-                )}
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge color={stageColor[deal.stage] || "gray"}>
+                    {stageLabel[deal.stage] || deal.stage}
+                  </Badge>
+                  <Badge color={ASSET_CLASS_COLORS[deal.assetClass] || "gray"}>
+                    {ASSET_CLASS_LABELS[deal.assetClass] || deal.assetClass}
+                  </Badge>
+                  {deal.capitalInstrument && (
+                    <Badge color={deal.capitalInstrument === "DEBT" ? "orange" : "blue"}>
+                      {CAPITAL_INSTRUMENT_LABELS[deal.capitalInstrument] || deal.capitalInstrument}
+                    </Badge>
+                  )}
+                  {deal.participationStructure && (
+                    <Badge color={PARTICIPATION_COLORS[deal.participationStructure] || "gray"}>
+                      {PARTICIPATION_LABELS[deal.participationStructure] || deal.participationStructure}
+                    </Badge>
+                  )}
+                </div>
 
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-900">AI Overview — IC Memo</span>
-                    {sr?.memo?.recommendation && (
-                      <Badge color={REC_COLORS[sr.memo.recommendation] || "gray"}>
-                        {sr.memo.recommendation.replace(/_/g, " ")}
-                      </Badge>
-                    )}
-                    {hasMemo && <Badge color="indigo">v{currentMemoVersion}</Badge>}
-                    {isAnalyzing && <Badge color="yellow">Generating...</Badge>}
+                <div className="mt-3 flex items-center gap-4 text-sm text-gray-300 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <span>{deal.dealLead?.name || "No lead assigned"}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {deal.aiScore != null && (
-                      <span className="text-[10px] text-gray-500">
-                        Score: {deal.aiScore >= 70 ? "Strong" : deal.aiScore >= 40 ? "Moderate" : "Weak"}
-                      </span>
-                    )}
-                    <span className="text-[10px] text-gray-400">
-                      {stageLabel[deal.stage] || deal.stage} · {workstreams.length} workstreams
-                    </span>
-                    {hasMemo && sr?.memoGeneratedAt && (
-                      <span className="text-[10px] text-gray-400">
-                        · Generated {new Date(sr.memoGeneratedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
+                  {deal.targetSize && (
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>{deal.targetSize}</span>
+                    </div>
+                  )}
+                  {deal.source && (
+                    <span className="text-xs text-gray-400">Source: {deal.source}</span>
+                  )}
+                  {deal.counterparty && (
+                    <span className="text-xs text-gray-400">Counterparty: {deal.counterparty}</span>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                {previousMemoVersions.length > 0 && (
-                  <select
-                    value={selectedMemoVersion ?? ""}
-                    onChange={(e) => setSelectedMemoVersion(e.target.value ? Number(e.target.value) : null)}
-                    className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white"
-                  >
-                    <option value="">v{currentMemoVersion} (Current)</option>
-                    {[...previousMemoVersions].reverse().map((v: any) => (
-                      <option key={v.version} value={v.version}>
-                        v{v.version} ({new Date(v.memoGeneratedAt).toLocaleDateString()})
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {!isAnalyzing && (
-                  <Button
-                    size="sm"
-                    variant={hasMemo ? "secondary" : "primary"}
-                    loading={regenerating}
-                    onClick={regenerateMemo}
-                  >
-                    {hasMemo ? "Regenerate" : "Generate IC Memo"}
-                  </Button>
-                )}
+
+              {/* Deal lead initials avatar */}
+              {deal.dealLead && (
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ml-4">
+                  {deal.dealLead.initials || deal.dealLead.name?.charAt(0) || "?"}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ═══ SECTION 2: Key Metrics ═══ */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard
+              label="Target Return"
+              value={deal.targetReturn || metadata.targetReturn || "--"}
+              small
+            />
+            <StatCard
+              label="Target Check Size"
+              value={deal.targetCheckSize || metadata.targetCheckSize || "--"}
+              small
+            />
+            <StatCard
+              label="Deal Size"
+              value={deal.targetSize || metadata.dealSize || "--"}
+              small
+            />
+            <StatCard
+              label="Projected Cash Flow"
+              value={metadata.projectedCashFlow || "Not available"}
+              small
+            />
+          </div>
+
+          {/* ═══ SECTIONS 3 & 4: IC Memo Summary + Deal Terms (2-col on lg) ═══ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* ═══ SECTION 3: IC Memo Summary ═══ */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setMemoExpanded(!memoExpanded)} className="text-xs text-gray-500">
+                    <span className={`transition-transform inline-block ${memoExpanded ? "rotate-90" : ""}`}>&#9654;</span>
+                  </button>
+
+                  {/* Integrated Score Circle */}
+                  {deal.aiScore != null && (
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      deal.aiScore >= 70 ? "bg-emerald-100 text-emerald-700" :
+                      deal.aiScore >= 40 ? "bg-amber-100 text-amber-700" :
+                      "bg-red-100 text-red-700"
+                    }`}>
+                      {deal.aiScore}
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-gray-900">IC Memo</span>
+                      {sr?.memo?.recommendation && (
+                        <Badge color={REC_COLORS[sr.memo.recommendation] || "gray"}>
+                          {sr.memo.recommendation.replace(/_/g, " ")}
+                        </Badge>
+                      )}
+                      {hasMemo && <Badge color="indigo">v{currentMemoVersion}</Badge>}
+                      {isAnalyzing && <Badge color="yellow">Generating...</Badge>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {previousMemoVersions.length > 0 && (
+                    <select
+                      value={selectedMemoVersion ?? ""}
+                      onChange={(e) => setSelectedMemoVersion(e.target.value ? Number(e.target.value) : null)}
+                      className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white"
+                    >
+                      <option value="">v{currentMemoVersion} (Current)</option>
+                      {[...previousMemoVersions].reverse().map((v: any) => (
+                        <option key={v.version} value={v.version}>
+                          v{v.version} ({new Date(v.memoGeneratedAt).toLocaleDateString()})
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {!isAnalyzing && (
+                    <Button
+                      size="sm"
+                      variant={hasMemo ? "secondary" : "primary"}
+                      loading={regenerating}
+                      onClick={regenerateMemo}
+                    >
+                      {hasMemo ? "Regenerate" : "Generate"}
+                    </Button>
+                  )}
+                </div>
               </div>
+
+              {memoExpanded && (
+                <div className="p-4">
+                  {displayMemo ? (
+                    <div className="space-y-3">
+                      {selectedMemoVersion != null && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-800 flex items-center gap-2">
+                          <span>Viewing version {selectedMemoVersion}.</span>
+                          <button
+                            onClick={() => setSelectedMemoVersion(null)}
+                            className="text-amber-700 font-semibold underline hover:text-amber-900"
+                          >
+                            Return to current
+                          </button>
+                        </div>
+                      )}
+
+                      {displayMemo.recommendation && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-gray-600">Recommendation:</span>
+                          <Badge color={REC_COLORS[displayMemo.recommendation] || "gray"}>
+                            {displayMemo.recommendation.replace(/_/g, " ")}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {displayMemo.summary && (
+                        <div>
+                          <div className="text-xs font-semibold text-gray-700 mb-1">Executive Summary</div>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                            {displayMemo.summary.length > 300
+                              ? displayMemo.summary.slice(0, 300) + "..."
+                              : displayMemo.summary}
+                          </p>
+                          {displayMemo.summary.length > 300 && (
+                            <button
+                              onClick={() => setMemoExpanded(true)}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1"
+                            >
+                              Read full memo (IC Review tab)
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {hasMemo && sr?.memoGeneratedAt && (
+                        <div className="text-[10px] text-gray-400 pt-1 border-t border-gray-100">
+                          Generated {new Date(sr.memoGeneratedAt).toLocaleDateString()} · v{currentMemoVersion}
+                        </div>
+                      )}
+                    </div>
+                  ) : isAnalyzing ? (
+                    <div className="py-6 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                        <div className="text-sm font-medium text-indigo-700">Generating IC Memo...</div>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        Analyzing {workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} and synthesizing into an IC-ready document.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="py-6 text-center">
+                      <div className="text-sm text-gray-500">IC Memo not yet generated.</div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Click &ldquo;Generate&rdquo; to run all workstream analyses and synthesize findings.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {memoExpanded && (
+            {/* ═══ SECTION 4: Deal Terms ═══ */}
+            <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700">Deal Terms</span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={extracting}
+                  onClick={extractMetadata}
+                >
+                  Extract from Documents
+                </Button>
+              </div>
+
               <div className="p-4">
-                {displayMemo ? (
+                {hasMetadata || getTermFields().length > 0 ? (
                   <div className="space-y-3">
-                    {selectedMemoVersion != null && (
-                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-xs text-amber-800 flex items-center gap-2">
-                        <span>Viewing version {selectedMemoVersion}.</span>
-                        <button
-                          onClick={() => setSelectedMemoVersion(null)}
-                          className="text-amber-700 font-semibold underline hover:text-amber-900"
-                        >
-                          Return to current
-                        </button>
+                    {/* Asset-class-specific fields */}
+                    {getTermFields().map(({ key, label }) => (
+                      <MetadataField
+                        key={key}
+                        label={label}
+                        value={metadata[key] ?? null}
+                        onSave={(val) => saveMetadataField(key, val)}
+                      />
+                    ))}
+
+                    {/* Generic extracted fields not in the predefined list */}
+                    {Object.entries(metadata)
+                      .filter(([key]) => {
+                        const fieldKeys = getTermFields().map(f => f.key);
+                        // Skip keys already shown above and common top-level keys
+                        return !fieldKeys.includes(key) &&
+                          !["dealSize", "targetReturn", "projectedCashFlow", "targetCheckSize", "investmentStructure"].includes(key);
+                      })
+                      .map(([key, value]) => (
+                        <MetadataField
+                          key={key}
+                          label={formatFieldLabel(key)}
+                          value={typeof value === "string" ? value : value != null ? JSON.stringify(value) : null}
+                          onSave={(val) => saveMetadataField(key, val)}
+                        />
+                      ))}
+
+                    {/* Investment structure summary if present */}
+                    {metadata.investmentStructure && (
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="text-xs font-semibold text-gray-500 mb-1">Investment Structure</div>
+                        <p className="text-sm text-gray-700">
+                          {typeof metadata.investmentStructure === "string"
+                            ? metadata.investmentStructure
+                            : JSON.stringify(metadata.investmentStructure)}
+                        </p>
                       </div>
                     )}
 
-                    {displayMemo.recommendation && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-gray-600">Recommendation:</span>
-                        <Badge color={REC_COLORS[displayMemo.recommendation] || "gray"}>
-                          {displayMemo.recommendation.replace(/_/g, " ")}
-                        </Badge>
+                    {/* Key terms summary if present */}
+                    {metadata.keyTerms && (
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="text-xs font-semibold text-gray-500 mb-1">Key Terms</div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {typeof metadata.keyTerms === "string"
+                            ? metadata.keyTerms
+                            : JSON.stringify(metadata.keyTerms, null, 2)}
+                        </p>
                       </div>
                     )}
-
-                    {displayMemo.summary && (
-                      <div>
-                        <div className="text-xs font-semibold text-gray-700 mb-1">Executive Summary</div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{displayMemo.summary}</p>
-                      </div>
-                    )}
-
-                    {Array.isArray(displayMemo.sections) && displayMemo.sections.length > 0 && (
-                      <div className="space-y-2">
-                        {displayMemo.sections.map((section: any, i: number) => (
-                          <div key={i} className="bg-gray-50 rounded-lg border border-gray-100 p-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-semibold text-gray-800">{section.name}</span>
-                              {section.riskLevel && (
-                                <Badge
-                                  color={section.riskLevel === "HIGH" ? "red" : section.riskLevel === "MEDIUM" ? "yellow" : "green"}
-                                >
-                                  {section.riskLevel}
-                                </Badge>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-600 whitespace-pre-wrap">{section.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {Array.isArray(displayMemo.findings) && displayMemo.findings.length > 0 && (
-                      <div>
-                        <div className="text-xs font-semibold text-gray-700 mb-2">Key Action Items ({displayMemo.findings.length})</div>
-                        <div className="space-y-1">
-                          {displayMemo.findings.map((f: any, i: number) => (
-                            <div key={i} className="flex items-start gap-2 text-xs">
-                              <Badge color={f.priority === "HIGH" ? "red" : f.priority === "MEDIUM" ? "yellow" : "gray"}>
-                                {f.priority}
-                              </Badge>
-                              <div>
-                                <span className="font-medium text-gray-800">{f.title}</span>
-                                {f.description && (
-                                  <span className="text-gray-500 ml-1">— {f.description}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : isAnalyzing ? (
-                  <div className="py-6 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                      <div className="text-sm font-medium text-indigo-700">Generating IC Memo...</div>
-                    </div>
-                    <p className="text-xs text-gray-400">
-                      Analyzing {workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} and synthesizing into an IC-ready document.
-                    </p>
                   </div>
                 ) : (
                   <div className="py-6 text-center">
-                    <div className="text-sm text-gray-500">No IC Memo generated yet.</div>
+                    <div className="text-sm text-gray-500">No deal terms extracted.</div>
                     <p className="text-xs text-gray-400 mt-1">
-                      Click &ldquo;Generate IC Memo&rdquo; to run all workstream analyses and synthesize findings into an IC-ready document.
+                      Upload documents and click &ldquo;Extract from Documents&rdquo; to populate deal terms using AI.
                     </p>
                   </div>
                 )}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Deal Details (collapsible) */}
+          {/* ═══ Collapsible Deal Details (existing fields) ═══ */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <button
               onClick={() => setSourceDataOpen(!sourceDataOpen)}
@@ -343,10 +591,12 @@ export function DealOverviewTab({
                     <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
                   </div>
                 </div>
-                <DealEntitySection dealId={deal.id} targetEntity={deal.targetEntity} />
               </div>
             )}
           </div>
+
+          {/* Investment Vehicle */}
+          <DealEntitySection dealId={deal.id} targetEntity={deal.targetEntity} />
         </>
       )}
     </div>
@@ -392,4 +642,91 @@ export function DealOverviewTab({
       </>
     );
   }
+}
+
+// ── Helper: format camelCase to Title Case ──
+function formatFieldLabel(key: string): string {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (s) => s.toUpperCase())
+    .trim();
+}
+
+// ── Metadata field component (inline edit for extracted terms) ──
+function MetadataField({
+  label,
+  value,
+  onSave,
+}: {
+  label: string;
+  value: string | null;
+  onSave: (val: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState(value ?? "");
+
+  function startEdit() {
+    setEditValue(value ?? "");
+    setEditing(true);
+  }
+
+  function save() {
+    if (editValue !== (value ?? "")) {
+      onSave(editValue);
+    }
+    setEditing(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Escape") {
+      setEditValue(value ?? "");
+      setEditing(false);
+    }
+    if (e.key === "Enter") {
+      save();
+    }
+  }
+
+  if (editing) {
+    return (
+      <div>
+        <div className="text-[11px] text-gray-500 mb-0.5">{label}</div>
+        <input
+          autoFocus
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={save}
+          onKeyDown={handleKeyDown}
+          className="w-full text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="text-[11px] text-gray-500 mb-0.5">{label}</div>
+      <button
+        onClick={startEdit}
+        className="group flex items-center gap-1.5 text-left"
+      >
+        <span className={`text-sm ${value ? "text-gray-900" : "text-gray-400 italic"}`}>
+          {value || "Not available"}
+        </span>
+        <svg
+          className="w-3 h-3 text-gray-300 group-hover:text-indigo-500 flex-shrink-0 transition-colors"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+          />
+        </svg>
+      </button>
+    </div>
+  );
 }

@@ -68,6 +68,7 @@ export const UpdateDealSchema = z.object({
   thesisNotes: z.string().nullable().optional(),
   investmentRationale: z.string().nullable().optional(),
   additionalContext: z.string().nullable().optional(),
+  dealMetadata: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const KillDealSchema = z.object({
