@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-02
+current_plan: 02-03
 status: in-progress
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-06T06:15:30Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-06T06:25:23Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Atlas — GSD State
@@ -22,14 +22,18 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 2 of 7 (Deal Desk End-to-End) — IN PROGRESS
-- **Phase status:** Plan 01 complete, 6 plans remaining
-- **Current Plan:** 02-02 (next to execute)
-- **Active plan:** none (ready for 02-02)
+- **Phase status:** Plans 01-02 complete, 5 plans remaining
+- **Current Plan:** 02-03 (next to execute)
+- **Active plan:** none (ready for 02-03)
 
 ## Performance Metrics
-- Plans completed: 4
+- Plans completed: 5
 - Plans total: 10 (3 Phase 1 + 7 Phase 2)
 - Phases completed: 1
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 02    | 02   | 5min     | 3     | 8     |
 
 ## Accumulated Context
 
@@ -94,6 +98,11 @@ progress:
 - **2026-03-06 (02-01):** Kept existing Deal.entityId for backward compatibility alongside new DealEntity junction table
 - **2026-03-06 (02-01):** Expanded KillDealSchema to require killReason (was just action: KILL) — schema was unused, safe expansion
 - **2026-03-06 (02-01):** Replaced DD-focused closing templates with transactional mechanics — DD belongs in workstreams, not closing checklist
+- **2026-03-06 (02-02):** Step 2 document requirement enforced via toast, not blocking Step 1->2 navigation — user can explore Step 2 before adding docs
+- **2026-03-06 (02-02):** Counterparty inline creation defaults to COUNTERPARTY type — most common for new companies during deal creation
+- **2026-03-06 (02-02):** InlineEditField keeps edit mode open on save failure — prevents losing typed input on API errors
+- **2026-03-06 (02-02):** Textarea Enter inserts newline, Ctrl+Enter or blur saves — natural text editing behavior
+- **2026-03-06 (02-02):** Revive deal falls back to SCREENING if no previousStage — handles edge case of pre-existing dead deals
 
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
@@ -103,7 +112,14 @@ progress:
 - Updated Zod schemas: AddDealEntitySchema, KillDealSchema (with killReason), AddCustomClosingItemSchema
 - Transactional closing templates (8 items focused on execution mechanics)
 
+### Phase 2 Wizard, Inline Edit, Kill/Revive (Plan 02-02)
+- CreateDealWizard: inline validation + toast, participation structure, deal lead defaults, counterparty inline creation, Step 2 requires docs
+- InlineEditField: double-save prevention (savingRef + justSavedRef), error toast, textarea newline support
+- KillDealModal: reason dropdown required (Pricing, Risk, Timing, Sponsor, Other) + optional free text
+- reviveDeal(): restores deal to previous stage, clears kill metadata
+- Pipeline: closing checklist progress % on Closing cards, kill reason badges on dead deal cards
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:15:30Z
-- **Stopped at:** Completed 02-01-PLAN.md
+- **Last session:** 2026-03-06T06:25:23Z
+- **Stopped at:** Completed 02-02-PLAN.md

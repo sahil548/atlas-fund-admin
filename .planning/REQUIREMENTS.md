@@ -36,15 +36,15 @@ These were documented on March 5 but have not been re-checked. They may or may n
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| DEAL-01 | Screening stage polish (UX, validation errors shown to user) | High | Wizard doesn't show validation errors for missing required fields |
+| DEAL-01 | Screening stage polish (UX, validation errors shown to user) | High | DONE (02-02): Wizard shows inline red error text per field + toast summary on submit |
 | DEAL-02 | Closing workflow reliable and complete end-to-end | High | Closing tab exists but untested with real workflow |
 | DEAL-03 | Deal-to-asset auto-creation when deal closes | High | Close action exists, asset auto-creation not verified |
 | DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | Formation workflow exists but not linked to deal closing |
-| DEAL-05 | Deal edit inline fields save reliably | Medium | InlineEditField component exists, edge cases untested |
+| DEAL-05 | Deal edit inline fields save reliably | Medium | DONE (02-02): Double-save prevention (savingRef+justSavedRef), error toast, textarea newline support |
 | DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | Overview tab exists but is a flat form — needs 4-section dashboard redesign with AI metadata extraction |
 | DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
 | DEAL-08 | IC Review with configurable decision-making structures | High | IC tab exists with basic voting — needs settings page for structures, in-app voting, Send Back flow |
-| DEAL-09 | Kill/revive deal flow with required reasons | Medium | killDeal() exists but no reason required, no revive, no dead deals view |
+| DEAL-09 | Kill/revive deal flow with required reasons | Medium | DONE (02-02): KillDealModal with reason dropdown, reviveDeal() restores to previous stage, dead deal badges on pipeline |
 | DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | Basic conversion rates exist — needs pipeline value by stage, time-in-stage, velocity metrics |
 
 ---
