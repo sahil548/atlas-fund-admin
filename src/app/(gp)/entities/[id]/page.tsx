@@ -36,7 +36,9 @@ interface Tier { id: string; tierOrder: number; name: string; description?: stri
 export default function EntityDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: entity, isLoading } = useSWR(id ? `/api/entities/${id}` : null, fetcher);
-  const { data: navData } = useSWR(id ? `/api/nav/${id}` : null, fetcher);
+  const { data: navData, mutate: mutateNav } = useSWR(id ? `/api/nav/${id}` : null, fetcher);
+  const { data: metricsData } = useSWR(id ? `/api/entities/${id}/metrics` : null, fetcher);
+  const { data: navHistory } = useSWR(id ? `/api/nav/${id}/history` : null, fetcher);
   const [tab, setTab] = useState("overview");
   const [showCapCall, setShowCapCall] = useState(false);
   const [showDist, setShowDist] = useState(false);
@@ -45,14 +47,17 @@ export default function EntityDetailPage() {
   const [showAddTier, setShowAddTier] = useState(false);
   const [editTier, setEditTier] = useState<Tier | null>(null);
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const [expandedCall, setExpandedCall] = useState<string | null>(null);
+  const [expandedDist, setExpandedDist] = useState<string | null>(null);
   const [markingFormed, setMarkingFormed] = useState(false);
+  // NAV proxy edit state
+  const [proxyEdit, setProxyEdit] = useState<{ cashPercent: string; otherAssetsPercent: string; liabilitiesPercent: string } | null>(null);
+  const [savingProxy, setSavingProxy] = useState(false);
   const toast = useToast();
 
   if (isLoading || !entity) return <div className="text-sm text-gray-400">Loading...</div>;
 
   const e = entity;
-  const totalCalled = (e.capitalCalls || []).reduce((s: number, c: { amount: number }) => s + c.amount, 0);
-  const totalDistributed = (e.distributions || []).reduce((s: number, d: { grossAmount: number }) => s + d.grossAmount, 0);
 
   const methodLabel: Record<string, string> = { COMPARABLE_MULTIPLES: "Multiples", LAST_ROUND: "Last round", DCF: "DCF", APPRAISAL: "Appraisal", GP_REPORTED_NAV: "GP NAV", COST: "Cost" };
   const tierColors = ["bg-emerald-50 border-emerald-200", "bg-blue-50 border-blue-200", "bg-amber-50 border-amber-200", "bg-orange-50 border-orange-200", "bg-purple-50 border-purple-200"];
@@ -99,6 +104,97 @@ export default function EntityDetailPage() {
       setMarkingFormed(false);
     }
   }
+
+  async function handleSaveProxies() {
+    if (!proxyEdit) return;
+    setSavingProxy(true);
+    try {
+      const res = await fetch(`/api/entities/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          navProxyConfig: {
+            cashPercent: parseFloat(proxyEdit.cashPercent) / 100,
+            otherAssetsPercent: parseFloat(proxyEdit.otherAssetsPercent) / 100,
+            liabilitiesPercent: parseFloat(proxyEdit.liabilitiesPercent) / 100,
+          },
+        }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to save proxy config");
+        return;
+      }
+      toast.success("NAV proxy config updated");
+      setProxyEdit(null);
+      mutate(`/api/entities/${id}`);
+      mutateNav();
+    } catch {
+      toast.error("Failed to save proxy config");
+    } finally {
+      setSavingProxy(false);
+    }
+  }
+
+  async function handleCallStatusTransition(callId: string, newStatus: string) {
+    try {
+      const res = await fetch(`/api/capital-calls/${callId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to update status");
+        return;
+      }
+      toast.success("Status updated");
+      mutate(`/api/entities/${id}`);
+    } catch {
+      toast.error("Failed to update status");
+    }
+  }
+
+  async function handleFundLineItem(callId: string, lineItemId: string) {
+    try {
+      const res = await fetch(`/api/capital-calls/${callId}/line-items/${lineItemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Funded", paidDate: new Date().toISOString() }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to fund");
+        return;
+      }
+      toast.success("Line item funded");
+      mutate(`/api/entities/${id}`);
+    } catch {
+      toast.error("Failed to fund line item");
+    }
+  }
+
+  async function handleDistStatusTransition(distId: string, newStatus: string) {
+    try {
+      const res = await fetch(`/api/distributions/${distId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to update status");
+        return;
+      }
+      toast.success("Distribution status updated");
+      mutate(`/api/entities/${id}`);
+    } catch {
+      toast.error("Failed to update distribution status");
+    }
+  }
+
+  // Derive metrics display values
+  const metrics = metricsData?.metrics;
+  const inputs = metricsData?.inputs;
 
   return (
     <div className="space-y-4">
@@ -264,12 +360,15 @@ export default function EntityDetailPage() {
       {/* Overview Tab */}
       {tab === "overview" && (
         <div className="space-y-4">
-          <div className="grid grid-cols-4 gap-3">
+          {/* Primary metric cards (6) */}
+          <div className="grid grid-cols-3 xl:grid-cols-6 gap-3">
             {[
               { label: "Total Commitments", value: fmt(e.totalCommitments || 0) },
-              { label: "Called Capital", value: fmt(totalCalled) },
-              { label: "Economic NAV", value: navData ? fmt(navData.economicNAV) : "\u2014" },
-              { label: "Fund Term", value: e.fundTermYears ? `${e.fundTermYears} years` : "\u2014" },
+              { label: "Called Capital", value: inputs ? fmt(inputs.totalCalled) : "\u2014" },
+              { label: "Economic NAV", value: navData ? fmt(navData.economicNAV) : (inputs ? fmt(inputs.currentNAV) : "\u2014") },
+              { label: "TVPI", value: metrics?.tvpi != null ? `${metrics.tvpi.toFixed(2)}x` : "N/A" },
+              { label: "DPI", value: metrics?.dpi != null ? `${metrics.dpi.toFixed(2)}x` : "N/A" },
+              { label: "IRR", value: metrics?.irr != null ? `${(metrics.irr * 100).toFixed(1)}%` : "N/A" },
             ].map((s) => (
               <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
@@ -277,6 +376,25 @@ export default function EntityDetailPage() {
               </div>
             ))}
           </div>
+
+          {/* Secondary metric cards (4) */}
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              { label: "RVPI", value: metrics?.rvpi != null ? `${metrics.rvpi.toFixed(2)}x` : "N/A" },
+              { label: "MOIC", value: metrics?.moic != null ? `${metrics.moic.toFixed(2)}x` : "N/A" },
+              { label: "Fund Term", value: e.fundTermYears ? `${e.fundTermYears} years` : "\u2014" },
+              { label: "Unfunded", value: inputs ? fmt(Math.max(0, (e.totalCommitments || 0) - inputs.totalCalled)) : "\u2014" },
+            ].map((s) => (
+              <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
+                <div className="text-lg font-bold mt-1">{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {!metricsData && (
+            <div className="text-xs text-gray-400">Computing metrics...</div>
+          )}
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Asset Allocations</h3></div>
@@ -303,61 +421,151 @@ export default function EntityDetailPage() {
 
       {/* NAV Tab */}
       {tab === "nav" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold">Two-Layer NAV \u2014 {e.name}</h3>
-            {e.accountingConnection && (
-              <div className="flex gap-2">
-                <Badge color={e.accountingConnection.syncStatus === "CONNECTED" ? "green" : "gray"}>{e.accountingConnection.provider} {e.accountingConnection.syncStatus === "CONNECTED" ? "Synced" : e.accountingConnection.syncStatus}</Badge>
+        <div className="space-y-4">
+          {/* NAV Proxy Configuration */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">NAV Proxy Configuration</h3>
+              {!proxyEdit && (
+                <Button size="sm" onClick={() => setProxyEdit({
+                  cashPercent: String(((navData?.navProxyConfig?.cashPercent ?? 0.05) * 100).toFixed(1)),
+                  otherAssetsPercent: String(((navData?.navProxyConfig?.otherAssetsPercent ?? 0.005) * 100).toFixed(1)),
+                  liabilitiesPercent: String(((navData?.navProxyConfig?.liabilitiesPercent ?? 0.02) * 100).toFixed(1)),
+                })}>Edit Proxies</Button>
+              )}
+            </div>
+            {proxyEdit ? (
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { key: "cashPercent", label: "Cash & Equivalents %" },
+                    { key: "otherAssetsPercent", label: "Other Assets %" },
+                    { key: "liabilitiesPercent", label: "Liabilities %" },
+                  ].map(({ key, label }) => (
+                    <div key={key}>
+                      <label className="text-[10px] text-gray-500 mb-1 block">{label}</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={proxyEdit[key as keyof typeof proxyEdit]}
+                        onChange={(ev) => setProxyEdit({ ...proxyEdit, [key]: ev.target.value })}
+                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveProxies} disabled={savingProxy}>
+                    {savingProxy ? "Saving..." : "Save Proxies"}
+                  </Button>
+                  <Button size="sm" onClick={() => setProxyEdit(null)}>Cancel</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <div className="text-[10px] text-gray-500">Cash %</div>
+                  <div className="font-medium">{((navData?.navProxyConfig?.cashPercent ?? 0.05) * 100).toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500">Other Assets %</div>
+                  <div className="font-medium">{((navData?.navProxyConfig?.otherAssetsPercent ?? 0.005) * 100).toFixed(1)}%</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-gray-500">Liabilities %</div>
+                  <div className="font-medium">{((navData?.navProxyConfig?.liabilitiesPercent ?? 0.02) * 100).toFixed(1)}%</div>
+                </div>
               </div>
             )}
           </div>
-          {navData ? (
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 1: Cost Basis (from QBO)</div>
-                <div className="space-y-1 text-sm font-mono">
-                  {[
-                    { l: "Cash & equivalents", v: fmt(navData.layer1.cashEquivalents) },
-                    { l: "Investments at cost", v: fmt(navData.layer1.investmentsAtCost) },
-                    { l: "Other assets", v: fmt(navData.layer1.otherAssets) },
-                    { l: "Total Assets", v: fmt(navData.layer1.totalAssets), b: true },
-                    { l: "Less: Liabilities", v: `(${fmt(navData.layer1.liabilities)})`, d: true },
-                    { l: "Cost Basis NAV", v: fmt(navData.layer1.costBasisNAV), b: true, h: "bg-gray-100" },
-                  ].map((r, i) => (
-                    <div key={i} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""}`}>
-                      <span>{r.l}</span><span>{r.v}</span>
-                    </div>
-                  ))}
+
+          {/* Main NAV computation */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Two-Layer NAV &mdash; {e.name}</h3>
+              {e.accountingConnection && (
+                <div className="flex gap-2">
+                  <Badge color={e.accountingConnection.syncStatus === "CONNECTED" ? "green" : "gray"}>{e.accountingConnection.provider} {e.accountingConnection.syncStatus === "CONNECTED" ? "Synced" : e.accountingConnection.syncStatus}</Badge>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 2: Fair Value Overlay (Atlas)</div>
-                <div className="space-y-1 text-sm font-mono">
-                  {(navData.layer2.assets || []).map((a: { assetName: string; unrealizedGain: number; valuationMethod: string | null }, i: number) => (
-                    <div key={i} className="flex justify-between py-0.5 px-2 rounded text-emerald-700">
-                      <span>{a.assetName}{a.valuationMethod && <span className="text-gray-400 text-xs ml-1 font-normal">({methodLabel[a.valuationMethod] ?? a.valuationMethod})</span>}</span>
-                      <span>{a.unrealizedGain >= 0 ? "+" : ""}{fmt(a.unrealizedGain)}</span>
-                    </div>
-                  ))}
-                  {[
-                    { l: "Total Unrealized", v: `${navData.layer2.totalUnrealized >= 0 ? "+" : ""}${fmt(navData.layer2.totalUnrealized)}`, b: true, g: true },
-                    { l: "", v: "" },
-                    { l: "Cost Basis NAV", v: fmt(navData.costBasisNAV) },
-                    { l: "+ Unrealized", v: `${navData.layer2.totalUnrealized >= 0 ? "+" : ""}${fmt(navData.layer2.totalUnrealized)}`, g: true },
-                    { l: "- Accrued Carry", v: `(${fmt(navData.layer2.accruedCarry)})`, d: true },
-                    { l: "Economic NAV", v: fmt(navData.economicNAV), b: true, h: "bg-indigo-50 text-indigo-900" },
-                  ].map((r, i) => (
-                    <div key={`s-${i}`} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""}`}>
-                      <span>{r.l}</span><span>{r.v}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="text-sm text-gray-400 py-4">NAV data not available.</div>
-          )}
+            {navData ? (
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 1: Cost Basis (from QBO)</div>
+                  <div className="space-y-1 text-sm font-mono">
+                    {[
+                      { l: "Cash & equivalents", v: fmt(navData.layer1.cashEquivalents) },
+                      { l: "Investments at cost", v: fmt(navData.layer1.investmentsAtCost) },
+                      { l: "Other assets", v: fmt(navData.layer1.otherAssets) },
+                      { l: "Total Assets", v: fmt(navData.layer1.totalAssets), b: true },
+                      { l: "Less: Liabilities", v: `(${fmt(navData.layer1.liabilities)})`, d: true },
+                      { l: "Cost Basis NAV", v: fmt(navData.layer1.costBasisNAV), b: true, h: "bg-gray-100" },
+                    ].map((r, i) => (
+                      <div key={i} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""}`}>
+                        <span>{r.l}</span><span>{r.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 2: Fair Value Overlay (Atlas)</div>
+                  <div className="space-y-1 text-sm font-mono">
+                    {(navData.layer2.assets || []).map((a: { assetName: string; unrealizedGain: number; valuationMethod: string | null }, i: number) => (
+                      <div key={i} className="flex justify-between py-0.5 px-2 rounded text-emerald-700">
+                        <span>{a.assetName}{a.valuationMethod && <span className="text-gray-400 text-xs ml-1 font-normal">({methodLabel[a.valuationMethod] ?? a.valuationMethod})</span>}</span>
+                        <span>{a.unrealizedGain >= 0 ? "+" : ""}{fmt(a.unrealizedGain)}</span>
+                      </div>
+                    ))}
+                    {[
+                      { l: "Total Unrealized", v: `${navData.layer2.totalUnrealized >= 0 ? "+" : ""}${fmt(navData.layer2.totalUnrealized)}`, b: true, g: true },
+                      { l: "", v: "" },
+                      { l: "Cost Basis NAV", v: fmt(navData.costBasisNAV) },
+                      { l: "+ Unrealized", v: `${navData.layer2.totalUnrealized >= 0 ? "+" : ""}${fmt(navData.layer2.totalUnrealized)}`, g: true },
+                      { l: "- Accrued Carry", v: `(${fmt(navData.layer2.accruedCarry)})`, d: true },
+                      { l: "Economic NAV", v: fmt(navData.economicNAV), b: true, h: "bg-indigo-50 text-indigo-900" },
+                    ].map((r, i) => (
+                      <div key={`s-${i}`} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""}`}>
+                        <span>{r.l}</span><span>{r.v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-400 py-4">NAV data not available.</div>
+            )}
+          </div>
+
+          {/* NAV History */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h3 className="text-sm font-semibold">NAV History</h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Snapshots stored each time NAV is computed</p>
+            </div>
+            {navHistory && navHistory.length > 0 ? (
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>{["Date", "Cost Basis NAV", "Economic NAV", "Unrealized Gain", "Accrued Carry"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {navHistory.map((snap: { id: string; periodDate: string; costBasisNAV: number; economicNAV: number; unrealizedGain?: number; accruedCarry?: number }) => (
+                    <tr key={snap.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-3 py-2.5">{new Date(snap.periodDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5 font-medium">{fmt(snap.costBasisNAV)}</td>
+                      <td className="px-3 py-2.5 font-bold text-indigo-700">{fmt(snap.economicNAV)}</td>
+                      <td className="px-3 py-2.5 text-emerald-600">{snap.unrealizedGain != null ? `+${fmt(snap.unrealizedGain)}` : "\u2014"}</td>
+                      <td className="px-3 py-2.5 text-red-500">{snap.accruedCarry != null ? fmt(snap.accruedCarry) : "\u2014"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <div className="px-4 py-6 text-center text-sm text-gray-400">No NAV history yet. Visit the NAV tab to generate a snapshot.</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -371,23 +579,63 @@ export default function EntityDetailPage() {
             </div>
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
-                <tr>{["Call #", "Call Date", "Due Date", "Amount", "Purpose", "Status", "Funded %"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
+                <tr>{["Call #", "Call Date", "Due Date", "Amount", "Purpose", "Status", "Funded %", "Actions"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
-                {(e.capitalCalls || []).map((c: { id: string; callNumber: string; callDate: string; dueDate: string; amount: number; purpose?: string; status: string; fundedPercent: number }) => (
-                  <tr key={c.id} className="border-t border-gray-50">
-                    <td className="px-3 py-2.5 font-medium text-indigo-700">{c.callNumber}</td>
-                    <td className="px-3 py-2.5">{new Date(c.callDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2.5">{new Date(c.dueDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
-                    <td className="px-3 py-2.5">{c.purpose || "\u2014"}</td>
-                    <td className="px-3 py-2.5"><Badge color={c.status === "FUNDED" ? "green" : c.status === "ISSUED" ? "amber" : "gray"}>{c.status}</Badge></td>
-                    <td className="px-3 py-2.5">
-                      <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${Math.min(c.fundedPercent, 100)}%` }} /></div>
-                    </td>
-                  </tr>
+                {(e.capitalCalls || []).map((c: { id: string; callNumber: string; callDate: string; dueDate: string; amount: number; purpose?: string; status: string; fundedPercent: number; lineItems?: any[] }) => (
+                  <>
+                    <tr key={c.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}>
+                      <td className="px-3 py-2.5 font-medium text-indigo-700">{c.callNumber}</td>
+                      <td className="px-3 py-2.5">{new Date(c.callDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5">{new Date(c.dueDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
+                      <td className="px-3 py-2.5">{c.purpose || "\u2014"}</td>
+                      <td className="px-3 py-2.5"><Badge color={c.status === "FUNDED" ? "green" : c.status === "ISSUED" ? "amber" : c.status === "OVERDUE" ? "red" : "gray"}>{c.status}</Badge></td>
+                      <td className="px-3 py-2.5">
+                        <div className="w-16 bg-gray-100 rounded-full h-1.5"><div className="bg-amber-500 h-1.5 rounded-full" style={{ width: `${Math.min(c.fundedPercent, 100)}%` }} /></div>
+                      </td>
+                      <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
+                        <div className="flex gap-1">
+                          {c.status === "DRAFT" && (
+                            <button onClick={() => handleCallStatusTransition(c.id, "ISSUED")} className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Issue</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedCall === c.id && (
+                      <tr key={`${c.id}-exp`}>
+                        <td colSpan={8} className="bg-gray-50 border-t border-gray-100 px-4 py-3">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
+                          {(c.lineItems || []).length === 0 ? (
+                            <div className="text-xs text-gray-400">No line items.</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr>{["Investor", "Amount", "Status", "Paid Date", "Actions"].map((h) => <th key={h} className="text-left py-1 pr-3 text-gray-500 font-medium">{h}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                {(c.lineItems || []).map((li: any) => (
+                                  <tr key={li.id} className="border-t border-gray-100">
+                                    <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
+                                    <td className="py-1.5 pr-3 font-medium">{fmt(li.amount)}</td>
+                                    <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
+                                    <td className="py-1.5 pr-3">{li.paidDate ? new Date(li.paidDate).toLocaleDateString() : "\u2014"}</td>
+                                    <td className="py-1.5">
+                                      {li.status !== "Funded" && (
+                                        <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
-                {(!e.capitalCalls || e.capitalCalls.length === 0) && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-400">No capital calls.</td></tr>}
+                {(!e.capitalCalls || e.capitalCalls.length === 0) && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No capital calls.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -399,22 +647,63 @@ export default function EntityDetailPage() {
             </div>
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
-                <tr>{["Date", "Source", "Gross", "ROC", "Income", "LT Gain", "Carry", "Net to LPs"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
+                <tr>{["Date", "Type", "Gross", "ROC", "Income", "LT Gain", "Carry", "Net to LPs", "Status", "Actions"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
-                {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number }) => (
-                  <tr key={d.id} className="border-t border-gray-50">
-                    <td className="px-3 py-2.5">{new Date(d.distributionDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2.5">{d.source || "\u2014"}</td>
-                    <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
-                    <td className="px-3 py-2.5 text-blue-600">{fmt(d.returnOfCapital)}</td>
-                    <td className="px-3 py-2.5 text-emerald-600">{fmt(d.income)}</td>
-                    <td className="px-3 py-2.5 text-purple-600">{fmt(d.longTermGain)}</td>
-                    <td className="px-3 py-2.5 text-red-600">{fmt(d.carriedInterest)}</td>
-                    <td className="px-3 py-2.5 font-bold">{fmt(d.netToLPs)}</td>
-                  </tr>
+                {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; distributionType?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number; status: string; lineItems?: any[] }) => (
+                  <>
+                    <tr key={d.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
+                      <td className="px-3 py-2.5">{new Date(d.distributionDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5"><Badge color="blue">{d.distributionType || d.source || "\u2014"}</Badge></td>
+                      <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
+                      <td className="px-3 py-2.5 text-blue-600">{fmt(d.returnOfCapital)}</td>
+                      <td className="px-3 py-2.5 text-emerald-600">{fmt(d.income)}</td>
+                      <td className="px-3 py-2.5 text-purple-600">{fmt(d.longTermGain)}</td>
+                      <td className="px-3 py-2.5 text-red-600">{fmt(d.carriedInterest)}</td>
+                      <td className="px-3 py-2.5 font-bold">{fmt(d.netToLPs)}</td>
+                      <td className="px-3 py-2.5"><Badge color={d.status === "PAID" ? "green" : d.status === "APPROVED" ? "amber" : "gray"}>{d.status}</Badge></td>
+                      <td className="px-3 py-2.5" onClick={(ev) => ev.stopPropagation()}>
+                        <div className="flex gap-1">
+                          {d.status === "DRAFT" && (
+                            <button onClick={() => handleDistStatusTransition(d.id, "APPROVED")} className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Approve</button>
+                          )}
+                          {d.status === "APPROVED" && (
+                            <button onClick={() => { if (confirm("Mark distribution as paid?")) handleDistStatusTransition(d.id, "PAID"); }} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Mark Paid</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedDist === d.id && (
+                      <tr key={`${d.id}-exp`}>
+                        <td colSpan={10} className="bg-gray-50 border-t border-gray-100 px-4 py-3">
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
+                          {(d.lineItems || []).length === 0 ? (
+                            <div className="text-xs text-gray-400">No line items.</div>
+                          ) : (
+                            <table className="w-full text-xs">
+                              <thead>
+                                <tr>{["Investor", "Gross Amount", "Net Amount", "Income", "ROC", "Carry"].map((h) => <th key={h} className="text-left py-1 pr-3 text-gray-500 font-medium">{h}</th>)}</tr>
+                              </thead>
+                              <tbody>
+                                {(d.lineItems || []).map((li: any) => (
+                                  <tr key={li.id} className="border-t border-gray-100">
+                                    <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
+                                    <td className="py-1.5 pr-3 font-medium">{fmt(li.grossAmount)}</td>
+                                    <td className="py-1.5 pr-3 font-bold">{fmt(li.netAmount)}</td>
+                                    <td className="py-1.5 pr-3 text-emerald-600">{fmt(li.income)}</td>
+                                    <td className="py-1.5 pr-3 text-blue-600">{fmt(li.returnOfCapital)}</td>
+                                    <td className="py-1.5 pr-3 text-red-600">{fmt(li.carriedInterest)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 ))}
-                {(!e.distributions || e.distributions.length === 0) && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No distributions.</td></tr>}
+                {(!e.distributions || e.distributions.length === 0) && <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">No distributions.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -544,13 +833,13 @@ export default function EntityDetailPage() {
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center text-xs font-bold">DS</div>
                 <div>
-                  <div className="text-xs font-medium">Side Letter \u2014 CalPERS</div>
+                  <div className="text-xs font-medium">Side Letter &mdash; CalPERS</div>
                   <div className="text-[10px] text-gray-500">1 signer &bull; via DocuSign</div>
                 </div>
               </div>
               <span className="px-2 py-0.5 text-[10px] font-medium bg-blue-100 text-blue-700 rounded-full">SENT</span>
             </div>
-            <div className="text-[10px] text-gray-400 text-center py-1">E-Signature integration coming soon \u2014 will connect to DocuSign or PandaDoc.</div>
+            <div className="text-[10px] text-gray-400 text-center py-1">E-Signature integration coming soon &mdash; will connect to DocuSign or PandaDoc.</div>
           </div>
         </div>
 
@@ -610,7 +899,6 @@ export default function EntityDetailPage() {
                   </button>
                 </div>
                 <div className="grid grid-cols-5 gap-3">
-                  {/* Column: Identified / Contacted */}
                   <div>
                     <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Identified</div>
                     <div className="space-y-2">
@@ -626,7 +914,6 @@ export default function EntityDetailPage() {
                       </div>
                     </div>
                   </div>
-                  {/* Column: Meeting / DD */}
                   <div>
                     <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Meeting / DD</div>
                     <div className="space-y-2">
@@ -636,20 +923,12 @@ export default function EntityDetailPage() {
                         <div className="text-xs font-semibold text-amber-700 mt-1">$40.0M</div>
                         <div className="text-[10px] text-amber-600 mt-0.5">DD in progress</div>
                       </div>
-                      <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
-                        <div className="text-xs font-medium">Sequoia Heritage</div>
-                        <div className="text-[10px] text-gray-500">Family Office</div>
-                        <div className="text-xs font-semibold text-amber-700 mt-1">$25.0M</div>
-                        <div className="text-[10px] text-amber-600 mt-0.5">Meeting scheduled</div>
-                      </div>
                     </div>
                   </div>
-                  {/* Column: Term Sheet */}
                   <div>
                     <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Term Sheet</div>
                     <div className="text-[10px] text-gray-400 text-center py-6">No prospects</div>
                   </div>
-                  {/* Column: Soft Commit */}
                   <div>
                     <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Soft Commit</div>
                     <div className="space-y-2">
@@ -660,7 +939,6 @@ export default function EntityDetailPage() {
                       </div>
                     </div>
                   </div>
-                  {/* Column: Hard Commit */}
                   <div>
                     <div className="text-[10px] font-semibold text-green-600 uppercase tracking-wider mb-2">Hard Commit</div>
                     <div className="space-y-2">
@@ -671,17 +949,6 @@ export default function EntityDetailPage() {
                         <div className="text-[10px] text-green-600 mt-0.5">Committed</div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Integration Notice */}
-              <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
-                <div className="flex items-center gap-2">
-                  <div className="text-indigo-600 text-sm">\ud83d\udca1</div>
-                  <div>
-                    <div className="text-xs font-medium text-indigo-700">Deal Closing \u2192 Vehicle Creation</div>
-                    <div className="text-[10px] text-indigo-600">When a deal closes, prospects with hard commitments can be automatically converted to investors in the new entity. This integration is coming soon.</div>
                   </div>
                 </div>
               </div>

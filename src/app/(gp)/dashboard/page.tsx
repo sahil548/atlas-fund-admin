@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR from "swr";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { StatCard } from "@/components/ui/stat-card";
 import { fmt, pct } from "@/lib/utils";
@@ -14,6 +15,8 @@ import {
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
 import { AssetAllocationChart } from "@/components/features/dashboard/asset-allocation-chart";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -59,6 +62,11 @@ export default function DashboardPage() {
     maxWidth: `${((stageCounts[stage] || 0) / maxCount) * 100}%`,
   }));
 
+  const pm = data.performanceMetrics || {};
+  const weightedIRR = pm.weightedIRR ?? 0;
+  const tvpi = pm.tvpi ?? 0;
+  const entityMetrics = data.entityMetrics || [];
+
   return (
     <div className="space-y-5">
       {/* Row 1: 6 Stat Cards */}
@@ -66,9 +74,9 @@ export default function DashboardPage() {
         <StatCard label="Total AUM (Fair Value)" value={fmt(data.totalFV)} sub={`${data.entities?.filter((e: { status: string }) => e.status === "ACTIVE").length || 0} entities connected`} trend={5.1} />
         <StatCard label="Portfolio Fair Value" value={fmt(data.totalFV)} sub={`Cost basis: ${fmt(data.totalCost)}`} />
         <StatCard label="Unrealized Gain" value={`+${fmt(data.unrealizedGain)}`} sub={`${data.totalCost > 0 ? ((data.totalFV / data.totalCost - 1) * 100).toFixed(0) : 0}% appreciation`} />
-        <StatCard label="Pipeline" value={`${data.pipelineCount} deals`} sub={`${data.activeAssetCount} active assets`} />
-        <StatCard label="Weighted IRR" value={`${(data.performanceMetrics?.weightedIRR ?? 0).toFixed(1)}%`} sub="Weighted by fair value" />
-        <StatCard label="TVPI" value={`${(data.performanceMetrics?.tvpi ?? 0).toFixed(2)}x`} sub="Total value / paid-in" />
+        <StatCard label="Total NAV" value={fmt(data.totalNAV ?? 0)} sub="Cross-entity economic NAV" />
+        <StatCard label="Weighted IRR" value={`${(weightedIRR * 100).toFixed(1)}%`} sub="Computed from real cash flows" />
+        <StatCard label="TVPI" value={`${tvpi.toFixed(2)}x`} sub="Total value / paid-in capital" />
       </div>
 
       {/* Row 2: Asset Allocation + Top Assets + Entity Overview */}
@@ -125,7 +133,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 3: Deal Pipeline + LP Commitments (NEW) */}
+      {/* Row 3: Deal Pipeline + LP Commitments */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-3">Deal Pipeline</h3>
@@ -165,7 +173,56 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Row 4: Recent Activity + Meetings & Capital Calls (NEW layout) */}
+      {/* Row 4: Entity Metrics Table */}
+      {entityMetrics.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b border-gray-100">
+            <h3 className="text-sm font-semibold">Entity Performance Metrics</h3>
+            <p className="text-[10px] text-gray-500 mt-0.5">Computed from real funded capital calls, paid distributions, and NAV</p>
+          </div>
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                {["Entity", "TVPI", "DPI", "RVPI", "IRR", "NAV"].map((h) => (
+                  <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {entityMetrics.map((em: { entityId: string; entityName: string; tvpi: number | null; dpi: number | null; rvpi: number | null; irr: number | null; nav: number }) => (
+                <tr key={em.entityId} className="border-t border-gray-50 hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <Link href={`/entities/${em.entityId}`} className="text-indigo-700 hover:underline font-medium">
+                      {em.entityName}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 font-medium">
+                    {em.tvpi != null ? `${em.tvpi.toFixed(2)}x` : <span className="text-gray-400">N/A</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {em.dpi != null ? `${em.dpi.toFixed(2)}x` : <span className="text-gray-400">N/A</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {em.rvpi != null ? `${em.rvpi.toFixed(2)}x` : <span className="text-gray-400">N/A</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {em.irr != null ? (
+                      <span className={em.irr >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
+                        {(em.irr * 100).toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">N/A</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-medium">{fmt(em.nav)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Row 5: Recent Activity + Meetings & Capital Calls */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-3">Recent Activity</h3>
@@ -209,7 +266,7 @@ export default function DashboardPage() {
             {data.capitalCalls?.map((c: { id: string; callNumber: string; entity: { name: string }; amount: number; status: string; purpose: string }) => (
               <div key={c.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                 <div>
-                  <div className="text-sm font-medium">{c.callNumber} — {c.entity?.name}</div>
+                  <div className="text-sm font-medium">{c.callNumber} &mdash; {c.entity?.name}</div>
                   <div className="text-[10px] text-gray-500">{c.purpose}</div>
                 </div>
                 <div className="text-right">
