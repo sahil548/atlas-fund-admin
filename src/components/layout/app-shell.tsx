@@ -7,6 +7,7 @@ import { TopBar } from "./top-bar";
 import { getPageTitle } from "@/lib/routes";
 import { useUser } from "@/components/providers/user-provider";
 import { OnboardingModal } from "@/components/features/onboarding/onboarding-modal";
+import { PageErrorBoundary } from "@/components/ui/error-boundary";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -63,7 +64,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar portal={portal} onPortalChange={handlePortalChange} />
       <div className="flex-1 overflow-y-auto">
         <TopBar title={title} />
-        <div className="p-6">{children}</div>
+        <div className="p-6">
+          <PageErrorBoundary>{children}</PageErrorBoundary>
+        </div>
       </div>
       <OnboardingModal />
     </div>
