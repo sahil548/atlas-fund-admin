@@ -25,6 +25,7 @@ export function OnboardingModal() {
   });
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [createEntity, setCreateEntity] = useState(true);
 
   const [form, setForm] = useState({
     firmName: "",
@@ -48,6 +49,19 @@ export function OnboardingModal() {
         }),
       });
       if (res.ok) {
+        // If toggle is on, auto-create the organization as the first entity
+        if (createEntity) {
+          await fetch("/api/entities", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: form.firmName.trim(),
+              entityType: "GP_ENTITY",
+              vehicleStructure: "LLC",
+              legalName: form.legalName.trim() || undefined,
+            }),
+          });
+        }
         mutate(`/api/firms/${firmId}`);
         mutate("/api/firms");
         localStorage.removeItem("atlas-onboarding-dismissed");
@@ -104,6 +118,18 @@ export function OnboardingModal() {
                   value={form.legalName}
                   onChange={(e) => setForm((f) => ({ ...f, legalName: e.target.value }))}
                 />
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="create-entity"
+                  checked={createEntity}
+                  onChange={(e) => setCreateEntity(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <label htmlFor="create-entity" className="text-xs text-gray-600 dark:text-gray-400">
+                  Also create this as my first fund entity
+                </label>
               </div>
             </>
           )}

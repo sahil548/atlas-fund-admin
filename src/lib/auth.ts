@@ -62,8 +62,23 @@ export async function getAuthUser() {
     select: AUTH_USER_SELECT,
   });
 
+  // Auto-create a Contact record for the new user
+  const contact = await prisma.contact.create({
+    data: {
+      firmId: firm.id,
+      firstName,
+      lastName,
+      email,
+      type: "INTERNAL",
+    },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { contactId: contact.id },
+  });
+
   console.log(`[auth] Auto-provisioned firm ${firm.id} + user ${user.id} for ${email}`);
-  return user;
+  return { ...user, contactId: contact.id };
 }
 
 export function unauthorized() {

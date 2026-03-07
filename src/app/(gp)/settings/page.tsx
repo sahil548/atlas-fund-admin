@@ -15,7 +15,7 @@ const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new E
 
 interface Firm { id: string; name: string; legalName: string | null }
 interface AccountingEntity { id: string; name: string; accountingConnection?: { provider: string; syncStatus: string; lastSyncAt: string | null } | null }
-interface User { id: string; name: string; email: string; role: string; isActive: boolean; initials: string | null; createdAt: string }
+interface User { id: string; name: string; email: string; role: string; isActive: boolean; initials: string | null; createdAt: string; inviteStatus?: string }
 interface DecisionMember { id: string; userId: string; role: string | null; user: { id: string; name: string; initials: string | null } }
 interface DecisionStructure {
   id: string;
@@ -116,7 +116,7 @@ export default function SettingsPage() {
         body: JSON.stringify(inviteForm),
       });
       if (res.ok) {
-        toast.success(`Invited ${inviteForm.email} — they can now sign up to join your firm.`);
+        toast.success(`Invited ${inviteForm.email} — they'll receive an email to join your workspace.`);
         setShowInvite(false);
         setInviteForm({ email: "", name: "", role: "GP_TEAM" });
         mutate("/api/users");
@@ -355,7 +355,11 @@ export default function SettingsPage() {
                     <Badge color={roleColors[u.role] || "gray"}>{u.role.replace(/_/g, " ")}</Badge>
                   </td>
                   <td className="px-3 py-2.5">
-                    <Badge color={u.isActive ? "green" : "red"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                    {u.inviteStatus === "PENDING" ? (
+                      <Badge color="yellow">Pending Invite</Badge>
+                    ) : (
+                      <Badge color={u.isActive ? "green" : "red"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                    )}
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td className="px-3 py-2.5">

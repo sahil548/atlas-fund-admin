@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       createdAt: true,
       firmId: true,
       contactId: true,
+      inviteStatus: true,
       contact: { select: { id: true, firstName: true, lastName: true } },
     },
   });

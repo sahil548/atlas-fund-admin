@@ -86,14 +86,35 @@ async function handleUserCreated(data: Record<string, unknown>) {
     .slice(0, 2) || fullName.slice(0, 2).toUpperCase();
 
   // Check if user was pre-invited (already exists in DB)
-  const existingUser = await prisma.user.findUnique({ where: { email } });
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, firmId: true, contactId: true },
+  });
 
   if (existingUser) {
-    // Pre-invited user: update name/initials from Clerk, keep firmId
+    // Pre-invited user: update name/initials from Clerk, mark as accepted
     await prisma.user.update({
       where: { email },
-      data: { name: fullName, initials, isActive: true },
+      data: { name: fullName, initials, isActive: true, inviteStatus: "ACCEPTED" },
     });
+
+    // Ensure a Contact record exists for this user
+    if (!existingUser.contactId) {
+      const contact = await prisma.contact.create({
+        data: {
+          firmId: existingUser.firmId,
+          firstName: firstName || fullName,
+          lastName: lastName || "",
+          email,
+          type: "INTERNAL",
+        },
+      });
+      await prisma.user.update({
+        where: { email },
+        data: { contactId: contact.id },
+      });
+    }
+
     console.log(`[clerk-webhook] Linked pre-invited user ${email} to firm ${existingUser.firmId}`);
     return NextResponse.json({ action: "linked", userId: existingUser.id, firmId: existingUser.firmId });
   }
@@ -111,6 +132,21 @@ async function handleUserCreated(data: Record<string, unknown>) {
       role: "GP_ADMIN",
       firmId: firm.id,
     },
+  });
+
+  // Auto-create a Contact record for the new user
+  const contact = await prisma.contact.create({
+    data: {
+      firmId: firm.id,
+      firstName: firstName || fullName,
+      lastName: lastName || "",
+      email,
+      type: "INTERNAL",
+    },
+  });
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { contactId: contact.id },
   });
 
   // Provision default DD category templates for the new firm

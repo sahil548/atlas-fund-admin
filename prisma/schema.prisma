@@ -224,6 +224,11 @@ enum UserRole {
   LP_INVESTOR
 }
 
+enum InviteStatus {
+  ACCEPTED
+  PENDING
+}
+
 enum NotificationChannel {
   EMAIL
   SMS
@@ -454,7 +459,8 @@ model User {
   name      String
   role      UserRole
   initials  String?
-  isActive  Boolean  @default(true)
+  isActive     Boolean      @default(true)
+  inviteStatus InviteStatus @default(ACCEPTED)
 
   // Service provider scoping
   entityAccess    String[]  @default([])
