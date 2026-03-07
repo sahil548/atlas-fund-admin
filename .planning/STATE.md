@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 04-03
+current_plan: 04-04
 status: in_progress
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-03-07T23:30:00.000Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-03-07T23:55:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Atlas — GSD State
@@ -22,8 +22,8 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 4 of 7 (Asset Entity Polish) — IN PROGRESS
-- **Phase status:** Plans 01, 02 complete — side letter engine + RBAC + audit log done
-- **Current Plan:** 04-03 (next up)
+- **Phase status:** Plans 01, 02, 03 complete — side letter engine + RBAC + audit log + pagination/search/error boundaries done
+- **Current Plan:** 04-04 (next up)
 - **Active plan:** none
 
 ## Performance Metrics
@@ -41,6 +41,7 @@ progress:
 | Phase 03-capital-activity P03 | 35 | 2 tasks | 9 files |
 | Phase 04-asset-entity-polish P01 | 6min | 2 tasks | 8 files |
 | 04    | 02   | 15min    | 2     | 20    |
+| 04    | 03   | 45min    | 2     | 25    |
 
 ## Accumulated Context
 
@@ -77,7 +78,7 @@ progress:
 - QBO/Xero real OAuth or API calls (UI-only)
 - Email/SMS notification delivery (in-app bell only)
 - DocuSign real API (stub endpoint only)
-- Pagination, error boundaries, rate limiting (Phase 04-03)
+- Pagination, error boundaries, rate limiting: BUILT in 04-03 (cursor pagination on all 7 list APIs + 8 pages, SearchFilterBar, LoadMoreButton, PageErrorBoundary, SectionErrorBoundary, rate limiter on AI endpoints)
 - PDF/Excel report generation
 - Side letter rule application: BUILT in 04-01 (SideLetterRule model, applySideLetterRules, detectMFNGaps, rules CRUD API)
 - Role-based route enforcement: BUILT in 04-02 (middleware + permissions system + audit log)
@@ -136,6 +137,9 @@ progress:
 - **2026-03-07 (04-02):** GP_TEAM permissions default to read_only everywhere; GP_ADMIN overrides cannot be configured (always full)
 - **2026-03-07 (04-02):** Audit log is fire-and-forget — never blocks primary operation; failure only logged to console
 - **2026-03-07 (04-02):** SERVICE_PROVIDER entity-access checked at API layer (not middleware) for per-resource granularity
+- **2026-03-07 (04-03):** SWR onSuccess accumulation pattern used instead of custom usePaginatedList hook — complex pages (deals kanban, tasks view tabs) needed direct control over cursor and accumulated array
+- **2026-03-07 (04-03):** Deals page kanban preserved — pagination feeds allDeals array, kanban filters it client-side by stage; visual board unchanged
+- **2026-03-07 (04-03):** No /api/transactions route exists — transactions page reads from /api/capital-calls and /api/distributions directly; SectionErrorBoundary import added, full pagination deferred
 
 ### Phase 3 Metrics Wiring (Plan 03-03)
 - Entity metrics API: TVPI, DPI, RVPI, MOIC, IRR from real funded capital calls + paid distributions + inline NAV
@@ -214,5 +218,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T23:30:00.000Z
-- **Stopped at:** Completed 04-02-PLAN.md
+- **Last session:** 2026-03-07T23:55:00.000Z
+- **Stopped at:** Completed 04-03-PLAN.md

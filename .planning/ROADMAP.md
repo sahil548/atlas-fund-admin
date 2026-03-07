@@ -106,16 +106,16 @@ Plans:
 - [ ] Fund-level and LP-level performance aggregated from underlying computations
 - [ ] Cross-entity NAV dashboard shows all entities
 - [x] Role-based access enforced (GP_ADMIN full, GP_TEAM configurable, SERVICE_PROVIDER scoped)
-- [ ] All data lists support pagination
-- [ ] Error boundaries prevent full-page crashes
-- [ ] AI endpoints have rate limiting
+- [x] All data lists support pagination
+- [x] Error boundaries prevent full-page crashes
+- [x] AI endpoints have rate limiting
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [x] 04-01-PLAN.md — Wave 1: Side letter structured rules + fee adjustment engine + MFN detection (FIN-07)
 - [x] 04-02-PLAN.md — Wave 1: Role-based access enforcement + service provider scoping + audit logging (CORE-02, CORE-03)
-- [ ] 04-03-PLAN.md — Wave 1: Pagination + search/filters + error boundaries + rate limiting (CORE-04, CORE-05, CORE-06)
+- [x] 04-03-PLAN.md — Wave 1: Pagination + search/filters + error boundaries + rate limiting (CORE-04, CORE-05, CORE-06)
 - [ ] 04-04-PLAN.md — Wave 2: Dashboard redesign + cross-entity NAV + performance aggregation + LP comparison (FIN-08, FIN-09, ASSET-02)
 - [ ] 04-05-PLAN.md — Wave 2: Deal-level performance attribution with projected vs actual (FIN-10)
 
