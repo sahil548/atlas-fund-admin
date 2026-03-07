@@ -678,3 +678,36 @@ export const CastICVoteSchema = z.object({
   conditions: z.string().optional(),
   userId: z.string().min(1, "User ID is required"),
 });
+
+// ── Permissions ─────────────────────────────────────
+
+const PermissionLevelSchema = z.enum(["full", "read_only", "none"]);
+
+export const UpdatePermissionsSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  permissions: z.object({
+    deals: PermissionLevelSchema,
+    entities: PermissionLevelSchema,
+    capital_activity: PermissionLevelSchema,
+    investors: PermissionLevelSchema,
+    documents: PermissionLevelSchema,
+    settings: PermissionLevelSchema,
+    reports: PermissionLevelSchema,
+  }),
+});
+
+export const UpdateEntityAccessSchema = z.object({
+  entityIds: z.array(z.string()).min(0),
+});
+
+// ── Audit Log ────────────────────────────────────────
+
+export const AuditLogQuerySchema = z.object({
+  firmId: z.string().min(1, "Firm ID is required"),
+  targetType: z.string().optional(),
+  userId: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  cursor: z.string().optional(),
+});

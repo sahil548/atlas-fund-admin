@@ -2,6 +2,29 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+// ── Lightweight role lookup for API routes ──────────────────
+
+/**
+ * Get just the role for the authenticated user — fast, no auto-provisioning.
+ * Used by API routes to enforce role-based access.
+ * Returns null if not authenticated or user not found.
+ */
+export async function getAuthUserRole(): Promise<string | null> {
+  const { userId: clerkUserId } = await auth();
+  if (!clerkUserId) return null;
+
+  const clerkUser = await currentUser();
+  const email = clerkUser?.emailAddresses[0]?.emailAddress;
+  if (!email) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { email },
+    select: { role: true },
+  });
+
+  return user?.role ?? null;
+}
+
 const AUTH_USER_SELECT = {
   id: true,
   name: true,

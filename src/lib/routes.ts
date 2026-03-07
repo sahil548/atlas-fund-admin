@@ -14,6 +14,8 @@ export interface AppRoute {
   sidebarIcon: string; // unicode character for sidebar
   portal: "gp" | "lp";
   priority: number; // command bar sort priority (higher = first)
+  /** Optional role hint — middleware enforces actual access; this is for UI hints only */
+  requiredRole?: "GP_ADMIN" | "GP_TEAM" | "SERVICE_PROVIDER" | "LP_INVESTOR";
 }
 
 export const APP_ROUTES: AppRoute[] = [
