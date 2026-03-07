@@ -13,6 +13,7 @@ export async function GET(
     include: {
       investor: { select: { id: true, name: true } },
       entity: { select: { id: true, name: true } },
+      rules: true,
     },
   });
   if (!sideLetter) return NextResponse.json({ error: "Not found" }, { status: 404 });
