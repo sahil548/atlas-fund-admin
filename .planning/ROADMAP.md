@@ -110,7 +110,7 @@ Plans:
 - [ ] Error boundaries prevent full-page crashes
 - [ ] AI endpoints have rate limiting
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md — Wave 1: Side letter structured rules + fee adjustment engine + MFN detection (FIN-07)
@@ -194,7 +194,7 @@ Plans:
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
 | 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
 | 3 | Capital Activity | 6 | 3 | In Progress (1/3 plans done) |
-| 4 | Asset & Entity Polish | 10 | 5 | Not started |
+| 4 | 1/5 | In Progress|  | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
 | 6 | LP Portal | 3 | 2 | Not started |
 | 7 | Notifications & Reports | 14 | 3 | Not started |

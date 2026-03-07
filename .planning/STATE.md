@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: unknown
-stopped_at: Phase 5 context gathered
-last_updated: "2026-03-07T22:14:04.347Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-07T23:13:15.132Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Atlas — GSD State
@@ -39,6 +39,7 @@ progress:
 | 03    | 01   | 25min    | 2     | 11    |
 | 03    | 02   | 12min    | 2     | 9     |
 | Phase 03-capital-activity P03 | 35 | 2 tasks | 9 files |
+| Phase 04-asset-entity-polish P01 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -78,7 +79,7 @@ progress:
 - Role-based route enforcement (auth works, access control doesn't)
 - Pagination, error boundaries, rate limiting
 - PDF/Excel report generation
-- Side letter rule application (fee engine built in 03-02; side letter LP-specific rules not yet applied)
+- Side letter rule application: BUILT in 04-01 (SideLetterRule model, applySideLetterRules, detectMFNGaps, rules CRUD API)
 
 ### Patterns to Preserve
 - Route registry (`routes.ts`) is single source of truth — never bypass
@@ -121,6 +122,10 @@ progress:
 - **2026-03-07 (03-03):** Dashboard falls back to asset-level IRR/TVPI when aggregatePaidIn=0 — avoids N/A display on fresh entities with no funded calls
 - **2026-03-07 (03-03):** NAV snapshots auto-saved as fire-and-forget on every GET /api/nav/[entityId] — doesn't block response
 - **2026-03-07 (03-03):** Commitment audit trail: Transaction(TRANSFER) record created with old->new description before updating Commitment.amount
+- **2026-03-07 (04-01):** FEE_DISCOUNT takes highest active discount if multiple rules exist — protects LP from ambiguity in multi-rule scenarios
+- **2026-03-07 (04-01):** CARRY_OVERRIDE stored as percentage (e.g. 15 for 15%), converted to decimal only inside engine — keeps DB values human-readable
+- **2026-03-07 (04-01):** MFN gap: fee gap when currentDiscount < bestDiscount; carry gap when currentOverride > bestOverride (lower carry is better for LP)
+- **2026-03-07 (04-01):** SideLetterRules cascade-delete on SideLetter delete; side letter + rules created atomically via prisma.$transaction
 
 ### Phase 3 Metrics Wiring (Plan 03-03)
 - Entity metrics API: TVPI, DPI, RVPI, MOIC, IRR from real funded capital calls + paid distributions + inline NAV
@@ -199,5 +204,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T22:14:04.339Z
-- **Stopped at:** Phase 5 context gathered
+- **Last session:** 2026-03-07T23:13:15.130Z
+- **Stopped at:** Completed 04-01-PLAN.md
