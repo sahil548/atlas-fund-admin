@@ -3,30 +3,58 @@ import { NextRequest, NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
+import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(req: NextRequest) {
   const firmId = req.nextUrl.searchParams.get("firmId");
-  const where: Record<string, unknown> = {};
+
+  const params = parsePaginationParams(req.nextUrl.searchParams, [
+    "firmId", "cursor", "limit", "search", "category",
+  ]);
+
+  const baseWhere: Record<string, unknown> = {};
   if (firmId) {
-    where.OR = [
+    baseWhere.OR = [
       { entity: { firmId } },
       { deal: { firmId } },
       { asset: { entityAllocations: { some: { entity: { firmId } } } } },
     ];
   }
+  if (params.filters?.category) baseWhere.category = params.filters.category;
 
-  const docs = await prisma.document.findMany({
-    where,
-    include: {
-      asset: { select: { id: true, name: true } },
-      entity: { select: { id: true, name: true } },
-      deal: { select: { id: true, name: true } },
-    },
-    orderBy: { uploadDate: "desc" },
+  // For documents, search across name field
+  const searchWhere = params.search
+    ? { name: { contains: params.search, mode: "insensitive" as const } }
+    : {};
+
+  const where = { ...baseWhere, ...searchWhere };
+
+  const [rawDocs, total] = await Promise.all([
+    prisma.document.findMany({
+      where,
+      take: params.limit + 1,
+      skip: params.cursor ? 1 : 0,
+      cursor: params.cursor ? { id: params.cursor } : undefined,
+      orderBy: { uploadDate: "desc" },
+      include: {
+        asset: { select: { id: true, name: true } },
+        entity: { select: { id: true, name: true } },
+        deal: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.document.count({ where }),
+  ]);
+
+  const paginated = buildPaginatedResult(rawDocs, params.limit, total);
+
+  return NextResponse.json({
+    data: paginated.data,
+    nextCursor: paginated.nextCursor,
+    hasMore: paginated.hasMore,
+    total: paginated.total,
   });
-  return NextResponse.json(docs);
 }
 
 export async function POST(req: Request) {
@@ -51,15 +79,12 @@ export async function POST(req: Request) {
       fileSize = buffer.length;
 
       if (USE_BLOB) {
-        // ── Vercel Blob (production) ──
         const blob = await put(`documents/${fileName}`, buffer, {
           access: "private",
           contentType: mimeType,
         });
-        // Serve via proxy route (works with both private and public blob stores)
         fileUrl = `/api/documents/serve?url=${encodeURIComponent(blob.url)}`;
       } else {
-        // ── Local filesystem (development) ──
         const uploadDir = path.join(process.cwd(), "data", "uploads");
         await mkdir(uploadDir, { recursive: true });
         const filePath = path.join(uploadDir, fileName);
@@ -71,6 +96,7 @@ export async function POST(req: Request) {
     const doc = await prisma.document.create({
       data: {
         name,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: category as any,
         assetId,
         entityId,

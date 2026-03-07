@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export interface FilterOption {
   value: string;
@@ -29,16 +29,14 @@ export function SearchFilterBar({
   placeholder = "Search...",
 }: SearchFilterBarProps) {
   const [query, setQuery] = useState("");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounce search: fire onSearch 300ms after user stops typing
   const debouncedSearch = useCallback(
-    (() => {
-      let timer: ReturnType<typeof setTimeout>;
-      return (value: string) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => onSearch(value), 300);
-      };
-    })(),
+    (value: string) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => onSearch(value), 300);
+    },
     [onSearch],
   );
 

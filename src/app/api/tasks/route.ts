@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,44 +12,65 @@ export async function GET(req: NextRequest) {
     const contextType = sp.get("contextType");
     const contextId = sp.get("contextId");
     const assigneeId = sp.get("assigneeId");
-    const status = sp.get("status");
     const dealId = sp.get("dealId");
     const entityId = sp.get("entityId");
 
-    const where: Record<string, unknown> = {};
-    if (contextType) where.contextType = contextType;
-    if (contextId) where.contextId = contextId;
-    if (assigneeId) where.assigneeId = assigneeId;
-    if (status) where.status = status;
-    if (dealId) where.dealId = dealId;
-    if (entityId) where.entityId = entityId;
+    const params = parsePaginationParams(sp, [
+      "firmId", "cursor", "limit", "search", "contextType", "contextId",
+      "assigneeId", "status", "priority", "dealId", "entityId",
+    ]);
 
-    // Filter by firm: tasks linked to deals or entities owned by the firm
+    const baseWhere: Record<string, unknown> = {};
+    if (contextType) baseWhere.contextType = contextType;
+    if (contextId) baseWhere.contextId = contextId;
+    if (assigneeId) baseWhere.assigneeId = assigneeId;
+    if (params.filters?.status) baseWhere.status = params.filters.status;
+    if (params.filters?.priority) baseWhere.priority = params.filters.priority;
+    if (dealId) baseWhere.dealId = dealId;
+    if (entityId) baseWhere.entityId = entityId;
+
     if (firmId && !dealId && !entityId) {
-      where.OR = [
+      baseWhere.OR = [
         { deal: { firmId } },
         { entity: { firmId } },
         { dealId: null, entityId: null },
       ];
     }
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        assignee: { select: { id: true, name: true, initials: true } },
-        deal: { select: { id: true, name: true } },
-        entity: { select: { id: true, name: true } },
-      },
-      orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
-    });
+    // Search across title
+    const searchWhere = params.search
+      ? { title: { contains: params.search, mode: "insensitive" as const } }
+      : {};
 
-    return NextResponse.json(tasks);
+    const where = { ...baseWhere, ...searchWhere };
+
+    const [rawTasks, total] = await Promise.all([
+      prisma.task.findMany({
+        where,
+        take: params.limit + 1,
+        skip: params.cursor ? 1 : 0,
+        cursor: params.cursor ? { id: params.cursor } : undefined,
+        orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
+        include: {
+          assignee: { select: { id: true, name: true, initials: true } },
+          deal: { select: { id: true, name: true } },
+          entity: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.task.count({ where }),
+    ]);
+
+    const paginated = buildPaginatedResult(rawTasks, params.limit, total);
+
+    return NextResponse.json({
+      data: paginated.data,
+      nextCursor: paginated.nextCursor,
+      hasMore: paginated.hasMore,
+      total: paginated.total,
+    });
   } catch (err) {
     console.error("[tasks] GET Error:", err);
-    return NextResponse.json(
-      { error: "Failed to load tasks" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to load tasks" }, { status: 500 });
   }
 }
 
@@ -81,10 +103,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(task, { status: 201 });
   } catch (err) {
     console.error("[tasks] POST Error:", err);
-    return NextResponse.json(
-      { error: "Failed to create task" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
   }
 }
 
@@ -99,10 +118,8 @@ export async function PATCH(req: NextRequest) {
     if (body.description !== undefined) data.description = body.description;
     if (body.status !== undefined) data.status = body.status;
     if (body.priority !== undefined) data.priority = body.priority;
-    if (body.assigneeId !== undefined)
-      data.assigneeId = body.assigneeId || null;
-    if (body.assigneeName !== undefined)
-      data.assigneeName = body.assigneeName;
+    if (body.assigneeId !== undefined) data.assigneeId = body.assigneeId || null;
+    if (body.assigneeName !== undefined) data.assigneeName = body.assigneeName;
     if (body.dueDate !== undefined)
       data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.notes !== undefined) data.notes = body.notes;
@@ -119,9 +136,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json(task);
   } catch (err) {
     console.error("[tasks] PATCH Error:", err);
-    return NextResponse.json(
-      { error: "Failed to update task" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
   }
 }

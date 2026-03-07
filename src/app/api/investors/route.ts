@@ -3,55 +3,68 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateInvestorSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
 
 export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser();
-    const firmId =
-      req.nextUrl.searchParams.get("firmId") || authUser?.firmId;
+    const firmId = req.nextUrl.searchParams.get("firmId") || authUser?.firmId;
 
-    const where: Record<string, unknown> = {};
+    const params = parsePaginationParams(req.nextUrl.searchParams, [
+      "firmId", "cursor", "limit", "search", "entityId", "type",
+    ]);
+
+    const baseWhere: Record<string, unknown> = {};
     if (firmId) {
-      where.commitments = { some: { entity: { firmId } } };
+      baseWhere.commitments = { some: { entity: { firmId } } };
     }
+    if (params.filters?.type) baseWhere.investorType = params.filters.type;
 
-    const investors = await prisma.investor.findMany({
-      where,
-      include: {
-        commitments: {
-          include: { entity: { select: { id: true, name: true } } },
-        },
-        contact: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
+    const cleanParams = { ...params, filters: {} };
+
+    const { where, take, skip, cursor } = buildPrismaArgs(
+      cleanParams,
+      ["name"],
+      baseWhere,
+      "createdAt",
+    );
+
+    const [rawInvestors, total] = await Promise.all([
+      prisma.investor.findMany({
+        where,
+        take,
+        skip,
+        cursor,
+        orderBy: { totalCommitted: "desc" },
+        include: {
+          commitments: {
+            include: { entity: { select: { id: true, name: true } } },
           },
-        },
-        company: { select: { id: true, name: true, type: true } },
-        userAccess: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                role: true,
-              },
+          contact: {
+            select: { id: true, firstName: true, lastName: true, email: true },
+          },
+          company: { select: { id: true, name: true, type: true } },
+          userAccess: {
+            include: {
+              user: { select: { id: true, name: true, email: true, role: true } },
             },
           },
         },
-      },
-      orderBy: { totalCommitted: "desc" },
+      }),
+      prisma.investor.count({ where }),
+    ]);
+
+    const paginated = buildPaginatedResult(rawInvestors, params.limit, total);
+
+    return NextResponse.json({
+      data: paginated.data,
+      nextCursor: paginated.nextCursor,
+      hasMore: paginated.hasMore,
+      total: paginated.total,
     });
-    return NextResponse.json(investors);
   } catch (err) {
     console.error("[investors] GET Error:", err);
-    return NextResponse.json(
-      { error: "Failed to load investors" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to load investors" }, { status: 500 });
   }
 }
 
@@ -63,9 +76,6 @@ export async function POST(req: Request) {
     return NextResponse.json(investor, { status: 201 });
   } catch (err) {
     console.error("[investors] POST Error:", err);
-    return NextResponse.json(
-      { error: "Failed to create investor" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to create investor" }, { status: 500 });
   }
 }
