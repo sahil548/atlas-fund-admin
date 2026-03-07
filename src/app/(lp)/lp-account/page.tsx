@@ -3,7 +3,6 @@
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
-import { fmt } from "@/lib/utils";
 import { useInvestor } from "@/components/providers/investor-provider";
 import { useToast } from "@/components/ui/toast";
 
@@ -20,24 +19,31 @@ function fmtSigned(n: number): string {
   return n < 0 ? `(${formatted})` : formatted;
 }
 
-function formatPeriod(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
+interface LedgerEntry {
+  date: string;
+  type: "CONTRIBUTION" | "DISTRIBUTION" | "FEE" | "INCOME";
+  entityId: string;
+  entityName: string;
+  description: string;
+  amount: number;
+  runningBalance: number;
 }
 
-interface CapitalAccountRecord {
-  id: string;
-  investorId: string;
+interface EntitySummary {
   entityId: string;
-  periodDate: string;
-  beginningBalance: number;
-  contributions: number;
-  incomeAllocations: number;
-  capitalAllocations: number;
-  distributions: number;
-  fees: number;
-  endingBalance: number;
-  entity: { id: string; name: string };
+  entityName: string;
+  commitment: number;
+  currentBalance: number;
+  totalContributed: number;
+  totalDistributed: number;
+  totalFees: number;
+}
+
+interface CapitalAccountData {
+  investorId: string;
+  investorName: string;
+  ledger: LedgerEntry[];
+  entities: EntitySummary[];
 }
 
 export default function LPAccountPage() {
@@ -45,7 +51,7 @@ export default function LPAccountPage() {
   const toast = useToast();
   const [recomputing, setRecomputing] = useState(false);
 
-  const { data: accounts, isLoading } = useSWR<CapitalAccountRecord[]>(
+  const { data, isLoading } = useSWR<CapitalAccountData>(
     investorId ? `/api/investors/${investorId}/capital-account` : null,
     fetcher
   );
@@ -55,10 +61,10 @@ export default function LPAccountPage() {
   );
 
   async function handleRecompute() {
-    if (!investorId || !accounts || accounts.length === 0) return;
+    if (!investorId || !data || data.entities.length === 0) return;
     setRecomputing(true);
     try {
-      const entityId = accounts[0].entityId;
+      const entityId = data.entities[0].entityId;
       const res = await fetch(`/api/investors/${investorId}/capital-account/compute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,10 +84,15 @@ export default function LPAccountPage() {
     setRecomputing(false);
   }
 
-  if (!investorId || isLoading || !accounts) return <div className="text-sm text-gray-400">Loading...</div>;
-  if (accounts.length === 0) return <div className="text-sm text-gray-400">No capital account data available.</div>;
+  if (!investorId || isLoading || !data) return <div className="text-sm text-gray-400">Loading...</div>;
+  if (data.entities.length === 0 && data.ledger.length === 0) return <div className="text-sm text-gray-400">No capital account data available.</div>;
 
-  const account = accounts[0]; // Latest period (API returns ordered by periodDate desc)
+  // Aggregate across all entities
+  const totalContributed = data.entities.reduce((s, e) => s + e.totalContributed, 0);
+  const totalDistributed = data.entities.reduce((s, e) => s + e.totalDistributed, 0);
+  const totalFees = data.entities.reduce((s, e) => s + e.totalFees, 0);
+  const currentBalance = data.entities.reduce((s, e) => s + e.currentBalance, 0);
+  const totalCommitment = data.entities.reduce((s, e) => s + e.commitment, 0);
 
   // Pull metrics from dashboard API (computed from real data)
   const netIrr = dashboard?.irr != null ? `${(dashboard.irr * 100).toFixed(1)}%` : "—";
@@ -90,26 +101,22 @@ export default function LPAccountPage() {
   const rvpi = dashboard?.rvpi != null ? `${dashboard.rvpi.toFixed(2)}x` : "—";
 
   const rows: { l: string; v: string; s?: boolean; hl?: boolean; label?: boolean; b?: boolean; inc?: boolean; cap?: boolean; neg?: boolean }[] = [
-    { l: `Beginning Balance (${formatPeriod(account.periodDate)})`, v: fmtSigned(account.beginningBalance), s: true },
-    { l: "Contributions", v: fmtSigned(account.contributions) },
-    { l: "INCOME ALLOCATIONS", v: "", label: true },
-    { l: "  Total Income Allocations", v: fmtSigned(account.incomeAllocations), b: true, inc: true },
-    { l: "CAPITAL ALLOCATIONS", v: "", label: true },
-    { l: "  Total Capital Allocations", v: fmtSigned(account.capitalAllocations), b: true, cap: true },
+    { l: "Total Commitment", v: fmtSigned(totalCommitment), s: true },
+    { l: "Contributions", v: fmtSigned(totalContributed) },
     { l: "DISTRIBUTIONS", v: "", label: true },
-    { l: "  Total Distributions", v: fmtSigned(-Math.abs(account.distributions)), b: true, neg: true },
+    { l: "  Total Distributions", v: fmtSigned(totalDistributed), b: true, inc: true },
     { l: "FEES & EXPENSES", v: "", label: true },
-    { l: "  Total Fees & Expenses", v: fmtSigned(-Math.abs(account.fees)), b: true, neg: true },
-    { l: `Ending Balance`, v: fmtSigned(account.endingBalance), s: true, hl: true },
+    { l: "  Total Fees & Expenses", v: fmtSigned(-Math.abs(totalFees)), b: true, neg: true },
+    { l: "Current Balance", v: fmtSigned(currentBalance), s: true, hl: true },
   ];
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-sm font-semibold">Capital Account — {account.entity.name}</h3>
+          <h3 className="text-sm font-semibold">Capital Account — {data.investorName}</h3>
           <div className="text-xs text-gray-500">
-            Period ending {new Date(account.periodDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+            {data.entities.length} {data.entities.length === 1 ? "entity" : "entities"} · {data.ledger.length} transactions
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -144,9 +151,8 @@ export default function LPAccountPage() {
 
       <div className="mt-3 flex gap-4 text-xs">
         {[
-          ["bg-emerald-500", "Income"],
-          ["bg-indigo-500", "Capital Gains"],
-          ["bg-gray-500", "Distributions/Fees"],
+          ["bg-emerald-500", "Distributions"],
+          ["bg-gray-500", "Fees"],
         ].map(([c, l]) => (
           <div key={l} className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${c}`} />
@@ -168,6 +174,58 @@ export default function LPAccountPage() {
           </div>
         ))}
       </div>
+
+      {/* Per-entity breakdown */}
+      {data.entities.length > 1 && (
+        <div className="mt-4 border-t border-gray-200 pt-3">
+          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Per Entity</h4>
+          <div className="space-y-2">
+            {data.entities.map((entity) => (
+              <div key={entity.entityId} className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2">
+                <div>
+                  <div className="font-medium">{entity.entityName}</div>
+                  <div className="text-xs text-gray-500">Commitment: {fmtSigned(entity.commitment)}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-semibold">{fmtSigned(entity.currentBalance)}</div>
+                  <div className="text-xs text-gray-500">Balance</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent ledger entries */}
+      {data.ledger.length > 0 && (
+        <div className="mt-4 border-t border-gray-200 pt-3">
+          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Activity Ledger</h4>
+          <div className="space-y-1 text-xs">
+            {data.ledger.slice(-10).reverse().map((entry, i) => (
+              <div key={i} className="flex justify-between items-center py-1 px-2 rounded hover:bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full ${
+                    entry.type === "CONTRIBUTION" ? "bg-blue-500" :
+                    entry.type === "DISTRIBUTION" ? "bg-emerald-500" :
+                    entry.type === "FEE" ? "bg-gray-400" :
+                    "bg-indigo-500"
+                  }`} />
+                  <span className="text-gray-600">{entry.description}</span>
+                  <span className="text-gray-400">{entry.entityName}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={entry.amount >= 0 ? "text-emerald-700 font-medium" : "text-gray-600"}>
+                    {fmtSigned(entry.amount)}
+                  </span>
+                  <span className="text-gray-400 w-16 text-right">
+                    {new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
