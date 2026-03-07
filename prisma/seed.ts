@@ -100,6 +100,7 @@ async function main() {
       { id: "contact-gp-jk", firmId: firm.id, firstName: "James", lastName: "Kim", email: "james.kim@atlasgp.com", title: "Managing Partner", type: "INTERNAL", companyId: "company-gp" },
       { id: "contact-gp-sm", firmId: firm.id, firstName: "Sarah", lastName: "Mitchell", email: "sarah.mitchell@atlasgp.com", title: "CFO", type: "INTERNAL", companyId: "company-gp" },
       { id: "contact-gp-al", firmId: firm.id, firstName: "Alex", lastName: "Lee", email: "alex.lee@atlasgp.com", title: "VP, Investments", type: "INTERNAL", companyId: "company-gp" },
+      { id: "contact-gp-sn", firmId: firm.id, firstName: "Sahil", lastName: "Nandwani", email: "sahil@calafiagroup.com", title: "Principal", type: "INTERNAL", companyId: "company-gp" },
     ],
   });
 
@@ -141,6 +142,19 @@ async function main() {
       role: "GP_TEAM",
       initials: "AL",
       contactId: "contact-gp-al",
+    },
+  });
+
+  // Current logged-in user — must be in firm-1 so API queries return seed data
+  await prisma.user.create({
+    data: {
+      id: "user-sn",
+      firmId: firm.id,
+      email: "sahil@calafiagroup.com",
+      name: "Sahil Nandwani",
+      role: "GP_ADMIN",
+      initials: "SN",
+      contactId: "contact-gp-sn",
     },
   });
 
@@ -1888,6 +1902,8 @@ End with credit risk rating, key covenant concerns, and recommended structural p
         carriedInterest: 4_000_000,
         netToLPs: 54_000_000,
         status: "PAID",
+        distributionType: "CAPITAL_GAIN",
+        memo: "SolarGrid Energy full exit",
       },
       {
         id: "dist-2",
@@ -1902,6 +1918,8 @@ End with credit risk rating, key covenant concerns, and recommended structural p
         carriedInterest: 0,
         netToLPs: 12_000_000,
         status: "PAID",
+        distributionType: "INCOME",
+        memo: "NovaTech AI quarterly dividend",
       },
       {
         id: "dist-3",
@@ -1916,6 +1934,8 @@ End with credit risk rating, key covenant concerns, and recommended structural p
         carriedInterest: 0,
         netToLPs: 2_100_000,
         status: "PAID",
+        distributionType: "INCOME",
+        memo: "Q4 interest income",
       },
       {
         id: "dist-4",
@@ -1930,6 +1950,40 @@ End with credit risk rating, key covenant concerns, and recommended structural p
         carriedInterest: 0,
         netToLPs: 1_200_000,
         status: "PAID",
+        distributionType: "INCOME",
+        memo: "NovaTech AI dividend",
+      },
+      {
+        id: "dist-5",
+        entityId: entity1.id,
+        distributionDate: new Date("2025-03-15"),
+        grossAmount: 5_000_000,
+        source: "Partial exit \u2014 UrbanNest",
+        distributionType: "RETURN_OF_CAPITAL",
+        memo: "Return of capital from partial exit",
+        returnOfCapital: 3_500_000,
+        income: 0,
+        longTermGain: 1_200_000,
+        shortTermGain: 0,
+        carriedInterest: 300_000,
+        netToLPs: 4_700_000,
+        status: "DRAFT",
+      },
+      {
+        id: "dist-6",
+        entityId: entity2.id,
+        distributionDate: new Date("2025-03-01"),
+        grossAmount: 3_000_000,
+        source: "CloudBase dividend",
+        distributionType: "INCOME",
+        memo: "Q1 2025 dividend income",
+        returnOfCapital: 0,
+        income: 3_000_000,
+        longTermGain: 0,
+        shortTermGain: 0,
+        carriedInterest: 0,
+        netToLPs: 3_000_000,
+        status: "APPROVED",
       },
     ],
   });
@@ -1984,6 +2038,15 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       // dist-3 (entity8, $2.1M gross/net) — investor3 (40%), investor6 (60%)
       { id: "dli-3-3", distributionId: "dist-3", investorId: investor3.id, grossAmount: 840_000, returnOfCapital: 0, income: 840_000, longTermGain: 0, carriedInterest: 0, netAmount: 840_000 },
       { id: "dli-3-6", distributionId: "dist-3", investorId: investor6.id, grossAmount: 1_260_000, returnOfCapital: 0, income: 1_260_000, longTermGain: 0, carriedInterest: 0, netAmount: 1_260_000 },
+      // dist-5 (entity1, $5M gross, $4.7M net, DRAFT) — same entity1 proportions: investor1 38.5%, investor3 19.2%, investor4 23.1%, investor6 19.2%
+      { id: "dli-5-1", distributionId: "dist-5", investorId: investor1.id, grossAmount: 1_925_000, returnOfCapital: 1_347_500, income: 0, longTermGain: 462_000, carriedInterest: 115_500, netAmount: 1_809_500 },
+      { id: "dli-5-3", distributionId: "dist-5", investorId: investor3.id, grossAmount: 960_000, returnOfCapital: 672_000, income: 0, longTermGain: 230_400, carriedInterest: 57_600, netAmount: 902_400 },
+      { id: "dli-5-4", distributionId: "dist-5", investorId: investor4.id, grossAmount: 1_155_000, returnOfCapital: 808_500, income: 0, longTermGain: 277_200, carriedInterest: 69_300, netAmount: 1_085_700 },
+      { id: "dli-5-6", distributionId: "dist-5", investorId: investor6.id, grossAmount: 960_000, returnOfCapital: 672_000, income: 0, longTermGain: 230_400, carriedInterest: 57_600, netAmount: 902_400 },
+      // dist-6 (entity2, $3M gross/net, APPROVED) — entity2 proportions: investor1 50%, investor2 33.3%, investor5 16.7%
+      { id: "dli-6-1", distributionId: "dist-6", investorId: investor1.id, grossAmount: 1_500_000, returnOfCapital: 0, income: 1_500_000, longTermGain: 0, carriedInterest: 0, netAmount: 1_500_000 },
+      { id: "dli-6-2", distributionId: "dist-6", investorId: investor2.id, grossAmount: 1_000_000, returnOfCapital: 0, income: 1_000_000, longTermGain: 0, carriedInterest: 0, netAmount: 1_000_000 },
+      { id: "dli-6-5", distributionId: "dist-6", investorId: investor5.id, grossAmount: 500_000, returnOfCapital: 0, income: 500_000, longTermGain: 0, carriedInterest: 0, netAmount: 500_000 },
     ],
   });
 
@@ -2126,6 +2189,11 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       id: "wf-1",
       name: "Standard European 8/20",
       description: "Return of Capital \u2192 8% Pref \u2192 100% GP Catch-Up \u2192 80/20 Split",
+      managementFeeRate: 0.02,
+      feeBasis: "COMMITTED_CAPITAL",
+      carryPercent: 0.20,
+      prefReturnRate: 0.08,
+      prefReturnCompounding: "COMPOUND",
     },
   });
 
@@ -2149,6 +2217,11 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       id: "wf-2",
       name: "Income-First + Reduced Carry",
       description: "100% Income to LPs \u2192 ROC \u2192 6% Pref \u2192 85/15 Split",
+      managementFeeRate: 0.015,
+      feeBasis: "INVESTED_CAPITAL",
+      carryPercent: 0.15,
+      prefReturnRate: 0.06,
+      prefReturnCompounding: "SIMPLE",
     },
   });
 
@@ -2169,6 +2242,7 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       id: "wf-3",
       name: "No Fee / Flat Split",
       description: "ROC \u2192 90/10 Profit Split (no pref, no catch-up, no mgmt fee)",
+      carryPercent: 0.10,
     },
   });
 
@@ -2187,6 +2261,11 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       id: "wf-4",
       name: "Credit Fund \u2014 Income Pass-Through",
       description: "100% Interest Income to LPs pro rata \u2192 ROC \u2192 7% Pref \u2192 80/20 Split",
+      managementFeeRate: 0.0125,
+      feeBasis: "NAV",
+      carryPercent: 0.20,
+      prefReturnRate: 0.07,
+      prefReturnCompounding: "SIMPLE",
     },
   });
 
@@ -2207,6 +2286,11 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       id: "wf-5",
       name: "Sidecar \u2014 Pari Passu",
       description: "Same as parent fund waterfall, pro rata allocation",
+      managementFeeRate: 0.02,
+      feeBasis: "COMMITTED_CAPITAL",
+      carryPercent: 0.20,
+      prefReturnRate: 0.08,
+      prefReturnCompounding: "COMPOUND",
     },
   });
 
@@ -2225,100 +2309,12 @@ End with credit risk rating, key covenant concerns, and recommended structural p
   await prisma.entity.update({ where: { id: entity7.id }, data: { waterfallTemplateId: wf5.id } });
 
   // ============================================================
-  // CAPITAL ACCOUNTS (CalPERS / Fund I Q4 2024)
+  // CAPITAL ACCOUNTS — NOT SEEDED
+  // These are computation outputs generated by the capital-activity-engine
+  // (recomputeCapitalAccountForInvestor) when capital calls are funded
+  // or distributions are paid. Not pre-loading ensures UAT proves the
+  // computation pipeline works end-to-end.
   // ============================================================
-  console.log("Creating capital accounts...");
-
-  const capitalAccountsData = [
-    {
-      id: "capact-1",
-      investorId: investor1.id,
-      entityId: entity1.id,
-      periodDate: new Date("2024-12-31"),
-      beginningBalance: 47_250_000,
-      contributions: 0,
-      incomeAllocations: 2_250_000,
-      capitalAllocations: 6_740_000,
-      distributions: -3_200_000,
-      fees: -1_080_000,
-      endingBalance: 51_960_000,
-      details: {
-        interestIncome: 320_000,
-        dividendIncome: 1_520_000,
-        rentalIncome: 410_000,
-        totalIncome: 2_250_000,
-        netRealizedGainLT: 4_640_000,
-        changeInUnrealized: 2_100_000,
-        totalCapitalGains: 6_740_000,
-        returnOfCapital: -1_800_000,
-        incomeDistributions: -1_400_000,
-        totalDistributions: -3_200_000,
-        managementFees: -187_500,
-        fundExpenses: -42_500,
-        carriedInterest: -850_000,
-      },
-    },
-    // CalPERS / Fund II Q4 2024
-    {
-      id: "capact-2",
-      investorId: investor1.id,
-      entityId: entity2.id,
-      periodDate: new Date("2024-12-31"),
-      beginningBalance: 42_000_000,
-      contributions: 4_500_000,
-      incomeAllocations: 1_100_000,
-      capitalAllocations: 3_200_000,
-      distributions: -1_800_000,
-      fees: -750_000,
-      endingBalance: 48_250_000,
-    },
-    // CalPERS / Growth Fund Q4 2024
-    {
-      id: "capact-3",
-      investorId: investor1.id,
-      entityId: entity4.id,
-      periodDate: new Date("2024-12-31"),
-      beginningBalance: 7_800_000,
-      contributions: 600_000,
-      incomeAllocations: 380_000,
-      capitalAllocations: 920_000,
-      distributions: -420_000,
-      fees: -210_000,
-      endingBalance: 9_070_000,
-    },
-    // CalPERS / Sidecar A Q4 2024
-    {
-      id: "capact-4",
-      investorId: investor1.id,
-      entityId: entity5.id,
-      periodDate: new Date("2024-12-31"),
-      beginningBalance: 16_200_000,
-      contributions: 2_000_000,
-      incomeAllocations: 640_000,
-      capitalAllocations: 1_850_000,
-      distributions: -800_000,
-      fees: -320_000,
-      endingBalance: 19_570_000,
-    },
-    // CalPERS / RE SPV Q4 2024
-    {
-      id: "capact-5",
-      investorId: investor1.id,
-      entityId: entity9.id,
-      periodDate: new Date("2024-12-31"),
-      beginningBalance: 4_600_000,
-      contributions: 400_000,
-      incomeAllocations: 220_000,
-      capitalAllocations: 310_000,
-      distributions: -180_000,
-      fees: -90_000,
-      endingBalance: 5_260_000,
-    },
-  ];
-
-  for (const ca of capitalAccountsData) {
-    await prisma.capitalAccount.create({ data: ca });
-  }
 
   // ============================================================
   // ACTIVITY EVENTS (Timeline for NovaTech AI)

@@ -2,6 +2,10 @@
 
 Critical patterns that prevent bugs and crashes. Follow these exactly.
 
+## GSD Context — Check before starting work
+
+Before starting work on a new feature, check `.planning/STATE.md` for current project position and `.planning/ROADMAP.md` for what phase you're in. After completing work, update STATE.md.
+
 ---
 
 ## Toast — will crash if destructured
@@ -168,6 +172,9 @@ try { ... } catch (e: any) {
 | Build type errors | Missing await, wrong imports | Run `npm run build` — error shows exact file:line |
 | File upload broken | Wrong component or missing FormData | Use `FileUpload` from `ui/file-upload`, upload via FormData |
 | Command bar is a modal | Old createPortal code | `command-bar-provider.tsx` must NOT use createPortal |
+| DD tab shows 0%/NOT_STARTED | Workstream status not synced with deal stage | BUG-01: deal-dd-tab.tsx — needs re-verification (may be fixed) |
+| Pipeline pass rate 300% | Calculation divides incorrectly | BUG-02: deals/page.tsx — needs re-verification (may be fixed) |
+| IC Memo stuck "Generating..." | No timeout or error fallback | BUG-03: deal-overview-tab.tsx — needs re-verification (may be fixed) |
 
 ---
 

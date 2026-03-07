@@ -2,13 +2,36 @@
 
 ---
 
+## GSD Planning Directory
+
+```
+.planning/
+├── PROJECT.md          # Project context, requirements, decisions
+├── REQUIREMENTS.md     # All requirements with REQ-IDs
+├── ROADMAP.md          # 7-phase roadmap with success criteria
+├── STATE.md            # Current position and accumulated context
+├── ARCHITECTURE.md     # Entity architecture, ownership, contracts, roles
+├── DATA-MODEL.md       # All 56 Prisma models + 64+ API routes
+├── UI-GUIDE.md         # UI components + step-by-step testing workflows
+├── AUDIT.md            # Honest scorecard — what's strong, weak, missing
+└── config.json         # GSD workflow configuration
+```
+
+### Checking Project State
+
+- Before suggesting next work: read `.planning/STATE.md`
+- Before planning a feature: read `.planning/ROADMAP.md` for phase context
+- After completing a feature: update `.planning/STATE.md` position
+
+---
+
 ## File Layout
 
 ```
 src/
 ├── app/(gp)/              # GP admin pages
 ├── app/(lp)/              # LP investor portal
-├── app/api/               # ~64 REST API route files
+├── app/api/               # 73 REST API route files
 ├── components/ui/         # Primitives (Button, Badge, Modal, Toast, FileUpload, etc.)
 ├── components/layout/     # AppShell, Sidebar, TopBar
 ├── components/features/   # Domain components (deals/, assets/, entities/, etc.)
@@ -91,7 +114,7 @@ const deal = await prisma.deal.findUnique({
 });
 ```
 
-For the full data model and all available relations, see `prisma/schema.prisma` or `docs/data-model-guide.md`.
+For the full data model and all available relations, see `prisma/schema.prisma` or `.planning/DATA-MODEL.md`.
 
 ---
 
@@ -101,7 +124,7 @@ For the full data model and all available relations, see `prisma/schema.prisma` 
 // Multi-tenancy — always use, never hardcode firm-1
 const { firmId } = useFirm();  // from @/components/providers/firm-provider
 
-// User context (demo auth — ready to replace with Clerk/Auth0)
+// User context (Clerk in production, mock for dev)
 const { user } = useUser();  // from @/components/providers/user-provider
-// Pre-seeded users: user-jk (James Kim, GP_ADMIN), user-sm (Sarah Mitchell, GP_TEAM), user-al (Alex Lee, GP_TEAM)
+// Dev users: user-jk (James Kim, GP_ADMIN), user-sm (Sarah Mitchell, GP_TEAM), user-al (Alex Lee, GP_TEAM) + 5 LP users
 ```
