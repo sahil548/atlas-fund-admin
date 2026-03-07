@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 02-07 (complete)
-status: phase-complete
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-03-06T06:58:00.000Z"
+current_plan: 03-01 (complete)
+status: in-progress
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-07T00:25:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 11
+  completed_plans: 11
 ---
 
 # Atlas — GSD State
@@ -21,14 +21,14 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 2 of 7 (Deal Desk End-to-End) — COMPLETE
-- **Phase status:** All 7 plans complete (01-07)
-- **Current Plan:** Phase 2 complete, ready for Phase 3
+- **Phase:** 3 of 7 (Capital Activity) — IN PROGRESS
+- **Phase status:** Plan 01 complete, ready for Plan 02
+- **Current Plan:** 03-01 complete
 - **Active plan:** none
 
 ## Performance Metrics
-- Plans completed: 10
-- Plans total: 10 (3 Phase 1 + 7 Phase 2)
+- Plans completed: 11
+- Plans total: 11 (3 Phase 1 + 7 Phase 2 + 1 Phase 3 so far)
 - Phases completed: 2
 
 | Phase | Plan | Duration | Tasks | Files |
@@ -36,6 +36,7 @@ progress:
 | 02    | 02   | 5min     | 3     | 8     |
 | 02    | 06   | 8min     | 2     | 9     |
 | 02    | 07   | 7min     | 2     | 7     |
+| 03    | 01   | 25min    | 2     | 11    |
 
 ## Accumulated Context
 
@@ -63,10 +64,10 @@ progress:
 - Slack IC voting: structurally sound, all DB fields exist (User.slackUserId, ICProcess.slackMessageId/slackChannel), requires workspace setup to test
 - GROUND-TRUTH.md: created — definitive status of every Phase 1 feature
 
-### Critical Gap Identified (Phase 2 Priority)
-- CapitalCallLineItem and DistributionLineItem have NO API endpoints — cannot record per-investor amounts
-- Impact: LP capital account compute returns $0 for contributions and distributions
-- Severity: HIGH — blocks correct LP metrics until fixed
+### Critical Gap — CLOSED (Phase 3 Plan 01)
+- CapitalCallLineItem and DistributionLineItem NOW have full API endpoints (GET list, POST create, PATCH update/fund)
+- Transaction chain engine closes the loop: fund a capital call line item -> calledAmount updates -> capital account recomputes
+- Distribution PAID -> all investor capital accounts recomputed
 
 ### What's Definitely Not Built
 - QBO/Xero real OAuth or API calls (UI-only)
@@ -109,6 +110,11 @@ progress:
 - **2026-03-06 (02-06):** Delete protection on decision structures — returns 409 with linked entity names instead of cascading
 - **2026-03-06 (02-06):** SEND_BACK vote auto-triggers sendBackToDueDiligence — APPROVE/REJECT only update counts (final decision via ic-decision endpoint)
 
+- **2026-03-07 (03-01):** autoGenerateLineItems defaults to true — pro-rata line items auto-created from entity commitments on capital call/distribution creation
+- **2026-03-07 (03-01):** Unfunded commitment warning uses X-Warning header, does NOT block create — "Warn but allow" per user decision
+- **2026-03-07 (03-01):** Distribution line item PATCH requires DRAFT status — prevents edits after approval/payment
+- **2026-03-07 (03-01):** Capital account upsert uses today's date as periodDate — idempotent; same-day recomputes simply overwrite
+
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
 - 5 new models: DealEntity, DDWorkstreamComment, DDWorkstreamAttachment, DecisionStructure, DecisionMember
@@ -123,6 +129,18 @@ progress:
 - KillDealModal: reason dropdown required (Pricing, Risk, Timing, Sponsor, Other) + optional free text
 - reviveDeal(): restores deal to previous stage, clears kill metadata
 - Pipeline: closing checklist progress % on Closing cards, kill reason badges on dead deal cards
+
+### Phase 2 Closing, Deal-to-Asset, Multi-Entity (Plan 02-03)
+- Closing tab: "Add Item" button for custom checklist items, per-item file upload/download, warn-on-incomplete override dialog
+- closeDeal(): sets sourceDealId on Asset, carries dealMetadata, auto-redirect to /assets/[id]
+- DealEntity section rewritten to use junction table API — add/remove entities, allocation % and roles
+- Close modal pre-populates allocation rows from DealEntity junction records
+
+### Phase 2 DD Workstreams PM-Style (Plan 02-05)
+- DD tab redesigned as PM-style list: assignee avatars, status/priority dropdowns, due dates, progress bar
+- WorkstreamDetailPanel: split-view with threaded comments and file attachments
+- New APIs: PATCH workstream (assignee/priority/due), comments CRUD, attachments CRUD
+- Workstream status flow: NOT_STARTED → IN_PROGRESS → COMPLETE with inline editing
 
 - **2026-03-06 (02-07):** sourceDeal include fetches screeningResult, workstreams, icProcess, dealMetadata, dealLead for comprehensive deal intelligence on asset pages
 - **2026-03-06 (02-07):** AI Deal Intelligence section defaults collapsed on asset overview -- avoids overwhelming the page while keeping data accessible
@@ -144,7 +162,15 @@ progress:
 - GET /api/analytics/pipeline: pipeline value, time-in-stage, velocity, conversion, throughput metrics
 - Analytics registered in routes.ts (sidebar, command bar, AI prompt auto-updated)
 
+### Phase 3 Capital Activity Foundation (Plan 03-01)
+- Phase 3 schema complete: fee config on WaterfallTemplate (8 fields), distributionType/memo on DistributionEvent, navProxyConfig on Entity
+- All Phase 3 schema done — no subsequent plan needs db push --force-reset
+- Capital activity engine: updateCommitmentCalledAmount, recomputeCapitalAccountForInvestor, recomputeAllInvestorCapitalAccounts, updateCapitalCallStatus
+- 6 new API routes: capital-calls/[id], capital-calls/[id]/line-items, capital-calls/[id]/line-items/[lineItemId], distributions/[id], distributions/[id]/line-items, distributions/[id]/line-items/[lineItemId]
+- Auto-generation of pro-rata line items on capital call/distribution creation (autoGenerateLineItems=true default)
+- Status transition validation: forward-only, allowlist per state
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-06T06:58:00.000Z
-- **Stopped at:** Completed 02-07-PLAN.md (Phase 2 complete)
+- **Last session:** 2026-03-07T00:25:00.000Z
+- **Stopped at:** Completed 03-01-PLAN.md

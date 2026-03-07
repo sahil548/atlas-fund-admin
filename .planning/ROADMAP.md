@@ -87,11 +87,11 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
+- [x] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
 - [ ] 03-02-PLAN.md — Wave 2: Waterfall enhancement (configurable carry, pref return, clawback, GP co-invest) + fee calculation engine (depends on 03-01)
 - [ ] 03-03-PLAN.md — Wave 2: Metrics wiring to entity detail + GP dashboard + capital account ledger + NAV refinement (depends on 03-01)
 
-**Progress:** 0/3 plans complete
+**Progress:** 1/3 plans complete
 
 ---
 
@@ -201,7 +201,7 @@ Plans:
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
 | 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
-| 3 | Capital Activity | 6 | 3 | Not started |
+| 3 | Capital Activity | 6 | 3 | In Progress (1/3 plans done) |
 | 4 | Asset & Entity Polish | 10 | 5 | Not started |
 | 5 | QBO/Xero Integration | 6 | 2 | Not started |
 | 6 | LP Portal | 3 | 2 | Not started |

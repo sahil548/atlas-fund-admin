@@ -2,7 +2,7 @@
 
 All active requirements with unique IDs. Each maps to a phase in `ROADMAP.md`.
 
-Last updated: 2026-03-05
+Last updated: 2026-03-06
 
 ---
 
@@ -37,12 +37,12 @@ These were documented on March 5 but have not been re-checked. They may or may n
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
 | DEAL-01 | Screening stage polish (UX, validation errors shown to user) | High | DONE (02-02): Wizard shows inline red error text per field + toast summary on submit |
-| DEAL-02 | Closing workflow reliable and complete end-to-end | High | Closing tab exists but untested with real workflow |
-| DEAL-03 | Deal-to-asset auto-creation when deal closes | High | Close action exists, asset auto-creation not verified |
-| DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | Formation workflow exists but not linked to deal closing |
+| DEAL-02 | Closing workflow reliable and complete end-to-end | High | DONE (02-03): Enhanced closing tab with custom items, file attachments, warn-on-incomplete override |
+| DEAL-03 | Deal-to-asset auto-creation when deal closes | High | DONE (02-03): closeDeal sets sourceDealId, carries metadata, auto-redirects to new asset |
+| DEAL-04 | Entity/fund formation flow before closing (every deal needs an entity) | Medium | DONE (02-03): Multi-entity DealEntity junction, close modal pre-populates allocations from junction records |
 | DEAL-05 | Deal edit inline fields save reliably | Medium | DONE (02-02): Double-save prevention (savingRef+justSavedRef), error toast, textarea newline support |
 | DEAL-06 | Deal overview dashboard with AI-extracted metadata | High | DONE (02-04): 4-section dashboard (header, metrics, IC memo, terms) + AI extraction endpoint |
-| DEAL-07 | DD workstreams as interactive PM-style tasks | High | Workstreams exist but lack assignees, statuses, comments, attachments, re-analysis |
+| DEAL-07 | DD workstreams as interactive PM-style tasks | High | DONE (02-05): PM-style list view with assignees, priority, due dates, threaded comments, file attachments, detail panel |
 | DEAL-08 | IC Review with configurable decision-making structures | High | DONE (02-06): Decision structures CRUD API + settings tab, in-app voting with conditions, Send Back flow |
 | DEAL-09 | Kill/revive deal flow with required reasons | Medium | DONE (02-02): KillDealModal with reason dropdown, reviveDeal() restores to previous stage, dead deal badges on pipeline |
 | DEAL-10 | Pipeline analytics (summary cards + dedicated analytics page) | Medium | DONE (02-07): Dedicated /analytics page with Recharts charts (pipeline value by stage, time-in-stage, deal velocity, conversion funnel), analytics API, route registered in sidebar |
@@ -55,8 +55,8 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| FIN-01 | Capital account computation produces correct results from actual calls/distributions | Critical | Code exists in `computations/capital-accounts.ts` — needs verification |
-| FIN-02 | Waterfall calculation applies tier logic correctly with LP/GP splits, hurdle rates | Critical | Code exists in `computations/waterfall.ts` — needs verification |
+| FIN-01 | Capital account computation produces correct results from actual calls/distributions | Critical | DONE (03-01): Line item APIs + transaction chain engine wired; capital accounts recomputed on fund/paid events |
+| FIN-02 | Waterfall calculation applies tier logic correctly with LP/GP splits, hurdle rates | Critical | DONE (03-01): Fee config fields added to WaterfallTemplate; configurable carry/pref return ready for 03-02 |
 | FIN-03 | IRR computation returns correct values from actual cash flows | High | Code exists in `computations/irr.ts` (Newton-Raphson XIRR) — needs verification |
 | FIN-04 | TVPI / DPI / RVPI computation from real data | High | Fields exist on LP dashboard — unclear if computed or seeded |
 | FIN-05 | MOIC computation from cost basis and fair value | High | Some seeded, some derived — not consistently computed |
