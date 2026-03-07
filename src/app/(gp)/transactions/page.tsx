@@ -10,7 +10,7 @@ import { CreateDistributionForm } from "@/components/features/capital/create-dis
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
-import { fmt } from "@/lib/utils";
+import { fmt, pct } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
@@ -35,6 +35,11 @@ interface WaterfallTier {
 interface WaterfallTemplate {
   id: string; name: string; description: string | null;
   tiers: WaterfallTier[]; entities: Entity[];
+  managementFeeRate: number | null; feeBasis: string | null;
+  carryPercent: number | null; prefReturnCompounding: string | null;
+}
+interface PerInvestorBreakdown {
+  investorId: string; investorName: string; proRataShare: number; lpAllocation: number;
 }
 
 const CC_STATUS_COLORS: Record<string, string> = {
@@ -63,6 +68,7 @@ export default function TransactionsPage() {
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
   const [addTierFor, setAddTierFor] = useState<{ templateId: string; nextOrder: number } | null>(null);
   const [editTier, setEditTier] = useState<{ templateId: string; tier: WaterfallTier } | null>(null);
+  const [expandedBreakdown, setExpandedBreakdown] = useState<string | null>(null); // templateId
 
   // Waterfall calculation
   const [showCalcModal, setShowCalcModal] = useState<string | null>(null); // templateId
@@ -275,7 +281,30 @@ export default function TransactionsPage() {
                   <div>
                     <div className="text-sm font-semibold text-gray-900">{t.name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{t.description}</div>
-                    <div className="flex items-center gap-2 mt-2">
+                    {/* Fee config summary */}
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      {t.managementFeeRate != null && (
+                        <span className="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">
+                          Mgmt: {(t.managementFeeRate * 100).toFixed(1)}%
+                        </span>
+                      )}
+                      {t.feeBasis && (
+                        <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                          {t.feeBasis.replace(/_/g, " ")}
+                        </span>
+                      )}
+                      {t.carryPercent != null && (
+                        <span className="text-[10px] bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded">
+                          Carry: {(t.carryPercent * 100).toFixed(0)}%
+                        </span>
+                      )}
+                      {t.prefReturnCompounding && (
+                        <span className="text-[10px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                          {t.prefReturnCompounding} pref
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5">
                       <Badge color="indigo">{t.tiers.length} tiers</Badge>
                       {t.entities.map((e) => <Badge key={e.id} color="blue">{e.name}</Badge>)}
                     </div>
@@ -347,12 +376,20 @@ export default function TransactionsPage() {
                             onClick={() => setCalcResults((prev) => { const next = { ...prev }; delete next[t.id]; return next; })}
                             className="text-[10px] text-gray-400 hover:text-gray-600"
                           >
-                            ✕ Dismiss
+                            Dismiss
                           </button>
                         </div>
                         <div className="text-[10px] text-emerald-700 mb-2">
-                          Distributable: {fmt(calcResults[t.id].distributableAmount)} · Contributed: {fmt(calcResults[t.id].totalContributed)} · Prior Distributions: {fmt(calcResults[t.id].totalDistributedPrior)}
+                          Distributable: {fmt(calcResults[t.id].distributableAmount)} &middot; Contributed: {fmt(calcResults[t.id].totalContributed)} &middot; Prior Distributions: {fmt(calcResults[t.id].totalDistributedPrior)}
                         </div>
+
+                        {/* Clawback warning */}
+                        {calcResults[t.id].clawbackLiability > 0 && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-2 text-[10px] text-red-700">
+                            Clawback Liability: {fmt(calcResults[t.id].clawbackLiability)} — GP may owe back this amount if fund underperforms in future periods.
+                          </div>
+                        )}
+
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="border-b border-emerald-200">
@@ -387,13 +424,45 @@ export default function TransactionsPage() {
                         <div className="flex gap-4 pt-1">
                           <div className="flex items-center gap-1.5 text-[10px]">
                             <span className="w-2 h-2 rounded-full bg-blue-500" />
-                            LP: {calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalLP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0"}%
+                            LP: {calcResults[t.id].summary?.lpPercent?.toFixed(1) ?? (calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalLP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0")}%
                           </div>
                           <div className="flex items-center gap-1.5 text-[10px]">
                             <span className="w-2 h-2 rounded-full bg-orange-400" />
-                            GP: {calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalGP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0"}%
+                            GP: {calcResults[t.id].summary?.gpPercent?.toFixed(1) ?? (calcResults[t.id].distributableAmount > 0 ? ((calcResults[t.id].totalGP / calcResults[t.id].distributableAmount) * 100).toFixed(1) : "0.0")}%
                           </div>
                         </div>
+
+                        {/* Per-Investor Breakdown (expandable) */}
+                        {(calcResults[t.id].perInvestorBreakdown?.length ?? 0) > 0 && (
+                          <div className="border-t border-emerald-200 pt-2">
+                            <button
+                              className="text-[10px] text-emerald-700 font-medium hover:text-emerald-900 flex items-center gap-1"
+                              onClick={() => setExpandedBreakdown(expandedBreakdown === t.id ? null : t.id)}
+                            >
+                              {expandedBreakdown === t.id ? "▼" : "▶"} Per-Investor Breakdown ({calcResults[t.id].perInvestorBreakdown.length} investors)
+                            </button>
+                            {expandedBreakdown === t.id && (
+                              <table className="w-full text-xs mt-2">
+                                <thead>
+                                  <tr className="border-b border-emerald-200">
+                                    <th className="text-left py-1 font-semibold text-emerald-800">Investor</th>
+                                    <th className="text-right py-1 font-semibold text-emerald-800">Pro-Rata</th>
+                                    <th className="text-right py-1 font-semibold text-emerald-800">LP Allocation</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {calcResults[t.id].perInvestorBreakdown.map((b: PerInvestorBreakdown) => (
+                                    <tr key={b.investorId} className="border-b border-emerald-50">
+                                      <td className="py-1 text-gray-900">{b.investorName}</td>
+                                      <td className="py-1 text-right text-gray-500">{(b.proRataShare * 100).toFixed(1)}%</td>
+                                      <td className="py-1 text-right font-medium text-blue-700">{fmt(b.lpAllocation)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
