@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 03-01 (complete)
+current_plan: 03-03 complete
 status: in-progress
-stopped_at: Completed 03-01-PLAN.md
-last_updated: "2026-03-07T00:25:00.000Z"
+stopped_at: Completed 03-03-PLAN.md
+last_updated: "2026-03-07T21:20:55.485Z"
 progress:
   total_phases: 7
-  completed_phases: 2
-  total_plans: 11
-  completed_plans: 11
+  completed_phases: 3
+  total_plans: 18
+  completed_plans: 13
 ---
 
 # Atlas — GSD State
@@ -22,13 +22,13 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 3 of 7 (Capital Activity) — IN PROGRESS
-- **Phase status:** Plan 01 complete, ready for Plan 02
-- **Current Plan:** 03-01 complete
+- **Phase status:** Plans 01, 02, 03 complete — all computation engines wired to UI
+- **Current Plan:** 03-03 complete
 - **Active plan:** none
 
 ## Performance Metrics
-- Plans completed: 11
-- Plans total: 11 (3 Phase 1 + 7 Phase 2 + 1 Phase 3 so far)
+- Plans completed: 13
+- Plans total: 18 (3 Phase 1 + 7 Phase 2 + 3 Phase 3 so far)
 - Phases completed: 2
 
 | Phase | Plan | Duration | Tasks | Files |
@@ -37,6 +37,8 @@ progress:
 | 02    | 06   | 8min     | 2     | 9     |
 | 02    | 07   | 7min     | 2     | 7     |
 | 03    | 01   | 25min    | 2     | 11    |
+| 03    | 02   | 12min    | 2     | 9     |
+| Phase 03-capital-activity P03 | 35 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -114,6 +116,18 @@ progress:
 - **2026-03-07 (03-01):** Unfunded commitment warning uses X-Warning header, does NOT block create — "Warn but allow" per user decision
 - **2026-03-07 (03-01):** Distribution line item PATCH requires DRAFT status — prevents edits after approval/payment
 - **2026-03-07 (03-01):** Capital account upsert uses today's date as periodDate — idempotent; same-day recomputes simply overwrite
+- **2026-03-07 (03-03):** Entity-level MOIC computed as weighted average: sum(fairValue * allocationPct) / sum(costBasis * allocationPct)
+- **2026-03-07 (03-03):** IRR outflows dated to CapitalCallLineItem.paidDate (not CapitalCall.callDate) — actual money movement date for correct XIRR
+- **2026-03-07 (03-03):** Dashboard falls back to asset-level IRR/TVPI when aggregatePaidIn=0 — avoids N/A display on fresh entities with no funded calls
+- **2026-03-07 (03-03):** NAV snapshots auto-saved as fire-and-forget on every GET /api/nav/[entityId] — doesn't block response
+- **2026-03-07 (03-03):** Commitment audit trail: Transaction(TRANSFER) record created with old->new description before updating Commitment.amount
+
+### Phase 3 Metrics Wiring (Plan 03-03)
+- Entity metrics API: TVPI, DPI, RVPI, MOIC, IRR from real funded capital calls + paid distributions + inline NAV
+- GP dashboard cross-entity rollup: aggregateTVPI/DPI/RVPI/weightedIRR/totalNAV + entityMetrics table
+- NAV proxy configuration editable per entity; snapshot auto-saved on every NAV GET
+- LP activity capital account running ledger: CONTRIBUTION/DISTRIBUTION/FEE entries with running balance
+- Commitment PATCH with audit trail — Transaction(TRANSFER) logged on every edit
 
 ### Phase 2 Schema Foundation (Plan 02-01)
 - All Phase 2 schema changes consolidated — no subsequent plan needs db push --force-reset
@@ -172,5 +186,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T00:25:00.000Z
-- **Stopped at:** Completed 03-01-PLAN.md
+- **Last session:** 2026-03-07T21:20:55.483Z
+- **Stopped at:** Completed 03-03-PLAN.md
