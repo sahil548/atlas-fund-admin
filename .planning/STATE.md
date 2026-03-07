@@ -78,7 +78,7 @@ progress:
 - Role-based route enforcement (auth works, access control doesn't)
 - Pagination, error boundaries, rate limiting
 - PDF/Excel report generation
-- Fee calculation engine, side letter rule application
+- Side letter rule application (fee engine built in 03-02; side letter LP-specific rules not yet applied)
 
 ### Patterns to Preserve
 - Route registry (`routes.ts`) is single source of truth — never bypass
@@ -183,6 +183,19 @@ progress:
 - 6 new API routes: capital-calls/[id], capital-calls/[id]/line-items, capital-calls/[id]/line-items/[lineItemId], distributions/[id], distributions/[id]/line-items, distributions/[id]/line-items/[lineItemId]
 - Auto-generation of pro-rata line items on capital call/distribution creation (autoGenerateLineItems=true default)
 - Status transition validation: forward-only, allowlist per state
+
+### Phase 3 Waterfall Engine Enhancement + Fee Calculation (Plan 03-02)
+- Waterfall engine now fully configurable: carry %, pref SIMPLE/COMPOUND compounding, offset-by-prior-distributions, income-counts-toward-pref, GP co-invest %, clawback liability — 40 tests all pass
+- Fee calculation engine: computeManagementFee (3 bases: COMMITTED_CAPITAL, INVESTED_CAPITAL, NAV), computeCarriedInterest, calculateFees
+- POST /api/fees/calculate: reads entity waterfall template fee config, aggregates commitments/NAV, upserts FeeCalculation record
+- Enhanced /api/waterfall-templates/[id]/calculate: WaterfallConfig from template fields, per-investor breakdown, clawbackLiability, saveResults=false for scenario mode
+- DELETE /api/waterfall-templates/[id]/tiers: tier removal endpoint
+- Distribution form: type selector (Income/ROC/Capital Gain/Final Liquidation), Run Waterfall button (auto-decomposes), editable per-investor LP table, memo field
+
+- **2026-03-07 (03-02):** GP catch-up formula preserved as distributableAmount * carryPercent — backward compatible; carryPercent now configurable (default 0.20)
+- **2026-03-07 (03-02):** saveResults=false in waterfall calculate — scenario mode for distribution form without DB write
+- **2026-03-07 (03-02):** Per-investor proRata based on Commitment.amount (total committed), not calledAmount — LP ownership stake for distribution allocation
+- **2026-03-07 (03-02):** clawbackLiability is display-only, always 0 in correct single-period waterfall; useful for multi-period over-distribution detection
 
 ## Session Continuity
 - **Initialized:** 2026-03-05

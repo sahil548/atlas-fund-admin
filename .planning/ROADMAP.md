@@ -84,7 +84,7 @@ Plans:
 - [ ] MOIC consistently computed from cost basis and fair value
 - [ ] Management fees and carried interest calculated per entity rules
 
-**Plans:** 3 plans
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
@@ -152,7 +152,7 @@ Plans:
 **Requirements:** LP-01, LP-02, LP-03
 
 **Success Criteria:**
-- [ ] LP dashboard shows computed metrics (IRR, TVPI, DPI, RVPI from Phase 3 engines)
+- [x] LP dashboard shows computed metrics (IRR, TVPI, DPI, RVPI from Phase 3 engines) (completed 2026-03-07)
 - [ ] Capital account statement reflects real computations
 - [ ] Performance metrics display as time-series charts (not just current numbers)
 - [ ] LP communication preferences stored and ready for notification engine
@@ -189,15 +189,7 @@ Plans:
 |---|------|--------|
 | 1 | Notification engine (email + SMS) | Not started |
 | 2 | PDF + Excel report generation | Not started |
-| 3 | DocuSign + remaining integrations | Not started |
-
-**Progress:** 0/3 plans complete
-
----
-
-## Summary
-
-| Phase | Name | Requirements | Plans | Status |
+| 3 | 3/3 | Complete   | 2026-03-07 | Phase | Name | Requirements | Plans | Status |
 |-------|------|-------------|-------|--------|
 | 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
 | 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
