@@ -103,6 +103,7 @@ export function DealOverviewTab({
 }: DealOverviewTabProps) {
   const [sourceDataOpen, setSourceDataOpen] = useState(false);
   const [memoExpanded, setMemoExpanded] = useState(true);
+  const [fullMemoExpanded, setFullMemoExpanded] = useState(false);
   const [selectedMemoVersion, setSelectedMemoVersion] = useState<number | null>(null);
   const [extracting, setExtracting] = useState(false);
   const toast = useToast();
@@ -351,7 +352,7 @@ export function DealOverviewTab({
           </div>
 
           {/* ═══ SECTIONS 3 & 4: IC Memo Summary + Deal Terms (2-col on lg) ═══ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={`grid grid-cols-1 ${fullMemoExpanded ? "" : "lg:grid-cols-2"} gap-6 items-start`}>
 
             {/* ═══ SECTION 3: IC Memo Summary ═══ */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -442,19 +443,36 @@ export function DealOverviewTab({
                         <div>
                           <div className="text-xs font-semibold text-gray-700 mb-1">Executive Summary</div>
                           <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                            {displayMemo.summary.length > 300
-                              ? displayMemo.summary.slice(0, 300) + "..."
-                              : displayMemo.summary}
+                            {displayMemo.summary}
                           </p>
-                          {displayMemo.summary.length > 300 && (
-                            <button
-                              onClick={() => setMemoExpanded(true)}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1"
-                            >
-                              Read full memo
-                            </button>
-                          )}
                         </div>
+                      )}
+
+                      {fullMemoExpanded && displayMemo.sections && Array.isArray(displayMemo.sections) && (
+                        <div className="space-y-3 pt-2 border-t border-gray-100">
+                          {displayMemo.sections.map((section: any, idx: number) => (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold text-gray-700">{section.name || section.title}</span>
+                                {section.riskLevel && (
+                                  <Badge color={section.riskLevel === "HIGH" ? "red" : section.riskLevel === "LOW" ? "green" : "yellow"}>
+                                    {section.riskLevel}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-gray-600 whitespace-pre-wrap">{section.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {displayMemo.sections && Array.isArray(displayMemo.sections) && displayMemo.sections.length > 0 && (
+                        <button
+                          onClick={() => setFullMemoExpanded(!fullMemoExpanded)}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-2"
+                        >
+                          {fullMemoExpanded ? "Collapse memo" : "Read full memo"}
+                        </button>
                       )}
 
                       {hasMemo && sr?.memoGeneratedAt && (

@@ -17,7 +17,12 @@ export function OnboardingModal() {
 
   // Detect auto-generated firm name
   const needsOnboarding = firmName.endsWith("'s Organization") || firmName === "Atlas";
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("atlas-onboarding-dismissed") === "true";
+    }
+    return false;
+  });
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
@@ -43,6 +48,7 @@ export function OnboardingModal() {
       if (res.ok) {
         mutate(`/api/firms/${firmId}`);
         mutate("/api/firms");
+        localStorage.removeItem("atlas-onboarding-dismissed");
         setDismissed(true);
         // Reload to refresh firm name throughout the app
         window.location.reload();
@@ -120,7 +126,10 @@ export function OnboardingModal() {
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-between">
           {step === 1 && (
             <>
-              <Button variant="secondary" onClick={() => setDismissed(true)}>
+              <Button variant="secondary" onClick={() => {
+                localStorage.setItem("atlas-onboarding-dismissed", "true");
+                setDismissed(true);
+              }}>
                 Skip for now
               </Button>
               <Button

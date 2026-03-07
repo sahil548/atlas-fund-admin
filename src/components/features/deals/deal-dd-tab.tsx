@@ -21,6 +21,7 @@ interface DealDDTabProps {
 export function DealDDTab({ deal }: DealDDTabProps) {
   const toast = useToast();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showAddWorkstream, setShowAddWorkstream] = useState(false);
   const [analyzingWs, setAnalyzingWs] = useState<string | null>(null);
   const [analyzingAll, setAnalyzingAll] = useState(false);
@@ -569,7 +570,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         <div className="flex gap-0 border border-gray-200 rounded-xl overflow-hidden">
           {/* Left: Workstream List */}
           <div
-            className={`${selectedWsId ? "w-1/2" : "w-full"} transition-all duration-200`}
+            className={`${(selectedWsId || selectedTaskId) ? "w-1/2" : "w-full"} transition-all duration-200`}
           >
             {/* Table header */}
             <div className="bg-gray-50 border-b border-gray-200 px-3 py-2 flex items-center gap-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
@@ -606,12 +607,8 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                   <div key={ws.id}>
                     {/* Workstream header row */}
                     <div
-                      className={`flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer ${
-                        isSelected ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""
-                      }`}
-                      onClick={() =>
-                        setSelectedWsId(isSelected ? null : ws.id)
-                      }
+                      className="flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => toggleExpand(ws.id)}
                     >
                       {/* Expand/collapse chevron */}
                       <button
@@ -801,6 +798,19 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            setSelectedTaskId(null);
+                            setSelectedWsId(selectedWsId === ws.id ? null : ws.id);
+                          }}
+                          className={`text-[10px] hover:text-gray-600 ${selectedWsId === ws.id ? "text-indigo-600" : "text-gray-400"}`}
+                          title="Comments & Attachments"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
                             openPromptModal(ws);
                           }}
                           className="text-[10px] text-gray-400 hover:text-gray-600"
@@ -835,7 +845,13 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                             {wsTasks.map((task: any) => (
                               <div
                                 key={task.id}
-                                className="flex items-center gap-2 pl-10 pr-3 py-1.5 border-t border-gray-100 hover:bg-gray-100/50 transition-colors"
+                                className={`flex items-center gap-2 pl-10 pr-3 py-1.5 border-t border-gray-100 hover:bg-gray-100/50 transition-colors cursor-pointer ${
+                                  selectedTaskId === task.id ? "bg-indigo-50 border-l-2 border-l-indigo-400" : ""
+                                }`}
+                                onClick={() => {
+                                  setSelectedWsId(null);
+                                  setSelectedTaskId(selectedTaskId === task.id ? null : task.id);
+                                }}
                               >
                                 {/* Task status toggle */}
                                 <button
@@ -947,7 +963,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           </div>
 
           {/* Right: Detail Panel */}
-          {selectedWsId && (
+          {selectedWsId && !selectedTaskId && (
             <div className="w-1/2">
               <WorkstreamDetailPanel
                 dealId={deal.id}
@@ -958,6 +974,26 @@ export function DealDDTab({ deal }: DealDDTabProps) {
               />
             </div>
           )}
+          {selectedTaskId && (() => {
+            let foundTask: any = null;
+            let wsName = "";
+            for (const ws of sortedWorkstreams) {
+              const t = (ws.tasks || []).find((t: any) => t.id === selectedTaskId);
+              if (t) { foundTask = t; wsName = ws.name; break; }
+            }
+            if (!foundTask) return null;
+            return (
+              <div className="w-1/2">
+                <TaskDetailPanel
+                  dealId={deal.id}
+                  task={foundTask}
+                  workstreamName={wsName}
+                  onClose={() => setSelectedTaskId(null)}
+                  onTaskUpdate={() => mutate(`/api/deals/${deal.id}`)}
+                />
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1064,6 +1100,188 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           </div>
         )}
       </Modal>
+    </div>
+  );
+}
+
+/* ── Task Detail Panel ── */
+
+function TaskDetailPanel({
+  dealId,
+  task,
+  workstreamName,
+  onClose,
+  onTaskUpdate,
+}: {
+  dealId: string;
+  task: any;
+  workstreamName: string;
+  onClose: () => void;
+  onTaskUpdate: () => void;
+}) {
+  const toast = useToast();
+  const [resolution, setResolution] = useState(task.resolution || "");
+  const [saving, setSaving] = useState(false);
+  const [localStatus, setLocalStatus] = useState(task.status);
+
+  // Reset when task changes
+  const taskId = task.id;
+  const taskResolution = task.resolution;
+  const taskStatus = task.status;
+  if (localStatus !== taskStatus && !saving) {
+    setLocalStatus(taskStatus);
+  }
+  if (resolution !== (taskResolution || "") && !saving) {
+    setResolution(taskResolution || "");
+  }
+
+  async function saveResolution() {
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/deals/${dealId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: taskId,
+          resolution: resolution.trim() || null,
+          ...(resolution.trim() && localStatus === "TODO" ? { status: "IN_PROGRESS" } : {}),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save");
+      toast.success("Resolution saved");
+      onTaskUpdate();
+    } catch {
+      toast.error("Failed to save resolution");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function updateStatus(newStatus: string) {
+    setLocalStatus(newStatus);
+    try {
+      const res = await fetch(`/api/deals/${dealId}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: taskId, status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update");
+      onTaskUpdate();
+    } catch {
+      toast.error("Failed to update status");
+      setLocalStatus(taskStatus);
+    }
+  }
+
+  return (
+    <div className="border-l border-gray-200 bg-white overflow-y-auto max-h-[calc(100vh-200px)]">
+      {/* Header */}
+      <div className="sticky top-0 bg-white z-10 border-b border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-semibold text-gray-900 flex-1 mr-2">
+            {task.title}
+          </h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">
+            &times;
+          </button>
+        </div>
+        <div className="text-[10px] text-gray-400">{workstreamName}</div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {/* Status + Priority + Assignee */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</div>
+            <select
+              value={localStatus}
+              onChange={(e) => updateStatus(e.target.value)}
+              className={`text-xs border border-gray-200 rounded px-2 py-1.5 w-full font-medium cursor-pointer ${
+                localStatus === "DONE"
+                  ? "text-emerald-700 bg-emerald-50"
+                  : localStatus === "IN_PROGRESS"
+                    ? "text-blue-700 bg-blue-50"
+                    : "text-gray-600 bg-gray-50"
+              }`}
+            >
+              <option value="TODO">To Do</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+            </select>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Priority</div>
+            <div className={`text-xs px-2 py-1.5 rounded font-medium ${
+              task.priority === "HIGH" ? "bg-red-50 text-red-600" :
+              task.priority === "LOW" ? "bg-green-50 text-green-600" :
+              "bg-yellow-50 text-yellow-600"
+            }`}>
+              {task.priority || "MEDIUM"}
+            </div>
+          </div>
+          {task.assignee && (
+            <div className="col-span-2">
+              <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Assignee</div>
+              <div className="text-xs text-gray-700">{task.assignee}</div>
+            </div>
+          )}
+        </div>
+
+        {/* Description */}
+        {task.description && (
+          <div>
+            <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Description</div>
+            <p className="text-xs text-gray-700 whitespace-pre-wrap leading-relaxed bg-gray-50 rounded-lg p-3 border border-gray-100">
+              {task.description}
+            </p>
+          </div>
+        )}
+
+        {/* Resolution / Answer */}
+        <div>
+          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            Resolution / Answer
+          </div>
+          <Textarea
+            value={resolution}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setResolution(e.target.value)}
+            placeholder="Enter your answer or resolution to this question..."
+            rows={4}
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={saveResolution}
+              loading={saving}
+              disabled={resolution === (task.resolution || "")}
+            >
+              Save Resolution
+            </Button>
+            {task.resolution && (
+              <span className="text-[10px] text-emerald-600 font-medium">Resolved</span>
+            )}
+          </div>
+        </div>
+
+        {/* Metadata */}
+        <div className="border-t border-gray-100 pt-3 space-y-1">
+          {task.source && (
+            <div className="flex items-center gap-2 text-[10px] text-gray-400">
+              <span>Source:</span>
+              <span className={`px-1.5 py-0.5 rounded ${
+                task.source?.startsWith("AI") ? "bg-indigo-50 text-indigo-600" : "bg-gray-100 text-gray-500"
+              }`}>
+                {task.source?.startsWith("AI_QUESTION_") ? "AI Question" : task.source || "Manual"}
+              </span>
+            </div>
+          )}
+          {task.createdAt && (
+            <div className="text-[10px] text-gray-400">
+              Created {new Date(task.createdAt).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

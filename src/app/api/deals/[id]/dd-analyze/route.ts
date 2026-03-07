@@ -98,6 +98,7 @@ export async function POST(
     where: { id },
     include: {
       screeningResult: true,
+      dealLead: { select: { id: true, name: true } },
       documents: { select: { name: true, category: true, extractedText: true } },
       notes: {
         orderBy: { createdAt: "desc" },
@@ -371,6 +372,7 @@ export async function POST(
           priority: question.priority,
           source: `AI_QUESTION_${type}`,
           status: "TODO",
+          assignee: deal.dealLead?.name || null,
         },
       });
 

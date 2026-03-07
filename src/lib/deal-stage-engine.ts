@@ -503,15 +503,11 @@ export async function recalcWorkstreamProgress(workstreamId: string) {
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.status === "DONE").length;
   const inProgress = tasks.some((t) => t.status === "IN_PROGRESS");
-  const hasAnalysis = !!ws?.analysisResult;
 
   let status: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE" = "NOT_STARTED";
   if (totalTasks > 0 && completedTasks === totalTasks) {
     status = "COMPLETE";
   } else if (completedTasks > 0 || inProgress) {
-    status = "IN_PROGRESS";
-  } else if (hasAnalysis && totalTasks > 0) {
-    // Analysis ran and created tasks — at minimum IN_PROGRESS
     status = "IN_PROGRESS";
   }
 
