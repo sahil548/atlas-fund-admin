@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -749,18 +749,10 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                         )}
                       </div>
 
-                      {/* Status dropdown */}
-                      <div
-                        className="w-24 text-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <select
-                          value={ws.status}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            patchWorkstream(ws.id, { status: e.target.value });
-                          }}
-                          className={`text-[10px] border border-gray-200 rounded px-1 py-0.5 font-medium cursor-pointer ${
+                      {/* Status badge (computed from tasks) */}
+                      <div className="w-24 text-center">
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-medium ${
                             ws.status === "COMPLETE"
                               ? "text-emerald-700 bg-emerald-50"
                               : ws.status === "IN_PROGRESS"
@@ -768,10 +760,8 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                                 : "text-gray-500 bg-gray-50"
                           }`}
                         >
-                          <option value="NOT_STARTED">Not Started</option>
-                          <option value="IN_PROGRESS">In Progress</option>
-                          <option value="COMPLETE">Complete</option>
-                        </select>
+                          {ws.status === "COMPLETE" ? "Complete" : ws.status === "IN_PROGRESS" ? "In Progress" : "Not Started"}
+                        </span>
                       </div>
 
                       {/* Actions */}
@@ -1106,6 +1096,12 @@ export function DealDDTab({ deal }: DealDDTabProps) {
 
 /* ── Task Detail Panel ── */
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function TaskDetailPanel({
   dealId,
   task,
@@ -1120,42 +1116,49 @@ function TaskDetailPanel({
   onTaskUpdate: () => void;
 }) {
   const toast = useToast();
-  const [resolution, setResolution] = useState(task.resolution || "");
-  const [saving, setSaving] = useState(false);
   const [localStatus, setLocalStatus] = useState(task.status);
 
-  // Reset when task changes
-  const taskId = task.id;
-  const taskResolution = task.resolution;
-  const taskStatus = task.status;
-  if (localStatus !== taskStatus && !saving) {
-    setLocalStatus(taskStatus);
-  }
-  if (resolution !== (taskResolution || "") && !saving) {
-    setResolution(taskResolution || "");
-  }
+  // Comments state
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [submittingReply, setSubmittingReply] = useState(false);
 
-  async function saveResolution() {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/deals/${dealId}/tasks`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: taskId,
-          resolution: resolution.trim() || null,
-          ...(resolution.trim() && localStatus === "TODO" ? { status: "IN_PROGRESS" } : {}),
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to save");
-      toast.success("Resolution saved");
-      onTaskUpdate();
-    } catch {
-      toast.error("Failed to save resolution");
-    } finally {
-      setSaving(false);
-    }
-  }
+  // Attachments state
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const taskId = task.id;
+
+  // Reset when a different task is selected
+  useEffect(() => {
+    setLocalStatus(task.status);
+    setCommentText("");
+    setReplyingTo(null);
+    setReplyText("");
+  }, [task.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch comments
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/deals/${dealId}/tasks/${taskId}/comments`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => { if (!cancelled) setComments(data); })
+      .catch(() => { if (!cancelled) setComments([]); });
+    return () => { cancelled = true; };
+  }, [dealId, taskId]);
+
+  // Fetch attachments
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/deals/${dealId}/tasks/${taskId}/attachments`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => { if (!cancelled) setAttachments(data); })
+      .catch(() => { if (!cancelled) setAttachments([]); });
+    return () => { cancelled = true; };
+  }, [dealId, taskId]);
 
   async function updateStatus(newStatus: string) {
     setLocalStatus(newStatus);
@@ -1169,7 +1172,86 @@ function TaskDetailPanel({
       onTaskUpdate();
     } catch {
       toast.error("Failed to update status");
-      setLocalStatus(taskStatus);
+      setLocalStatus(task.status);
+    }
+  }
+
+  async function postComment() {
+    if (!commentText.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const res = await fetch(`/api/deals/${dealId}/tasks/${taskId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: commentText.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed to post");
+      const comment = await res.json();
+      setComments((prev) => [...prev, comment]);
+      setCommentText("");
+    } catch {
+      toast.error("Failed to post comment");
+    } finally {
+      setSubmittingComment(false);
+    }
+  }
+
+  async function postReply(parentId: string) {
+    if (!replyText.trim()) return;
+    setSubmittingReply(true);
+    try {
+      const res = await fetch(`/api/deals/${dealId}/tasks/${taskId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: replyText.trim(), parentId }),
+      });
+      if (!res.ok) throw new Error("Failed to post");
+      const reply = await res.json();
+      setComments((prev) =>
+        prev.map((c) =>
+          c.id === parentId
+            ? { ...c, replies: [...(c.replies || []), reply] }
+            : c
+        )
+      );
+      setReplyingTo(null);
+      setReplyText("");
+    } catch {
+      toast.error("Failed to post reply");
+    } finally {
+      setSubmittingReply(false);
+    }
+  }
+
+  async function uploadAttachment(file: File) {
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`/api/deals/${dealId}/tasks/${taskId}/attachments`, {
+        method: "POST",
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const att = await res.json();
+      setAttachments((prev) => [att, ...prev]);
+      toast.success("File uploaded");
+    } catch {
+      toast.error("Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function deleteAttachment(attachmentId: string) {
+    try {
+      await fetch(
+        `/api/deals/${dealId}/tasks/${taskId}/attachments?attachmentId=${attachmentId}`,
+        { method: "DELETE" }
+      );
+      setAttachments((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch {
+      toast.error("Failed to delete attachment");
     }
   }
 
@@ -1237,29 +1319,197 @@ function TaskDetailPanel({
           </div>
         )}
 
-        {/* Resolution / Answer */}
+        {/* Comments Section */}
         <div>
-          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
-            Resolution / Answer
+          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Comments ({comments.length})
           </div>
-          <Textarea
-            value={resolution}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setResolution(e.target.value)}
-            placeholder="Enter your answer or resolution to this question..."
-            rows={4}
-          />
-          <div className="mt-2 flex items-center gap-2">
+
+          {comments.length > 0 ? (
+            <div className="space-y-3">
+              {comments.map((comment: any) => (
+                <div key={comment.id} className="space-y-2">
+                  {/* Root comment */}
+                  <div className="flex gap-2">
+                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                      {comment.author?.initials || "?"}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-gray-800">
+                          {comment.author?.name || "Unknown"}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(comment.createdAt).toLocaleDateString()}{" "}
+                          {new Date(comment.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-700 mt-0.5 whitespace-pre-wrap">
+                        {comment.content}
+                      </p>
+                      <button
+                        onClick={() => {
+                          setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                          setReplyText("");
+                        }}
+                        className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium mt-1"
+                      >
+                        Reply
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Replies */}
+                  {comment.replies && comment.replies.length > 0 && (
+                    <div className="ml-8 space-y-2">
+                      {comment.replies.map((reply: any) => (
+                        <div key={reply.id} className="flex gap-2">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">
+                            {reply.author?.initials || "?"}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-medium text-gray-700">
+                                {reply.author?.name || "Unknown"}
+                              </span>
+                              <span className="text-[10px] text-gray-400">
+                                {new Date(reply.createdAt).toLocaleDateString()}{" "}
+                                {new Date(reply.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">
+                              {reply.content}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Reply form */}
+                  {replyingTo === comment.id && (
+                    <div className="ml-8 space-y-1.5">
+                      <Textarea
+                        value={replyText}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReplyText(e.target.value)}
+                        placeholder="Write a reply..."
+                        rows={2}
+                        className="text-xs"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => postReply(comment.id)}
+                          disabled={!replyText.trim()}
+                          loading={submittingReply}
+                        >
+                          Reply
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => {
+                            setReplyingTo(null);
+                            setReplyText("");
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">No comments yet.</p>
+          )}
+
+          {/* New comment form */}
+          <div className="mt-3 space-y-1.5">
+            <Textarea
+              value={commentText}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCommentText(e.target.value)}
+              placeholder="Add a comment..."
+              rows={2}
+              className="text-xs"
+            />
             <Button
               size="sm"
-              onClick={saveResolution}
-              loading={saving}
-              disabled={resolution === (task.resolution || "")}
+              onClick={postComment}
+              disabled={!commentText.trim()}
+              loading={submittingComment}
             >
-              Save Resolution
+              Post Comment
             </Button>
-            {task.resolution && (
-              <span className="text-[10px] text-emerald-600 font-medium">Resolved</span>
-            )}
+          </div>
+        </div>
+
+        {/* Attachments Section */}
+        <div>
+          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Attachments ({attachments.length})
+          </div>
+
+          {attachments.length > 0 ? (
+            <div className="space-y-1.5">
+              {attachments.map((att: any) => (
+                <div
+                  key={att.id}
+                  className="flex items-center justify-between bg-gray-50 rounded border border-gray-200 px-3 py-2"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                    <div className="min-w-0">
+                      <a
+                        href={att.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700 truncate block"
+                      >
+                        {att.fileName}
+                      </a>
+                      {att.fileSize && (
+                        <span className="text-[10px] text-gray-400">
+                          {formatFileSize(att.fileSize)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => deleteAttachment(att.id)}
+                    className="text-gray-400 hover:text-red-500 text-xs ml-2"
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">No attachments.</p>
+          )}
+
+          {/* Upload button */}
+          <div className="mt-2">
+            <label className="cursor-pointer">
+              <input
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadAttachment(file);
+                  e.target.value = "";
+                }}
+              />
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {uploading ? "Uploading..." : "Upload File"}
+              </span>
+            </label>
           </div>
         </div>
 

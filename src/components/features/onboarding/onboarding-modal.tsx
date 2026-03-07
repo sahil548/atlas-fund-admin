@@ -12,7 +12,7 @@ import { mutate } from "swr";
  * name still matches the auto-generated pattern ("X's Organization").
  */
 export function OnboardingModal() {
-  const { firmId, firmName } = useFirm();
+  const { firmId, firmName, isLoading } = useFirm();
   const { user } = useUser();
 
   // Detect auto-generated firm name
@@ -31,7 +31,9 @@ export function OnboardingModal() {
     legalName: "",
   });
 
-  if (!needsOnboarding || dismissed || !firmId || !user.id) return null;
+  // Don't show while firm data is loading (firmName defaults to "Atlas" during load)
+  if (isLoading || !firmId || !user.id) return null;
+  if (!needsOnboarding || dismissed) return null;
 
   async function handleSave() {
     if (!form.firmName.trim()) return;

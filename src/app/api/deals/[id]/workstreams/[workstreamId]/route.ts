@@ -4,7 +4,7 @@ import { z } from "zod";
 import { parseBody } from "@/lib/api-helpers";
 
 const UpdateWorkstreamSchema = z.object({
-  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETE"]).optional(),
+  // status is computed from tasks — not manually editable
   assigneeId: z.string().nullable().optional(),
   priority: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
@@ -64,7 +64,6 @@ export async function PATCH(
   }
 
   const updateData: Record<string, unknown> = {};
-  if (data!.status !== undefined) updateData.status = data!.status;
   if (data!.assigneeId !== undefined) updateData.assigneeId = data!.assigneeId;
   if (data!.priority !== undefined) updateData.priority = data!.priority;
   if (data!.dueDate !== undefined) {

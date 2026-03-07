@@ -202,19 +202,22 @@ export function WorkstreamDetailPanel({
 
         {/* Editable fields */}
         <div className="grid grid-cols-2 gap-2 text-xs">
-          {/* Status */}
+          {/* Status (computed from tasks) */}
           <div>
             <span className="text-gray-500 font-medium">Status</span>
-            <Select
-              value={ws.status}
-              onChange={(e) => patchWorkstream({ status: e.target.value })}
-              options={[
-                { value: "NOT_STARTED", label: "Not Started" },
-                { value: "IN_PROGRESS", label: "In Progress" },
-                { value: "COMPLETE", label: "Complete" },
-              ]}
-              className="text-xs mt-0.5"
-            />
+            <div className="mt-1">
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                  ws.status === "COMPLETE"
+                    ? "text-emerald-700 bg-emerald-50"
+                    : ws.status === "IN_PROGRESS"
+                      ? "text-blue-700 bg-blue-50"
+                      : "text-gray-500 bg-gray-50"
+                }`}
+              >
+                {ws.status === "COMPLETE" ? "Complete" : ws.status === "IN_PROGRESS" ? "In Progress" : "Not Started"}
+              </span>
+            </div>
           </div>
 
           {/* Assignee */}

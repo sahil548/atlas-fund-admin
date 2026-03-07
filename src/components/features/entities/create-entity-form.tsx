@@ -35,12 +35,19 @@ export function CreateEntityForm({ open, onClose }: Props) {
     vintageYear: "", targetSize: "", legalName: "", stateOfFormation: "",
     ein: "", fiscalYearEnd: "", fundTermYears: "",
   });
+  const [nameError, setNameError] = useState("");
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (k === "name" && nameError) setNameError("");
     setForm((p) => ({ ...p, [k]: e.target.value }));
+  };
 
   async function handleSubmit() {
-    if (!form.name.trim()) return;
+    if (!form.name.trim()) {
+      setNameError("Entity name is required");
+      toast.error("Entity name is required");
+      return;
+    }
     try {
       await trigger({
         name: form.name,
@@ -83,7 +90,7 @@ export function CreateEntityForm({ open, onClose }: Props) {
     <Modal open={open} onClose={onClose} title="Create Entity" size="md" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={isLoading} onClick={handleSubmit}>Create</Button></>}>
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Entity Name *"><Input value={form.name} onChange={set("name")} placeholder="e.g. Atlas Fund IV" /></FormField>
+          <FormField label="Entity Name *" error={nameError}><Input value={form.name} onChange={set("name")} placeholder="e.g. Atlas Fund IV" error={!!nameError} /></FormField>
           <FormField label="Legal Name"><Input value={form.legalName} onChange={set("legalName")} placeholder="e.g. Atlas Fund IV, LLC" /></FormField>
         </div>
         <div className="grid grid-cols-2 gap-3">

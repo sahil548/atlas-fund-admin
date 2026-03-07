@@ -482,6 +482,7 @@ model User {
   notifications      Notification[]    @relation("UserNotifications")
   assignedWorkstreams DDWorkstream[]   @relation("WorkstreamAssignee")
   workstreamComments  DDWorkstreamComment[] @relation("WorkstreamCommentAuthor")
+  taskComments        DDTaskComment[]       @relation("TaskCommentAuthor")
   decisionMemberships DecisionMember[]
 }
 
@@ -1136,7 +1137,40 @@ model DDTask {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  workstream DDWorkstream @relation(fields: [workstreamId], references: [id])
+  workstream  DDWorkstream       @relation(fields: [workstreamId], references: [id])
+  comments    DDTaskComment[]
+  attachments DDTaskAttachment[]
+}
+
+model DDTaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  authorId  String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task    DDTask          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author  User            @relation("TaskCommentAuthor", fields: [authorId], references: [id])
+  parent  DDTaskComment?  @relation("TaskCommentThread", fields: [parentId], references: [id])
+  replies DDTaskComment[] @relation("TaskCommentThread")
+
+  @@index([taskId])
+}
+
+model DDTaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  fileName     String
+  fileUrl      String
+  fileSize     Int?
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  task DDTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model AIScreeningResult {

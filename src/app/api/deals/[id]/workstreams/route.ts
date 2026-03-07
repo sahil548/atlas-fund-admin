@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 const UpdateWorkstreamSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
-  status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETE"]).optional(),
+  // status is computed from tasks — not manually editable
   description: z.string().nullable().optional(),
   customInstructions: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
