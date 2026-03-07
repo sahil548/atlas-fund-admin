@@ -20,7 +20,7 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const STAGE_COLORS: Record<string, string> = {
   SCREENING: "#9ca3af",

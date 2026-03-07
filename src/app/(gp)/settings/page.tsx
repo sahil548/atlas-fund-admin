@@ -11,7 +11,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { AIGlobalConfig } from "@/components/features/settings/ai-global-config";
 import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline-editor";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Firm { id: string; name: string; legalName: string | null }
 interface AccountingEntity { id: string; name: string; accountingConnection?: { provider: string; syncStatus: string; lastSyncAt: string | null } | null }

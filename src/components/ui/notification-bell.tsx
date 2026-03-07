@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import useSWR, { mutate } from "swr";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const TYPE_ICONS: Record<string, string> = {
   STAGE_CHANGE: "↗",

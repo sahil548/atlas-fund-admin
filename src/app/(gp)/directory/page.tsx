@@ -18,7 +18,7 @@ import { CreateSideLetterForm } from "@/components/features/side-letters/create-
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt } from "@/lib/utils";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

@@ -22,7 +22,7 @@ import { DealActivityTab } from "@/components/features/deals/deal-activity-tab";
 import { DealICReviewTab } from "@/components/features/deals/deal-ic-review-tab";
 import { DealClosingTab } from "@/components/features/deals/deal-closing-tab";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 import {
   ASSET_CLASS_LABELS,

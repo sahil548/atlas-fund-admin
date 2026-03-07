@@ -10,7 +10,7 @@ import { useUser } from "@/components/providers/user-provider";
 import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const STATUS_COLORS: Record<string, string> = {
   TODO: "gray",

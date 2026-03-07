@@ -13,7 +13,7 @@ import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { fmt } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Entity { id: string; name: string }
 interface CapitalCall {

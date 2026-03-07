@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Doc {
   id: string;

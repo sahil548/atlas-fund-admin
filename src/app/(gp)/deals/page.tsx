@@ -9,7 +9,7 @@ import { CreateDealWizard } from "@/components/features/deals/create-deal-wizard
 import { Modal } from "@/components/ui/modal";
 import { useFirm } from "@/components/providers/firm-provider";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 import {
   ASSET_CLASS_LABELS,

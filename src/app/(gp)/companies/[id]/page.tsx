@@ -16,7 +16,7 @@ import { useMutation } from "@/hooks/use-mutation";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const COMPANY_TYPE_LABELS: Record<string, string> = {
   GP: "GP",

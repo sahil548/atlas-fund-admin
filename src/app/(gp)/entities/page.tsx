@@ -9,7 +9,7 @@ import { fmt } from "@/lib/utils";
 import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { useFirm } from "@/components/providers/firm-provider";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface EntityRow {
   id: string;

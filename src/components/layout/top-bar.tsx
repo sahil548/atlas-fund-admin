@@ -4,7 +4,7 @@ import useSWR from "swr";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { CommandBar } from "@/components/features/command-bar/command-bar";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "never";

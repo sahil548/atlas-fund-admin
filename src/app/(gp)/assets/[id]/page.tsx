@@ -16,7 +16,7 @@ import { AssetOriginatedFrom } from "@/components/features/assets/asset-originat
 import { fmt, pct, cn } from "@/lib/utils";
 import Link from "next/link";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 import {
   ASSET_CLASS_LABELS,

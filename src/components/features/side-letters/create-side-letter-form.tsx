@@ -14,7 +14,7 @@ import { CreateSideLetterSchema } from "@/lib/schemas";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Props { open: boolean; onClose: () => void }
 

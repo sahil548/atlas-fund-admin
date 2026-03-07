@@ -11,7 +11,7 @@ import Link from "next/link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const entityTypeLabels: Record<string, string> = {
   MAIN_FUND: "Main Fund",

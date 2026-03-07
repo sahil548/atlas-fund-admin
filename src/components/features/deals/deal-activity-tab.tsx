@@ -13,7 +13,7 @@ import { useToast } from "@/components/ui/toast";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const activityTypeColors: Record<string, string> = {
   STAGE_CHANGE: "blue",

@@ -14,7 +14,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { useUser } from "@/components/providers/user-provider";
 import useSWR, { mutate as swrMutate } from "swr";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const ASSET_CLASS_OPTIONS = [
   { value: "REAL_ESTATE", label: "Real Estate" },

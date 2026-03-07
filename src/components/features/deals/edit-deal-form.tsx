@@ -13,7 +13,7 @@ import { UpdateDealSchema } from "@/lib/schemas";
 import { useFirm } from "@/components/providers/firm-provider";
 import useSWR from "swr";
 
-const fetcherFn = (url: string) => fetch(url).then((r) => r.json());
+const fetcherFn = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const ASSET_CLASS_OPTIONS = [
   { value: "REAL_ESTATE", label: "Real Estate" },

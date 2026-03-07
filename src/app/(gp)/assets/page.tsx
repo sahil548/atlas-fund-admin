@@ -8,7 +8,7 @@ import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { fmt, pct } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 import {
   ASSET_CLASS_LABELS,

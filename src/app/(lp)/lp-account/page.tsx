@@ -7,7 +7,7 @@ import { fmt } from "@/lib/utils";
 import { useInvestor } from "@/components/providers/investor-provider";
 import { useToast } from "@/components/ui/toast";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 function fmtSigned(n: number): string {
   if (n === 0) return "$0";

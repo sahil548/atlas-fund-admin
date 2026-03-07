@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
 import Link from "next/link";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Meeting {
   id: string;

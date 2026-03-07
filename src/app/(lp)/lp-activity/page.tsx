@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
 import { useInvestor } from "@/components/providers/investor-provider";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 export default function LPActivityPage() {
   const { investorId } = useInvestor();

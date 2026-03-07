@@ -9,7 +9,7 @@ import { fmt } from "@/lib/utils";
 import { ReconnectForm } from "@/components/features/accounting/reconnect-form";
 import { TriggerSyncForm } from "@/components/features/accounting/trigger-sync-form";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "never";
