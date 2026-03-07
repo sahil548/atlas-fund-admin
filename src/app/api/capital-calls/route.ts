@@ -2,16 +2,29 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateCapitalCallSchema } from "@/lib/schemas";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET() {
-  const calls = await prisma.capitalCall.findMany({
-    include: {
-      entity: { select: { id: true, name: true } },
-      lineItems: { include: { investor: true } },
-    },
-    orderBy: { callDate: "desc" },
-  });
-  return NextResponse.json(calls);
+  try {
+    const authUser = await getAuthUser();
+    const firmId = authUser?.firmId;
+
+    const calls = await prisma.capitalCall.findMany({
+      where: firmId ? { entity: { firmId } } : {},
+      include: {
+        entity: { select: { id: true, name: true } },
+        lineItems: { include: { investor: true } },
+      },
+      orderBy: { callDate: "desc" },
+    });
+    return NextResponse.json(calls);
+  } catch (err) {
+    console.error("[capital-calls] GET Error:", err);
+    return NextResponse.json(
+      { error: "Failed to load capital calls" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: Request) {

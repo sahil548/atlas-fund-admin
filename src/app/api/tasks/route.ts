@@ -1,88 +1,127 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
-  const sp = req.nextUrl.searchParams;
-  const contextType = sp.get("contextType");
-  const contextId = sp.get("contextId");
-  const assigneeId = sp.get("assigneeId");
-  const status = sp.get("status");
-  const dealId = sp.get("dealId");
-  const entityId = sp.get("entityId");
+  try {
+    const authUser = await getAuthUser();
+    const firmId = authUser?.firmId;
 
-  const where: Record<string, unknown> = {};
-  if (contextType) where.contextType = contextType;
-  if (contextId) where.contextId = contextId;
-  if (assigneeId) where.assigneeId = assigneeId;
-  if (status) where.status = status;
-  if (dealId) where.dealId = dealId;
-  if (entityId) where.entityId = entityId;
+    const sp = req.nextUrl.searchParams;
+    const contextType = sp.get("contextType");
+    const contextId = sp.get("contextId");
+    const assigneeId = sp.get("assigneeId");
+    const status = sp.get("status");
+    const dealId = sp.get("dealId");
+    const entityId = sp.get("entityId");
 
-  const tasks = await prisma.task.findMany({
-    where,
-    include: {
-      assignee: { select: { id: true, name: true, initials: true } },
-      deal: { select: { id: true, name: true } },
-      entity: { select: { id: true, name: true } },
-    },
-    orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
-  });
+    const where: Record<string, unknown> = {};
+    if (contextType) where.contextType = contextType;
+    if (contextId) where.contextId = contextId;
+    if (assigneeId) where.assigneeId = assigneeId;
+    if (status) where.status = status;
+    if (dealId) where.dealId = dealId;
+    if (entityId) where.entityId = entityId;
 
-  return NextResponse.json(tasks);
+    // Filter by firm: tasks linked to deals or entities owned by the firm
+    if (firmId && !dealId && !entityId) {
+      where.OR = [
+        { deal: { firmId } },
+        { entity: { firmId } },
+        { dealId: null, entityId: null },
+      ];
+    }
+
+    const tasks = await prisma.task.findMany({
+      where,
+      include: {
+        assignee: { select: { id: true, name: true, initials: true } },
+        deal: { select: { id: true, name: true } },
+        entity: { select: { id: true, name: true } },
+      },
+      orderBy: [{ status: "asc" }, { dueDate: "asc" }, { createdAt: "desc" }],
+    });
+
+    return NextResponse.json(tasks);
+  } catch (err) {
+    console.error("[tasks] GET Error:", err);
+    return NextResponse.json(
+      { error: "Failed to load tasks" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const task = await prisma.task.create({
-    data: {
-      title: body.title,
-      description: body.description || null,
-      status: body.status || "TODO",
-      priority: body.priority || "MEDIUM",
-      assigneeId: body.assigneeId || null,
-      assigneeName: body.assigneeName || null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
-      notes: body.notes || null,
-      order: body.order ?? null,
-      contextType: body.contextType || null,
-      contextId: body.contextId || null,
-      assetId: body.assetId || null,
-      dealId: body.dealId || null,
-      entityId: body.entityId || null,
-    },
-    include: {
-      assignee: { select: { id: true, name: true, initials: true } },
-      deal: { select: { id: true, name: true } },
-      entity: { select: { id: true, name: true } },
-    },
-  });
-  return NextResponse.json(task, { status: 201 });
+  try {
+    const body = await req.json();
+    const task = await prisma.task.create({
+      data: {
+        title: body.title,
+        description: body.description || null,
+        status: body.status || "TODO",
+        priority: body.priority || "MEDIUM",
+        assigneeId: body.assigneeId || null,
+        assigneeName: body.assigneeName || null,
+        dueDate: body.dueDate ? new Date(body.dueDate) : null,
+        notes: body.notes || null,
+        order: body.order ?? null,
+        contextType: body.contextType || null,
+        contextId: body.contextId || null,
+        assetId: body.assetId || null,
+        dealId: body.dealId || null,
+        entityId: body.entityId || null,
+      },
+      include: {
+        assignee: { select: { id: true, name: true, initials: true } },
+        deal: { select: { id: true, name: true } },
+        entity: { select: { id: true, name: true } },
+      },
+    });
+    return NextResponse.json(task, { status: 201 });
+  } catch (err) {
+    console.error("[tasks] POST Error:", err);
+    return NextResponse.json(
+      { error: "Failed to create task" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function PATCH(req: NextRequest) {
-  const body = await req.json();
-  if (!body.id)
-    return NextResponse.json({ error: "id required" }, { status: 400 });
+  try {
+    const body = await req.json();
+    if (!body.id)
+      return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const data: Record<string, unknown> = {};
-  if (body.title !== undefined) data.title = body.title;
-  if (body.description !== undefined) data.description = body.description;
-  if (body.status !== undefined) data.status = body.status;
-  if (body.priority !== undefined) data.priority = body.priority;
-  if (body.assigneeId !== undefined) data.assigneeId = body.assigneeId || null;
-  if (body.assigneeName !== undefined) data.assigneeName = body.assigneeName;
-  if (body.dueDate !== undefined)
-    data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
-  if (body.notes !== undefined) data.notes = body.notes;
+    const data: Record<string, unknown> = {};
+    if (body.title !== undefined) data.title = body.title;
+    if (body.description !== undefined) data.description = body.description;
+    if (body.status !== undefined) data.status = body.status;
+    if (body.priority !== undefined) data.priority = body.priority;
+    if (body.assigneeId !== undefined)
+      data.assigneeId = body.assigneeId || null;
+    if (body.assigneeName !== undefined)
+      data.assigneeName = body.assigneeName;
+    if (body.dueDate !== undefined)
+      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.notes !== undefined) data.notes = body.notes;
 
-  const task = await prisma.task.update({
-    where: { id: body.id },
-    data,
-    include: {
-      assignee: { select: { id: true, name: true, initials: true } },
-      deal: { select: { id: true, name: true } },
-      entity: { select: { id: true, name: true } },
-    },
-  });
-  return NextResponse.json(task);
+    const task = await prisma.task.update({
+      where: { id: body.id },
+      data,
+      include: {
+        assignee: { select: { id: true, name: true, initials: true } },
+        deal: { select: { id: true, name: true } },
+        entity: { select: { id: true, name: true } },
+      },
+    });
+    return NextResponse.json(task);
+  } catch (err) {
+    console.error("[tasks] PATCH Error:", err);
+    return NextResponse.json(
+      { error: "Failed to update task" },
+      { status: 500 },
+    );
+  }
 }
