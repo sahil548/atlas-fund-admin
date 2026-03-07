@@ -19,8 +19,9 @@ export async function GET() {
     return NextResponse.json(entities);
   } catch (err) {
     console.error("[accounting/connections] Error:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Failed to load accounting connections" },
+      { error: "Failed to load accounting connections", details: message },
       { status: 500 },
     );
   }

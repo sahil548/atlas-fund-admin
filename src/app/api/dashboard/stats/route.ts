@@ -147,8 +147,9 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[dashboard/stats] Error:", err);
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Failed to load dashboard stats" },
+      { error: "Failed to load dashboard stats", details: message },
       { status: 500 },
     );
   }
