@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
-status: unknown
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-07T23:13:15.132Z"
+current_plan: 04-03
+status: in_progress
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-07T23:30:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 14
+  completed_plans: 15
 ---
 
 # Atlas — GSD State
@@ -21,9 +21,9 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 3 of 7 (Capital Activity) — IN PROGRESS
-- **Phase status:** Plans 01, 02, 03 complete — all computation engines wired to UI
-- **Current Plan:** Not started
+- **Phase:** 4 of 7 (Asset Entity Polish) — IN PROGRESS
+- **Phase status:** Plans 01, 02 complete — side letter engine + RBAC + audit log done
+- **Current Plan:** 04-03 (next up)
 - **Active plan:** none
 
 ## Performance Metrics
@@ -40,6 +40,7 @@ progress:
 | 03    | 02   | 12min    | 2     | 9     |
 | Phase 03-capital-activity P03 | 35 | 2 tasks | 9 files |
 | Phase 04-asset-entity-polish P01 | 6min | 2 tasks | 8 files |
+| 04    | 02   | 15min    | 2     | 20    |
 
 ## Accumulated Context
 
@@ -76,10 +77,14 @@ progress:
 - QBO/Xero real OAuth or API calls (UI-only)
 - Email/SMS notification delivery (in-app bell only)
 - DocuSign real API (stub endpoint only)
-- Role-based route enforcement (auth works, access control doesn't)
-- Pagination, error boundaries, rate limiting
+- Pagination, error boundaries, rate limiting (Phase 04-03)
 - PDF/Excel report generation
 - Side letter rule application: BUILT in 04-01 (SideLetterRule model, applySideLetterRules, detectMFNGaps, rules CRUD API)
+- Role-based route enforcement: BUILT in 04-02 (middleware + permissions system + audit log)
+  - LP_INVESTOR: redirected from GP pages, 403 on GP APIs
+  - SERVICE_PROVIDER: 403 on all write methods, entity-access checked at API layer
+  - GP_TEAM: configurable per-area permissions via Settings > Permissions tab
+  - Audit log: CREATE_DEAL, KILL/CLOSE/REVIVE_DEAL, CREATE/UPDATE_ENTITY, CREATE_CAPITAL_CALL, CREATE_DISTRIBUTION
 
 ### Patterns to Preserve
 - Route registry (`routes.ts`) is single source of truth — never bypass
@@ -126,6 +131,11 @@ progress:
 - **2026-03-07 (04-01):** CARRY_OVERRIDE stored as percentage (e.g. 15 for 15%), converted to decimal only inside engine — keeps DB values human-readable
 - **2026-03-07 (04-01):** MFN gap: fee gap when currentDiscount < bestDiscount; carry gap when currentOverride > bestOverride (lower carry is better for LP)
 - **2026-03-07 (04-01):** SideLetterRules cascade-delete on SideLetter delete; side letter + rules created atomically via prisma.$transaction
+- **2026-03-07 (04-02):** Clerk publicMetadata for role in middleware — avoids DB query on every request; role stored at invite time
+- **2026-03-07 (04-02):** permissions-types.ts split — Prisma import in permissions.ts caused client bundle errors; pure-TS types moved to separate file
+- **2026-03-07 (04-02):** GP_TEAM permissions default to read_only everywhere; GP_ADMIN overrides cannot be configured (always full)
+- **2026-03-07 (04-02):** Audit log is fire-and-forget — never blocks primary operation; failure only logged to console
+- **2026-03-07 (04-02):** SERVICE_PROVIDER entity-access checked at API layer (not middleware) for per-resource granularity
 
 ### Phase 3 Metrics Wiring (Plan 03-03)
 - Entity metrics API: TVPI, DPI, RVPI, MOIC, IRR from real funded capital calls + paid distributions + inline NAV
@@ -204,5 +214,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T23:13:15.130Z
-- **Stopped at:** Completed 04-01-PLAN.md
+- **Last session:** 2026-03-07T23:30:00.000Z
+- **Stopped at:** Completed 04-02-PLAN.md
