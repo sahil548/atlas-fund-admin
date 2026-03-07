@@ -3,26 +3,51 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateEntitySchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized } from "@/lib/auth";
+import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
-  const where: Record<string, unknown> = {};
-  if (firmId) where.firmId = firmId;
 
-  const entities = await prisma.entity.findMany({
-    where,
-    include: {
-      accountingConnection: true,
-      commitments: { include: { investor: true } },
-      assetAllocations: { include: { asset: true } },
-      navComputations: { orderBy: { periodDate: "desc" }, take: 1 },
-      distributions: { select: { netToLPs: true } },
-    },
-    orderBy: { name: "asc" },
-  });
+  const params = parsePaginationParams(req.nextUrl.searchParams, [
+    "firmId", "cursor", "limit", "search", "entityType", "status", "vintage",
+  ]);
 
-  const enriched = entities.map((entity) => {
+  const baseWhere: Record<string, unknown> = {};
+  if (firmId) baseWhere.firmId = firmId;
+  if (params.filters?.entityType) baseWhere.entityType = params.filters.entityType;
+  if (params.filters?.status) baseWhere.status = params.filters.status;
+  if (params.filters?.vintage) baseWhere.vintageYear = parseInt(params.filters.vintage, 10);
+
+  const cleanParams = { ...params, filters: {} };
+
+  const { where, take, skip, cursor } = buildPrismaArgs(
+    cleanParams,
+    ["name"],
+    baseWhere,
+    "createdAt",
+  );
+
+  const [rawEntities, total] = await Promise.all([
+    prisma.entity.findMany({
+      where,
+      take,
+      skip,
+      cursor,
+      orderBy: { name: "asc" },
+      include: {
+        accountingConnection: true,
+        commitments: { include: { investor: true } },
+        assetAllocations: { include: { asset: true } },
+        navComputations: { orderBy: { periodDate: "desc" }, take: 1 },
+        distributions: { select: { netToLPs: true } },
+      },
+    }),
+    prisma.entity.count({ where }),
+  ]);
+
+  const enriched = rawEntities.map((entity) => {
     const totalCalled = entity.commitments.reduce(
       (sum, c) => sum + (c.calledAmount ?? 0),
       0,
@@ -36,7 +61,14 @@ export async function GET(req: NextRequest) {
     return { ...rest, totalCalled, totalDistributed };
   });
 
-  return NextResponse.json(enriched);
+  const paginated = buildPaginatedResult(enriched, params.limit, total);
+
+  return NextResponse.json({
+    data: paginated.data,
+    nextCursor: paginated.nextCursor,
+    hasMore: paginated.hasMore,
+    total: paginated.total,
+  });
 }
 
 export async function POST(req: Request) {
@@ -61,12 +93,17 @@ export async function POST(req: Request) {
         entityId: entity.id,
       })),
     });
-    // Update entity to FORMING
     await prisma.entity.update({
       where: { id: entity.id },
       data: { formationStatus: "FORMING" },
     });
   }
+
+  // Audit log — fire and forget
+  logAudit(authUser.firmId, authUser.id, "CREATE_ENTITY", "Entity", entity.id, {
+    name: entity.name,
+    entityType: entity.entityType,
+  });
 
   return NextResponse.json(entity, { status: 201 });
 }

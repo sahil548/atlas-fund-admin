@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateCapitalCallSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -75,6 +76,16 @@ export async function POST(req: Request) {
         lineItems: { include: { investor: { select: { id: true, name: true } } } },
       },
     });
+
+    // Audit log — fire and forget
+    const authUser = await getAuthUser();
+    if (authUser) {
+      logAudit(authUser.firmId, authUser.id, "CREATE_CAPITAL_CALL", "CapitalCall", call.id, {
+        callNumber: data!.callNumber,
+        amount: data!.amount,
+        entityId: data!.entityId,
+      });
+    }
 
     return NextResponse.json(callWithLineItems, { status: 201 });
   } catch (e: unknown) {

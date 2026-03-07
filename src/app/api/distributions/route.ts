@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDistributionSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET() {
   try {
@@ -90,6 +91,16 @@ export async function POST(req: Request) {
         lineItems: { include: { investor: { select: { id: true, name: true } } } },
       },
     });
+
+    // Audit log — fire and forget
+    const authUser = await getAuthUser();
+    if (authUser) {
+      logAudit(authUser.firmId, authUser.id, "CREATE_DISTRIBUTION", "DistributionEvent", dist.id, {
+        grossAmount: data!.grossAmount,
+        entityId: data!.entityId,
+        distributionType: data!.distributionType,
+      });
+    }
 
     return NextResponse.json(distWithLineItems, { status: 201 });
   } catch (err) {

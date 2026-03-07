@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,14 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
+import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
 
-const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    return r.json();
+  });
 
 interface Doc {
   id: string;
@@ -26,15 +32,8 @@ interface Doc {
   deal?: { id: string; name: string } | null;
 }
 
-interface EntityOption {
-  id: string;
-  name: string;
-}
-
-interface AssetOption {
-  id: string;
-  name: string;
-}
+interface EntityOption { id: string; name: string }
+interface AssetOption { id: string; name: string }
 
 const categoryColors: Record<string, string> = {
   FINANCIAL: "indigo", LEGAL: "orange", TAX: "green", REPORT: "blue",
@@ -44,38 +43,94 @@ const categoryColors: Record<string, string> = {
 
 const CATEGORIES = ["BOARD", "FINANCIAL", "LEGAL", "GOVERNANCE", "VALUATION", "STATEMENT", "TAX", "REPORT", "NOTICE", "OTHER"] as const;
 
+const DOC_FILTERS = [
+  {
+    key: "category",
+    label: "Category",
+    options: CATEGORIES.map((c) => ({ value: c, label: c.charAt(0) + c.slice(1).toLowerCase() })),
+  },
+];
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 export default function DocumentsPage() {
   const { firmId } = useFirm();
-  const { data: docs, isLoading } = useSWR<Doc[]>(`/api/documents?firmId=${firmId}`, fetcher);
-  const { data: entities } = useSWR<EntityOption[]>(`/api/entities?firmId=${firmId}`, fetcher);
-  const { data: assets } = useSWR<AssetOption[]>(`/api/assets?firmId=${firmId}`, fetcher);
+  const { data: entities } = useSWR<EntityOption[]>(`/api/entities?firmId=${firmId}`, (url: string) =>
+    fetch(url).then((r) => r.json()).then((r) => r.data ?? r),
+  );
+  const { data: assets } = useSWR<AssetOption[]>(`/api/assets?firmId=${firmId}`, (url: string) =>
+    fetch(url).then((r) => r.json()).then((r) => r.data ?? r),
+  );
 
-  const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [allDocs, setAllDocs] = useState<Doc[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadForm, setUploadForm] = useState({ name: "", category: "FINANCIAL", associateWith: "" });
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
 
-  if (isLoading || !docs) return <div className="text-sm text-gray-400">Loading...</div>;
+  const buildUrl = useCallback(
+    (currentCursor?: string | null) => {
+      const params = new URLSearchParams({ firmId, limit: "50" });
+      if (search) params.set("search", search);
+      for (const [k, v] of Object.entries(activeFilters)) {
+        if (v) params.set(k, v);
+      }
+      if (currentCursor) params.set("cursor", currentCursor);
+      return `/api/documents?${params.toString()}`;
+    },
+    [firmId, search, activeFilters],
+  );
 
-  const categories = ["ALL", ...Array.from(new Set(docs.map((d) => d.category)))];
-
-  const filtered = docs.filter((d) => {
-    if (filter !== "ALL" && d.category !== filter) return false;
-    if (search && !d.name.toLowerCase().includes(search.toLowerCase())) return false;
-    if (dateFrom) {
-      const docDate = new Date(d.uploadDate).toISOString().slice(0, 10);
-      if (docDate < dateFrom) return false;
-    }
-    if (dateTo) {
-      const docDate = new Date(d.uploadDate).toISOString().slice(0, 10);
-      if (docDate > dateTo) return false;
-    }
-    return true;
+  const { isLoading } = useSWR(buildUrl(null), fetcher, {
+    onSuccess: (result) => {
+      setAllDocs(result.data ?? []);
+      setCursor(result.nextCursor ?? null);
+    },
+    revalidateOnFocus: false,
   });
+
+  const handleSearch = useCallback((q: string) => {
+    setSearch(q);
+    setAllDocs([]);
+    setCursor(null);
+  }, []);
+
+  const handleFilterChange = useCallback((key: string, value: string) => {
+    setActiveFilters((prev) => ({ ...prev, [key]: value }));
+    setAllDocs([]);
+    setCursor(null);
+  }, []);
+
+  const handleLoadMore = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(buildUrl(cursor));
+      const result = await res.json();
+      setAllDocs((prev) => [...prev, ...(result.data ?? [])]);
+      setCursor(result.nextCursor ?? null);
+    } catch (e) {
+      console.error("Load more failed", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, loadingMore, buildUrl]);
+
+  if (isLoading && allDocs.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-400">
+        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        Loading documents...
+      </div>
+    );
+  }
 
   function association(d: Doc) {
     if (d.asset) return { label: d.asset.name, type: "Asset", href: `/assets/${d.asset.id}` };
@@ -106,7 +161,10 @@ export default function DocumentsPage() {
       });
 
       if (res.ok) {
-        mutate(`/api/documents?firmId=${firmId}`);
+        // Refresh the paginated list
+        setAllDocs([]);
+        setCursor(null);
+        mutate(buildUrl(null));
         setShowUpload(false);
         setUploadForm({ name: "", category: "FINANCIAL", associateWith: "" });
       }
@@ -117,98 +175,77 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header with search + date filters + upload button */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex-1 relative">
-          <Input
-            placeholder="Search documents..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="w-36"
-          />
-          <Input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="w-36"
-          />
-        </div>
+      {/* Header with search + filters + upload button */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SearchFilterBar
+          onSearch={handleSearch}
+          filters={DOC_FILTERS}
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
+          placeholder="Search documents..."
+        />
         <Button onClick={() => setShowUpload(true)}>+ Upload Document</Button>
-      </div>
-
-      {/* Category filter pills */}
-      <div className="flex gap-1.5 flex-wrap">
-        {categories.map((c) => (
-          <button
-            key={c}
-            onClick={() => setFilter(c)}
-            className={`px-2.5 py-1 rounded-full text-[10px] font-medium border ${filter === c ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
-          >
-            {c === "ALL" ? "All" : c.charAt(0) + c.slice(1).toLowerCase()} {c === "ALL" ? `(${docs.length})` : `(${docs.filter((d) => d.category === c).length})`}
-          </button>
-        ))}
       </div>
 
       {/* Document list */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold">All Documents ({filtered.length})</h3>
+          <h3 className="text-sm font-semibold">All Documents ({allDocs.length})</h3>
         </div>
-        <table className="w-full text-xs">
-          <thead className="bg-gray-50">
-            <tr>
-              {["Document", "Category", "Associated With", "Upload Date", "Size"].map((h) => (
-                <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((d) => {
-              const assoc = association(d);
-              return (
-                <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-3 py-2.5 font-medium">
-                    {d.fileUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setPreviewDoc(d)}
-                        className="text-indigo-600 hover:underline cursor-pointer text-left"
-                      >
-                        {d.name}
-                      </button>
-                    ) : (
-                      d.name
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <Badge color={categoryColors[d.category] || "gray"}>{d.category}</Badge>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    {assoc.href ? (
-                      <Link href={assoc.href} className="text-indigo-700 hover:underline">{assoc.label}</Link>
-                    ) : (
-                      <span className="text-indigo-700">{assoc.label}</span>
-                    )}
-                    {assoc.type && <span className="text-gray-400 ml-1">({assoc.type})</span>}
-                  </td>
-                  <td className="px-3 py-2.5 text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</td>
-                  <td className="px-3 py-2.5 text-gray-500">{d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "\u2014"}</td>
-                </tr>
-              );
-            })}
-            {filtered.length === 0 && (
-              <tr><td colSpan={5} className="px-3 py-8 text-center text-gray-400">No documents found.</td></tr>
-            )}
-          </tbody>
-        </table>
+        {allDocs.length === 0 && !isLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+            <p className="text-sm text-gray-500">No documents found</p>
+            <p className="text-xs text-gray-400">
+              {search || Object.values(activeFilters).some(Boolean)
+                ? "Try different search terms or clear filters"
+                : "Upload your first document to get started"}
+            </p>
+          </div>
+        ) : (
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                {["Document", "Category", "Associated With", "Upload Date", "Size"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allDocs.map((d) => {
+                const assoc = association(d);
+                return (
+                  <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <td className="px-3 py-2.5 font-medium">
+                      {d.fileUrl ? (
+                        <button type="button" onClick={() => setPreviewDoc(d)} className="text-indigo-600 hover:underline cursor-pointer text-left">
+                          {d.name}
+                        </button>
+                      ) : (
+                        d.name
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <Badge color={categoryColors[d.category] || "gray"}>{d.category}</Badge>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {assoc.href ? (
+                        <Link href={assoc.href} className="text-indigo-700 hover:underline">{assoc.label}</Link>
+                      ) : (
+                        <span className="text-indigo-700">{assoc.label}</span>
+                      )}
+                      {assoc.type && <span className="text-gray-400 ml-1">({assoc.type})</span>}
+                    </td>
+                    <td className="px-3 py-2.5 text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2.5 text-gray-500">{d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "\u2014"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
+
+      <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onLoadMore={handleLoadMore} />
 
       {/* Upload Modal */}
       <Modal
@@ -250,14 +287,14 @@ export default function DocumentsPage() {
               <option value="">General</option>
               {entities && entities.length > 0 && (
                 <optgroup label="Entities">
-                  {entities.map((e) => (
+                  {entities.map((e: any) => (
                     <option key={e.id} value={`entity:${e.id}`}>{e.name}</option>
                   ))}
                 </optgroup>
               )}
               {assets && assets.length > 0 && (
                 <optgroup label="Assets">
-                  {assets.map((a) => (
+                  {assets.map((a: any) => (
                     <option key={a.id} value={`asset:${a.id}`}>{a.name}</option>
                   ))}
                 </optgroup>

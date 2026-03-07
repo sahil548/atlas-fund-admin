@@ -3,36 +3,66 @@ import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDealSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized } from "@/lib/auth";
+import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
-  const where: Record<string, unknown> = {};
-  if (firmId) where.firmId = firmId;
 
-  const deals = await prisma.deal.findMany({
-    where,
-    include: {
-      workstreams: { include: { tasks: true } },
-      screeningResult: true,
-      icProcess: { include: { votes: true } },
-      dealLead: { select: { id: true, name: true, initials: true } },
-      closingChecklist: { select: { id: true, status: true } },
+  const params = parsePaginationParams(req.nextUrl.searchParams, [
+    "firmId", "cursor", "limit", "search", "stage", "assetClass", "dealLeadId",
+  ]);
+
+  const baseWhere: Record<string, unknown> = {};
+  if (firmId) baseWhere.firmId = firmId;
+
+  const { where, take, skip, cursor, orderBy } = buildPrismaArgs(
+    params,
+    ["name"],
+    baseWhere,
+    "createdAt",
+  );
+
+  const [rawDeals, total] = await Promise.all([
+    prisma.deal.findMany({
+      where,
+      take,
+      skip,
+      cursor,
+      orderBy,
+      include: {
+        workstreams: { include: { tasks: true } },
+        screeningResult: true,
+        icProcess: { include: { votes: true } },
+        dealLead: { select: { id: true, name: true, initials: true } },
+        closingChecklist: { select: { id: true, status: true } },
+      },
+    }),
+    prisma.deal.count({ where }),
+  ]);
+
+  const paginated = buildPaginatedResult(rawDeals, params.limit, total);
+
+  // Compute analytics from the full set (not paginated)
+  const allDeals = await prisma.deal.findMany({
+    where: firmId ? { firmId } : {},
+    select: {
+      stage: true,
+      targetSize: true,
+      screeningResult: { select: { id: true } },
     },
-    orderBy: { createdAt: "desc" },
   });
 
-  // Compute screening stats from real data
-  const docsProcessed = deals.filter((d) => d.screeningResult !== null).length;
-  const dealsScreened = deals.length;
-  const passedToDD = deals.filter((d) =>
+  const docsProcessed = allDeals.filter((d) => d.screeningResult !== null).length;
+  const dealsScreened = allDeals.length;
+  const passedToDD = allDeals.filter((d) =>
     ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage),
   ).length;
 
-  // Pipeline analytics
   const stageDistribution: Record<string, number> = {};
   for (const stage of ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED", "DEAD"]) {
-    stageDistribution[stage] = deals.filter((d) => d.stage === stage).length;
+    stageDistribution[stage] = allDeals.filter((d) => d.stage === stage).length;
   }
 
   function parseTargetSize(s: string | null): number {
@@ -48,41 +78,44 @@ export async function GET(req: NextRequest) {
 
   const valueByStage: Record<string, number> = {};
   for (const stage of ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"]) {
-    valueByStage[stage] = deals
+    valueByStage[stage] = allDeals
       .filter((d) => d.stage === stage)
       .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
   }
 
-  // Total pipeline value (active deals only)
-  const pipelineValue = deals
+  const pipelineValue = allDeals
     .filter((d) => !["CLOSED", "DEAD"].includes(d.stage))
     .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
 
-  const totalDeals = deals.length;
-  const pastScreening = deals.filter((d) => ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
-  const pastDD = deals.filter((d) => ["IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage)).length;
-  const pastIC = deals.filter((d) => ["CLOSING", "CLOSED"].includes(d.stage)).length;
+  const totalDeals = allDeals.length;
+  const pastScreening = allDeals.filter((d) =>
+    ["DUE_DILIGENCE", "IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage),
+  ).length;
+  const pastDD = allDeals.filter((d) =>
+    ["IC_REVIEW", "CLOSING", "CLOSED"].includes(d.stage),
+  ).length;
+  const pastIC = allDeals.filter((d) =>
+    ["CLOSING", "CLOSED"].includes(d.stage),
+  ).length;
 
-  // BUG-02 fix: add Math.min(100, ...) safety cap — mathematically these can never exceed 100%
-  // since pastIC <= pastDD <= pastScreening <= totalDeals, but defensive guard prevents edge cases
-  // with data anomalies (e.g. DEAD deals miscounted) from ever showing >100% in the UI.
   const screeningToDD = totalDeals > 0 ? Math.min(100, Math.round((pastScreening / totalDeals) * 100)) : 0;
   const ddToIC = pastScreening > 0 ? Math.min(100, Math.round((pastDD / pastScreening) * 100)) : 0;
   const icToClose = pastDD > 0 ? Math.min(100, Math.round((pastIC / pastDD) * 100)) : 0;
 
   return NextResponse.json({
-    deals,
-    screeningStats: {
-      docsProcessed,
-      dealsScreened,
-      passedToDD,
-    },
+    // Paginated deal list
+    deals: paginated.data,
+    nextCursor: paginated.nextCursor,
+    hasMore: paginated.hasMore,
+    total: paginated.total,
+    // Analytics (computed across all deals, not filtered page)
+    screeningStats: { docsProcessed, dealsScreened, passedToDD },
     pipelineAnalytics: {
       stageDistribution,
       valueByStage,
       pipelineValue,
       conversionRates: { screeningToDD, ddToIC, icToClose },
-      totalActiveDeals: deals.filter((d) => !["CLOSED", "DEAD"].includes(d.stage)).length,
+      totalActiveDeals: allDeals.filter((d) => !["CLOSED", "DEAD"].includes(d.stage)).length,
       totalClosedDeals: stageDistribution.CLOSED || 0,
       totalDeadDeals: stageDistribution.DEAD || 0,
     },
@@ -96,11 +129,17 @@ export async function POST(req: Request) {
   const { data, error } = await parseBody(req, CreateDealSchema);
   if (error) return error;
 
-  // Sanitize optional FK fields: convert empty strings to null/undefined
   const cleaned = { ...data! };
   if (!cleaned.dealLeadId) cleaned.dealLeadId = undefined;
   if (!cleaned.entityId) cleaned.entityId = undefined;
 
   const deal = await prisma.deal.create({ data: { ...cleaned, firmId: authUser.firmId } });
+
+  // Audit log — fire and forget
+  logAudit(authUser.firmId, authUser.id, "CREATE_DEAL", "Deal", deal.id, {
+    name: deal.name,
+    assetClass: deal.assetClass,
+  });
+
   return NextResponse.json(deal, { status: 201 });
 }

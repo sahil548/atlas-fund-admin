@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateDealSchema, CloseDealSchema, KillDealSchema } from "@/lib/schemas";
 import { killDeal, reviveDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
+import { getAuthUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _req: Request,
@@ -121,6 +123,8 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
+  const authUser = await getAuthUser();
+
   if (body.action === "KILL") {
     const parsed = KillDealSchema.safeParse(body);
     if (!parsed.success) {
@@ -128,6 +132,12 @@ export async function PATCH(
     }
     try {
       const deal = await killDeal(id, parsed.data.killReason, parsed.data.killReasonText);
+      if (authUser) {
+        logAudit(authUser.firmId, authUser.id, "KILL_DEAL", "Deal", id, {
+          killReason: parsed.data.killReason,
+          killReasonText: parsed.data.killReasonText,
+        });
+      }
       return NextResponse.json(deal);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -138,6 +148,9 @@ export async function PATCH(
   if (body.action === "REVIVE") {
     try {
       const deal = await reviveDeal(id);
+      if (authUser) {
+        logAudit(authUser.firmId, authUser.id, "REVIVE_DEAL", "Deal", id, {});
+      }
       return NextResponse.json(deal);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -170,6 +183,11 @@ export async function PATCH(
       });
       if ("warning" in result) {
         return NextResponse.json({ warning: result.warning, checklistTotal: result.checklistTotal, checklistComplete: result.checklistComplete });
+      }
+      if (authUser) {
+        logAudit(authUser.firmId, authUser.id, "CLOSE_DEAL", "Deal", id, {
+          costBasis: parsed.data.costBasis,
+        });
       }
       return NextResponse.json(result);
     } catch (err: unknown) {

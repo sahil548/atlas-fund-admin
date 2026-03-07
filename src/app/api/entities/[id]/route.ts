@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateEntitySchema } from "@/lib/schemas";
+import { getAuthUser } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 
 export async function GET(
   _req: Request,
@@ -36,6 +38,7 @@ export async function GET(
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const authUser = await getAuthUser();
   const { data, error } = await parseBody(req, UpdateEntitySchema);
   if (error) return error;
   const { investmentPeriodEnd, ...rest } = data!;
@@ -46,6 +49,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(investmentPeriodEnd ? { investmentPeriodEnd: new Date(investmentPeriodEnd) } : {}),
     },
   });
+
+  if (authUser) {
+    logAudit(authUser.firmId, authUser.id, "UPDATE_ENTITY", "Entity", id, {
+      fields: Object.keys(rest),
+    });
+  }
+
   return NextResponse.json(entity);
 }
 

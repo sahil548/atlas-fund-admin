@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { AIGlobalConfig } from "@/components/features/settings/ai-global-config";
 import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline-editor";
+import { PermissionsTab } from "@/components/features/settings/permissions-tab";
+import { ServiceProviderManager } from "@/components/features/settings/service-provider-manager";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -47,7 +49,7 @@ export default function SettingsPage() {
   );
   const toast = useToast();
 
-  const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "decisions" | "notifications">("firm");
+  const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "decisions" | "notifications" | "permissions" | "service-providers">("firm");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", legalName: "" });
   const [saving, setSaving] = useState(false);
@@ -79,6 +81,8 @@ export default function SettingsPage() {
     { key: "dealdesk" as const, label: "Deal Desk" },
     { key: "decisions" as const, label: "Decision Structures" },
     { key: "notifications" as const, label: "Notifications" },
+    { key: "permissions" as const, label: "Permissions" },
+    { key: "service-providers" as const, label: "Service Providers" },
   ];
 
   function startEditing() {
@@ -672,6 +676,36 @@ export default function SettingsPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h3 className="text-sm font-semibold mb-4">Notifications</h3>
           <div className="text-sm text-gray-400">Notification preferences coming soon.</div>
+        </div>
+      )}
+
+      {/* Tab 9: Permissions (GP_ADMIN only) */}
+      {tab === "permissions" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Team Permissions</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Configure what each GP Team member can access. Changes take effect immediately.
+              </p>
+            </div>
+          </div>
+          <PermissionsTab />
+        </div>
+      )}
+
+      {/* Tab 10: Service Providers (GP_ADMIN only) */}
+      {tab === "service-providers" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Service Provider Access</h3>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Manage which entities each service provider can view. Service providers have read-only access.
+              </p>
+            </div>
+          </div>
+          <ServiceProviderManager />
         </div>
       )}
 
