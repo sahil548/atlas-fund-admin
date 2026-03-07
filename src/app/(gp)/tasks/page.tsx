@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,57 +9,115 @@ import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/components/providers/user-provider";
 import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
+import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
 
-const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    return r.json();
+  });
 
-const STATUS_COLORS: Record<string, string> = {
-  TODO: "gray",
-  IN_PROGRESS: "yellow",
-  DONE: "green",
-};
-const STATUS_LABELS: Record<string, string> = {
-  TODO: "To Do",
-  IN_PROGRESS: "In Progress",
-  DONE: "Done",
-};
-const PRIORITY_COLORS: Record<string, string> = {
-  LOW: "gray",
-  MEDIUM: "blue",
-  HIGH: "orange",
-  URGENT: "red",
-};
+const STATUS_COLORS: Record<string, string> = { TODO: "gray", IN_PROGRESS: "yellow", DONE: "green" };
+const STATUS_LABELS: Record<string, string> = { TODO: "To Do", IN_PROGRESS: "In Progress", DONE: "Done" };
+const PRIORITY_COLORS: Record<string, string> = { LOW: "gray", MEDIUM: "blue", HIGH: "orange", URGENT: "red" };
 const STATUS_CYCLE = ["TODO", "IN_PROGRESS", "DONE"];
+
+const TASK_FILTERS = [
+  {
+    key: "status",
+    label: "Status",
+    options: [
+      { value: "TODO", label: "To Do" },
+      { value: "IN_PROGRESS", label: "In Progress" },
+      { value: "DONE", label: "Done" },
+    ],
+  },
+  {
+    key: "priority",
+    label: "Priority",
+    options: [
+      { value: "LOW", label: "Low" },
+      { value: "MEDIUM", label: "Medium" },
+      { value: "HIGH", label: "High" },
+      { value: "URGENT", label: "Urgent" },
+    ],
+  },
+];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default function TasksPage() {
   const toast = useToast();
   const { firmId } = useFirm();
-  const { data: tasks = [], isLoading } = useSWR("/api/tasks", fetcher);
   const { data: users = [] } = useSWR(firmId ? `/api/users?firmId=${firmId}` : null, fetcher);
   const [viewTab, setViewTab] = useState<"my" | "all" | "overdue">("all");
-  const [statusFilter, setStatusFilter] = useState<string>("");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    priority: "MEDIUM",
-    assigneeId: "",
-    dueDate: "",
-  });
+  const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM", assigneeId: "", dueDate: "" });
+
+  // Pagination state
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [allTasks, setAllTasks] = useState<any[]>([]);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const { userId: currentUserId } = useUser();
   const now = new Date();
 
-  const filtered = tasks.filter((t: any) => {
+  const buildUrl = useCallback(
+    (currentCursor?: string | null) => {
+      const params = new URLSearchParams({ limit: "50" });
+      if (search) params.set("search", search);
+      for (const [k, v] of Object.entries(activeFilters)) {
+        if (v) params.set(k, v);
+      }
+      if (currentCursor) params.set("cursor", currentCursor);
+      return `/api/tasks?${params.toString()}`;
+    },
+    [search, activeFilters],
+  );
+
+  const { isLoading } = useSWR(buildUrl(null), fetcher, {
+    onSuccess: (result) => {
+      setAllTasks(result.data ?? []);
+      setCursor(result.nextCursor ?? null);
+    },
+    revalidateOnFocus: false,
+  });
+
+  const handleSearch = useCallback((q: string) => {
+    setSearch(q);
+    setAllTasks([]);
+    setCursor(null);
+  }, []);
+
+  const handleFilterChange = useCallback((key: string, value: string) => {
+    setActiveFilters((prev) => ({ ...prev, [key]: value }));
+    setAllTasks([]);
+    setCursor(null);
+  }, []);
+
+  const handleLoadMore = useCallback(async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(buildUrl(cursor));
+      const result = await res.json();
+      setAllTasks((prev) => [...prev, ...(result.data ?? [])]);
+      setCursor(result.nextCursor ?? null);
+    } catch (e) {
+      console.error("Load more failed", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [cursor, loadingMore, buildUrl]);
+
+  // Client-side view filtering (my/overdue — no API round-trip needed)
+  const filtered = allTasks.filter((t: any) => {
     if (viewTab === "my" && t.assigneeId !== currentUserId) return false;
-    if (
-      viewTab === "overdue" &&
-      (t.status === "DONE" || !t.dueDate || new Date(t.dueDate) >= now)
-    )
-      return false;
-    if (statusFilter && t.status !== statusFilter) return false;
+    if (viewTab === "overdue" && (t.status === "DONE" || !t.dueDate || new Date(t.dueDate) >= now)) return false;
     return true;
   });
 
@@ -72,17 +130,15 @@ export default function TasksPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: task.id, status: next }),
       });
-      mutate("/api/tasks");
+      // Update local state
+      setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
     } catch {
       toast.error("Failed to update status");
     }
   }
 
   async function handleCreate() {
-    if (!form.title.trim()) {
-      toast.error("Title is required");
-      return;
-    }
+    if (!form.title.trim()) { toast.error("Title is required"); return; }
     setCreating(true);
     try {
       await fetch("/api/tasks", {
@@ -97,15 +153,12 @@ export default function TasksPage() {
         }),
       });
       toast.success("Task created");
-      mutate("/api/tasks");
+      // Refresh
+      setAllTasks([]);
+      setCursor(null);
+      mutate(buildUrl(null));
       setShowCreate(false);
-      setForm({
-        title: "",
-        description: "",
-        priority: "MEDIUM",
-        assigneeId: "",
-        dueDate: "",
-      });
+      setForm({ title: "", description: "", priority: "MEDIUM", assigneeId: "", dueDate: "" });
     } catch {
       toast.error("Failed to create task");
     } finally {
@@ -113,19 +166,26 @@ export default function TasksPage() {
     }
   }
 
-  const myCount = tasks.filter(
-    (t: any) => t.assigneeId === currentUserId && t.status !== "DONE"
-  ).length;
-  const overdueCount = tasks.filter(
-    (t: any) =>
-      t.status !== "DONE" && t.dueDate && new Date(t.dueDate) < now
-  ).length;
+  const myCount = allTasks.filter((t: any) => t.assigneeId === currentUserId && t.status !== "DONE").length;
+  const overdueCount = allTasks.filter((t: any) => t.status !== "DONE" && t.dueDate && new Date(t.dueDate) < now).length;
 
   const viewTabs = [
     { key: "my", label: `My Tasks (${myCount})` },
-    { key: "all", label: `All Tasks (${tasks.length})` },
+    { key: "all", label: `All Tasks (${allTasks.length})` },
     { key: "overdue", label: `Overdue (${overdueCount})` },
   ];
+
+  if (isLoading && allTasks.length === 0) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-400">
+        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        Loading tasks...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -134,15 +194,22 @@ export default function TasksPage() {
         <Button onClick={() => setShowCreate(true)}>+ New Task</Button>
       </div>
 
+      {/* Search + Filters */}
+      <SearchFilterBar
+        onSearch={handleSearch}
+        filters={TASK_FILTERS}
+        onFilterChange={handleFilterChange}
+        activeFilters={activeFilters}
+        placeholder="Search tasks..."
+      />
+
       <div className="flex gap-1 border-b border-gray-200 pb-0">
         {viewTabs.map((vt) => (
           <button
             key={vt.key}
             onClick={() => setViewTab(vt.key as "my" | "all" | "overdue")}
             className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${
-              viewTab === vt.key
-                ? "bg-white text-indigo-700 border-gray-200"
-                : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
+              viewTab === vt.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
             }`}
           >
             {vt.label}
@@ -150,24 +217,17 @@ export default function TasksPage() {
         ))}
       </div>
 
-      <div className="flex gap-2">
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-xs border border-gray-200 rounded-lg px-2 py-1.5"
-        >
-          <option value="">All Statuses</option>
-          <option value="TODO">To Do</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="DONE">Done</option>
-        </select>
-      </div>
-
-      {isLoading ? (
-        <div className="text-sm text-gray-400">Loading...</div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-12 text-gray-400 text-sm">
-          No tasks found.
+      {filtered.length === 0 && !isLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+          <p className="text-sm text-gray-500">No tasks found</p>
+          <p className="text-xs text-gray-400">
+            {search || Object.values(activeFilters).some(Boolean)
+              ? "Try different search terms or clear filters"
+              : viewTab === "my" ? "No tasks assigned to you" : viewTab === "overdue" ? "No overdue tasks" : "Create your first task"}
+          </p>
+          {viewTab === "all" && !search && !Object.values(activeFilters).some(Boolean) && (
+            <Button onClick={() => setShowCreate(true)} className="mt-2">+ New Task</Button>
+          )}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -186,45 +246,24 @@ export default function TasksPage() {
               {filtered.map((task: any) => (
                 <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2.5">
-                    <div className="font-medium text-gray-900">
-                      {task.title}
-                    </div>
+                    <div className="font-medium text-gray-900">{task.title}</div>
                     {task.description && (
-                      <div className="text-gray-400 mt-0.5 truncate max-w-[300px]">
-                        {task.description}
-                      </div>
+                      <div className="text-gray-400 mt-0.5 truncate max-w-[300px]">{task.description}</div>
                     )}
                   </td>
                   <td className="px-4 py-2.5">
-                    <button
-                      onClick={() => toggleStatus(task)}
-                      title="Click to cycle status"
-                    >
-                      <Badge color={STATUS_COLORS[task.status] || "gray"}>
-                        {STATUS_LABELS[task.status] || task.status}
-                      </Badge>
+                    <button onClick={() => toggleStatus(task)} title="Click to cycle status">
+                      <Badge color={STATUS_COLORS[task.status] || "gray"}>{STATUS_LABELS[task.status] || task.status}</Badge>
                     </button>
                   </td>
                   <td className="px-4 py-2.5">
-                    <Badge color={PRIORITY_COLORS[task.priority] || "gray"}>
-                      {task.priority || "MEDIUM"}
-                    </Badge>
+                    <Badge color={PRIORITY_COLORS[task.priority] || "gray"}>{task.priority || "MEDIUM"}</Badge>
                   </td>
                   <td className="px-4 py-2.5 text-gray-500">
                     {task.deal ? (
-                      <Link
-                        href={`/deals/${task.deal.id}`}
-                        className="text-indigo-600 hover:underline"
-                      >
-                        {task.deal.name}
-                      </Link>
+                      <Link href={`/deals/${task.deal.id}`} className="text-indigo-600 hover:underline">{task.deal.name}</Link>
                     ) : task.entity ? (
-                      <Link
-                        href={`/entities/${task.entity.id}`}
-                        className="text-indigo-600 hover:underline"
-                      >
-                        {task.entity.name}
-                      </Link>
+                      <Link href={`/entities/${task.entity.id}`} className="text-indigo-600 hover:underline">{task.entity.name}</Link>
                     ) : task.contextType ? (
                       <span>{task.contextType}</span>
                     ) : (
@@ -232,20 +271,11 @@ export default function TasksPage() {
                     )}
                   </td>
                   <td className="px-4 py-2.5 text-gray-600">
-                    {task.assignee?.name || task.assigneeName || (
-                      <span className="text-gray-300">—</span>
-                    )}
+                    {task.assignee?.name || task.assigneeName || <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-2.5 text-gray-500">
                     {task.dueDate ? (
-                      <span
-                        className={
-                          new Date(task.dueDate) < now &&
-                          task.status !== "DONE"
-                            ? "text-red-600 font-medium"
-                            : ""
-                        }
-                      >
+                      <span className={new Date(task.dueDate) < now && task.status !== "DONE" ? "text-red-600 font-medium" : ""}>
                         {new Date(task.dueDate).toLocaleDateString()}
                       </span>
                     ) : (
@@ -259,48 +289,22 @@ export default function TasksPage() {
         </div>
       )}
 
-      <Modal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        title="New Task"
-        size="md"
-      >
+      <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onLoadMore={handleLoadMore} />
+
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Task" size="md">
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Title *
-            </label>
-            <input
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              placeholder="Task title"
-            />
+            <label className="block text-xs font-medium text-gray-700 mb-1">Title *</label>
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Task title" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              rows={2}
-              placeholder="Optional description"
-            />
+            <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Optional description" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Priority
-              </label>
-              <select
-                value={form.priority}
-                onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              >
+              <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
@@ -308,44 +312,21 @@ export default function TasksPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                Assignee
-              </label>
-              <select
-                value={form.assigneeId}
-                onChange={(e) =>
-                  setForm({ ...form, assigneeId: e.target.value })
-                }
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              >
+              <label className="block text-xs font-medium text-gray-700 mb-1">Assignee</label>
+              <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
                 <option value="">Unassigned</option>
-                {users.map((u: any) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name}
-                  </option>
-                ))}
+                {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Due Date
-            </label>
-            <input
-              type="date"
-              value={form.dueDate}
-              onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
+            <label className="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
+            <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="secondary" onClick={() => setShowCreate(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleCreate} loading={creating}>
-            Create Task
-          </Button>
+          <Button variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
+          <Button onClick={handleCreate} loading={creating}>Create Task</Button>
         </div>
       </Modal>
     </div>

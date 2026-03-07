@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ import { CreateContactForm } from "@/components/features/contacts/create-contact
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt } from "@/lib/utils";
+import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -37,12 +39,65 @@ export default function DirectoryPage() {
   const [tab, setTab] = useState<"investors" | "companies" | "contacts" | "team" | "sideLetters">("investors");
   const toast = useToast();
 
+  // Investor search/pagination state
+  const [investorSearch, setInvestorSearch] = useState("");
+  const [investorFilters, setInvestorFilters] = useState<Record<string, string>>({});
+  const [investorCursor, setInvestorCursor] = useState<string | null>(null);
+  const [allInvestors, setAllInvestors] = useState<any[]>([]);
+  const [investorLoadingMore, setInvestorLoadingMore] = useState(false);
+
+  const buildInvestorUrl = useCallback(
+    (currentCursor?: string | null) => {
+      const params = new URLSearchParams({ firmId, limit: "50" });
+      if (investorSearch) params.set("search", investorSearch);
+      for (const [k, v] of Object.entries(investorFilters)) {
+        if (v) params.set(k, v);
+      }
+      if (currentCursor) params.set("cursor", currentCursor);
+      return `/api/investors?${params.toString()}`;
+    },
+    [firmId, investorSearch, investorFilters],
+  );
+
   // Data fetching
-  const { data: investors, isLoading: investorsLoading } = useSWR(`/api/investors?firmId=${firmId}`, fetcher);
+  const { isLoading: investorsLoading } = useSWR(buildInvestorUrl(null), fetcher, {
+    onSuccess: (result) => {
+      setAllInvestors(result.data ?? []);
+      setInvestorCursor(result.nextCursor ?? null);
+    },
+    revalidateOnFocus: false,
+  });
   const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcher);
   const { data: contacts } = useSWR(`/api/contacts?firmId=${firmId}`, fetcher);
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const { data: sideLetters } = useSWR("/api/side-letters", fetcher);
+
+  const handleInvestorSearch = useCallback((q: string) => {
+    setInvestorSearch(q);
+    setAllInvestors([]);
+    setInvestorCursor(null);
+  }, []);
+
+  const handleInvestorFilter = useCallback((key: string, value: string) => {
+    setInvestorFilters((prev) => ({ ...prev, [key]: value }));
+    setAllInvestors([]);
+    setInvestorCursor(null);
+  }, []);
+
+  const handleInvestorLoadMore = useCallback(async () => {
+    if (!investorCursor || investorLoadingMore) return;
+    setInvestorLoadingMore(true);
+    try {
+      const res = await fetch(buildInvestorUrl(investorCursor));
+      const result = await res.json();
+      setAllInvestors((prev) => [...prev, ...(result.data ?? [])]);
+      setInvestorCursor(result.nextCursor ?? null);
+    } catch (e) {
+      console.error("Load more failed", e);
+    } finally {
+      setInvestorLoadingMore(false);
+    }
+  }, [investorCursor, investorLoadingMore, buildInvestorUrl]);
 
   // Modals
   const [showCreateInvestor, setShowCreateInvestor] = useState(false);
@@ -123,14 +178,24 @@ export default function DirectoryPage() {
   }
 
   const tabs = [
-    { key: "investors" as const, label: "Investors", count: investors?.length || 0 },
+    { key: "investors" as const, label: "Investors", count: allInvestors?.length || 0 },
     { key: "companies" as const, label: "Companies", count: companies?.length || 0 },
     { key: "contacts" as const, label: "Contacts", count: contacts?.length || 0 },
     { key: "team" as const, label: "Team", count: users?.length || 0 },
     { key: "sideLetters" as const, label: "Side Letters", count: sideLetters?.length || 0 },
   ];
 
-  if (investorsLoading || !investors) return <div className="text-sm text-gray-400">Loading...</div>;
+  if (investorsLoading && allInvestors.length === 0 && tab === "investors") {
+    return (
+      <div className="flex items-center gap-2 text-sm text-gray-400">
+        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        Loading directory...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -158,48 +223,71 @@ export default function DirectoryPage() {
 
       {/* Investors Tab */}
       {tab === "investors" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Investor", "Type", "Total Committed", "Entities", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {investors.map((inv: InvestorRow) => (
-                <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
-                  <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
-                  <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
-                  <td className="px-3 py-2.5">
-                    {inv.commitments?.map((c) => (
-                      <span key={c.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{c.entity.name}</span>
-                    ))}
-                  </td>
-                  <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
-                  <td className="px-3 py-2.5">
-                    {inv.contact ? (
-                      <span className="text-xs text-indigo-600">{inv.contact.firstName} {inv.contact.lastName}</span>
-                    ) : inv.company ? (
-                      <span className="text-xs text-indigo-600">{inv.company.name}</span>
-                    ) : (
-                      <span className="text-gray-400">{"\u2014"}</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">{"\u2014"}</span>}</td>
-                  <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex gap-2">
-                      <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEditInvestor(true); }}>Edit</button>
-                      <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "investor", id: inv.id, name: inv.name }); }}>Delete</button>
-                    </div>
-                  </td>
+        <div className="space-y-3">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div className="p-3 border-b border-gray-100">
+              <SearchFilterBar
+                onSearch={handleInvestorSearch}
+                filters={[
+                  { key: "type", label: "Type", options: [
+                    { value: "Individual", label: "Individual" },
+                    { value: "Institutional", label: "Institutional" },
+                    { value: "Family Office", label: "Family Office" },
+                  ]},
+                ]}
+                onFilterChange={handleInvestorFilter}
+                activeFilters={investorFilters}
+                placeholder="Search investors..."
+              />
+            </div>
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50">
+                <tr>
+                  {["Investor", "Type", "Total Committed", "Entities", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
+                    <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {allInvestors.map((inv: InvestorRow) => (
+                  <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
+                    <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
+                    <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
+                    <td className="px-3 py-2.5">
+                      {inv.commitments?.map((c) => (
+                        <span key={c.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{c.entity.name}</span>
+                      ))}
+                    </td>
+                    <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
+                    <td className="px-3 py-2.5">
+                      {inv.contact ? (
+                        <span className="text-xs text-indigo-600">{inv.contact.firstName} {inv.contact.lastName}</span>
+                      ) : inv.company ? (
+                        <span className="text-xs text-indigo-600">{inv.company.name}</span>
+                      ) : (
+                        <span className="text-gray-400">{"\u2014"}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">{"\u2014"}</span>}</td>
+                    <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex gap-2">
+                        <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEditInvestor(true); }}>Edit</button>
+                        <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "investor", id: inv.id, name: inv.name }); }}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {allInvestors.length === 0 && !investorsLoading && (
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">
+                    {investorSearch || Object.values(investorFilters).some(Boolean) ? "No investors match your search" : "No investors yet"}
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <LoadMoreButton hasMore={!!investorCursor} loading={investorLoadingMore} onLoadMore={handleInvestorLoadMore} />
         </div>
       )}
 

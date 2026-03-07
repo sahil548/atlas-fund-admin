@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
+import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { CreateCapitalCallForm } from "@/components/features/capital/create-capital-call-form";
 import { CreateDistributionForm } from "@/components/features/capital/create-distribution-form";
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
