@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+// ── Pagination ────────────────────────────────────────────
+
+export const PaginationQuerySchema = z.object({
+  cursor: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  search: z.string().optional(),
+});
+
 // ── Shared Taxonomy ──────────────────────────────────────
 
 export const ASSET_CLASSES = [
@@ -366,6 +374,28 @@ export const UpdateSideLetterSchema = z.object({
   terms: z.string().min(1).optional(),
   investorId: z.string().min(1).optional(),
   entityId: z.string().min(1).optional(),
+});
+
+export const SIDE_LETTER_RULE_TYPES = [
+  "FEE_DISCOUNT",
+  "CARRY_OVERRIDE",
+  "MFN",
+  "CO_INVEST_RIGHTS",
+  "CUSTOM",
+] as const;
+
+export const CreateSideLetterRuleSchema = z.object({
+  sideLetterId: z.string().min(1, "Side letter ID is required"),
+  ruleType: z.enum(SIDE_LETTER_RULE_TYPES),
+  value: z.number().min(0).max(100).optional(),
+  description: z.string().optional(),
+});
+
+export const UpdateSideLetterRuleSchema = z.object({
+  ruleType: z.enum(SIDE_LETTER_RULE_TYPES).optional(),
+  value: z.number().min(0).max(100).optional(),
+  description: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 // ── Investors ──────────────────────────────────────────

@@ -287,6 +287,14 @@ enum DDWorkstreamStatus {
   COMPLETE
 }
 
+enum SideLetterRuleType {
+  FEE_DISCOUNT
+  CARRY_OVERRIDE
+  MFN
+  CO_INVEST_RIGHTS
+  CUSTOM
+}
+
 enum ContactType {
   INTERNAL
   EXTERNAL
@@ -321,6 +329,7 @@ model Firm {
   aiConfiguration AIConfiguration?
   aiPromptTemplates AIPromptTemplate[]
   decisionStructures DecisionStructure[]
+  auditLogs  AuditLog[]
 }
 
 model AIConfiguration {
@@ -469,6 +478,9 @@ model User {
   entityAccess    String[]  @default([])
   accessExpiresAt DateTime?
 
+  // GP_TEAM configurable permissions per area (null = use defaults)
+  permissions Json?
+
   slackUserId String?
 
   createdAt DateTime @default(now())
@@ -493,6 +505,7 @@ model User {
   workstreamComments  DDWorkstreamComment[] @relation("WorkstreamCommentAuthor")
   taskComments        DDTaskComment[]       @relation("TaskCommentAuthor")
   decisionMemberships DecisionMember[]
+  auditLogs           AuditLog[]
 }
 
 // ============================================================
@@ -773,8 +786,22 @@ model SideLetter {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  investor Investor @relation(fields: [investorId], references: [id])
-  entity   Entity   @relation(fields: [entityId], references: [id])
+  investor Investor           @relation(fields: [investorId], references: [id])
+  entity   Entity             @relation(fields: [entityId], references: [id])
+  rules    SideLetterRule[]
+}
+
+model SideLetterRule {
+  id           String             @id @default(cuid())
+  sideLetterId String
+  ruleType     SideLetterRuleType
+  value        Float?
+  description  String?
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  sideLetter   SideLetter         @relation(fields: [sideLetterId], references: [id], onDelete: Cascade)
 }
 
 model InvestorNotificationPreference {
@@ -1668,4 +1695,27 @@ model InvestorUserAccess {
   @@unique([investorId, userId])
   @@index([userId])
   @@index([investorId])
+}
+
+// ============================================================
+// AUDIT LOG
+// ============================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  firmId     String
+  userId     String
+  action     String   // e.g. "CREATE_DEAL", "UPDATE_ENTITY", "CREATE_CAPITAL_CALL"
+  targetType String   // e.g. "Deal", "Entity", "CapitalCall"
+  targetId   String
+  metadata   Json?    // { before, after, description, ... }
+  createdAt  DateTime @default(now())
+
+  firm       Firm     @relation(fields: [firmId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([firmId])
+  @@index([userId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }
