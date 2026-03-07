@@ -32,6 +32,13 @@ interface AllocationRow {
   allocationPercent: number;
 }
 
+function formatCurrencyInput(value: string): string {
+  const digits = value.replace(/[^0-9.]/g, "");
+  const parts = digits.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.length > 1 ? parts[0] + "." + parts[1] : parts[0];
+}
+
 interface CloseDealModalProps {
   open: boolean;
   onClose: () => void;
@@ -351,7 +358,7 @@ export function CloseDealModal({
             <input
               type="text"
               value={costBasis}
-              onChange={(e) => setCostBasis(e.target.value)}
+              onChange={(e) => setCostBasis(formatCurrencyInput(e.target.value))}
               placeholder="e.g. 10,000,000"
               className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
@@ -369,7 +376,7 @@ export function CloseDealModal({
             <input
               type="text"
               value={fairValue}
-              onChange={(e) => setFairValue(e.target.value)}
+              onChange={(e) => setFairValue(formatCurrencyInput(e.target.value))}
               placeholder="Defaults to cost basis"
               className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />

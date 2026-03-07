@@ -37,7 +37,7 @@ export function OnboardingModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.firmName.trim(),
-          legalName: form.legalName.trim() || null,
+          legalName: form.legalName.trim() || undefined,
         }),
       });
       if (res.ok) {

@@ -168,14 +168,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
     setDocs((prev) => prev.filter((_, i) => i !== index));
   }
 
-  /** Validate Step 2: require at least 1 document */
-  function validateStep2(): boolean {
-    if (docs.length === 0) {
-      toast.error("At least one document is required");
-      return false;
-    }
-    return true;
-  }
+  // Documents are optional — no validation required
 
   /** Create new counterparty company inline */
   async function handleCreateCompany() {
@@ -252,7 +245,6 @@ export function CreateDealWizard({ open, onClose }: Props) {
   }
 
   async function handleCreateDeal() {
-    if (!validateStep2()) return;
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
@@ -269,7 +261,6 @@ export function CreateDealWizard({ open, onClose }: Props) {
   }
 
   async function handleCreateAndScreen() {
-    if (!validateStep2()) return;
     setIsLoading(true);
     try {
       const dealId = await createDealAndUploadDocs();
@@ -534,7 +525,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
           {/* File upload */}
           <div className="space-y-3">
             <p className="text-xs text-gray-500">
-              Upload documents for AI screening. At least one document is required.
+              Upload documents for AI screening (optional).
             </p>
             <FormField label="Select File">
               <FileUpload
@@ -560,8 +551,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
           {/* Queued docs */}
           {docs.length === 0 ? (
-            <div className="text-center py-4 text-red-400 text-sm border-2 border-dashed border-red-200 rounded-lg">
-              No documents queued. At least one document is required to create a deal.
+            <div className="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+              No documents queued. You can add documents later.
             </div>
           ) : (
             <div className="space-y-1.5">

@@ -57,7 +57,7 @@ export function CreateEntityForm({ open, onClose }: Props) {
       toast.success("Entity created");
       setForm({ name: "", entityType: "MAIN_FUND", vehicleStructure: "LLC", vintageYear: "", targetSize: "", legalName: "", stateOfFormation: "", ein: "", fiscalYearEnd: "", fundTermYears: "" });
       onClose();
-    } catch { toast.error("Failed to create entity"); }
+    } catch (err: unknown) { toast.error((err as Error)?.message || "Failed to create entity"); }
   }
 
   return (

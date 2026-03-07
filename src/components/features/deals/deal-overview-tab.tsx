@@ -451,7 +451,7 @@ export function DealOverviewTab({
                               onClick={() => setMemoExpanded(true)}
                               className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1"
                             >
-                              Read full memo (IC Review tab)
+                              Read full memo
                             </button>
                           )}
                         </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -35,6 +36,10 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [promptEditing, setPromptEditing] = useState(false);
   const [savingInstructions, setSavingInstructions] = useState(false);
   const [loadingTemplate, setLoadingTemplate] = useState(false);
+  const [expandedWs, setExpandedWs] = useState<Record<string, boolean>>({});
+  const [addingTaskWs, setAddingTaskWs] = useState<string | null>(null);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [savingTask, setSavingTask] = useState(false);
 
   const allWorkstreams = (deal.workstreams || []) as any[];
   // IC_MEMO is not a workstream - it's in AIScreeningResult
@@ -335,6 +340,69 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     return new Date(date) < new Date();
   }
 
+  function toggleExpand(wsId: string) {
+    setExpandedWs((prev) => ({ ...prev, [wsId]: !prev[wsId] }));
+  }
+
+  // Cycle task status: TODO → IN_PROGRESS → DONE → TODO
+  async function cycleTaskStatus(task: any) {
+    const nextStatus =
+      task.status === "TODO"
+        ? "IN_PROGRESS"
+        : task.status === "IN_PROGRESS"
+          ? "DONE"
+          : "TODO";
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/tasks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: task.id, status: nextStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Failed to update task status");
+    }
+  }
+
+  async function addTask(wsId: string) {
+    if (!newTaskTitle.trim()) return;
+    setSavingTask(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.id}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          workstreamId: wsId,
+          title: newTaskTitle.trim(),
+          source: "MANUAL",
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create task");
+      setNewTaskTitle("");
+      setAddingTaskWs(null);
+      mutate(`/api/deals/${deal.id}`);
+    } catch {
+      toast.error("Failed to add task");
+    } finally {
+      setSavingTask(false);
+    }
+  }
+
+  function taskStatusBadge(status: string) {
+    if (status === "DONE")
+      return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    if (status === "IN_PROGRESS")
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    return "bg-gray-100 text-gray-500 border-gray-200";
+  }
+
+  function taskStatusIcon(status: string) {
+    if (status === "DONE") return "\u2713";
+    if (status === "IN_PROGRESS") return "\u25CF";
+    return "\u25CB";
+  }
+
   return (
     <div className="space-y-4">
       {/* DD Progress Summary */}
@@ -524,202 +592,354 @@ export function DealDDTab({ deal }: DealDDTabProps) {
               <div className="w-24 text-center">Actions</div>
             </div>
 
-            {/* Workstream rows */}
+            {/* Workstream rows with collapsible task groups */}
             <div className="divide-y divide-gray-100">
               {sortedWorkstreams.map((ws: any) => {
                 const commentCount = ws._count?.comments ?? 0;
                 const attachmentCount = ws._count?.attachments ?? 0;
                 const isSelected = selectedWsId === ws.id;
+                const isExpanded = !!expandedWs[ws.id];
+                const wsTasks = (ws.tasks || []) as any[];
+                const wsCompletedTasks = wsTasks.filter((t: any) => t.status === "DONE").length;
 
                 return (
-                  <div
-                    key={ws.id}
-                    className={`flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      isSelected ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""
-                    }`}
-                    onClick={() =>
-                      setSelectedWsId(isSelected ? null : ws.id)
-                    }
-                  >
-                    {/* Status dot */}
-                    <div className="w-5 flex justify-center">
-                      <span
-                        className={`w-2.5 h-2.5 rounded-full ${statusDot(ws.status)}`}
-                      />
-                    </div>
-
-                    {/* Name */}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium text-gray-800 truncate block">
-                        {ws.name}
-                      </span>
-                      {ws.analysisResult && (
-                        <span className="text-[10px] text-indigo-500">
-                          {ws.analysisResult.aiPowered ? "AI analyzed" : "Sample data"}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Assignee */}
+                  <div key={ws.id}>
+                    {/* Workstream header row */}
                     <div
-                      className="w-20 text-center"
-                      onClick={(e) => e.stopPropagation()}
+                      className={`flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors cursor-pointer ${
+                        isSelected ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""
+                      }`}
+                      onClick={() =>
+                        setSelectedWsId(isSelected ? null : ws.id)
+                      }
                     >
-                      {ws.assignee ? (
-                        <div
-                          className="inline-flex items-center gap-1 text-[10px] text-gray-600 cursor-default"
-                          title={ws.assignee.name}
-                        >
-                          <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold">
-                            {ws.assignee.initials}
-                          </span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            // Use the first team member as a quick-assign, or open panel
-                            setSelectedWsId(ws.id);
-                          }}
-                          className="text-[10px] text-gray-400 hover:text-indigo-600"
-                        >
-                          --
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Priority */}
-                    <div
-                      className="w-16 text-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <select
-                        value={ws.priority || "MEDIUM"}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          patchWorkstream(ws.id, { priority: e.target.value });
-                        }}
-                        className="text-[10px] border-0 bg-transparent cursor-pointer font-medium text-center p-0"
-                        style={{
-                          color:
-                            ws.priority === "HIGH"
-                              ? "#dc2626"
-                              : ws.priority === "LOW"
-                                ? "#16a34a"
-                                : "#ca8a04",
-                        }}
-                      >
-                        <option value="HIGH">High</option>
-                        <option value="MEDIUM">Medium</option>
-                        <option value="LOW">Low</option>
-                      </select>
-                    </div>
-
-                    {/* Due Date */}
-                    <div
-                      className="w-20 text-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {ws.dueDate ? (
-                        <span
-                          className={`text-[10px] ${
-                            isOverdue(ws.dueDate) && ws.status !== "COMPLETE"
-                              ? "text-red-600 font-semibold"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {new Date(ws.dueDate).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-gray-300">--</span>
-                      )}
-                    </div>
-
-                    {/* Comment count */}
-                    <div className="w-8 text-center">
-                      {commentCount > 0 ? (
-                        <span className="text-[10px] text-gray-500 font-medium">
-                          {commentCount}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-gray-300">--</span>
-                      )}
-                    </div>
-
-                    {/* Attachment count */}
-                    <div className="w-8 text-center">
-                      {attachmentCount > 0 ? (
-                        <span className="text-[10px] text-gray-500 font-medium">
-                          {attachmentCount}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-gray-300">--</span>
-                      )}
-                    </div>
-
-                    {/* Status dropdown */}
-                    <div
-                      className="w-24 text-center"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <select
-                        value={ws.status}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          patchWorkstream(ws.id, { status: e.target.value });
-                        }}
-                        className={`text-[10px] border border-gray-200 rounded px-1 py-0.5 font-medium cursor-pointer ${
-                          ws.status === "COMPLETE"
-                            ? "text-emerald-700 bg-emerald-50"
-                            : ws.status === "IN_PROGRESS"
-                              ? "text-blue-700 bg-blue-50"
-                              : "text-gray-500 bg-gray-50"
-                        }`}
-                      >
-                        <option value="NOT_STARTED">Not Started</option>
-                        <option value="IN_PROGRESS">In Progress</option>
-                        <option value="COMPLETE">Complete</option>
-                      </select>
-                    </div>
-
-                    {/* Actions */}
-                    <div
-                      className="w-24 text-center flex items-center justify-center gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {ws.hasAI && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            runWorkstreamAnalysis(ws);
-                          }}
-                          disabled={analyzingWs === ws.id || analyzingAll}
-                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {analyzingWs === ws.id
-                            ? "..."
-                            : ws.analysisResult
-                              ? "Re-analyze"
-                              : "Analyze"}
-                        </button>
-                      )}
+                      {/* Expand/collapse chevron */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          openPromptModal(ws);
+                          toggleExpand(ws.id);
                         }}
-                        className="text-[10px] text-gray-400 hover:text-gray-600"
-                        title="Analysis Prompt"
+                        className="w-5 flex justify-center text-gray-400 hover:text-gray-600"
                       >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <svg
+                          className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       </button>
+
+                      {/* Name + task count */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot(ws.status)}`}
+                          />
+                          <span className="text-xs font-medium text-gray-800 truncate">
+                            {ws.name}
+                          </span>
+                          {wsTasks.length > 0 && (
+                            <span className="text-[10px] text-gray-400 flex-shrink-0">
+                              {wsCompletedTasks}/{wsTasks.length}
+                            </span>
+                          )}
+                        </div>
+                        {ws.analysisResult && (
+                          <span className="text-[10px] text-indigo-500 ml-4">
+                            {ws.analysisResult.aiPowered ? "AI analyzed" : "Sample data"}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Assignee */}
+                      <div
+                        className="w-20 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {ws.assignee ? (
+                          <div
+                            className="inline-flex items-center gap-1 text-[10px] text-gray-600 cursor-default"
+                            title={ws.assignee.name}
+                          >
+                            <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[9px] font-bold">
+                              {ws.assignee.initials}
+                            </span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedWsId(ws.id);
+                            }}
+                            className="text-[10px] text-gray-400 hover:text-indigo-600"
+                          >
+                            --
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Priority */}
+                      <div
+                        className="w-16 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <select
+                          value={ws.priority || "MEDIUM"}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            patchWorkstream(ws.id, { priority: e.target.value });
+                          }}
+                          className="text-[10px] border-0 bg-transparent cursor-pointer font-medium text-center p-0"
+                          style={{
+                            color:
+                              ws.priority === "HIGH"
+                                ? "#dc2626"
+                                : ws.priority === "LOW"
+                                  ? "#16a34a"
+                                  : "#ca8a04",
+                          }}
+                        >
+                          <option value="HIGH">High</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="LOW">Low</option>
+                        </select>
+                      </div>
+
+                      {/* Due Date */}
+                      <div
+                        className="w-20 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {ws.dueDate ? (
+                          <span
+                            className={`text-[10px] ${
+                              isOverdue(ws.dueDate) && ws.status !== "COMPLETE"
+                                ? "text-red-600 font-semibold"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            {new Date(ws.dueDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-300">--</span>
+                        )}
+                      </div>
+
+                      {/* Comment count */}
+                      <div className="w-8 text-center">
+                        {commentCount > 0 ? (
+                          <span className="text-[10px] text-gray-500 font-medium">
+                            {commentCount}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-300">--</span>
+                        )}
+                      </div>
+
+                      {/* Attachment count */}
+                      <div className="w-8 text-center">
+                        {attachmentCount > 0 ? (
+                          <span className="text-[10px] text-gray-500 font-medium">
+                            {attachmentCount}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-gray-300">--</span>
+                        )}
+                      </div>
+
+                      {/* Status dropdown */}
+                      <div
+                        className="w-24 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <select
+                          value={ws.status}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            patchWorkstream(ws.id, { status: e.target.value });
+                          }}
+                          className={`text-[10px] border border-gray-200 rounded px-1 py-0.5 font-medium cursor-pointer ${
+                            ws.status === "COMPLETE"
+                              ? "text-emerald-700 bg-emerald-50"
+                              : ws.status === "IN_PROGRESS"
+                                ? "text-blue-700 bg-blue-50"
+                                : "text-gray-500 bg-gray-50"
+                          }`}
+                        >
+                          <option value="NOT_STARTED">Not Started</option>
+                          <option value="IN_PROGRESS">In Progress</option>
+                          <option value="COMPLETE">Complete</option>
+                        </select>
+                      </div>
+
+                      {/* Actions */}
+                      <div
+                        className="w-24 text-center flex items-center justify-center gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {ws.hasAI && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              runWorkstreamAnalysis(ws);
+                            }}
+                            disabled={analyzingWs === ws.id || analyzingAll}
+                            className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-1.5 py-0.5 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {analyzingWs === ws.id
+                              ? "..."
+                              : ws.analysisResult
+                                ? "Re-analyze"
+                                : "Analyze"}
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openPromptModal(ws);
+                          }}
+                          className="text-[10px] text-gray-400 hover:text-gray-600"
+                          title="Analysis Prompt"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Expanded task sub-rows */}
+                    {isExpanded && (
+                      <div className="bg-gray-50/50">
+                        {wsTasks.length === 0 && !addingTaskWs ? (
+                          <div className="pl-10 pr-3 py-3 text-[11px] text-gray-400 flex items-center justify-between">
+                            <span>No tasks yet. Run analysis or add tasks manually.</span>
+                            <button
+                              onClick={() => {
+                                setAddingTaskWs(ws.id);
+                                setNewTaskTitle("");
+                              }}
+                              className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium"
+                            >
+                              + Add Task
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            {wsTasks.map((task: any) => (
+                              <div
+                                key={task.id}
+                                className="flex items-center gap-2 pl-10 pr-3 py-1.5 border-t border-gray-100 hover:bg-gray-100/50 transition-colors"
+                              >
+                                {/* Task status toggle */}
+                                <button
+                                  onClick={() => cycleTaskStatus(task)}
+                                  className={`w-5 h-5 rounded border flex items-center justify-center text-[10px] font-bold flex-shrink-0 cursor-pointer transition-colors ${taskStatusBadge(task.status)}`}
+                                  title={`${task.status} — click to cycle`}
+                                >
+                                  {taskStatusIcon(task.status)}
+                                </button>
+
+                                {/* Task title */}
+                                <span
+                                  className={`flex-1 text-[11px] truncate ${
+                                    task.status === "DONE"
+                                      ? "text-gray-400 line-through"
+                                      : "text-gray-700"
+                                  }`}
+                                >
+                                  {task.title}
+                                </span>
+
+                                {/* Task priority */}
+                                {task.priority && (
+                                  <span
+                                    className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                                      task.priority === "HIGH"
+                                        ? "bg-red-50 text-red-600"
+                                        : task.priority === "LOW"
+                                          ? "bg-green-50 text-green-600"
+                                          : "bg-yellow-50 text-yellow-600"
+                                    }`}
+                                  >
+                                    {task.priority}
+                                  </span>
+                                )}
+
+                                {/* Task assignee */}
+                                {task.assignee && (
+                                  <span className="text-[10px] text-gray-400 truncate max-w-[60px]">
+                                    {task.assignee}
+                                  </span>
+                                )}
+
+                                {/* Task source badge */}
+                                {task.source === "AI" && (
+                                  <span className="text-[9px] text-indigo-500 bg-indigo-50 px-1 rounded">
+                                    AI
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+
+                            {/* Add task inline */}
+                            {addingTaskWs === ws.id ? (
+                              <div className="flex items-center gap-2 pl-10 pr-3 py-1.5 border-t border-gray-100">
+                                <input
+                                  autoFocus
+                                  value={newTaskTitle}
+                                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") addTask(ws.id);
+                                    if (e.key === "Escape") {
+                                      setAddingTaskWs(null);
+                                      setNewTaskTitle("");
+                                    }
+                                  }}
+                                  placeholder="Task title..."
+                                  className="flex-1 text-[11px] border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-indigo-400"
+                                  disabled={savingTask}
+                                />
+                                <button
+                                  onClick={() => addTask(ws.id)}
+                                  disabled={savingTask || !newTaskTitle.trim()}
+                                  className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 px-2 py-1 rounded disabled:opacity-50"
+                                >
+                                  {savingTask ? "..." : "Add"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setAddingTaskWs(null);
+                                    setNewTaskTitle("");
+                                  }}
+                                  className="text-[10px] text-gray-400 hover:text-gray-600"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="pl-10 pr-3 py-1.5 border-t border-gray-100">
+                                <button
+                                  onClick={() => {
+                                    setAddingTaskWs(ws.id);
+                                    setNewTaskTitle("");
+                                  }}
+                                  className="text-[10px] text-gray-400 hover:text-indigo-600 font-medium"
+                                >
+                                  + Add Task
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

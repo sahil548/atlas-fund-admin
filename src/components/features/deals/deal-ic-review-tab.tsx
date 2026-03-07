@@ -20,6 +20,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
   const [votingLoading, setVotingLoading] = useState(false);
   const [showConditions, setShowConditions] = useState(false);
   const [conditionsText, setConditionsText] = useState("");
+  const [justVoted, setJustVoted] = useState<string | null>(null);
   const [newQuestionText, setNewQuestionText] = useState("");
   const [postingQuestion, setPostingQuestion] = useState(false);
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
@@ -104,6 +105,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
           conditionsText.trim() ? " (with conditions)" : ""
         }`
       );
+      setJustVoted(vote);
       setConditionsText("");
       setShowConditions(false);
       mutate(`/api/deals/${deal.id}`);
@@ -302,6 +304,10 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                     </div>
                   )}
                 </div>
+              ) : justVoted ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs text-emerald-700">
+                  ✓ Your vote: {justVoted.replace(/_/g, " ")}
+                </div>
               ) : userHasVoted ? (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
                   You have already voted on this deal.
@@ -317,7 +323,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                 <div className="flex gap-2">
                   <Button
                     loading={icDecisionLoading}
-                    disabled={userLoading || !userId}
+                    disabled={userLoading || !userId || votes.length === 0}
                     onClick={() => handleICDecision("APPROVED")}
                     className="bg-emerald-600 hover:bg-emerald-700"
                   >
@@ -326,7 +332,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                   <Button
                     variant="danger"
                     loading={icDecisionLoading}
-                    disabled={userLoading || !userId}
+                    disabled={userLoading || !userId || votes.length === 0}
                     onClick={() => handleICDecision("REJECTED")}
                   >
                     Reject (Final)
@@ -334,12 +340,15 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                   <Button
                     variant="secondary"
                     loading={icDecisionLoading}
-                    disabled={userLoading || !userId}
+                    disabled={userLoading || !userId || votes.length === 0}
                     onClick={() => handleICDecision("SEND_BACK")}
                   >
                     Send Back (Final)
                   </Button>
                 </div>
+                {votes.length === 0 && (
+                  <p className="text-[11px] text-gray-500 mt-2">At least one vote must be cast before recording a final decision.</p>
+                )}
               </div>
             </div>
           ) : null}
