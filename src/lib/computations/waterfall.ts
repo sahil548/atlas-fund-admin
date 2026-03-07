@@ -21,11 +21,37 @@ export interface WaterfallTierResult {
   remaining: number;
 }
 
+export interface InvestorShare {
+  investorId: string;
+  investorName: string;
+  proRataShare: number;  // fraction 0-1, e.g. 0.6 for 60%
+}
+
+export interface InvestorBreakdown {
+  investorId: string;
+  investorName: string;
+  proRataShare: number;
+  lpAllocation: number;
+  gpCarryAllocation?: number;
+}
+
+export interface WaterfallConfig {
+  carryPercent?: number;                            // e.g., 0.20 for 20%. Default 0.20
+  prefReturnCompounding?: "SIMPLE" | "COMPOUND";   // Default SIMPLE
+  prefReturnOffsetByDistributions?: boolean;        // Default false
+  incomeCountsTowardPref?: boolean;                 // Default false
+  gpCoInvestPercent?: number;                       // null = no GP co-invest
+  priorIncomeDistributed?: number;                  // for income-counts-toward-pref calc
+}
+
 export interface WaterfallResult {
   tiers: WaterfallTierResult[];
   totalLP: number;
   totalGP: number;
   distributableAmount: number;
+  clawbackLiability: number;
+  gpCoInvestAllocation: number;
+  perInvestorBreakdown?: InvestorBreakdown[];
 }
 
 /**
@@ -42,6 +68,8 @@ export interface WaterfallResult {
  * @param totalContributed Total capital contributed by LPs (for ROC calculation)
  * @param totalDistributedPrior Total distributions already made in prior periods
  * @param yearsOutstanding Years since first capital call (for preferred return)
+ * @param config Optional configuration for carry %, pref compounding, GP co-invest etc.
+ * @param investorShares Optional investor shares for per-investor breakdown
  */
 export function computeWaterfall(
   tiers: WaterfallTierInput[],
@@ -49,7 +77,17 @@ export function computeWaterfall(
   totalContributed: number,
   totalDistributedPrior: number = 0,
   yearsOutstanding: number = 1,
+  config?: WaterfallConfig,
+  investorShares?: InvestorShare[],
 ): WaterfallResult {
+  // Resolve config with defaults
+  const carryPercent = config?.carryPercent ?? 0.20;
+  const compounding = config?.prefReturnCompounding ?? "SIMPLE";
+  const offsetByDist = config?.prefReturnOffsetByDistributions ?? false;
+  const incomeTowardPref = config?.incomeCountsTowardPref ?? false;
+  const gpCoInvestPercent = config?.gpCoInvestPercent ?? 0;
+  const priorIncomeDistributed = config?.priorIncomeDistributed ?? 0;
+
   let remaining = distributableAmount;
   const results: WaterfallTierResult[] = [];
   let totalLP = 0;
@@ -78,18 +116,35 @@ export function computeWaterfall(
       tierAmount = Math.min(remaining, unreturned);
     }
 
-    // Preferred Return: cap at hurdle rate * contributed * years
+    // Preferred Return: cap at hurdle rate * contributed * years (simple or compound)
     if (tier.hurdleRate && tier.hurdleRate > 0 && tier.splitLP === 100 && tier.splitGP === 0) {
-      const prefAmount = totalContributed * (tier.hurdleRate / 100) * yearsOutstanding;
+      let prefAmount: number;
+      if (compounding === "COMPOUND") {
+        // Compound: contributed * (1 + rate)^years - 1
+        prefAmount = totalContributed * (Math.pow(1 + tier.hurdleRate / 100, yearsOutstanding) - 1);
+      } else {
+        // Simple: contributed * rate * years
+        prefAmount = totalContributed * (tier.hurdleRate / 100) * yearsOutstanding;
+      }
+
+      // Reduce pref by prior distributions if offset option is on
+      if (offsetByDist) {
+        prefAmount = Math.max(0, prefAmount - totalDistributedPrior);
+      }
+
+      // Reduce pref by prior income distributed (income counts toward pref)
+      if (incomeTowardPref) {
+        prefAmount = Math.max(0, prefAmount - priorIncomeDistributed);
+      }
+
       tierAmount = Math.min(remaining, prefAmount);
     }
 
-    // GP Catch-Up: 100% to GP until GP reaches target share
+    // GP Catch-Up: 100% to GP until GP reaches target share of total distributable
+    // Standard formula: GP target = distributableAmount * carryPercent
+    // This ensures GP gets carryPercent% of the TOTAL distribution (not just profits above pref)
     if (tier.splitGP === 100 && tier.splitLP === 0) {
-      // Standard: GP catches up to 20% of total profits distributed so far
-      const totalProfitsSoFar = distributableAmount - remaining;
-      const gpTargetPct = 0.20; // standard 20% carry
-      const gpTarget = (totalProfitsSoFar + remaining) * gpTargetPct;
+      const gpTarget = distributableAmount * carryPercent;
       const gpNeeded = Math.max(0, gpTarget - totalGP);
       tierAmount = Math.min(remaining, gpNeeded);
     }
@@ -111,10 +166,41 @@ export function computeWaterfall(
     });
   }
 
+  // GP co-invest allocation: GP gets LP treatment on their co-invest portion
+  // gpCoInvestPercent of the LP allocation is re-attributed to GP as co-invest
+  let gpCoInvestAllocation = 0;
+  if (gpCoInvestPercent > 0) {
+    gpCoInvestAllocation = totalLP * gpCoInvestPercent;
+    // Note: GP co-invest is a reallocation of LP proceeds to GP (LP committed this portion as GP capital)
+    // We track it separately rather than shifting totalLP/totalGP since the invariant must hold
+    // The gpCoInvestAllocation represents the economic benefit to GP from their LP-treatment co-invest
+  }
+
+  // Clawback liability: max(0, totalGP - entitled GP amount)
+  // Entitled GP = distributableAmount * carryPercent (matches catch-up formula)
+  // In practice, after a correct waterfall run GP should equal entitledGP (no clawback)
+  // Clawback > 0 can arise when GP received carry in prior periods but fund underperforms later
+  const entitledGP = distributableAmount * carryPercent;
+  const clawbackLiability = Math.max(0, totalGP - entitledGP);
+
+  // Per-investor breakdown: allocate LP proceeds proportionally
+  let perInvestorBreakdown: InvestorBreakdown[] | undefined;
+  if (investorShares && investorShares.length > 0) {
+    perInvestorBreakdown = investorShares.map((inv) => ({
+      investorId: inv.investorId,
+      investorName: inv.investorName,
+      proRataShare: inv.proRataShare,
+      lpAllocation: totalLP * inv.proRataShare,
+    }));
+  }
+
   return {
     tiers: results,
     totalLP,
     totalGP,
     distributableAmount,
+    clawbackLiability,
+    gpCoInvestAllocation,
+    perInvestorBreakdown,
   };
 }
