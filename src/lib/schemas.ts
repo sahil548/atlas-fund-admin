@@ -403,6 +403,24 @@ export const CreateCapitalCallSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
   purpose: z.string().optional(),
   status: z.enum(["DRAFT", "ISSUED", "FUNDED", "PARTIALLY_FUNDED", "OVERDUE"]).default("DRAFT"),
+  autoGenerateLineItems: z.boolean().default(true),
+});
+
+export const UpdateCapitalCallSchema = z.object({
+  status: z.enum(["DRAFT", "ISSUED", "FUNDED", "PARTIALLY_FUNDED", "OVERDUE"]).optional(),
+  purpose: z.string().optional(),
+  dueDate: z.string().optional(),
+});
+
+export const CreateCapitalCallLineItemSchema = z.object({
+  investorId: z.string().min(1, "Investor is required"),
+  amount: z.number().positive("Amount must be positive"),
+});
+
+export const UpdateCapitalCallLineItemSchema = z.object({
+  status: z.enum(["Pending", "Funded"]).optional(),
+  paidDate: z.string().optional(),
+  amount: z.number().positive().optional(),
 });
 
 // ── Distributions ──────────────────────────────────────
@@ -419,6 +437,41 @@ export const CreateDistributionSchema = z.object({
   carriedInterest: z.number().default(0),
   netToLPs: z.number().default(0),
   status: z.enum(["DRAFT", "APPROVED", "PAID"]).default("APPROVED"),
+  distributionType: z.string().optional(),
+  memo: z.string().optional(),
+  autoGenerateLineItems: z.boolean().default(true),
+});
+
+export const UpdateDistributionSchema = z.object({
+  status: z.enum(["DRAFT", "APPROVED", "PAID"]).optional(),
+  distributionType: z.string().optional(),
+  memo: z.string().optional(),
+  grossAmount: z.number().positive().optional(),
+  returnOfCapital: z.number().optional(),
+  income: z.number().optional(),
+  longTermGain: z.number().optional(),
+  shortTermGain: z.number().optional(),
+  carriedInterest: z.number().optional(),
+  netToLPs: z.number().optional(),
+});
+
+export const CreateDistributionLineItemSchema = z.object({
+  investorId: z.string().min(1, "Investor is required"),
+  grossAmount: z.number().positive("Gross amount must be positive"),
+  returnOfCapital: z.number().default(0),
+  income: z.number().default(0),
+  longTermGain: z.number().default(0),
+  carriedInterest: z.number().default(0),
+  netAmount: z.number(),
+});
+
+export const UpdateDistributionLineItemSchema = z.object({
+  grossAmount: z.number().positive().optional(),
+  returnOfCapital: z.number().optional(),
+  income: z.number().optional(),
+  longTermGain: z.number().optional(),
+  carriedInterest: z.number().optional(),
+  netAmount: z.number().optional(),
 });
 
 // ── Meetings ───────────────────────────────────────────

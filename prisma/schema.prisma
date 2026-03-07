@@ -420,6 +420,9 @@ model Entity {
   dealEntities         DealEntity[]
   decisionStructureId  String?
   decisionStructure    DecisionStructure? @relation("EntityDecisionStructure", fields: [decisionStructureId], references: [id])
+
+  // Phase 3: NAV proxy configuration
+  navProxyConfig       Json?              // { cashPercent, otherAssetsPercent, liabilitiesPercent }
 }
 
 model AccountingConnection {
@@ -850,6 +853,12 @@ model DistributionEvent {
   carriedInterest   Float              @default(0)
   netToLPs          Float              @default(0)
   status            DistributionStatus @default(APPROVED)
+
+  // Phase 3: Distribution type and memo
+  distributionType          String?  // "INCOME" | "RETURN_OF_CAPITAL" | "CAPITAL_GAIN" | "FINAL_LIQUIDATION"
+  memo                      String?
+  waterfallCalculationId    String?  // Optional link to the waterfall calc that produced this distribution
+
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
 
@@ -867,6 +876,10 @@ model DistributionLineItem {
   longTermGain     Float    @default(0)
   carriedInterest  Float    @default(0)
   netAmount        Float
+
+  // Phase 3: Distribution type carried through to line items
+  distributionType String?
+
   createdAt        DateTime @default(now())
 
   distribution DistributionEvent @relation(fields: [distributionId], references: [id])
@@ -935,6 +948,17 @@ model WaterfallTemplate {
   id          String  @id @default(cuid())
   name        String
   description String?
+
+  // Phase 3: Fee configuration fields
+  managementFeeRate              Float?   // Annual rate as decimal (e.g., 0.02 = 2%)
+  feeBasis                       String?  // "COMMITTED_CAPITAL" | "INVESTED_CAPITAL" | "NAV"
+  carryPercent                   Float?   // Carried interest % (e.g., 0.20 = 20%)
+  prefReturnRate                 Float?   // Preferred return rate if different from hurdle
+  prefReturnCompounding          String?  // "SIMPLE" | "COMPOUND"
+  prefReturnOffsetByDistributions Boolean @default(false)
+  incomeCountsTowardPref         Boolean  @default(false)
+  gpCoInvestPercent              Float?   // GP co-investment % (null = no GP co-invest)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
