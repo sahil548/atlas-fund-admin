@@ -161,5 +161,6 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | 7: Notifications & Reports | NOTIF-01, NOTIF-02, NOTIF-03, INTEG-01, INTEG-02, REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, INTEG-03, INTEG-04, INTEG-05, INTEG-06 |
 | 8: Auth & Permissions Hardening | CORE-02, CORE-03 |
 | 9: Financial Wiring & Polish | FIN-07, NOTIF-03 |
+| 10: Integration Wiring & UI Polish | CORE-02, CORE-03, REPORT-01, REPORT-02, REPORT-05, FIN-07, FIN-10 |
 
-**Coverage check:** All requirements mapped to a phase. CORE-01 is DONE (not in any phase). Gap closure phases 8-9 reassign partial requirements from Phase 4/7. Zero orphans.
+**Coverage check:** All requirements mapped to a phase. CORE-01 is DONE (not in any phase). Gap closure phases 8-10 address partial requirements and integration gaps from audit. Zero orphans.

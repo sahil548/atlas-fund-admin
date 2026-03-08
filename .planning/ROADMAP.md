@@ -6,9 +6,8 @@
 
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
-**Total phases:** 7
-**Current phase:** Phase 8 (gap closure)
-**Total phases:** 9
+**Total phases:** 10
+**Current phase:** Phase 10 (gap closure)
 
 ---
 
@@ -256,4 +255,27 @@ Plans:
 
 ---
 
-**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Gap closure phases 8-9 address partial requirements from audit. Zero orphans.
+## Phase 10: Integration Wiring & UI Polish
+
+**Goal:** Close remaining integration gaps and orphaned API endpoints found in the v1.0 re-audit. Add LP document download link, expand middleware GP route coverage, surface fee calculation and entity attribution in the UI.
+
+**Gap Closure:** Closes integration/flow gaps from v1.0-MILESTONE-AUDIT.md (re-audit)
+**Requirements:** CORE-02, CORE-03, REPORT-01, REPORT-02, REPORT-05, FIN-07, FIN-10
+
+**Success Criteria:**
+- [ ] LP document center (`lp-documents/page.tsx`) renders download link for each document with `fileUrl`
+- [ ] `isGPAPIRoute` in `middleware.ts` includes `/api/k1`, `/api/esignature`, `/api/side-letters`, `/api/commitments`, `/api/docusign/connect|disconnect|status`
+- [ ] Entity detail page has a "Calculate Fees" button that POSTs to `/api/fees/calculate`
+- [ ] Entity detail page surfaces entity-level performance attribution from `/api/entities/[id]/attribution`
+- [ ] Build passes with zero errors
+
+**Plans:** 0/1 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — LP download link + middleware routes + fee calc UI + entity attribution UI
+
+**Progress:** 0/1 plans complete
+
+---
+
+**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Gap closure phases 8-10 address partial requirements and integration gaps from audit. Zero orphans.
