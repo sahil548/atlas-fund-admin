@@ -42,6 +42,7 @@ export default function EntityDetailPage() {
   const { data: metricsData } = useSWR(id ? `/api/entities/${id}/metrics` : null, fetcher);
   const { data: navHistory } = useSWR(id ? `/api/nav/${id}/history` : null, fetcher);
   const { data: plaidData } = useSWR(id ? `/api/integrations/plaid/accounts?entityId=${id}` : null, fetcher);
+  const { data: attributionData } = useSWR(id ? `/api/entities/${id}/attribution` : null, fetcher);
   const [tab, setTab] = useState("overview");
   const [showCapCall, setShowCapCall] = useState(false);
   const [showDist, setShowDist] = useState(false);
@@ -53,6 +54,14 @@ export default function EntityDetailPage() {
   const [expandedCall, setExpandedCall] = useState<string | null>(null);
   const [expandedDist, setExpandedDist] = useState<string | null>(null);
   const [markingFormed, setMarkingFormed] = useState(false);
+  const [calculatingFees, setCalculatingFees] = useState(false);
+  const [feeResult, setFeeResult] = useState<{
+    managementFee: number;
+    carriedInterest: number;
+    entityName: string;
+    periodDate: string;
+    templateName: string | null;
+  } | null>(null);
   // NAV proxy edit state
   const [proxyEdit, setProxyEdit] = useState<{ cashPercent: string; otherAssetsPercent: string; liabilitiesPercent: string } | null>(null);
   const [savingProxy, setSavingProxy] = useState(false);
@@ -192,6 +201,42 @@ export default function EntityDetailPage() {
       mutate(`/api/entities/${id}`);
     } catch {
       toast.error("Failed to update distribution status");
+    }
+  }
+
+  async function handleCalculateFees() {
+    setCalculatingFees(true);
+    setFeeResult(null);
+    try {
+      const res = await fetch("/api/fees/calculate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          entityId: id,
+          periodDate: new Date().toISOString().split("T")[0],
+          fundExpenses: 0,
+          periodFraction: 0.25,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Fee calculation failed";
+        toast.error(msg);
+        return;
+      }
+      const data = await res.json();
+      setFeeResult({
+        managementFee: data.managementFee,
+        carriedInterest: data.carriedInterest,
+        entityName: data.entityName,
+        periodDate: data.periodDate,
+        templateName: data.templateName ?? null,
+      });
+      toast.success("Fee calculation complete");
+    } catch {
+      toast.error("Fee calculation failed");
+    } finally {
+      setCalculatingFees(false);
     }
   }
 
