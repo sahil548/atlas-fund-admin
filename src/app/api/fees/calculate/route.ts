@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { z } from "zod";
 import { calculateFees, type FeeConfig, type FeeInputs } from "@/lib/computations/fee-engine";
+import { integrateSideLetterWithFeeCalc, type AdjustedFeeResult } from "@/lib/computations/side-letter-engine";
 
 const CalculateFeesSchema = z.object({
   entityId: z.string().min(1, "Entity is required"),
@@ -97,6 +98,23 @@ export async function POST(req: Request) {
 
     const feeResult = calculateFees(feeConfig, feeInputs);
 
+    // Apply per-investor side letter adjustments (informational only — does not modify base fee)
+    type PerInvestorAdjustment = AdjustedFeeResult & { investorId: string };
+    const perInvestorAdjustments: PerInvestorAdjustment[] = [];
+    try {
+      for (const commitment of commitments) {
+        const adjusted = await integrateSideLetterWithFeeCalc(
+          commitment.investorId,
+          entityId,
+          feeResult,
+        );
+        perInvestorAdjustments.push({ investorId: commitment.investorId, ...adjusted });
+      }
+    } catch (sideLetterErr) {
+      // Side letter query failure must NOT break base fee calculation
+      console.error("[fees/calculate] Side letter integration failed (non-fatal):", sideLetterErr);
+    }
+
     // Upsert FeeCalculation record for entity + periodDate
     const periodDateObj = new Date(periodDate);
     const existing = await prisma.feeCalculation.findFirst({
@@ -115,6 +133,7 @@ export async function POST(req: Request) {
         config: { managementFeeRate, feeBasis, periodFraction },
         inputs: { totalCommitments, totalCalled, entityNAV, waterfallGPAllocation },
         calculatedAt: new Date().toISOString(),
+        perInvestorAdjustments,
       })),
     };
 
@@ -141,6 +160,7 @@ export async function POST(req: Request) {
       periodDate,
       templateName: template?.name ?? null,
       ...feeResult,
+      perInvestorAdjustments,
     });
   } catch (err) {
     console.error("[fees/calculate]", err);
