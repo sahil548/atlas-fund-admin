@@ -246,7 +246,7 @@ Plans:
 - [ ] waterfall.test.ts TypeScript error fixed
 - [ ] eslint-disable any-type workarounds cleaned up where possible (deal tabs, Recharts)
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 09-01-PLAN.md — Side letter fee wiring + digest preference enforcement (FIN-07, NOTIF-03)
