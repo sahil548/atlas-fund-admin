@@ -95,6 +95,40 @@ export async function GET(
 
   const irr = cashFlows.length >= 2 ? xirr(cashFlows) : null;
 
+  // Fire-and-forget: save metric snapshot (don't block response)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  prisma.metricSnapshot.upsert({
+    where: {
+      investorId_entityId_periodDate: {
+        investorId,
+        entityId: "__AGGREGATE__",
+        periodDate: today,
+      },
+    },
+    create: {
+      investorId,
+      entityId: "__AGGREGATE__",
+      periodDate: today,
+      irr,
+      tvpi: metrics.tvpi,
+      dpi: metrics.dpi,
+      rvpi: metrics.rvpi,
+      nav: currentNAV,
+      totalCalled,
+      totalDistributed,
+    },
+    update: {
+      irr,
+      tvpi: metrics.tvpi,
+      dpi: metrics.dpi,
+      rvpi: metrics.rvpi,
+      nav: currentNAV,
+      totalCalled,
+      totalDistributed,
+    },
+  }).catch((err: unknown) => console.error("[metric-snapshot] save failed:", err));
+
   return NextResponse.json({
     investor,
     totalCommitted,

@@ -788,6 +788,7 @@ model Investor {
   capitalAccounts        CapitalAccount[]
   documents              Document[]
   notes                  Note[]
+  metricSnapshots        MetricSnapshot[]
 }
 
 model Commitment {
@@ -1745,4 +1746,28 @@ model AuditLog {
   @@index([userId])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+// ============================================================
+// LP METRIC SNAPSHOTS (Phase 6)
+// ============================================================
+
+model MetricSnapshot {
+  id               String   @id @default(cuid())
+  investorId       String
+  entityId         String   @default("__AGGREGATE__") // "__AGGREGATE__" for portfolio-wide, real entityId for per-entity
+  periodDate       DateTime // snapshot date (truncated to midnight UTC)
+  irr              Float?
+  tvpi             Float?
+  dpi              Float?
+  rvpi             Float?
+  nav              Float?
+  totalCalled      Float?
+  totalDistributed Float?
+  createdAt        DateTime @default(now())
+
+  investor Investor @relation(fields: [investorId], references: [id])
+
+  @@unique([investorId, entityId, periodDate])
+  @@index([investorId, periodDate])
 }
