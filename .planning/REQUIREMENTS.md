@@ -73,8 +73,8 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
 | CORE-01 | ~~Clerk auth replaces demo UserProvider~~ | ~~Critical~~ | **DONE — Clerk works in production. Mock for dev.** |
-| CORE-02 | Role-based access enforced per route (not just modeled) | High | PARTIAL (04-02): Middleware blocks LP/SERVICE_PROVIDER; GP_TEAM fine-grained perms stored but `getEffectivePermissions()` not called in API routes — reassigned to Phase 8 |
-| CORE-03 | Service provider scoped access (read-only, entity-specific, time-bound) | Medium | PARTIAL (04-02): Entity-access stored + middleware write-block; per-route entity-scope check not enforced — reassigned to Phase 8 |
+| CORE-02 | Role-based access enforced per route (not just modeled) | High | DONE (04-02, 08): Middleware blocks LP_INVESTOR and SERVICE_PROVIDER (write-block). GP_TEAM fine-grained perms enforced via `getEffectivePermissions()` in all GP API routes — deals, entities, capital-calls, distributions, investors, documents, reports, k1, settings (Phase 8, 12/12 verification passed). Phase 10-01 expanded isGPAPIRoute to cover 7 routes added in Phases 7-9. |
+| CORE-03 | Service provider scoped access (read-only, entity-specific, time-bound) | Medium | DONE (04-02, 08): SERVICE_PROVIDER write-block in middleware. Per-route entity-scope enforcement implemented in Phase 8: entities route filters by authUser.entityAccess array; accessExpiresAt checked on entities routes (expired access returns 403); capital-calls and distributions routes filter by entity.id in entityAccess. Phase 8 verification: 12/12 must-haves passed. |
 | CORE-04 | Pagination on all data lists | Medium | No pagination — all records loaded at once |
 | CORE-05 | Error boundaries to prevent full-page crashes | Medium | No error boundaries anywhere |
 | CORE-06 | API rate limiting on AI endpoints | Medium | No rate limiting |
