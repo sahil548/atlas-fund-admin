@@ -7,7 +7,8 @@
     "build": "prisma generate && prisma db push && next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "stage-files": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['src/lib/computations/performance-attribution.ts','src/app/api/assets/[id]/attribution/route.ts','src/app/api/entities/[id]/attribution/route.ts','src/components/features/assets/asset-performance-tab.tsx','src/app/(gp)/assets/[id]/page.tsx','src/app/api/assets/[id]/route.ts'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
