@@ -127,11 +127,11 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
-| REPORT-01 | Quarterly report generation (PDF) | Medium | No implementation |
-| REPORT-02 | Capital account statement PDF export | Medium | No implementation |
+| REPORT-01 | Quarterly report generation (PDF) | Medium | DONE (07-03): /api/reports/generate POST endpoint generates quarterly report PDF using @react-pdf/renderer. GP reports page at /app/(gp)/reports/page.tsx calls it. LP access enabled in Phase 10-01 via download link in lp-documents/page.tsx — LPs can download reports stored as Documents with fileUrl. |
+| REPORT-02 | Capital account statement PDF export | Medium | DONE (07-03): /api/reports/generate generates capital account statement PDF (CAPITAL_STATEMENT type). Document saved with fileUrl. LP access enabled via Phase 10-01 download link in LP document center. |
 | REPORT-03 | Data export to Excel (any table) | Medium | No implementation |
 | REPORT-04 | K-1 upload and distribution to LPs | Medium | No implementation |
-| REPORT-05 | Fund summary reports | Low | No implementation |
+| REPORT-05 | Fund summary reports | Low | DONE (07-03): /api/reports/generate generates fund summary one-pager PDF (FUND_SUMMARY type). Document saved with fileUrl. LP access enabled via Phase 10-01 download link in LP document center. |
 
 ---
 
