@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: unknown
-stopped_at: Phase 7 context gathered
-last_updated: "2026-03-08T05:35:31.539Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-03-08T06:00:56.931Z"
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 23
-  completed_plans: 23
+  total_plans: 29
+  completed_plans: 24
 ---
 
 # Atlas — GSD State
@@ -49,6 +49,7 @@ progress:
 | Phase 05 P03 | 10min | 1 tasks | 3 files |
 | Phase 06-lp-portal P02 | 3min | 2 tasks | 4 files |
 | Phase 06-lp-portal P01 | 25min | 2 tasks | 6 files |
+| Phase 07 P02 | 6min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -171,6 +172,9 @@ progress:
 - **2026-03-08 (06-02):** gpOverrides.capitalCallsAlwaysImmediate returned as system constant on every GET/PUT response — not stored in DB, enforced by notification engine in Phase 7
 - **2026-03-08 (06-02):** Debounce auto-save at 500ms per section change — no external library, clearTimeout/setTimeout pattern
 - **2026-03-08 (06-02):** Undefined field filtering before Prisma upsert — prevents overwriting existing preferences when only a subset of fields are sent
+- **2026-03-07 (07-02):** SearchFilterBar renamed to FilterBar internally; SearchFilterBar alias kept for backward compat — zero call site changes needed
+- **2026-03-07 (07-02):** ExportButton uses children slot in FilterBar for GP list pages; LP pages get ExportButton directly in header area
+- **2026-03-07 (07-02):** xlsx XLSX.writeFile handles browser download internally — no manual blob/URL.createObjectURL needed
 
 ### Phase 5 Account Mapping + Trial Balance (Plan 05-02)
 - 4 API routes: chart-of-accounts (auto-detect + suggestFrom), mappings CRUD (delete+createMany upsert), sync (SYNCING lifecycle + TrialBalanceSnapshot upsert), trial-balance (bucket organization + list mode)
@@ -275,5 +279,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T05:35:31.536Z
-- **Stopped at:** Phase 7 context gathered
+- **Last session:** 2026-03-08T06:00:56.927Z
+- **Stopped at:** Completed 07-02-PLAN.md

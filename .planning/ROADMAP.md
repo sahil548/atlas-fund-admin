@@ -191,7 +191,7 @@ Plans:
 - [ ] Search bars removed from list pages (AI command bar is universal search)
 - [ ] Asana, Notion, Plaid, Google Calendar integrations connected via Settings
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 Plans:
 - [ ] 07-01-PLAN.md — Wave 1: Notification delivery engine (email via Resend + SMS via Twilio) + notification bell polish (NOTIF-01, NOTIF-02, NOTIF-03, INTEG-01)
