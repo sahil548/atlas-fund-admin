@@ -34,6 +34,8 @@ const AUTH_USER_SELECT = {
   initials: true,
   isActive: true,
   contactId: true,
+  entityAccess: true,
+  accessExpiresAt: true,
 } as const;
 
 /**
