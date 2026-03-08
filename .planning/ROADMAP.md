@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** Phase 8 (gap closure)
+**Current phase:** Phase 9 (gap closure)
 **Total phases:** 9
 
 ---
@@ -243,10 +243,13 @@ Plans:
 - [ ] waterfall.test.ts TypeScript error fixed
 - [ ] eslint-disable any-type workarounds cleaned up where possible (deal tabs, Recharts)
 
-Plans:
-- [ ] 09-01-PLAN.md — Side letter fee wiring + digest preference enforcement + Plaid card + code cleanup
+**Plans:** 2 plans
 
-**Progress:** 0/1 plans complete
+Plans:
+- [ ] 09-01-PLAN.md — Side letter fee wiring + digest preference enforcement (FIN-07, NOTIF-03)
+- [ ] 09-02-PLAN.md — Plaid balance card + waterfall test fix + eslint cleanup
+
+**Progress:** 0/2 plans complete
 
 ---
 
