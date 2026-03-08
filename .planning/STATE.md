@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Phase 6 Plan 02 complete — LP settings + notification preferences CRUD built
-status: in_progress
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-03-08T04:10:34.603Z"
+current_plan: Phase 6 (LP Portal) next
+status: unknown
+stopped_at: Phase 6 Plan 01 complete — MetricSnapshot + performance charts + period summaries
+last_updated: "2026-03-08T04:13:28.431Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Atlas — GSD State
@@ -21,9 +21,9 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 5 of 7 (QBO/Xero Integration) — COMPLETE
-- **Phase status:** Plans 01-03 all complete — QBO OAuth2 + provider abstraction + account mapping + trial balance + GL-based NAV + entity Accounting tab
-- **Current Plan:** Phase 6 (LP Portal) next
+- **Phase:** 6 of 7 (LP Portal) — IN PROGRESS
+- **Phase status:** Plan 01 complete — MetricSnapshot model + snapshot-on-compute + metrics-history API + Recharts time-series charts + quarterly period summaries
+- **Current Plan:** Phase 6 Plan 02 next
 - **Active plan:** none
 
 ## Performance Metrics
@@ -48,6 +48,7 @@ progress:
 | Phase 05-qbo-xero-integration P02 | 6min | 2 tasks | 7 files |
 | Phase 05 P03 | 10min | 1 tasks | 3 files |
 | Phase 06-lp-portal P02 | 3min | 2 tasks | 4 files |
+| Phase 06-lp-portal P01 | 25min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -267,7 +268,12 @@ progress:
 - **2026-03-07 (03-02):** Per-investor proRata based on Commitment.amount (total committed), not calledAmount — LP ownership stake for distribution allocation
 - **2026-03-07 (03-02):** clawbackLiability is display-only, always 0 in correct single-period waterfall; useful for multi-period over-distribution detection
 
+- **2026-03-07 (06-01):** entityId in MetricSnapshot uses '__AGGREGATE__' sentinel string (non-nullable) — avoids Prisma @@unique treating each null as unique, which would defeat one-aggregate-per-day intent
+- **2026-03-07 (06-01):** MetricSnapshot has no Entity @relation — only Investor — to allow sentinel value '__AGGREGATE__' without FK violation
+- **2026-03-07 (06-01):** Recharts v3 Tooltip formatter typed as any with eslint-disable — Formatter<T,N> generic causes TS incompatibility with undefined union in some Recharts v3 versions
+- **2026-03-07 (06-01):** Period summaries computed client-side from existing ledger data — no new API needed, data already fetched via useSWR on capital account page
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T04:10:34.600Z
-- **Stopped at:** Completed 06-02-PLAN.md
+- **Last session:** 2026-03-08T04:13:28.428Z
+- **Stopped at:** Phase 6 Plan 01 complete — MetricSnapshot + performance charts + period summaries
