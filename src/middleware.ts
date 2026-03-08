@@ -68,6 +68,13 @@ const isGPAPIRoute = createRouteMatcher([
   "/api/agent(.*)",
   "/api/decision-structures(.*)",
   "/api/audit-log(.*)",
+  "/api/k1(.*)",
+  "/api/esignature(.*)",
+  "/api/side-letters(.*)",
+  "/api/commitments(.*)",
+  "/api/docusign/connect(.*)",
+  "/api/docusign/disconnect(.*)",
+  "/api/docusign/status(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
