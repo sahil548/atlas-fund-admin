@@ -88,9 +88,15 @@ export async function POST(req: Request) {
   // Send Clerk invitation email (non-blocking — if it fails, user can still sign up manually)
   try {
     const clerk = await clerkClient();
+
+    // redirectUrl must point to the sign-up page so Clerk can process the invitation ticket.
+    // Use NEXT_PUBLIC_APP_URL for the full domain (required in production), fall back to sign-up path.
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
+    const redirectUrl = `${baseUrl}/sign-up`;
+
     await clerk.invitations.createInvitation({
       emailAddress: email,
-      redirectUrl: process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL || "/",
+      redirectUrl,
     });
     console.log(`[invite] Sent Clerk invitation email to ${email}`);
   } catch (err) {

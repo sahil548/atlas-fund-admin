@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import useSWR, { mutate } from "swr";
@@ -651,8 +651,8 @@ export default function EntityDetailPage() {
               </thead>
               <tbody>
                 {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; distributionType?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number; status: string; lineItems?: any[] }) => (
-                  <>
-                    <tr key={d.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
+                  <Fragment key={d.id}>
+                    <tr className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
                       <td className="px-3 py-2.5">{new Date(d.distributionDate).toLocaleDateString()}</td>
                       <td className="px-3 py-2.5"><Badge color="blue">{d.distributionType || d.source || "\u2014"}</Badge></td>
                       <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
@@ -701,7 +701,7 @@ export default function EntityDetailPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 ))}
                 {(!e.distributions || e.distributions.length === 0) && <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">No distributions.</td></tr>}
               </tbody>

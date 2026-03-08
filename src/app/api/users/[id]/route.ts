@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { z } from "zod";
 
 const UpdateUserSchema = z.object({
@@ -36,7 +37,23 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+  if (authUser.role !== "GP_ADMIN") return forbidden();
+
   const { id } = await params;
+
+  // Prevent admins from changing their own role or deactivating themselves
+  if (id === authUser.id) {
+    const peek = await req.clone().json().catch(() => ({}));
+    if (peek.role && peek.role !== authUser.role) {
+      return NextResponse.json({ error: "You cannot change your own role" }, { status: 400 });
+    }
+    if (peek.isActive === false) {
+      return NextResponse.json({ error: "You cannot deactivate yourself" }, { status: 400 });
+    }
+  }
+
   const { data, error } = await parseBody(req, UpdateUserSchema);
   if (error) return error;
 
@@ -59,7 +76,17 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+  if (authUser.role !== "GP_ADMIN") return forbidden();
+
   const { id } = await params;
+
+  // Prevent admins from deactivating themselves
+  if (id === authUser.id) {
+    return NextResponse.json({ error: "You cannot deactivate yourself" }, { status: 400 });
+  }
+
   // Soft-delete: set isActive = false
   const user = await prisma.user.update({
     where: { id },

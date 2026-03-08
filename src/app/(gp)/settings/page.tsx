@@ -59,6 +59,11 @@ export default function SettingsPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", name: "", role: "GP_TEAM" });
 
+  // Edit user modal state
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editUserForm, setEditUserForm] = useState({ name: "", role: "GP_TEAM", isActive: true });
+  const [savingUser, setSavingUser] = useState(false);
+
   // Decision structure state
   const [showCreateStructure, setShowCreateStructure] = useState(false);
   const [creatingStructure, setCreatingStructure] = useState(false);
@@ -133,6 +138,59 @@ export default function SettingsPage() {
       toast.error("Failed to invite user");
     } finally {
       setInviting(false);
+    }
+  }
+
+  function startEditUser(u: User) {
+    setEditUserForm({ name: u.name, role: u.role, isActive: u.isActive });
+    setEditingUser(u);
+  }
+
+  async function handleUpdateUser() {
+    if (!editingUser) return;
+    setSavingUser(true);
+    try {
+      const res = await fetch(`/api/users/${editingUser.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editUserForm),
+      });
+      if (res.ok) {
+        toast.success(`Updated ${editUserForm.name}`);
+        setEditingUser(null);
+        mutate("/api/users");
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to update user";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to update user");
+    } finally {
+      setSavingUser(false);
+    }
+  }
+
+  async function handleDeactivateUser(u: User) {
+    const action = u.isActive ? "deactivate" : "reactivate";
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${u.name}?`)) return;
+    try {
+      const res = await fetch(`/api/users/${u.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !u.isActive }),
+      });
+      if (res.ok) {
+        toast.success(`${u.name} ${action}d`);
+        setEditingUser(null);
+        mutate("/api/users");
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : `Failed to ${action} user`;
+        toast.error(msg);
+      }
+    } catch {
+      toast.error(`Failed to ${action} user`);
     }
   }
 
@@ -367,7 +425,15 @@ export default function SettingsPage() {
                   </td>
                   <td className="px-3 py-2.5 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td className="px-3 py-2.5">
-                    <button className="text-indigo-600 hover:underline text-xs">Edit</button>
+                    <div className="flex gap-2">
+                      <button className="text-indigo-600 hover:underline text-xs" onClick={() => startEditUser(u)}>Edit</button>
+                      <button
+                        className={`hover:underline text-xs ${u.isActive ? "text-red-600" : "text-green-600"}`}
+                        onClick={() => handleDeactivateUser(u)}
+                      >
+                        {u.isActive ? "Deactivate" : "Reactivate"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -752,6 +818,61 @@ export default function SettingsPage() {
             <Button variant="secondary" onClick={() => setShowInvite(false)}>Cancel</Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit User Modal */}
+      <Modal open={!!editingUser} onClose={() => setEditingUser(null)} title="Edit User">
+        {editingUser && (
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Update this team member&apos;s details. Role changes take effect immediately.
+            </p>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Name</label>
+              <Input
+                value={editUserForm.name}
+                onChange={(e) => setEditUserForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
+              <div className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                {editingUser.email}
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1">Email cannot be changed — it&apos;s linked to their login.</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Role</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                value={editUserForm.role}
+                onChange={(e) => setEditUserForm((f) => ({ ...f, role: e.target.value }))}
+              >
+                <option value="GP_ADMIN">GP Admin</option>
+                <option value="GP_TEAM">GP Team</option>
+                <option value="LP_INVESTOR">LP Investor</option>
+                <option value="SERVICE_PROVIDER">Service Provider</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
+              <select
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                value={editUserForm.isActive ? "active" : "inactive"}
+                onChange={(e) => setEditUserForm((f) => ({ ...f, isActive: e.target.value === "active" }))}
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleUpdateUser} loading={savingUser} disabled={!editUserForm.name}>
+                Save Changes
+              </Button>
+              <Button variant="secondary" onClick={() => setEditingUser(null)}>Cancel</Button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Create Decision Structure Modal */}
