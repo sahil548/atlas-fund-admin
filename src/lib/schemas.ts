@@ -744,6 +744,15 @@ export const UpdateNotificationPreferencesSchema = z.object({
   }).optional(),
 });
 
+// ── Reports ────────────────────────────────────────
+
+export const GenerateReportSchema = z.object({
+  entityId: z.string().min(1, "Entity ID is required"),
+  reportType: z.enum(["QUARTERLY", "CAPITAL_ACCOUNT_STATEMENT", "FUND_SUMMARY"]),
+  period: z.string().optional(), // e.g. "Q4 2025" or "2025"
+  investorId: z.string().optional(), // for investor-specific capital account statement
+});
+
 // ── Audit Log ────────────────────────────────────────
 
 export const AuditLogQuerySchema = z.object({
