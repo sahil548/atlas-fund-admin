@@ -263,19 +263,21 @@ Plans:
 **Requirements:** CORE-02, CORE-03, REPORT-01, REPORT-02, REPORT-05, FIN-07, FIN-10
 
 **Success Criteria:**
-- [ ] LP document center (`lp-documents/page.tsx`) renders download link for each document with `fileUrl`
-- [ ] `isGPAPIRoute` in `middleware.ts` includes `/api/k1`, `/api/esignature`, `/api/side-letters`, `/api/commitments`, `/api/docusign/connect|disconnect|status`
-- [ ] Entity detail page has a "Calculate Fees" button that POSTs to `/api/fees/calculate`
-- [ ] Entity detail page surfaces entity-level performance attribution from `/api/entities/[id]/attribution`
-- [ ] Build passes with zero errors
+- [x] LP document center (`lp-documents/page.tsx`) renders download link for each document with `fileUrl`
+- [x] `isGPAPIRoute` in `middleware.ts` includes `/api/k1`, `/api/esignature`, `/api/side-letters`, `/api/commitments`, `/api/docusign/connect|disconnect|status`
+- [x] Entity detail page has a "Calculate Fees" button that POSTs to `/api/fees/calculate`
+- [x] Entity detail page surfaces entity-level performance attribution from `/api/entities/[id]/attribution`
+- [x] Build passes with zero errors
+- [ ] REQUIREMENTS.md notes for REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03 accurately reflect implemented state
 
-**Plans:** 2/2 plans complete
+**Plans:** 3 plans (2 executed, 1 gap closure)
 
 Plans:
-- [ ] 10-01-PLAN.md — Wave 1: LP document download link + middleware GP route coverage (REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03)
-- [ ] 10-02-PLAN.md — Wave 1: Fee calculation UI button + entity attribution table on entity detail (FIN-07, FIN-10)
+- [x] 10-01-PLAN.md — Wave 1: LP document download link + middleware GP route coverage (REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03)
+- [x] 10-02-PLAN.md — Wave 1: Fee calculation UI button + entity attribution table on entity detail (FIN-07, FIN-10)
+- [ ] 10-03-PLAN.md — Wave 1: Requirements traceability update — correct REPORT-01/02/05 and CORE-02/03 notes to reflect actual implemented state (REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03)
 
-**Progress:** 0/2 plans complete
+**Progress:** 2/3 plans complete
 
 ---
 
