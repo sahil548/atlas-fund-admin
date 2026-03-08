@@ -90,6 +90,8 @@ enum NotificationType {
   TASK_ASSIGNED
   CLOSING_UPDATE
   GENERAL
+  DISTRIBUTION
+  REPORT
 }
 
 // DealCategory removed — deals now use AssetClass + CapitalInstrument + ParticipationStructure
@@ -331,6 +333,7 @@ model Firm {
   aiPromptTemplates AIPromptTemplate[]
   decisionStructures DecisionStructure[]
   auditLogs  AuditLog[]
+  integrationConnections IntegrationConnection[]
 }
 
 model AIConfiguration {
@@ -1596,6 +1599,22 @@ model ESignaturePackage {
 }
 
 // ============================================================
+// DOCUSIGN INTEGRATION
+// ============================================================
+
+model DocuSignConnection {
+  id           String   @id @default(cuid())
+  firmId       String   @unique
+  accessToken  String
+  refreshToken String
+  tokenExpiry  DateTime
+  accountId    String   // DocuSign account ID
+  baseUri      String   // API base URI from /oauth/userinfo
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================
 // FUNDRAISING
 // ============================================================
 
@@ -1746,6 +1765,49 @@ model AuditLog {
   @@index([userId])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+// ============================================================
+// THIRD-PARTY INTEGRATIONS (Phase 7)
+// ============================================================
+
+model IntegrationConnection {
+  id                  String    @id @default(cuid())
+  firmId              String
+  provider            String    // "asana" | "notion" | "google_calendar" | "plaid"
+  entityId            String?   // for per-entity integrations (Plaid)
+  accessToken         String
+  refreshToken        String?
+  tokenExpiry         DateTime?
+  externalAccountId   String?   // provider-specific account/workspace ID
+  metadata            Json?     // provider-specific config (workspace ID, project ID, etc.)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  firm                Firm      @relation(fields: [firmId], references: [id])
+  plaidAccounts       PlaidAccount[]
+
+  @@unique([firmId, provider, entityId])
+  @@index([firmId])
+}
+
+model PlaidAccount {
+  id               String   @id @default(cuid())
+  connectionId     String
+  accountId        String   // Plaid account_id
+  name             String
+  type             String   // checking, savings, etc.
+  subtype          String?
+  currentBalance   Float?
+  availableBalance Float?
+  lastSynced       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  connection       IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, accountId])
+  @@index([connectionId])
 }
 
 // ============================================================

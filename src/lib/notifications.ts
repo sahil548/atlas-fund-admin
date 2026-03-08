@@ -1,20 +1,37 @@
 import { prisma } from "@/lib/prisma";
 
-type NotificationType = "STAGE_CHANGE" | "IC_VOTE" | "DOCUMENT_UPLOAD" | "CAPITAL_CALL" | "TASK_ASSIGNED" | "CLOSING_UPDATE" | "GENERAL";
+export type NotificationType =
+  | "STAGE_CHANGE"
+  | "IC_VOTE"
+  | "DOCUMENT_UPLOAD"
+  | "CAPITAL_CALL"
+  | "TASK_ASSIGNED"
+  | "CLOSING_UPDATE"
+  | "GENERAL"
+  | "DISTRIBUTION"
+  | "REPORT";
 
 export async function createNotification({
   userId,
+  investorId,
   type,
   subject,
   body,
 }: {
   userId: string;
+  investorId?: string;
   type: NotificationType;
   subject: string;
   body?: string;
 }) {
   return prisma.notification.create({
-    data: { userId, type, subject, body },
+    data: {
+      userId,
+      ...(investorId ? { investorId } : {}),
+      type,
+      subject,
+      body,
+    },
   });
 }
 
