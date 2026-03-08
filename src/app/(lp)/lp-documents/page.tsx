@@ -61,6 +61,7 @@ export default function LPDocumentsPage() {
           category: string;
           uploadDate: string;
           fileSize: number | null;
+          fileUrl: string;
           entity: { name: string } | null;
         }) => (
           <div key={doc.id} className="flex items-center justify-between py-3">
@@ -76,9 +77,21 @@ export default function LPDocumentsPage() {
                 </div>
               </div>
             </div>
-            <Badge color={categoryColor[doc.category] || "gray"}>
-              {doc.category?.toLowerCase() || "other"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge color={categoryColor[doc.category] || "gray"}>
+                {doc.category?.toLowerCase() || "other"}
+              </Badge>
+              {doc.fileUrl && (
+                <a
+                  href={doc.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                >
+                  &#8595; Download
+                </a>
+              )}
+            </div>
           </div>
         ))}
       </div>
