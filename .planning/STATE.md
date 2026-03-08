@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: none — all phases complete
-status: milestone_complete
-stopped_at: Phase 7 verified (12/12 must-haves) — Milestone 1 (GP Production Ready) complete
-last_updated: "2026-03-08T06:30:00.000Z"
+current_plan: none — all plans complete
+status: unknown
+stopped_at: Completed 08-01-PLAN.md — GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on 12 API routes
+last_updated: "2026-03-08T07:23:36.928Z"
 progress:
-  total_phases: 7
+  total_phases: 9
   completed_phases: 7
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 33
+  completed_plans: 30
 ---
 
 # Atlas — GSD State
@@ -56,6 +56,7 @@ progress:
 | Phase 07 P06 | 14min | 2 tasks | 21 files |
 | 07    | 01   | 15min    | 2     | 9     |
 | Phase 07 P04 | 15min | 2 tasks | 5 files |
+| Phase 08 P01 | 5min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -306,8 +307,11 @@ progress:
 - **2026-03-08 (07-06):** Plaid uses official SDK for Link Token (required by Plaid API); Asana/Notion/GCal use raw fetch (consistent with QBO provider pattern)
 - **2026-03-08 (07-06):** Task model has no firmId — scoped to firm via entity relation chain (firm -> entities -> tasks via entityId)
 - **2026-03-08 (07-06):** Sync routes return counts not full data — bidirectional import is UI-driven for user control, not auto-created in Atlas
+- **2026-03-08 (08-01):** AUTH_USER_SELECT extended with entityAccess and accessExpiresAt — cascades automatically to all getAuthUser() callers; no migration needed (fields already in schema)
+- **2026-03-08 (08-01):** SERVICE_PROVIDER entity-scope filter replaces firmId where clause on capital-calls/distributions list routes — entity.id filter is more restrictive and correct
+- **2026-03-08 (08-01):** SERVICE_PROVIDER accessExpiresAt check on entities routes: expired access returns 403 before entity query executes
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T06:17:44.690Z
-- **Stopped at:** Completed 07-04-PLAN.md — K-1 bulk upload API, K-1 distribution UI on /reports, LP notifications on report generation
+- **Last session:** 2026-03-08T07:23:36.925Z
+- **Stopped at:** Completed 08-01-PLAN.md — GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on 12 API routes
