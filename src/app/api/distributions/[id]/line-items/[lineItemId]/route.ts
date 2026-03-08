@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateDistributionLineItemSchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 export async function PATCH(
   req: Request,
@@ -18,6 +19,12 @@ export async function PATCH(
 
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
+
+    // GP_TEAM permission check
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "full")) return forbidden();
+    }
 
     // Verify access via parent distribution
     const distribution = await prisma.distributionEvent.findFirst({

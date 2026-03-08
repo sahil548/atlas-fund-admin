@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateEntitySchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 
 export async function GET(
@@ -10,6 +11,22 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const authUser = await getAuthUser();
+
+  // GP_TEAM permission check (only when authenticated)
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "entities", "read_only")) return forbidden();
+  }
+
+  // SERVICE_PROVIDER entity-scope: check access expiry and entity membership
+  if (authUser && authUser.role === "SERVICE_PROVIDER") {
+    if (authUser.accessExpiresAt && new Date(authUser.accessExpiresAt) < new Date()) {
+      return forbidden();
+    }
+    if (!authUser.entityAccess.includes(id)) return forbidden();
+  }
+
   const entity = await prisma.entity.findUnique({
     where: { id },
     include: {
@@ -39,6 +56,21 @@ export async function GET(
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const authUser = await getAuthUser();
+
+  // GP_TEAM permission check
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "entities", "full")) return forbidden();
+  }
+
+  // SERVICE_PROVIDER entity-scope: check entity membership
+  if (authUser && authUser.role === "SERVICE_PROVIDER") {
+    if (authUser.accessExpiresAt && new Date(authUser.accessExpiresAt) < new Date()) {
+      return forbidden();
+    }
+    if (!authUser.entityAccess.includes(id)) return forbidden();
+  }
+
   const { data, error } = await parseBody(req, UpdateEntitySchema);
   if (error) return error;
   const { investmentPeriodEnd, ...rest } = data!;
@@ -61,6 +93,14 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const authUserForPatch = await getAuthUser();
+
+  // GP_TEAM permission check
+  if (authUserForPatch && authUserForPatch.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUserForPatch.id);
+    if (!checkPermission(perms, "entities", "full")) return forbidden();
+  }
+
   const body = await req.json();
 
   if (body.action === "MARK_FORMED") {

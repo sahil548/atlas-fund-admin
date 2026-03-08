@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateCapitalCallSchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 
 export async function GET() {
@@ -10,8 +11,20 @@ export async function GET() {
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
 
+    // GP_TEAM permission check (only when authenticated)
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "read_only")) return forbidden();
+    }
+
+    // Build base where clause with firm scoping and SERVICE_PROVIDER entity-scope
+    let baseWhere: Record<string, unknown> = firmId ? { entity: { firmId } } : {};
+    if (authUser && authUser.role === "SERVICE_PROVIDER") {
+      baseWhere = { entity: { id: { in: authUser.entityAccess } } };
+    }
+
     const calls = await prisma.capitalCall.findMany({
-      where: firmId ? { entity: { firmId } } : {},
+      where: baseWhere,
       include: {
         entity: { select: { id: true, name: true } },
         lineItems: { include: { investor: true } },
@@ -30,6 +43,14 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const authUserPost = await getAuthUser();
+    if (!authUserPost) return unauthorized();
+
+    if (authUserPost.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUserPost.id);
+      if (!checkPermission(perms, "capital_activity", "full")) return forbidden();
+    }
+
     const { data, error } = await parseBody(req, CreateCapitalCallSchema);
     if (error) return error;
 

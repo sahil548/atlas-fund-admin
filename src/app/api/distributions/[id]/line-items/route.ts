@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDistributionLineItemSchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 export async function GET(
   _req: Request,
@@ -12,6 +13,12 @@ export async function GET(
     const { id } = await params;
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
+
+    // GP_TEAM permission check (only when authenticated)
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "read_only")) return forbidden();
+    }
 
     // Verify access
     const distribution = await prisma.distributionEvent.findFirst({
@@ -54,6 +61,12 @@ export async function POST(
 
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
+
+    // GP_TEAM permission check
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "full")) return forbidden();
+    }
 
     // Verify access
     const distribution = await prisma.distributionEvent.findFirst({

@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateEntitySchema } from "@/lib/schemas";
-import { getAuthUser, unauthorized } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
 
@@ -10,12 +11,30 @@ export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
 
+  // GP_TEAM permission check (only when authenticated)
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "entities", "read_only")) return forbidden();
+  }
+
+  // SERVICE_PROVIDER access expiry check
+  if (authUser && authUser.role === "SERVICE_PROVIDER") {
+    if (authUser.accessExpiresAt && new Date(authUser.accessExpiresAt) < new Date()) {
+      return forbidden();
+    }
+  }
+
   const params = parsePaginationParams(req.nextUrl.searchParams, [
     "firmId", "cursor", "limit", "search", "entityType", "status", "vintage",
   ]);
 
   const baseWhere: Record<string, unknown> = {};
   if (firmId) baseWhere.firmId = firmId;
+
+  // SERVICE_PROVIDER entity-scope: restrict to entities in entityAccess
+  if (authUser && authUser.role === "SERVICE_PROVIDER") {
+    baseWhere.id = { in: authUser.entityAccess };
+  }
   if (params.filters?.entityType) baseWhere.entityType = params.filters.entityType;
   if (params.filters?.status) baseWhere.status = params.filters.status;
   if (params.filters?.vintage) baseWhere.vintageYear = parseInt(params.filters.vintage, 10);
@@ -74,6 +93,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
+
+  if (authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "entities", "full")) return forbidden();
+  }
 
   const { data, error } = await parseBody(req, CreateEntitySchema);
   if (error) return error;

@@ -2,13 +2,20 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateDealSchema } from "@/lib/schemas";
-import { getAuthUser, unauthorized } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
 
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
+
+  // GP_TEAM permission check (only when authenticated)
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "deals", "read_only")) return forbidden();
+  }
 
   const params = parsePaginationParams(req.nextUrl.searchParams, [
     "firmId", "cursor", "limit", "search", "stage", "assetClass", "dealLeadId",
@@ -125,6 +132,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: Request) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
+
+  if (authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "deals", "full")) return forbidden();
+  }
 
   const { data, error } = await parseBody(req, CreateDealSchema);
   if (error) return error;

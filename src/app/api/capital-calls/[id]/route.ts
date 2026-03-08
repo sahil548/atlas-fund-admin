@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateCapitalCallSchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnCapitalCall } from "@/lib/notification-delivery";
 
 // Valid forward-only status transitions
@@ -23,6 +24,12 @@ export async function GET(
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
 
+    // GP_TEAM permission check (only when authenticated)
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "read_only")) return forbidden();
+    }
+
     const call = await prisma.capitalCall.findFirst({
       where: firmId ? { id, entity: { firmId } } : { id },
       include: {
@@ -38,6 +45,11 @@ export async function GET(
 
     if (!call) {
       return NextResponse.json({ error: "Capital call not found" }, { status: 404 });
+    }
+
+    // SERVICE_PROVIDER entity-scope: check entity membership
+    if (authUser && authUser.role === "SERVICE_PROVIDER") {
+      if (!authUser.entityAccess.includes(call.entityId)) return forbidden();
     }
 
     // Compute summary stats
@@ -82,6 +94,12 @@ export async function PATCH(
 
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
+
+    // GP_TEAM permission check
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "full")) return forbidden();
+    }
 
     const existing = await prisma.capitalCall.findFirst({
       where: firmId ? { id, entity: { firmId } } : { id },

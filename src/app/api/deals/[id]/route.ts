@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateDealSchema, CloseDealSchema, KillDealSchema } from "@/lib/schemas";
 import { killDeal, reviveDeal, closeDeal, advanceToClosing } from "@/lib/deal-stage-engine";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 
 export async function GET(
@@ -11,6 +12,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const authUser = await getAuthUser();
+
+  // GP_TEAM permission check (only when authenticated)
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "deals", "read_only")) return forbidden();
+  }
+
   const deal = await prisma.deal.findUnique({
     where: { id },
     include: {
@@ -86,6 +95,14 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const authUserForPut = await getAuthUser();
+  if (!authUserForPut) return forbidden();
+
+  if (authUserForPut.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUserForPut.id);
+    if (!checkPermission(perms, "deals", "full")) return forbidden();
+  }
+
   const { data, error } = await parseBody(req, UpdateDealSchema);
   if (error) return error;
 
@@ -124,6 +141,11 @@ export async function PATCH(
   const body = await req.json();
 
   const authUser = await getAuthUser();
+
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "deals", "full")) return forbidden();
+  }
 
   if (body.action === "KILL") {
     const parsed = KillDealSchema.safeParse(body);
