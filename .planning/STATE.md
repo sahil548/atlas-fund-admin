@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: Not started
 status: unknown
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-08T06:00:56.931Z"
+stopped_at: Completed 07-05-PLAN.md
+last_updated: "2026-03-08T06:05:09.503Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 29
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # Atlas — GSD State
@@ -22,8 +22,8 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 6 of 7 (LP Portal) — IN PROGRESS
-- **Phase status:** Plan 01 complete — MetricSnapshot model + snapshot-on-compute + metrics-history API + Recharts time-series charts + quarterly period summaries
-- **Current Plan:** Not started
+- **Phase status:** Plan 05 complete — DocuSign OAuth + envelope creation + webhook + signed doc download + UI buttons
+- **Current Plan:** 05 complete (DocuSign integration)
 - **Active plan:** none
 
 ## Performance Metrics
@@ -50,6 +50,7 @@ progress:
 | Phase 06-lp-portal P02 | 3min | 2 tasks | 4 files |
 | Phase 06-lp-portal P01 | 25min | 2 tasks | 6 files |
 | Phase 07 P02 | 6min | 2 tasks | 14 files |
+| Phase 07 P05 | 10min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -175,6 +176,11 @@ progress:
 - **2026-03-07 (07-02):** SearchFilterBar renamed to FilterBar internally; SearchFilterBar alias kept for backward compat — zero call site changes needed
 - **2026-03-07 (07-02):** ExportButton uses children slot in FilterBar for GP list pages; LP pages get ExportButton directly in header area
 - **2026-03-07 (07-02):** xlsx XLSX.writeFile handles browser download internally — no manual blob/URL.createObjectURL needed
+- **2026-03-08 (07-05):** Raw fetch for DocuSign (no SDK) — mirrors QBO Phase 5 pattern; DocuSign SDK has no TypeScript types
+- **2026-03-08 (07-05):** DocuSignConnection stored at firm level (not entity) — DocuSign accounts are firm-wide, not per-entity
+- **2026-03-08 (07-05):** fileUrl support added to esignature POST — closing checklist items store fileUrl directly, not via Document model
+- **2026-03-08 (07-05):** Webhook returns 200 always — prevents DocuSign retry storms when package not found
+- **2026-03-08 (07-05):** Signed document stored as new Document record (category=LEGAL) — preserves original, adds signed version alongside
 
 ### Phase 5 Account Mapping + Trial Balance (Plan 05-02)
 - 4 API routes: chart-of-accounts (auto-detect + suggestFrom), mappings CRUD (delete+createMany upsert), sync (SYNCING lifecycle + TrialBalanceSnapshot upsert), trial-balance (bucket organization + list mode)
@@ -279,5 +285,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T06:00:56.927Z
-- **Stopped at:** Completed 07-02-PLAN.md
+- **Last session:** 2026-03-08T06:05:09.499Z
+- **Stopped at:** Completed 07-05-PLAN.md
