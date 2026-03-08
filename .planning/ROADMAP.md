@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** Phase 9 (gap closure)
+**Current phase:** Phase 8 (gap closure)
 **Total phases:** 9
 
 ---
@@ -222,10 +222,13 @@ Plans:
 - [ ] `/api/k1` GET has auth guard returning 401 when unauthenticated
 - [ ] Dev mock mode still functional (RBAC bypassed gracefully, not broken)
 
-Plans:
-- [ ] 08-01-PLAN.md — GP_TEAM permission enforcement + SERVICE_PROVIDER entity-scope + security fixes
+**Plans:** 2 plans
 
-**Progress:** 0/1 plans complete
+Plans:
+- [ ] 08-01-PLAN.md — Wave 1: AUTH_USER_SELECT extension + GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on deals, entities, capital-calls, distributions + unit tests (CORE-02, CORE-03)
+- [ ] 08-02-PLAN.md — Wave 2: GP_TEAM gates on investors, documents, settings, reports, k1 + notifications IDOR fix + K-1 auth guard + notification bell client fix (CORE-02, CORE-03)
+
+**Progress:** 0/2 plans complete
 
 ---
 
