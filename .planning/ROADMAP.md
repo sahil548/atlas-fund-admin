@@ -222,7 +222,7 @@ Plans:
 - [ ] `/api/k1` GET has auth guard returning 401 when unauthenticated
 - [ ] Dev mock mode still functional (RBAC bypassed gracefully, not broken)
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 08-01-PLAN.md — Wave 1: AUTH_USER_SELECT extension + GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on deals, entities, capital-calls, distributions + unit tests (CORE-02, CORE-03)

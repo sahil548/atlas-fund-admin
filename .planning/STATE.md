@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 current_plan: none — all plans complete
 status: unknown
-stopped_at: Completed 08-01-PLAN.md — GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on 12 API routes
-last_updated: "2026-03-08T07:23:36.928Z"
+stopped_at: Completed 08-02-PLAN.md — IDOR fix on notifications, GP_TEAM permission gates on 9 remaining API routes
+last_updated: "2026-03-08T07:31:40.368Z"
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 33
-  completed_plans: 30
+  completed_plans: 31
 ---
 
 # Atlas — GSD State
@@ -57,6 +57,7 @@ progress:
 | 07    | 01   | 15min    | 2     | 9     |
 | Phase 07 P04 | 15min | 2 tasks | 5 files |
 | Phase 08 P01 | 5min | 2 tasks | 13 files |
+| Phase 08 P02 | 5min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -310,8 +311,11 @@ progress:
 - **2026-03-08 (08-01):** AUTH_USER_SELECT extended with entityAccess and accessExpiresAt — cascades automatically to all getAuthUser() callers; no migration needed (fields already in schema)
 - **2026-03-08 (08-01):** SERVICE_PROVIDER entity-scope filter replaces firmId where clause on capital-calls/distributions list routes — entity.id filter is more restrictive and correct
 - **2026-03-08 (08-01):** SERVICE_PROVIDER accessExpiresAt check on entities routes: expired access returns 403 before entity query executes
+- **2026-03-08 (08-02):** markAllRead in notification-bell passes userId as path segment to PATCH /api/notifications/[id] — secondary IDOR noted, deferred (the [id] route treats MARK_ALL_READ with the id as userId for updateMany)
+- **2026-03-08 (08-02):** K-1 auth guard placed before try/catch — ensures unauthenticated requests return 401 not 500; authUser still accessible inside try via closure
+- **2026-03-08 (08-02):** documents/route.ts GET: firmId now prefers authUser.firmId over query param when authenticated — consistent with all other list routes
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T07:23:36.925Z
-- **Stopped at:** Completed 08-01-PLAN.md — GP_TEAM permission gates + SERVICE_PROVIDER entity-scope on 12 API routes
+- **Last session:** 2026-03-08T07:31:40.365Z
+- **Stopped at:** Completed 08-02-PLAN.md — IDOR fix on notifications, GP_TEAM permission gates on 9 remaining API routes
