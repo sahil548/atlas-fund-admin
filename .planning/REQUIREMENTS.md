@@ -61,7 +61,7 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | FIN-04 | TVPI / DPI / RVPI computation from real data | High | Fields exist on LP dashboard — unclear if computed or seeded |
 | FIN-05 | MOIC computation from cost basis and fair value | High | Some seeded, some derived — not consistently computed |
 | FIN-06 | Fee calculation engine (management fees, carried interest) | High | FeeCalculation model exists — data seeded, no computation logic found |
-| FIN-07 | Side letter rules applied per LP per entity | Medium | SideLetter model exists — no rule application logic |
+| FIN-07 | Side letter rules applied per LP per entity | Medium | PARTIAL (04-01): Rules stored + UI exists; `integrateSideLetterWithFeeCalc()` not called in fee API — reassigned to Phase 9 |
 | FIN-08 | Fund-level performance aggregation | Medium | **DONE (04-04):** Entity cards + portfolio aggregates show fund-level TVPI/DPI/RVPI/IRR computed from real funded capital calls + paid distributions + NAV |
 | FIN-09 | LP-level performance aggregation | Medium | **DONE (04-04):** LP comparison view shows all LPs with per-entity TVPI/DPI/RVPI/IRR computed via computeMetrics + xirr from real data |
 | FIN-10 | Deal-level performance attribution | Low | No implementation |
@@ -73,8 +73,8 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
 | CORE-01 | ~~Clerk auth replaces demo UserProvider~~ | ~~Critical~~ | **DONE — Clerk works in production. Mock for dev.** |
-| CORE-02 | Role-based access enforced per route (not just modeled) | High | UserRole enum exists, Clerk works — no middleware enforcement |
-| CORE-03 | Service provider scoped access (read-only, entity-specific, time-bound) | Medium | User.entityAccess[] field exists — no enforcement |
+| CORE-02 | Role-based access enforced per route (not just modeled) | High | PARTIAL (04-02): Middleware blocks LP/SERVICE_PROVIDER; GP_TEAM fine-grained perms stored but `getEffectivePermissions()` not called in API routes — reassigned to Phase 8 |
+| CORE-03 | Service provider scoped access (read-only, entity-specific, time-bound) | Medium | PARTIAL (04-02): Entity-access stored + middleware write-block; per-route entity-scope check not enforced — reassigned to Phase 8 |
 | CORE-04 | Pagination on all data lists | Medium | No pagination — all records loaded at once |
 | CORE-05 | Error boundaries to prevent full-page crashes | Medium | No error boundaries anywhere |
 | CORE-06 | API rate limiting on AI endpoints | Medium | No rate limiting |
@@ -155,9 +155,11 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | 1: Verify & Stabilize | VERIFY-01, VERIFY-02, VERIFY-03, VERIFY-04, VERIFY-05, BUG-01, BUG-02, BUG-03 |
 | 2: Deal Desk End-to-End | DEAL-01, DEAL-02, DEAL-03, DEAL-04, DEAL-05, DEAL-06, DEAL-07, DEAL-08, DEAL-09, DEAL-10, ASSET-01 |
 | 3: Capital Activity | FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06 |
-| 4: Asset & Entity Polish | FIN-07, FIN-08, FIN-09, FIN-10, ASSET-02, CORE-02, CORE-03, CORE-04, CORE-05, CORE-06 |
+| 4: Asset & Entity Polish | FIN-08, FIN-09, FIN-10, ASSET-02, CORE-04, CORE-05, CORE-06 |
 | 5: QBO/Xero Integration | ACCT-01, ACCT-02, ACCT-03, ACCT-04, ACCT-05, ASSET-03 |
 | 6: LP Portal | LP-01, LP-02, LP-03 |
 | 7: Notifications & Reports | NOTIF-01, NOTIF-02, NOTIF-03, INTEG-01, INTEG-02, REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, INTEG-03, INTEG-04, INTEG-05, INTEG-06 |
+| 8: Auth & Permissions Hardening | CORE-02, CORE-03 |
+| 9: Financial Wiring & Polish | FIN-07, NOTIF-03 |
 
-**Coverage check:** All requirements mapped to a phase. CORE-01 is DONE (not in any phase). Zero orphans.
+**Coverage check:** All requirements mapped to a phase. CORE-01 is DONE (not in any phase). Gap closure phases 8-9 reassign partial requirements from Phase 4/7. Zero orphans.

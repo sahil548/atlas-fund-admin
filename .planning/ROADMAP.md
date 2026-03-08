@@ -7,7 +7,8 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** ALL PHASES COMPLETE — Milestone 1 ready for audit
+**Current phase:** Phase 8 (gap closure)
+**Total phases:** 9
 
 ---
 
@@ -205,4 +206,48 @@ Plans:
 
 ---
 
-**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Zero orphans.
+---
+
+## Phase 8: Auth & Permissions Hardening
+
+**Goal:** Close RBAC enforcement gaps found in v1.0 audit. Wire `getEffectivePermissions()` into GP API routes for GP_TEAM fine-grained access. Add entity-scope checks for SERVICE_PROVIDER. Fix security issues in notification and K-1 endpoints.
+
+**Gap Closure:** Closes gaps from v1.0-MILESTONE-AUDIT.md
+**Requirements:** CORE-02, CORE-03
+
+**Success Criteria:**
+- [ ] `getEffectivePermissions()` called in GP API route handlers for deals, entities, capital_activity, investors, documents, settings, reports
+- [ ] SERVICE_PROVIDER entity-scope checked per-route (not just middleware write-block)
+- [ ] `/api/notifications` GET uses session userId instead of query param (IDOR fix)
+- [ ] `/api/k1` GET has auth guard returning 401 when unauthenticated
+- [ ] Dev mock mode still functional (RBAC bypassed gracefully, not broken)
+
+Plans:
+- [ ] 08-01-PLAN.md — GP_TEAM permission enforcement + SERVICE_PROVIDER entity-scope + security fixes
+
+**Progress:** 0/1 plans complete
+
+---
+
+## Phase 9: Financial Wiring & Polish
+
+**Goal:** Close remaining financial computation wiring gaps and cosmetic tech debt. Wire side letter engine into fee calculation. Enforce LP digest preferences in notification delivery. Clean up minor code quality issues across phases.
+
+**Gap Closure:** Closes gaps from v1.0-MILESTONE-AUDIT.md
+**Requirements:** FIN-07, NOTIF-03
+
+**Success Criteria:**
+- [ ] `integrateSideLetterWithFeeCalc()` called in `/api/fees/calculate` — LP-specific side letter discounts applied to fee output
+- [ ] `deliverNotification()` reads `digestPreference` and queues DAILY_DIGEST/WEEKLY_DIGEST notifications instead of immediate dispatch
+- [ ] Plaid entity detail balance card shows live bank data when Plaid connected
+- [ ] waterfall.test.ts TypeScript error fixed
+- [ ] eslint-disable any-type workarounds cleaned up where possible (deal tabs, Recharts)
+
+Plans:
+- [ ] 09-01-PLAN.md — Side letter fee wiring + digest preference enforcement + Plaid card + code cleanup
+
+**Progress:** 0/1 plans complete
+
+---
+
+**Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Gap closure phases 8-9 address partial requirements from audit. Zero orphans.
