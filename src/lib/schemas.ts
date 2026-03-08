@@ -730,6 +730,20 @@ export const UpdateEntityAccessSchema = z.object({
   entityIds: z.array(z.string()).min(0),
 });
 
+// ── Notification Preferences ─────────────────────────
+
+export const UpdateNotificationPreferencesSchema = z.object({
+  preferredChannel: z.enum(["EMAIL", "SMS", "PORTAL_ONLY"]).optional(),
+  emailAddress: z.string().email().nullable().optional(),
+  phoneNumber: z.string().min(10).nullable().optional(),
+  digestPreference: z.enum(["IMMEDIATE", "DAILY_DIGEST", "WEEKLY_DIGEST"]).optional(),
+  notificationTypes: z.object({
+    capitalActivity: z.boolean().default(true),    // capital calls issued, distributions paid
+    reports: z.boolean().default(true),             // quarterly reports, K-1 ready
+    portfolio: z.boolean().default(true),           // NAV updates, valuation changes, new deal closes
+  }).optional(),
+});
+
 // ── Audit Log ────────────────────────────────────────
 
 export const AuditLogQuerySchema = z.object({
