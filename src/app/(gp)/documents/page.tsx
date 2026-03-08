@@ -13,6 +13,7 @@ import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
+import { DocuSignSend } from "@/components/features/documents/docusign-send";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -220,7 +221,7 @@ export default function DocumentsPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Document", "Category", "Associated With", "Upload Date", "Size"].map((h) => (
+                {["Document", "Category", "Associated With", "Upload Date", "Size", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -252,6 +253,16 @@ export default function DocumentsPage() {
                     </td>
                     <td className="px-3 py-2.5 text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</td>
                     <td className="px-3 py-2.5 text-gray-500">{d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "\u2014"}</td>
+                    <td className="px-3 py-2.5">
+                      {d.fileUrl && (
+                        <DocuSignSend
+                          documentId={d.id}
+                          documentName={d.name}
+                          dealId={d.deal?.id}
+                          entityId={d.entity?.id}
+                        />
+                      )}
+                    </td>
                   </tr>
                 );
               })}

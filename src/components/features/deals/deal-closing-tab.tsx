@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { DocuSignButton } from "@/components/features/deals/docusign-button";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -332,24 +333,32 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
                     <div>
                       <label className="text-[10px] font-semibold text-gray-500 uppercase block mb-1">Attachment</label>
                       {item.fileUrl ? (
-                        <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
-                          <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                          </svg>
-                          <a
-                            href={item.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-700 hover:underline font-medium flex-1 truncate"
-                          >
-                            {item.fileName || "Attached file"}
-                          </a>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleRemoveFile(item.id); }}
-                            className="text-xs text-red-500 hover:text-red-700 font-medium flex-shrink-0"
-                          >
-                            Remove
-                          </button>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
+                            <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
+                            <a
+                              href={item.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-700 hover:underline font-medium flex-1 truncate"
+                            >
+                              {item.fileName || "Attached file"}
+                            </a>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRemoveFile(item.id); }}
+                              className="text-xs text-red-500 hover:text-red-700 font-medium flex-shrink-0"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          {/* Send for Signature button when document is attached */}
+                          <DocuSignButton
+                            fileUrl={item.fileUrl}
+                            documentName={item.fileName || item.title}
+                            dealId={deal.id}
+                          />
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
