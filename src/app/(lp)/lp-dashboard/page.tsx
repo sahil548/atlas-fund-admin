@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { fmt } from "@/lib/utils";
 import { useInvestor } from "@/components/providers/investor-provider";
+import { PerformanceCharts } from "@/components/features/lp/performance-charts";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -62,6 +63,8 @@ export default function LPDashboardPage() {
           </div>
         ))}
       </div>
+
+      <PerformanceCharts investorId={investorId} />
     </div>
   );
 }
