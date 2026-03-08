@@ -269,7 +269,7 @@ Plans:
 - [ ] Entity detail page surfaces entity-level performance attribution from `/api/entities/[id]/attribution`
 - [ ] Build passes with zero errors
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 10-01-PLAN.md — Wave 1: LP document download link + middleware GP route coverage (REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03)
