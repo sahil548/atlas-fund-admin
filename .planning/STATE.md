@@ -322,6 +322,9 @@ progress:
 - **2026-03-08 (09-01):** Side letter integration failure wrapped in try/catch — base fee result always returned even if side letter DB query fails (non-fatal)
 - **2026-03-08 (09-01):** Digest check placed after in-app notification creation — DAILY/WEEKLY_DIGEST investors receive in-app bell notification but no immediate email/SMS
 - **2026-03-08 (09-01):** Full batch digest processor (cron job) is out of scope — this plan ensures skip of immediate dispatch; digest emails are a future enhancement
+- **2026-03-08 (10-01):** Download anchor renders conditionally only when doc.fileUrl is non-empty — avoids broken href on documents with empty fileUrl string
+- **2026-03-08 (10-01):** /api/docusign/callback and /api/docusign/webhook kept in isPublicRoute (not isGPAPIRoute) — called by DocuSign servers, must remain public
+- **2026-03-08 (10-01):** After adding new GP API routes in a phase, always append them to isGPAPIRoute in middleware.ts before closing the phase
 - **2026-03-08 (10-02):** Fee calculation uses fire-and-shoot POST with local useState — no SWR mutation needed since result is transient display only
 - **2026-03-08 (10-02):** Attribution table guards on attributionData truthy (not isLoading) — attribution is supplemental, not blocking page load
 - **2026-03-08 (10-02):** feeResult state cleared on each new calculation attempt to avoid showing stale data
