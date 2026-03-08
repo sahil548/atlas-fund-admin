@@ -14,6 +14,7 @@ import { CreateTemplateForm } from "@/components/features/waterfall/create-templ
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { useToast } from "@/components/ui/toast";
+import { EntityAccountingTab } from "@/components/features/accounting/entity-accounting-tab";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -29,6 +30,7 @@ const baseTabs = [
   { key: "documents", label: "Documents" },
   { key: "fundraising", label: "Fundraising" },
   { key: "regulatory", label: "Regulatory" },
+  { key: "accounting", label: "Accounting" },
 ];
 
 interface Tier { id: string; tierOrder: number; name: string; description?: string; splitLP?: number; splitGP?: number; hurdleRate?: number; appliesTo?: string }
@@ -976,6 +978,23 @@ export default function EntityDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Accounting Tab */}
+      {tab === "accounting" && (
+        <EntityAccountingTab
+          entityId={e.id}
+          entityName={e.name}
+          connection={e.accountingConnection ? {
+            id: e.accountingConnection.id,
+            provider: e.accountingConnection.provider,
+            syncStatus: e.accountingConnection.syncStatus,
+            lastSyncAt: e.accountingConnection.lastSyncAt,
+            chartOfAccountsMapped: e.accountingConnection.chartOfAccountsMapped,
+            lastSyncError: e.accountingConnection.lastSyncError,
+            providerCompanyName: e.accountingConnection.providerCompanyName,
+          } : null}
+        />
       )}
 
       {/* Modals */}
