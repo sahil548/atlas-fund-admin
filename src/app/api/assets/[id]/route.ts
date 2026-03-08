@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateAssetSchema } from "@/lib/schemas";
+import { Prisma } from "@prisma/client";
 
 export async function GET(
   _req: Request,
@@ -66,6 +67,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { data, error } = await parseBody(req, UpdateAssetSchema);
   if (error) return error;
-  const asset = await prisma.asset.update({ where: { id }, data: data! });
+  const { projectedMetrics, ...rest } = data!;
+  const asset = await prisma.asset.update({
+    where: { id },
+    data: {
+      ...rest,
+      ...(projectedMetrics !== undefined
+        ? { projectedMetrics: projectedMetrics as Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput }
+        : {}),
+    },
+  });
   return NextResponse.json(asset);
 }

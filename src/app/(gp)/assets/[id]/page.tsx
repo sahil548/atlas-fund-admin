@@ -13,6 +13,7 @@ import { UploadDocumentForm } from "@/components/features/assets/upload-document
 import { LogIncomeForm } from "@/components/features/assets/log-income-form";
 import { AssetDealIntelligence } from "@/components/features/assets/asset-deal-intelligence";
 import { AssetOriginatedFrom } from "@/components/features/assets/asset-originated-from";
+import { AssetPerformanceTab } from "@/components/features/assets/asset-performance-tab";
 import { fmt, pct, cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -63,7 +64,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   if (a.equityDetails) allTabs.push("equity");
   if (a.fundLPDetails) allTabs.push("fund");
   if (deal) allTabs.push("deal intel");
-  allTabs.push("valuation", "documents", "meetings", "tasks", "governance");
+  allTabs.push("performance", "valuation", "documents", "meetings", "tasks", "governance");
 
   return (
     <div className="space-y-4">
@@ -617,6 +618,11 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       {/* Deal Intelligence Tab */}
       {tab === "deal intel" && deal && (
         <AssetDealIntelligence deal={deal} asset={a} />
+      )}
+
+      {/* Performance Tab */}
+      {tab === "performance" && (
+        <AssetPerformanceTab assetId={a.id} />
       )}
 
       {/* Governance Tab */}
