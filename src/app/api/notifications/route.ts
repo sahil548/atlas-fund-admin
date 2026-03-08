@@ -2,18 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationType } from "@prisma/client";
 import { getAuthUser, unauthorized } from "@/lib/auth";
-
-const VALID_TYPES = new Set<string>([
-  "STAGE_CHANGE",
-  "IC_VOTE",
-  "DOCUMENT_UPLOAD",
-  "CAPITAL_CALL",
-  "TASK_ASSIGNED",
-  "CLOSING_UPDATE",
-  "GENERAL",
-  "DISTRIBUTION",
-  "REPORT",
-]);
+import { VALID_TYPES } from "@/lib/notification-types";
 
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
