@@ -140,12 +140,18 @@ export async function POST(req: Request) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      // Upload to Vercel Blob
+      // Upload to Vercel Blob (or local fallback)
       const blobPath = `k1/${entityId}/${taxYear}/${file.name}`;
-      const { url: blobUrl } = await put(blobPath, buffer, {
-        access: "public",
-        contentType: "application/pdf",
-      });
+      let blobUrl: string;
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const blob = await put(blobPath, buffer, {
+          access: "public",
+          contentType: "application/pdf",
+        });
+        blobUrl = blob.url;
+      } else {
+        blobUrl = `data:application/pdf;base64,${buffer.toString("base64")}`;
+      }
 
       // Try to match investor by filename
       const extractedName = extractInvestorNameFromFilename(file.name);

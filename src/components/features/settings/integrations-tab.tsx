@@ -141,10 +141,11 @@ export function IntegrationsTab({ firmId }: IntegrationsTabProps) {
   );
 
   // Fetch entities for Plaid per-entity selector
-  const { data: entities } = useSWR<Entity[]>(
+  const { data: entitiesRes } = useSWR<{ data: Entity[] }>(
     firmId ? `/api/entities?firmId=${firmId}` : null,
     fetcher
   );
+  const entities = entitiesRes?.data;
 
   // Sync state per provider
   const [syncing, setSyncing] = useState<Record<string, boolean>>({});

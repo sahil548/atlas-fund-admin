@@ -340,14 +340,27 @@ export async function POST(req: Request) {
       documentCategory = "REPORT";
     }
 
-    // ── Store to Vercel Blob ────────────────────────────────────
+    // ── Store to Vercel Blob (or local fallback) ───────────────
     const safePeriod = periodLabel.replace(/[^a-zA-Z0-9-_]/g, "_");
     const filename = `reports/${entityId}/${reportType}_${safePeriod}_${Date.now()}.pdf`;
 
-    const { url: fileUrl } = await put(filename, pdfBuffer, {
-      access: "public",
-      contentType: "application/pdf",
-    });
+    let fileUrl: string;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(filename, pdfBuffer, {
+        access: "public",
+        contentType: "application/pdf",
+      });
+      fileUrl = blob.url;
+    } else {
+      // Local dev fallback: write to /tmp and serve as data URL
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dir = path.join("/tmp", "atlas-reports", entityId);
+      await fs.mkdir(dir, { recursive: true });
+      const filePath = path.join(dir, `${reportType}_${safePeriod}_${Date.now()}.pdf`);
+      await fs.writeFile(filePath, pdfBuffer);
+      fileUrl = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+    }
 
     // ── Create Document record ──────────────────────────────────
     const doc = await prisma.document.create({
