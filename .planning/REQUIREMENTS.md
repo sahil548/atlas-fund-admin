@@ -62,8 +62,8 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | FIN-05 | MOIC computation from cost basis and fair value | High | Some seeded, some derived — not consistently computed |
 | FIN-06 | Fee calculation engine (management fees, carried interest) | High | FeeCalculation model exists — data seeded, no computation logic found |
 | FIN-07 | Side letter rules applied per LP per entity | Medium | SideLetter model exists — no rule application logic |
-| FIN-08 | Fund-level performance aggregation | Medium | LP dashboard shows metrics — unclear if computed |
-| FIN-09 | LP-level performance aggregation | Medium | Displayed — unclear if computed |
+| FIN-08 | Fund-level performance aggregation | Medium | **DONE (04-04):** Entity cards + portfolio aggregates show fund-level TVPI/DPI/RVPI/IRR computed from real funded capital calls + paid distributions + NAV |
+| FIN-09 | LP-level performance aggregation | Medium | **DONE (04-04):** LP comparison view shows all LPs with per-entity TVPI/DPI/RVPI/IRR computed via computeMetrics + xirr from real data |
 | FIN-10 | Deal-level performance attribution | Low | No implementation |
 
 ---
@@ -86,7 +86,7 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | ID | Requirement | Priority | Notes |
 |----|-------------|----------|-------|
 | ASSET-01 | Asset detail pages polished after deal-to-asset flow works | Medium | DONE (02-07): Originated-from banner with source deal link, collapsible AI intelligence section (score/strengths/risks), equity tab, entity allocations card, type-specific placeholders |
-| ASSET-02 | Cross-entity NAV dashboard showing all entities | Medium | Entity detail shows NAV but no cross-entity view |
+| ASSET-02 | Cross-entity NAV dashboard showing all entities | Medium | **DONE (04-04):** Dashboard entity cards show NAV (cost basis/fair value/unrealized gain) per entity; click to expand reveals per-asset contribution table — replaces need for separate cross-entity NAV page |
 | ASSET-03 | Account mapping UI for QBO/Xero chart of accounts | Medium | AccountMapping model exists, no UI |
 
 ---

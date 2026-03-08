@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 04-04
+current_plan: 04-05
 status: in_progress
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-03-07T23:55:00.000Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-03-08T00:50:34Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Atlas — GSD State
@@ -22,12 +22,12 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 4 of 7 (Asset Entity Polish) — IN PROGRESS
-- **Phase status:** Plans 01, 02, 03 complete — side letter engine + RBAC + audit log + pagination/search/error boundaries done
-- **Current Plan:** 04-04 (next up)
+- **Phase status:** Plans 01, 02, 03, 04 complete — side letter engine + RBAC + audit log + pagination/search/error boundaries + dashboard redesign done
+- **Current Plan:** 04-05 (next up, if it exists)
 - **Active plan:** none
 
 ## Performance Metrics
-- Plans completed: 13
+- Plans completed: 17
 - Plans total: 18 (3 Phase 1 + 7 Phase 2 + 3 Phase 3 so far)
 - Phases completed: 2
 
@@ -42,6 +42,7 @@ progress:
 | Phase 04-asset-entity-polish P01 | 6min | 2 tasks | 8 files |
 | 04    | 02   | 15min    | 2     | 20    |
 | 04    | 03   | 45min    | 2     | 25    |
+| 04    | 04   | 50min    | 2     | 13    |
 
 ## Accumulated Context
 
@@ -86,6 +87,7 @@ progress:
   - SERVICE_PROVIDER: 403 on all write methods, entity-access checked at API layer
   - GP_TEAM: configurable per-area permissions via Settings > Permissions tab
   - Audit log: CREATE_DEAL, KILL/CLOSE/REVIVE_DEAL, CREATE/UPDATE_ENTITY, CREATE_CAPITAL_CALL, CREATE_DISTRIBUTION
+- GP Dashboard redesign: BUILT in 04-04 (entity cards + portfolio aggregates + LP comparison view)
 
 ### Patterns to Preserve
 - Route registry (`routes.ts`) is single source of truth — never bypass
@@ -96,6 +98,8 @@ progress:
 - Fallback progress: when totalTasks=0, use workstream COMPLETE count / total for DD progress
 - Defensive caps: wrap all API percentage calculations in Math.min(100, ...)
 - Long-running AI fetches: use Promise.race with 90-second timeout
+- SectionErrorBoundary wraps all major dashboard sections — section failure never takes down full page
+- Entity card expand/collapse: CSS max-height transition, no dependencies
 
 ## Decisions Log
 - **2026-03-06 (01-01):** Used Vitest for financial computation tests — zero-config for TypeScript/ESM; no bugs found in any of the three computation engines
@@ -140,6 +144,18 @@ progress:
 - **2026-03-07 (04-03):** SWR onSuccess accumulation pattern used instead of custom usePaginatedList hook — complex pages (deals kanban, tasks view tabs) needed direct control over cursor and accumulated array
 - **2026-03-07 (04-03):** Deals page kanban preserved — pagination feeds allDeals array, kanban filters it client-side by stage; visual board unchanged
 - **2026-03-07 (04-03):** No /api/transactions route exists — transactions page reads from /api/capital-calls and /api/distributions directly; SectionErrorBoundary import added, full pagination deferred
+- **2026-03-08 (04-04):** Dashboard redesigned as two sections: entity cards (top) + portfolio overview (bottom) — clean separation of concerns, each section can fail independently
+- **2026-03-08 (04-04):** LPComparisonView is collapsible placed below portfolio section — keeps dashboard uncluttered while LP data remains accessible
+- **2026-03-08 (04-04):** Entity card expand/collapse uses CSS max-height transition — zero dependencies, smooth animation
+- **2026-03-08 (04-04):** PortfolioAggregates fetches from /portfolio-aggregates and distributes data as props to child components — single SWR call for entire bottom section
+- **2026-03-08 (04-04):** Top/bottom performers: assets with no IRR data excluded from performer lists — N/A values meaningless for ranking
+
+### Phase 4 Dashboard Redesign (Plan 04-04)
+- GP Dashboard fully redesigned as "morning briefing": entity cards (NAV/IRR/TVPI/deployment) at top + portfolio overview (allocation/performers/deployment/activity) at bottom
+- Entity cards: compact view with expand to show NAV breakdown (cost basis vs fair value) and per-asset contribution table
+- Portfolio aggregates: top/bottom performers split panel, capital deployment stacked bars with dry powder, recent activity timeline
+- LP comparison: sortable table showing all LPs with per-entity TVPI/IRR and aggregate metrics; collapsible below portfolio section
+- SectionErrorBoundary wraps each major section — section failure never takes down full dashboard
 
 ### Phase 3 Metrics Wiring (Plan 03-03)
 - Entity metrics API: TVPI, DPI, RVPI, MOIC, IRR from real funded capital calls + paid distributions + inline NAV
@@ -218,5 +234,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T23:55:00.000Z
-- **Stopped at:** Completed 04-03-PLAN.md
+- **Last session:** 2026-03-08T00:50:34Z
+- **Stopped at:** Completed 04-04-PLAN.md

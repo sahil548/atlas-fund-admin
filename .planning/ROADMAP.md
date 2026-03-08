@@ -102,24 +102,25 @@ Plans:
 **Requirements:** FIN-07, FIN-08, FIN-09, FIN-10, ASSET-02, CORE-02, CORE-03, CORE-04, CORE-05, CORE-06
 
 **Success Criteria:**
-- [ ] Side letter rules modify fee calculations per LP per entity
-- [ ] Fund-level and LP-level performance aggregated from underlying computations
-- [ ] Cross-entity NAV dashboard shows all entities
+- [x] Side letter rules modify fee calculations per LP per entity (FIN-07, 04-01)
+- [x] Fund-level and LP-level performance aggregated from underlying computations (FIN-08, 04-04)
+- [x] Cross-entity NAV dashboard shows all entities with expandable detail (ASSET-02, 04-04)
+- [x] LP comparison view shows all LPs with TVPI/DPI/RVPI/IRR per entity (FIN-09, 04-04)
 - [x] Role-based access enforced (GP_ADMIN full, GP_TEAM configurable, SERVICE_PROVIDER scoped)
 - [x] All data lists support pagination
 - [x] Error boundaries prevent full-page crashes
 - [x] AI endpoints have rate limiting
 
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 
 Plans:
 - [x] 04-01-PLAN.md — Wave 1: Side letter structured rules + fee adjustment engine + MFN detection (FIN-07)
 - [x] 04-02-PLAN.md — Wave 1: Role-based access enforcement + service provider scoping + audit logging (CORE-02, CORE-03)
 - [x] 04-03-PLAN.md — Wave 1: Pagination + search/filters + error boundaries + rate limiting (CORE-04, CORE-05, CORE-06)
-- [ ] 04-04-PLAN.md — Wave 2: Dashboard redesign + cross-entity NAV + performance aggregation + LP comparison (FIN-08, FIN-09, ASSET-02)
+- [x] 04-04-PLAN.md — Wave 2: Dashboard redesign + cross-entity NAV + performance aggregation + LP comparison (FIN-08, FIN-09, ASSET-02)
 - [ ] 04-05-PLAN.md — Wave 2: Deal-level performance attribution with projected vs actual (FIN-10)
 
-**Progress:** 2/5 plans complete
+**Progress:** 4/5 plans complete
 
 ---
 
