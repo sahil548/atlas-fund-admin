@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 05-lp-portal
+current_plan: 05-02
 status: in_progress
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-03-08T01:15:00Z"
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-03-08T03:12:25.903Z"
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 21
+  completed_plans: 19
 ---
 
 # Atlas — GSD State
@@ -44,6 +44,7 @@ progress:
 | 04    | 03   | 45min    | 2     | 25    |
 | 04    | 04   | 50min    | 2     | 13    |
 | 04    | 05   | 30min    | 2     | 8     |
+| Phase 05 P01 | 6min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,10 @@ progress:
 - **2026-03-08 (04-05):** Projection source is transparent in UI: "AI-extracted from CIM" vs "GP estimate" badge shows data provenance
 - **2026-03-08 (04-05):** IRR entered as percentage by GP (e.g. 15 for 15%), stored as decimal (0.15) — avoids common confusion between representations
 - **2026-03-08 (04-05):** PATCH on attribution route for GP overrides keeps projection updates separate from general PUT /api/assets/[id]
+- **2026-03-08 (05-01):** Used raw fetch instead of intuit-oauth SDK — SDK has no TypeScript types; standard OAuth2 is straightforward with fetch
+- **2026-03-08 (05-01):** CSRF state is base64url JSON {entityId, nonce} in httpOnly cookie (10-min expiry) for OAuth2 redirect round-trip
+- **2026-03-08 (05-01):** Disconnect preserves chartOfAccountsMapped and accountMappings — historically pulled data remains useful after OAuth disconnection
+- **2026-03-08 (05-01):** Prisma.JsonNull required for setting nullable JSON fields to null in TypeScript (oauthCredentials on disconnect)
 
 ### Phase 4 Performance Attribution (Plan 04-05)
 - computeAssetAttribution: XIRR from real capital calls/distributions (via entity allocation weighting) + projected metrics from AI deal metadata or GP overrides
@@ -249,5 +254,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T01:15:00Z
-- **Stopped at:** Completed 04-05-PLAN.md
+- **Last session:** 2026-03-08T03:12:25.900Z
+- **Stopped at:** Completed 05-01-PLAN.md

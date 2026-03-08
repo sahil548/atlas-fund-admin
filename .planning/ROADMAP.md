@@ -138,7 +138,7 @@ Plans:
 - [ ] Trial balance data flows from QBO into Atlas with historical snapshots (ACCT-04)
 - [ ] Two-layer NAV: cost basis from GL when connected, proxy fallback otherwise + fair value overlay from Atlas valuations (ACCT-05)
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 05-01-PLAN.md — Wave 1: Schema + provider abstraction + QBO OAuth connect/callback/disconnect (ACCT-01, ACCT-02)
