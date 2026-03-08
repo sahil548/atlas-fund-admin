@@ -161,7 +161,7 @@ Plans:
 - [ ] Performance metrics display as time-series charts (not just current numbers)
 - [ ] LP communication preferences stored and ready for notification engine
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 06-01-PLAN.md — Wave 1: MetricSnapshot schema + snapshot-on-compute + time-series charts + capital account period summaries (LP-01, LP-02)

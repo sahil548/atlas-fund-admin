@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Phase 6 (LP Portal) next
-status: phase_complete
-stopped_at: "Phase 5 complete — all 3 plans executed, checkpoint verified in Chrome"
-last_updated: "2026-03-08T04:00:00.000Z"
+current_plan: Phase 6 Plan 02 complete — LP settings + notification preferences CRUD built
+status: in_progress
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-03-08T04:10:34.603Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 23
-  completed_plans: 21
+  completed_plans: 22
 ---
 
 # Atlas — GSD State
@@ -47,6 +47,7 @@ progress:
 | Phase 05 P01 | 6min | 2 tasks | 8 files |
 | Phase 05-qbo-xero-integration P02 | 6min | 2 tasks | 7 files |
 | Phase 05 P03 | 10min | 1 tasks | 3 files |
+| Phase 06-lp-portal P02 | 3min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,9 @@ progress:
 - **2026-03-08 (05-02):** Delete-then-createMany for AccountMapping upsert — no @@unique([connectionId, providerAccountId]) constraint; delete matching records + createMany is semantically equivalent
 - **2026-03-08 (05-02):** suggestFrom query param on chart-of-accounts enables cross-entity name-based mapping suggestions for faster GP onboarding
 - **2026-03-08 (05-02):** chartOfAccountsMapped set to true once any mappings saved — GP controls completeness; Trial Balance tab disabled until this is true
+- **2026-03-08 (06-02):** gpOverrides.capitalCallsAlwaysImmediate returned as system constant on every GET/PUT response — not stored in DB, enforced by notification engine in Phase 7
+- **2026-03-08 (06-02):** Debounce auto-save at 500ms per section change — no external library, clearTimeout/setTimeout pattern
+- **2026-03-08 (06-02):** Undefined field filtering before Prisma upsert — prevents overwriting existing preferences when only a subset of fields are sent
 
 ### Phase 5 Account Mapping + Trial Balance (Plan 05-02)
 - 4 API routes: chart-of-accounts (auto-detect + suggestFrom), mappings CRUD (delete+createMany upsert), sync (SYNCING lifecycle + TrialBalanceSnapshot upsert), trial-balance (bucket organization + list mode)
@@ -265,5 +269,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T03:27:48.927Z
-- **Stopped at:** Phase 5 complete — all 3 plans executed, checkpoint verified in Chrome
+- **Last session:** 2026-03-08T04:10:34.600Z
+- **Stopped at:** Completed 06-02-PLAN.md
