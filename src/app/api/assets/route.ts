@@ -73,3 +73,55 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Failed to load assets" }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const {
+      name, assetClass, capitalInstrument, participationStructure,
+      sector, status, costBasis, fairValue, incomeType,
+      entityId, allocationPercent,
+    } = body;
+
+    if (!name || !assetClass || costBasis == null || fairValue == null || !entityId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const cost = Number(costBasis);
+    const fv = Number(fairValue);
+    const moic = cost > 0 ? fv / cost : 0;
+
+    const asset = await prisma.asset.create({
+      data: {
+        name,
+        assetClass,
+        capitalInstrument: capitalInstrument || null,
+        participationStructure: participationStructure || null,
+        sector: sector || null,
+        status: status || "ACTIVE",
+        costBasis: cost,
+        fairValue: fv,
+        moic,
+        incomeType: incomeType || null,
+        entryDate: new Date(),
+        entityAllocations: {
+          create: {
+            entityId,
+            allocationPercent: Number(allocationPercent) || 100,
+            costBasis: cost,
+          },
+        },
+      },
+      include: {
+        entityAllocations: {
+          include: { entity: { select: { id: true, name: true } } },
+        },
+      },
+    });
+
+    return NextResponse.json(asset, { status: 201 });
+  } catch (err) {
+    console.error("[assets] POST Error:", err);
+    return NextResponse.json({ error: "Failed to create asset" }, { status: 500 });
+  }
+}

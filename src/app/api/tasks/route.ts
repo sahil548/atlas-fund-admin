@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       baseWhere.OR = [
         { deal: { firmId } },
         { entity: { firmId } },
-        { dealId: null, entityId: null },
+        { dealId: null, entityId: null, assignee: { firmId } },
       ];
     }
 

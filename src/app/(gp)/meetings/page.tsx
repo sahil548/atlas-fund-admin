@@ -129,15 +129,36 @@ export default function MeetingsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header + Filters */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-lg font-bold text-gray-900">Meetings</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"
+        <SearchFilterBar
+          filters={MEETING_FILTERS}
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
         >
-          + Log Meeting
-        </button>
+          <ExportButton
+            data={allMeetings.map((m) => ({
+              id: m.id,
+              title: m.title,
+              date: new Date(m.meetingDate).toLocaleDateString(),
+              type: m.meetingType ?? "",
+              source: SOURCE_LABELS[m.source] ?? m.source,
+              hasTranscript: m.hasTranscript ? "Yes" : "No",
+              actionItems: m.actionItems,
+              asset: m.asset?.name ?? "",
+              deal: m.deal?.name ?? "",
+              entity: m.entity?.name ?? "",
+            }))}
+            fileName="Meetings_Export"
+          />
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"
+          >
+            + Log Meeting
+          </button>
+        </SearchFilterBar>
       </div>
 
       {/* Stat Cards */}
@@ -147,29 +168,6 @@ export default function MeetingsPage() {
         <StatCard label="Total Action Items" value={String(totalActionItems)} small />
         <StatCard label="This Month" value={String(thisMonth)} small />
       </div>
-
-      {/* Filters + Export */}
-      <SearchFilterBar
-        filters={MEETING_FILTERS}
-        onFilterChange={handleFilterChange}
-        activeFilters={activeFilters}
-      >
-        <ExportButton
-          data={allMeetings.map((m) => ({
-            id: m.id,
-            title: m.title,
-            date: new Date(m.meetingDate).toLocaleDateString(),
-            type: m.meetingType ?? "",
-            source: SOURCE_LABELS[m.source] ?? m.source,
-            hasTranscript: m.hasTranscript ? "Yes" : "No",
-            actionItems: m.actionItems,
-            asset: m.asset?.name ?? "",
-            deal: m.deal?.name ?? "",
-            entity: m.entity?.name ?? "",
-          }))}
-          fileName="Meetings_Export"
-        />
-      </SearchFilterBar>
 
       {/* Meeting Cards */}
       {allMeetings.length === 0 && !isLoading ? (

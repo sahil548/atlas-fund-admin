@@ -338,7 +338,7 @@ export function CommandBar() {
 
       {/* Dropdown results panel */}
       {showDropdown && (
-        <div className="absolute top-full left-0 mt-1.5 w-[520px] bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden z-50">
+        <div className="absolute top-full left-0 mt-1.5 w-full bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
           {/* Dynamic command actions (pill row) */}
           {dynamicActions.length > 0 && conversation.length === 0 && (
             <div className="flex gap-1.5 px-3 py-2 overflow-x-auto border-b border-gray-100">

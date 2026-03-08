@@ -144,32 +144,30 @@ export default function DealsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-semibold">Deal Pipeline</h2>
-        <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
+        <SearchFilterBar
+          filters={DEAL_FILTERS}
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
+        >
+          <ExportButton
+            data={deals.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              assetClass: d.assetClass,
+              stage: d.stage,
+              targetReturn: d.targetReturn ?? "",
+              targetSize: d.targetSize ?? "",
+              dealLead: d.dealLead?.name ?? "",
+              status: d.status ?? d.stage,
+              createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "",
+            }))}
+            fileName="Deals_Export"
+          />
+          <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
+        </SearchFilterBar>
       </div>
-
-      {/* Filters + Export */}
-      <SearchFilterBar
-        filters={DEAL_FILTERS}
-        onFilterChange={handleFilterChange}
-        activeFilters={activeFilters}
-      >
-        <ExportButton
-          data={deals.map((d: any) => ({
-            id: d.id,
-            name: d.name,
-            assetClass: d.assetClass,
-            stage: d.stage,
-            targetReturn: d.targetReturn ?? "",
-            targetSize: d.targetSize ?? "",
-            dealLead: d.dealLead?.name ?? "",
-            status: d.status ?? d.stage,
-            createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "",
-          }))}
-          fileName="Deals_Export"
-        />
-      </SearchFilterBar>
 
       {/* Pipeline Analytics */}
       {analytics && (

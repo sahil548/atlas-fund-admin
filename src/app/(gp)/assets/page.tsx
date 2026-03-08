@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
+import { CreateAssetForm } from "@/components/features/assets/create-asset-form";
 import { fmt, pct } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
@@ -48,6 +49,7 @@ export default function AssetsPage() {
   const { firmId } = useFirm();
   const [showEdit, setShowEdit] = useState(false);
   const [editingAsset, setEditingAsset] = useState<any>(null);
+  const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [cursor, setCursor] = useState<string | null>(null);
@@ -126,6 +128,7 @@ export default function AssetsPage() {
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
           >
+            <Button onClick={() => setShowCreate(true)}>+ Add Asset</Button>
             <ExportButton
               data={allAssets.map((a: any) => ({
                 id: a.id,
@@ -150,8 +153,11 @@ export default function AssetsPage() {
             <p className="text-xs text-gray-400">
               {search || Object.values(activeFilters).some(Boolean)
                 ? "Try different search terms or clear filters"
-                : "Assets appear here after deals are closed"}
+                : "Add your first asset to get started"}
             </p>
+            {!search && !Object.values(activeFilters).some(Boolean) && (
+              <Button size="sm" onClick={() => setShowCreate(true)} className="mt-2">+ Add Asset</Button>
+            )}
           </div>
         ) : (
           <table className="w-full text-xs">
@@ -233,6 +239,8 @@ export default function AssetsPage() {
       {editingAsset && (
         <EditAssetForm open={showEdit} onClose={() => { setShowEdit(false); setEditingAsset(null); }} asset={editingAsset} />
       )}
+
+      <CreateAssetForm open={showCreate} onClose={() => setShowCreate(false)} />
     </div>
   );
 }

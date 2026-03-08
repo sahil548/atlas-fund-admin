@@ -10,6 +10,23 @@ export async function GET(req: NextRequest) {
     const companyId = req.nextUrl.searchParams.get("companyId");
     const type = req.nextUrl.searchParams.get("type");
 
+    // Self-healing: backfill Contact records for Users that don't have one
+    if (firmId) {
+      const usersWithoutContact = await prisma.user.findMany({
+        where: { firmId, contactId: null, isActive: true },
+        select: { id: true, name: true, email: true, firmId: true },
+      });
+      for (const u of usersWithoutContact) {
+        const parts = u.name.split(" ");
+        const firstName = parts[0] || u.name;
+        const lastName = parts.slice(1).join(" ") || "";
+        const contact = await prisma.contact.create({
+          data: { firmId: u.firmId, firstName, lastName, email: u.email, type: "INTERNAL" },
+        });
+        await prisma.user.update({ where: { id: u.id }, data: { contactId: contact.id } });
+      }
+    }
+
     const where: Record<string, unknown> = {};
     if (firmId) where.firmId = firmId;
     if (companyId) where.companyId = companyId;

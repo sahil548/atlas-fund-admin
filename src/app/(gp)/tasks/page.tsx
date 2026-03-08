@@ -190,31 +190,29 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold">Tasks</h2>
-        <Button onClick={() => setShowCreate(true)}>+ New Task</Button>
+        <SearchFilterBar
+          filters={TASK_FILTERS}
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
+        >
+          <ExportButton
+            data={allTasks.map((t: any) => ({
+              id: t.id,
+              title: t.title,
+              status: STATUS_LABELS[t.status] ?? t.status,
+              priority: t.priority ?? "MEDIUM",
+              assignee: t.assignee?.name ?? t.assigneeName ?? "",
+              dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "",
+              dealName: t.deal?.name ?? "",
+              entityName: t.entity?.name ?? "",
+            }))}
+            fileName="Tasks_Export"
+          />
+          <Button onClick={() => setShowCreate(true)}>+ New Task</Button>
+        </SearchFilterBar>
       </div>
-
-      {/* Filters + Export */}
-      <SearchFilterBar
-        filters={TASK_FILTERS}
-        onFilterChange={handleFilterChange}
-        activeFilters={activeFilters}
-      >
-        <ExportButton
-          data={allTasks.map((t: any) => ({
-            id: t.id,
-            title: t.title,
-            status: STATUS_LABELS[t.status] ?? t.status,
-            priority: t.priority ?? "MEDIUM",
-            assignee: t.assignee?.name ?? t.assigneeName ?? "",
-            dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "",
-            dealName: t.deal?.name ?? "",
-            entityName: t.entity?.name ?? "",
-          }))}
-          fileName="Tasks_Export"
-        />
-      </SearchFilterBar>
 
       <div className="flex gap-1 border-b border-gray-200 pb-0">
         {viewTabs.map((vt) => (
