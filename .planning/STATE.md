@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 05-02
+current_plan: 05-03
 status: in_progress
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-03-08T03:12:25.903Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-03-08T03:21:46.359Z"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 21
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # Atlas — GSD State
@@ -45,6 +45,7 @@ progress:
 | 04    | 04   | 50min    | 2     | 13    |
 | 04    | 05   | 30min    | 2     | 8     |
 | Phase 05 P01 | 6min | 2 tasks | 8 files |
+| Phase 05-qbo-xero-integration P02 | 6min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -161,6 +162,15 @@ progress:
 - **2026-03-08 (05-01):** CSRF state is base64url JSON {entityId, nonce} in httpOnly cookie (10-min expiry) for OAuth2 redirect round-trip
 - **2026-03-08 (05-01):** Disconnect preserves chartOfAccountsMapped and accountMappings — historically pulled data remains useful after OAuth disconnection
 - **2026-03-08 (05-01):** Prisma.JsonNull required for setting nullable JSON fields to null in TypeScript (oauthCredentials on disconnect)
+- **2026-03-08 (05-02):** Delete-then-createMany for AccountMapping upsert — no @@unique([connectionId, providerAccountId]) constraint; delete matching records + createMany is semantically equivalent
+- **2026-03-08 (05-02):** suggestFrom query param on chart-of-accounts enables cross-entity name-based mapping suggestions for faster GP onboarding
+- **2026-03-08 (05-02):** chartOfAccountsMapped set to true once any mappings saved — GP controls completeness; Trial Balance tab disabled until this is true
+
+### Phase 5 Account Mapping + Trial Balance (Plan 05-02)
+- 4 API routes: chart-of-accounts (auto-detect + suggestFrom), mappings CRUD (delete+createMany upsert), sync (SYNCING lifecycle + TrialBalanceSnapshot upsert), trial-balance (bucket organization + list mode)
+- AccountMappingPanel: grouped by classification (Asset/Liability/Equity/Revenue/Expense), per-account dropdown, Apply All Suggestions, unmapped warning badge
+- TrialBalanceView: 5 bucket sections (expandable cards), UNMAPPED in amber, period selector, reconciliation summary, Sync Now
+- Accounting page: entity drill-in expand/collapse with Account Mapping + Trial Balance tabs, Connect/Reconnect/Sync inline, SectionErrorBoundary wraps drill-in
 
 ### Phase 4 Performance Attribution (Plan 04-05)
 - computeAssetAttribution: XIRR from real capital calls/distributions (via entity allocation weighting) + projected metrics from AI deal metadata or GP overrides
@@ -254,5 +264,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T03:12:25.900Z
-- **Stopped at:** Completed 05-01-PLAN.md
+- **Last session:** 2026-03-08T03:21:46.356Z
+- **Stopped at:** Completed 05-02-PLAN.md
