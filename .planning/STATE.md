@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: GP Production Ready
+milestone: v1.1
+milestone_name: Module Deep Pass
 current_plan: none
-status: milestone_complete
-stopped_at: v1.0 milestone archived — 10 phases, 36 plans, 58/58 requirements shipped
-last_updated: "2026-03-08T19:00:00.000Z"
+status: defining_requirements
+stopped_at: v1.1 milestone started — defining requirements
+last_updated: "2026-03-08T21:00:00.000Z"
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 36
-  completed_plans: 36
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Atlas — GSD State
@@ -18,15 +18,14 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v1.0 complete — next milestone pending
+- **Current focus:** v1.1 Module Deep Pass — defining requirements
 
 ## Current Position
-- **Milestone:** 1 (GP Production Ready)
-- **Phase:** 10 of 10 (Integration Wiring & UI Polish) — COMPLETE
-- **Phase status:** 2 of 2 plans executed
-- **Current Plan:** Not started
-- **Active plan:** none
-- **Milestone status:** 35/35 plans complete — MILESTONE COMPLETE
+- **Milestone:** v1.1 (Module Deep Pass)
+- **Phase:** Not started (defining requirements)
+- **Plan:** —
+- **Status:** Defining requirements
+- **Last activity:** 2026-03-08 — Milestone v1.1 started
 
 ## Performance Metrics
 - Plans completed: 17

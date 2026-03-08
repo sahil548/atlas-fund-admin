@@ -116,6 +116,18 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v1
 
 ---
 
+## Current Milestone: v1.1 Module Deep Pass
+
+**Goal:** Module-by-module deep pass across all areas of Atlas — filling feature gaps and polishing UI/UX to production quality, with equal weight on functionality and user experience.
+
+**Target features:**
+- Deep pass on every module: Deals, Assets, Entities, Capital Activity, LP Portal, Dashboard, Accounting, Settings, Integrations
+- Fill missing CRUD operations, incomplete workflows, orphaned UI
+- Polish layouts, spacing, consistency, responsiveness, empty states
+- Fix any issues surfaced by codebase scan
+
+---
+
 ## Requirements
 
 Full requirement registry: see `.planning/REQUIREMENTS.md` (created per milestone)
@@ -124,4 +136,4 @@ v1.0 requirements archived: [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-RE
 
 ---
 
-*Last updated: 2026-03-08 after v1.0 milestone*
+*Last updated: 2026-03-08 after v1.1 milestone started*
