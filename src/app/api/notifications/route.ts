@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { NotificationType } from "@prisma/client";
+import { getAuthUser, unauthorized } from "@/lib/auth";
 
 const VALID_TYPES = new Set<string>([
   "STAGE_CHANGE",
@@ -15,13 +16,13 @@ const VALID_TYPES = new Set<string>([
 ]);
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+
+  // Use session userId — NOT query param (IDOR fix)
+  const userId = authUser.id;
+
   const typeParam = req.nextUrl.searchParams.get("type");
-
-  if (!userId) {
-    return NextResponse.json({ error: "userId required" }, { status: 400 });
-  }
-
   const typeFilter =
     typeParam && VALID_TYPES.has(typeParam)
       ? (typeParam as NotificationType)

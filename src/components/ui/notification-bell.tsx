@@ -47,7 +47,7 @@ export function NotificationBell() {
 
   const swrKey =
     userId
-      ? `/api/notifications?userId=${userId}${filterType ? `&type=${filterType}` : ""}`
+      ? `/api/notifications${filterType ? `?type=${filterType}` : ""}`
       : null;
 
   const { data } = useSWR(swrKey, fetcher, {
