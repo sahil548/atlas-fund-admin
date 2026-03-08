@@ -107,6 +107,7 @@ enum AccountingProvider {
 
 enum SyncStatus {
   CONNECTED
+  SYNCING
   DISCONNECTED
   ERROR
 }
@@ -443,14 +444,16 @@ model AccountingConnection {
   oauthCredentials    Json?
   syncStatus          SyncStatus         @default(DISCONNECTED)
   lastSyncAt          DateTime?
+  lastSyncError       String?
   syncFrequency       String             @default("15min")
   chartOfAccountsMapped Boolean          @default(false)
   unreconciledItems   Int                @default(0)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
-  entity         Entity          @relation(fields: [entityId], references: [id])
-  accountMappings AccountMapping[]
+  entity                 Entity                  @relation(fields: [entityId], references: [id])
+  accountMappings        AccountMapping[]
+  trialBalanceSnapshots  TrialBalanceSnapshot[]
 }
 
 model AccountMapping {
@@ -459,9 +462,28 @@ model AccountMapping {
   atlasAccountType  String
   providerAccountId String?
   providerAccountName String?
+  isAutoDetected    Boolean  @default(false)
   createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   connection AccountingConnection @relation(fields: [connectionId], references: [id])
+}
+
+model TrialBalanceSnapshot {
+  id            String   @id @default(cuid())
+  connectionId  String
+  periodDate    DateTime              // as-of date (e.g., month-end)
+  accountData   Json                  // array of { accountId, accountName, accountType, debit, credit, balance }
+  totalDebits   Float
+  totalCredits  Float
+  isBalanced    Boolean  @default(true)  // debits == credits check
+  syncedAt      DateTime @default(now()) // when this snapshot was pulled
+  createdAt     DateTime @default(now())
+
+  connection AccountingConnection @relation(fields: [connectionId], references: [id])
+
+  @@unique([connectionId, periodDate])
+  @@index([connectionId, periodDate])
 }
 
 model User {

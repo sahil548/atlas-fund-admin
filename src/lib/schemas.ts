@@ -559,8 +559,28 @@ export const UpdateWaterfallTierSchema = z.object({
 
 export const UpdateAccountingConnectionSchema = z.object({
   entityId: z.string().min(1),
-  syncStatus: z.enum(["CONNECTED", "DISCONNECTED", "ERROR"]),
+  syncStatus: z.enum(["CONNECTED", "SYNCING", "DISCONNECTED", "ERROR"]),
   lastSyncAt: z.string().optional(),
+});
+
+export const AtlasAccountBucketEnum = z.enum([
+  "CASH",
+  "INVESTMENTS_AT_COST",
+  "OTHER_ASSETS",
+  "LIABILITIES",
+  "EQUITY_PARTNERS_CAPITAL",
+]);
+
+export const CreateAccountMappingSchema = z.object({
+  connectionId: z.string().min(1),
+  atlasAccountType: AtlasAccountBucketEnum,
+  providerAccountId: z.string().min(1),
+  providerAccountName: z.string().min(1),
+  isAutoDetected: z.boolean().optional(),
+});
+
+export const UpdateAccountMappingSchema = z.object({
+  atlasAccountType: AtlasAccountBucketEnum,
 });
 
 // ── Entities ───────────────────────────────────────────
