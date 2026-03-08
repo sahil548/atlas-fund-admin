@@ -50,8 +50,12 @@ interface Props {
 export function CreateSideLetterForm({ open, onClose, onCreated }: Props) {
   const toast = useToast();
   const { firmId } = useFirm();
-  const { data: investors } = useSWR(open ? `/api/investors?firmId=${firmId}` : null, fetcher);
-  const { data: entities } = useSWR(open ? `/api/entities?firmId=${firmId}` : null, fetcher);
+  const { data: investors } = useSWR(open ? `/api/investors?firmId=${firmId}` : null, (url: string) =>
+    fetcher(url).then((r: any) => r.data ?? r),
+  );
+  const { data: entities } = useSWR(open ? `/api/entities?firmId=${firmId}` : null, (url: string) =>
+    fetcher(url).then((r: any) => r.data ?? r),
+  );
 
   const [form, setForm] = useState({ investorId: "", entityId: "", terms: "" });
   const [rules, setRules] = useState<RuleInput[]>(DEFAULT_RULES.map((r) => ({ ...r })));

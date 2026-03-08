@@ -95,7 +95,7 @@ export function CloseDealModal({
   // Fetch entities
   const { data: entities, mutate: mutateEntities } = useSWR<any[]>(
     open ? `/api/entities?firmId=${firmId}` : null,
-    fetcher,
+    (url: string) => fetcher(url).then((r: any) => r.data ?? r),
   );
 
   // Fetch DealEntity junction records for pre-population
