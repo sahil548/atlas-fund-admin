@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 05 complete (DocuSign integration)
+current_plan: 07-03 complete (PDF report generation)
 status: unknown
-stopped_at: Completed 07-03-PLAN.md (PDF report generation)
-last_updated: "2026-03-08T06:07:04.496Z"
+stopped_at: "Completed 07-06-PLAN.md — four third-party integrations: Asana, Notion, Plaid, Google Calendar"
+last_updated: "2026-03-08T06:08:43.300Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 29
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Atlas — GSD State
@@ -52,6 +52,7 @@ progress:
 | Phase 07 P02 | 6min | 2 tasks | 14 files |
 | Phase 07 P05 | 10min | 2 tasks | 15 files |
 | Phase 07 P03 | 30 | 2 tasks | 9 files |
+| Phase 07 P06 | 14min | 2 tasks | 21 files |
 
 ## Accumulated Context
 
@@ -288,7 +289,13 @@ progress:
 - **2026-03-07 (06-01):** Recharts v3 Tooltip formatter typed as any with eslint-disable — Formatter<T,N> generic causes TS incompatibility with undefined union in some Recharts v3 versions
 - **2026-03-07 (06-01):** Period summaries computed client-side from existing ledger data — no new API needed, data already fetched via useSWR on capital account page
 
+- **2026-03-08 (07-06):** Asana/Notion/GCal are firm-level IntegrationConnection (entityId=null); Plaid is per-entity (real entityId) — mirrors QBO per-entity pattern
+- **2026-03-08 (07-06):** Missing env vars for integrations: connect routes return 503, UI buttons disabled with amber warning (graceful degradation)
+- **2026-03-08 (07-06):** Plaid uses official SDK for Link Token (required by Plaid API); Asana/Notion/GCal use raw fetch (consistent with QBO provider pattern)
+- **2026-03-08 (07-06):** Task model has no firmId — scoped to firm via entity relation chain (firm -> entities -> tasks via entityId)
+- **2026-03-08 (07-06):** Sync routes return counts not full data — bidirectional import is UI-driven for user control, not auto-created in Atlas
+
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T06:07:04.493Z
-- **Stopped at:** Completed 07-03-PLAN.md (PDF report generation)
+- **Last session:** 2026-03-08T06:08:43.297Z
+- **Stopped at:** Completed 07-06-PLAN.md — four third-party integrations: Asana, Notion, Plaid, Google Calendar
