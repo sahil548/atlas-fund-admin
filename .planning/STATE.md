@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 07-01 complete (notification delivery engine)
-status: in_progress
-stopped_at: "Completed 07-01-PLAN.md — email/SMS delivery, multi-channel dispatcher, notification bell fix, sidebar badge"
-last_updated: "2026-03-07T22:25:00.000Z"
+current_plan: 07-04 complete (K-1 distribution + report notifications)
+status: complete
+stopped_at: Completed 07-04-PLAN.md — K-1 bulk upload API, K-1 distribution UI on /reports, LP notifications on report generation
+last_updated: "2026-03-08T06:17:44.693Z"
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 29
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Atlas — GSD State
@@ -54,6 +54,7 @@ progress:
 | Phase 07 P03 | 30 | 2 tasks | 9 files |
 | Phase 07 P06 | 14min | 2 tasks | 21 files |
 | 07    | 01   | 15min    | 2     | 9     |
+| Phase 07 P04 | 15min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -188,6 +189,10 @@ progress:
 - **2026-03-08 (07-05):** fileUrl support added to esignature POST — closing checklist items store fileUrl directly, not via Document model
 - **2026-03-08 (07-05):** Webhook returns 200 always — prevents DocuSign retry storms when package not found
 - **2026-03-08 (07-05):** Signed document stored as new Document record (category=LEGAL) — preserves original, adds signed version alongside
+- **2026-03-08 (07-04):** Unmatched K-1s still uploaded with null investorId — GP can manually assign later; no data loss on bulk upload
+- **2026-03-08 (07-04):** taxYear stored as string in FormData, parsed to int only for notifyInvestorsOnK1Available call — keeps K-1 upload API flexible
+- **2026-03-08 (07-04):** Entity detail page uses Link (not button) for Generate Report quick action — pure navigation, no API call needed
+- **2026-03-08 (07-04):** K-1 filename fuzzy matching: exact OR substring containment in either direction — handles "John Smith" matching "K1_John_Smith_2025.pdf" reliably
 
 ### Phase 5 Account Mapping + Trial Balance (Plan 05-02)
 - 4 API routes: chart-of-accounts (auto-detect + suggestFrom), mappings CRUD (delete+createMany upsert), sync (SYNCING lifecycle + TrialBalanceSnapshot upsert), trial-balance (bucket organization + list mode)
@@ -303,5 +308,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-07T22:25:00.000Z
-- **Stopped at:** Completed 07-01-PLAN.md — notification delivery engine (Resend + Twilio + multi-channel dispatcher + bell fix + sidebar badge)
+- **Last session:** 2026-03-08T06:17:44.690Z
+- **Stopped at:** Completed 07-04-PLAN.md — K-1 bulk upload API, K-1 distribution UI on /reports, LP notifications on report generation
