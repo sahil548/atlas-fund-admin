@@ -10,6 +10,10 @@ const isPublicRoute = createRouteMatcher([
   "/api/slack/interactions",
   "/api/integrations/(.*)/webhook",
   "/api/integrations/(.*)/callback",
+  // DocuSign OAuth callback (no auth — called by DocuSign servers)
+  "/api/docusign/callback",
+  // DocuSign webhook (no auth — called by DocuSign Connect)
+  "/api/docusign/webhook",
 ]);
 
 // ── LP portal routes (LP_INVESTOR only) ────────────────────
