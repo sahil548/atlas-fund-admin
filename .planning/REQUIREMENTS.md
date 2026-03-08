@@ -61,10 +61,10 @@ Computation code exists for IRR, waterfall, and capital accounts. These requirem
 | FIN-04 | TVPI / DPI / RVPI computation from real data | High | Fields exist on LP dashboard — unclear if computed or seeded |
 | FIN-05 | MOIC computation from cost basis and fair value | High | Some seeded, some derived — not consistently computed |
 | FIN-06 | Fee calculation engine (management fees, carried interest) | High | FeeCalculation model exists — data seeded, no computation logic found |
-| FIN-07 | Side letter rules applied per LP per entity | Medium | PARTIAL (04-01): Rules stored + UI exists; `integrateSideLetterWithFeeCalc()` not called in fee API — reassigned to Phase 9 |
+| FIN-07 | Side letter rules applied per LP per entity | Medium | DONE (04-01, 09, 10-02): Rules stored + UI exists; `integrateSideLetterWithFeeCalc()` IS called in `/api/fees/calculate/route.ts` (lines 7, 106). Side letter adjustments applied per LP per entity in fee calculation. Fee calc surfaced in entity detail UI in Phase 10-02. |
 | FIN-08 | Fund-level performance aggregation | Medium | **DONE (04-04):** Entity cards + portfolio aggregates show fund-level TVPI/DPI/RVPI/IRR computed from real funded capital calls + paid distributions + NAV |
 | FIN-09 | LP-level performance aggregation | Medium | **DONE (04-04):** LP comparison view shows all LPs with per-entity TVPI/DPI/RVPI/IRR computed via computeMetrics + xirr from real data |
-| FIN-10 | Deal-level performance attribution | Low | No implementation |
+| FIN-10 | Deal-level performance attribution | Low | DONE (04-04, 10-02): `/api/entities/[id]/attribution` route computes entity attribution via `computeEntityAttribution()`. Wired to entity detail Overview tab in Phase 10-02 — GP can view ranked attribution table with IRR, MOIC, and contribution % per asset. |
 
 ---
 
