@@ -269,12 +269,13 @@ Plans:
 - [ ] Entity detail page surfaces entity-level performance attribution from `/api/entities/[id]/attribution`
 - [ ] Build passes with zero errors
 
-**Plans:** 0/1 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — LP download link + middleware routes + fee calc UI + entity attribution UI
+- [ ] 10-01-PLAN.md — Wave 1: LP document download link + middleware GP route coverage (REPORT-01, REPORT-02, REPORT-05, CORE-02, CORE-03)
+- [ ] 10-02-PLAN.md — Wave 1: Fee calculation UI button + entity attribution table on entity detail (FIN-07, FIN-10)
 
-**Progress:** 0/1 plans complete
+**Progress:** 0/2 plans complete
 
 ---
 
