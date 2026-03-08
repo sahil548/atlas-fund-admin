@@ -17,7 +17,41 @@ import {
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
 
+// Memo sections, previous versions, and workstream shapes come from JSON fields —
+// remaining any usages below are for those API response fields only.
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+interface DealForOverviewTab {
+  id: string;
+  stage: string;
+  name: string;
+  aiScore?: number | null;
+  assetClass: string;
+  capitalInstrument?: string;
+  participationStructure?: string;
+  targetSize: string | null;
+  targetReturn: string | null;
+  targetCheckSize: string | null;
+  source: string | null;
+  counterparty: string | null;
+  gpName: string | null;
+  investmentRationale: string | null;
+  thesisNotes: string | null;
+  description: string | null;
+  additionalContext: string | null;
+  dealMetadata?: Record<string, unknown> | null;
+  dealLead?: { id: string; name?: string | null; initials?: string | null } | null;
+  documents?: Array<unknown>;
+  notes?: Array<unknown>;
+  workstreams?: Array<{ analysisType?: string | null }>;
+  screeningResult?: {
+    memo?: Record<string, any> | null;
+    memoGeneratedAt?: string | null;
+    version?: number | null;
+    recommendation?: string | null;
+    previousVersions?: unknown;
+  } | null;
+}
 
 const stageLabel: Record<string, string> = {
   SCREENING: "Screening",
@@ -85,7 +119,7 @@ const DEBT_FIELDS = [
 ];
 
 interface DealOverviewTabProps {
-  deal: any;
+  deal: DealForOverviewTab;
   analysisProgress: AnalysisProgress | null;
   ddStarting: boolean;
   regenerating: boolean;
@@ -139,7 +173,7 @@ export function DealOverviewTab({
     if (deal.capitalInstrument === "DEBT") {
       return DEBT_FIELDS;
     }
-    return ASSET_CLASS_FIELDS[deal.assetClass] || [];
+    return (deal.assetClass ? ASSET_CLASS_FIELDS[deal.assetClass] : undefined) || [];
   }
 
   // Trigger AI metadata extraction

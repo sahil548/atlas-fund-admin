@@ -12,10 +12,36 @@ import { mutate } from "swr";
 import { AddWorkstreamForm } from "./add-workstream-form";
 import { WorkstreamDetailPanel } from "./workstream-detail-panel";
 
+// Workstream and task shapes come from API JSON responses with complex nested
+// structures — remaining any usages below are for those API response fields only.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+interface DealForDDTab {
+  id: string;
+  stage: string;
+  workstreams?: Array<{
+    id: string;
+    name: string;
+    analysisType?: string | null;
+    status: string;
+    priority?: string | null;
+    dueDate?: string | null;
+    sortOrder?: number | null;
+    totalTasks?: number;
+    completedTasks?: number;
+    hasAI?: boolean;
+    customInstructions?: string | null;
+    analysisResult?: { aiPowered?: boolean } | null;
+    assignee?: { id: string; name: string; initials: string } | null;
+    _count?: { comments: number; attachments: number };
+    tasks?: Array<{ id: string; status: string; title?: string }>;
+  }>;
+  dealLead?: { id: string; name: string; initials: string } | null;
+  screeningResult?: { memo?: Record<string, unknown> | null; version?: number } | null;
+}
+
 interface DealDDTabProps {
-  deal: any;
+  deal: DealForDDTab;
 }
 
 export function DealDDTab({ deal }: DealDDTabProps) {
