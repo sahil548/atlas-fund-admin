@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 07-03 complete (PDF report generation)
-status: unknown
-stopped_at: "Completed 07-06-PLAN.md — four third-party integrations: Asana, Notion, Plaid, Google Calendar"
-last_updated: "2026-03-08T06:08:43.300Z"
+current_plan: 07-01 complete (notification delivery engine)
+status: in_progress
+stopped_at: "Completed 07-01-PLAN.md — email/SMS delivery, multi-channel dispatcher, notification bell fix, sidebar badge"
+last_updated: "2026-03-07T22:25:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 29
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Atlas — GSD State
@@ -22,8 +22,8 @@ progress:
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
 - **Phase:** 7 of 7 (Notifications & Reports) — IN PROGRESS
-- **Phase status:** Plan 03 complete — PDF report generation (quarterly, capital account, fund summary) via react-pdf + Vercel Blob + Document records + /reports page
-- **Current Plan:** 07-03 complete (PDF report generation)
+- **Phase status:** Plan 01 complete — email/SMS delivery engine (Resend + Twilio), multi-channel dispatcher, notification bell fixed to real user ID with type filter, sidebar unread badge
+- **Current Plan:** 07-01 complete (notification delivery engine)
 - **Active plan:** none
 
 ## Performance Metrics
@@ -53,6 +53,7 @@ progress:
 | Phase 07 P05 | 10min | 2 tasks | 15 files |
 | Phase 07 P03 | 30 | 2 tasks | 9 files |
 | Phase 07 P06 | 14min | 2 tasks | 21 files |
+| 07    | 01   | 15min    | 2     | 9     |
 
 ## Accumulated Context
 
@@ -289,6 +290,11 @@ progress:
 - **2026-03-07 (06-01):** Recharts v3 Tooltip formatter typed as any with eslint-disable — Formatter<T,N> generic causes TS incompatibility with undefined union in some Recharts v3 versions
 - **2026-03-07 (06-01):** Period summaries computed client-side from existing ledger data — no new API needed, data already fetched via useSWR on capital account page
 
+- **2026-03-07 (07-01):** Resend SDK used for email; Twilio uses raw fetch/Basic auth — no Twilio SDK needed (same pattern as QBO in Phase 5)
+- **2026-03-07 (07-01):** All email/SMS delivery is fire-and-forget with try/catch logging — notification failure never blocks status change
+- **2026-03-07 (07-01):** investorId -> userId resolved via InvestorUserAccess table (first record) — Investor model has no direct User FK
+- **2026-03-07 (07-01):** GP team gets in-app only notifications for capital activity — email would be redundant since they initiated the action
+- **2026-03-07 (07-01):** Notifications API type filter validates against VALID_TYPES set before casting to Prisma NotificationType enum — prevents invalid enum errors
 - **2026-03-08 (07-06):** Asana/Notion/GCal are firm-level IntegrationConnection (entityId=null); Plaid is per-entity (real entityId) — mirrors QBO per-entity pattern
 - **2026-03-08 (07-06):** Missing env vars for integrations: connect routes return 503, UI buttons disabled with amber warning (graceful degradation)
 - **2026-03-08 (07-06):** Plaid uses official SDK for Link Token (required by Plaid API); Asana/Notion/GCal use raw fetch (consistent with QBO provider pattern)
@@ -297,5 +303,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T06:08:43.297Z
-- **Stopped at:** Completed 07-06-PLAN.md — four third-party integrations: Asana, Notion, Plaid, Google Calendar
+- **Last session:** 2026-03-07T22:25:00.000Z
+- **Stopped at:** Completed 07-01-PLAN.md — notification delivery engine (Resend + Twilio + multi-channel dispatcher + bell fix + sidebar badge)
