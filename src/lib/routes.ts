@@ -39,6 +39,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: "/lp-portfolio", label: "LP Portfolio", description: "LP portfolio view", keywords: ["lp portfolio", "my investments"], icon: "TrendingUp", sidebarIcon: "\u25C9", portal: "lp", priority: 66 },
   { path: "/lp-activity", label: "Notices & Activity", description: "LP notices and activity feed", keywords: ["notices", "activity", "updates"], icon: "Bell", sidebarIcon: "\u25C7", portal: "lp", priority: 64 },
   { path: "/lp-documents", label: "Documents", description: "LP documents and reports", keywords: ["documents", "reports", "k1", "statements"], icon: "FileText", sidebarIcon: "\u25A5", portal: "lp", priority: 62 },
+  { path: "/lp-settings", label: "Settings", description: "LP notification preferences and settings", keywords: ["settings", "notifications", "preferences", "email", "sms"], icon: "Settings", sidebarIcon: "\u2699", portal: "lp", priority: 58 },
 ];
 
 // ── Derived helpers (auto-generated from APP_ROUTES) ─────────
