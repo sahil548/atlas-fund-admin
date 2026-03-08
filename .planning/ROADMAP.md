@@ -127,23 +127,25 @@ Plans:
 
 ## Phase 5: QBO/Xero Integration
 
-**Goal:** Connect real accounting so Atlas can pull from actual books.
+**Goal:** Connect real QBO accounting per entity via OAuth so Atlas can pull real GL data for trial balance and NAV computation. Provider-agnostic abstraction built so Xero slots in later without rework.
 
 **Requirements:** ACCT-01, ACCT-02, ACCT-03, ACCT-04, ACCT-05, ASSET-03
 
 **Success Criteria:**
-- [ ] Each entity can connect to its own QBO or Xero company via real OAuth
-- [ ] Account mapping UI lets users map Atlas accounts to QBO/Xero GL accounts
-- [ ] Trial balance data flows from QBO/Xero into Atlas
-- [ ] Two-layer NAV: cost basis from GL + fair value overlay from Atlas valuations
+- [ ] Each entity can connect to its own QBO company via real OAuth (ACCT-01)
+- [ ] Provider abstraction layer exists for future Xero support (ACCT-02)
+- [ ] Account mapping UI with auto-detect lets users map QBO accounts to 5 Atlas buckets (ACCT-03, ASSET-03)
+- [ ] Trial balance data flows from QBO into Atlas with historical snapshots (ACCT-04)
+- [ ] Two-layer NAV: cost basis from GL when connected, proxy fallback otherwise + fair value overlay from Atlas valuations (ACCT-05)
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | QBO/Xero real OAuth + account mapping | Not started |
-| 2 | Trial balance + NAV computation from GL | Not started |
+**Plans:** 3 plans
 
-**Progress:** 0/2 plans complete
+Plans:
+- [ ] 05-01-PLAN.md — Wave 1: Schema + provider abstraction + QBO OAuth connect/callback/disconnect (ACCT-01, ACCT-02)
+- [ ] 05-02-PLAN.md — Wave 2: Account mapping API + trial balance sync + mapping/TB UI + accounting page drill-in (ACCT-03, ACCT-04, ASSET-03)
+- [ ] 05-03-PLAN.md — Wave 3: NAV GL integration + entity Accounting tab + human verification checkpoint (ACCT-05)
+
+**Progress:** 0/3 plans complete
 
 ---
 
@@ -191,15 +193,10 @@ Plans:
 |---|------|--------|
 | 1 | Notification engine (email + SMS) | Not started |
 | 2 | PDF + Excel report generation | Not started |
-| 3 | 3/3 | Complete   | 2026-03-07 | Phase | Name | Requirements | Plans | Status |
-|-------|------|-------------|-------|--------|
-| 1 | Verify & Stabilize | 8 | 3 | Complete (3/3 plans done) |
-| 2 | Deal Desk End-to-End | 11 | 7 | Complete (7/7 plans done) |
-| 3 | Capital Activity | 6 | 3 | In Progress (1/3 plans done) |
-| 4 | 1/5 | In Progress|  | Not started |
-| 5 | QBO/Xero Integration | 6 | 2 | Not started |
-| 6 | LP Portal | 3 | 2 | Not started |
-| 7 | Notifications & Reports | 14 | 3 | Not started |
-| **Total** | | **58** | **25** | |
+| 3 | External integrations (DocuSign, K-1) | Not started |
+
+**Progress:** 0/3 plans complete
+
+---
 
 **Requirement coverage:** All active REQ-IDs in REQUIREMENTS.md mapped to a phase. CORE-01 (Clerk auth) is DONE -- not in any phase. Zero orphans.
