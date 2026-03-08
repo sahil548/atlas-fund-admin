@@ -506,6 +506,104 @@ export default function EntityDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Fee Calculation */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Fee Calculation</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Management fee and carried interest for current quarter
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleCalculateFees}
+                disabled={calculatingFees}
+              >
+                {calculatingFees ? "Calculating..." : "Calculate Fees"}
+              </Button>
+            </div>
+            {feeResult && (
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Management Fee</div>
+                  <div className="text-sm font-bold mt-1">{fmt(feeResult.managementFee)}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Carried Interest</div>
+                  <div className="text-sm font-bold mt-1">{fmt(feeResult.carriedInterest)}</div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <div className="text-[10px] text-gray-500 uppercase font-semibold">Period</div>
+                  <div className="text-sm font-bold mt-1">{feeResult.periodDate}</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Performance Attribution */}
+          {attributionData && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold">Performance Attribution</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Asset contributions to fund returns — ranked by weighted IRR contribution
+                  </p>
+                </div>
+                <div className="flex gap-4 text-xs text-gray-500">
+                  {attributionData.entityMetrics?.totalIRR != null && (
+                    <span>Fund IRR: <span className="font-semibold text-gray-900">{(attributionData.entityMetrics.totalIRR * 100).toFixed(1)}%</span></span>
+                  )}
+                  {attributionData.entityMetrics?.totalTVPI != null && (
+                    <span>TVPI: <span className="font-semibold text-gray-900">{attributionData.entityMetrics.totalTVPI.toFixed(2)}x</span></span>
+                  )}
+                </div>
+              </div>
+              {attributionData.rankedByContribution && attributionData.rankedByContribution.length > 0 ? (
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {["Rank", "Asset", "IRR", "MOIC", "Contribution %", "vs Projected"].map((h) => (
+                        <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attributionData.rankedByContribution.map((item: any, idx: number) => (
+                      <tr key={item.assetId} className="border-t border-gray-50 hover:bg-gray-50">
+                        <td className="px-3 py-2.5 text-gray-400 font-mono">#{idx + 1}</td>
+                        <td className="px-3 py-2.5 font-medium text-gray-900">{item.assetName}</td>
+                        <td className="px-3 py-2.5">
+                          {item.irr != null ? `${(item.irr * 100).toFixed(1)}%` : "N/A"}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {item.moic != null ? `${item.moic.toFixed(2)}x` : "N/A"}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {item.contributionPct != null ? `${item.contributionPct.toFixed(1)}%` : "N/A"}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {item.variance?.irrDelta != null ? (
+                            <span className={item.variance.irrDelta >= 0 ? "text-emerald-600 font-medium" : "text-red-600 font-medium"}>
+                              {item.variance.irrDelta >= 0 ? "+" : ""}{(item.variance.irrDelta * 100).toFixed(1)}%
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="px-4 py-6 text-center text-sm text-gray-400">
+                  No asset allocations to compute attribution for.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
