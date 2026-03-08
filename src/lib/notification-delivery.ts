@@ -89,9 +89,18 @@ export async function deliverNotification({
     return;
   }
 
+  // 6. Check digest preference — DAILY_DIGEST/WEEKLY_DIGEST investors skip immediate external dispatch
+  const digestPreference = pref?.digestPreference ?? "IMMEDIATE";
+  if (digestPreference === "DAILY_DIGEST" || digestPreference === "WEEKLY_DIGEST") {
+    console.log(
+      `[notification-delivery] Queued for ${digestPreference} -- skipping immediate external delivery for investor: ${investorId}`,
+    );
+    return;
+  }
+
   const channel = pref?.preferredChannel ?? "EMAIL";
 
-  // 6. Dispatch to external channel
+  // 7. Dispatch to external channel (IMMEDIATE preference only)
   if (channel === "EMAIL" || channel === "PORTAL_ONLY") {
     // PORTAL_ONLY: no external delivery
     if (channel === "EMAIL" && emailHtml) {
