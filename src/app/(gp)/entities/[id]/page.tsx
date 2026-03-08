@@ -214,6 +214,15 @@ export default function EntityDetailPage() {
             {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
           </div>
         </div>
+        <div className="flex-shrink-0">
+          <Link
+            href={`/reports?entityId=${e.id}`}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+          >
+            <span>&#9660;</span>
+            Generate Report
+          </Link>
+        </div>
       </div>
 
       {/* Tabs */}

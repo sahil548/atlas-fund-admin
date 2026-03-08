@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { getAuthUser } from "@/lib/auth";
 import { GenerateReportSchema } from "@/lib/schemas";
+import { notifyInvestorsOnReportAvailable } from "@/lib/notification-delivery";
 import { QuarterlyReport, type QuarterlyReportData } from "@/lib/pdf/quarterly-report";
 import {
   CapitalAccountStatement,
@@ -18,6 +19,15 @@ import {
 import { FundSummaryReport, type FundSummaryData } from "@/lib/pdf/fund-summary";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+function reportTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    QUARTERLY: "Quarterly Report",
+    CAPITAL_ACCOUNT_STATEMENT: "Capital Account Statement",
+    FUND_SUMMARY: "Fund Summary",
+  };
+  return labels[type] ?? type;
+}
 
 export async function POST(req: Request) {
   try {
@@ -350,6 +360,19 @@ export async function POST(req: Request) {
         entityId,
       },
     });
+
+    // ── Notify all entity investors (fire-and-forget) ───────────
+    const investorIds = entity.commitments.map((c: any) => c.investorId);
+    if (investorIds.length > 0) {
+      notifyInvestorsOnReportAvailable({
+        investorIds,
+        entityName: entity.name,
+        reportType: reportTypeLabel(reportType),
+        period: periodLabel,
+      }).catch((err: any) => {
+        console.error("[reports/generate] Failed to send investor notifications:", err);
+      });
+    }
 
     return NextResponse.json(
       {
