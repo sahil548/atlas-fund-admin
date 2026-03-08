@@ -7,6 +7,13 @@ import { useUser } from "@/components/providers/user-provider";
 import { getSidebarNav } from "@/lib/routes";
 import { UserSwitcher } from "@/components/features/directory/user-switcher";
 import { useTheme } from "@/components/providers/theme-provider";
+import useSWR from "swr";
+
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    return r.json();
+  });
 
 export function Sidebar({
   portal,
@@ -22,6 +29,14 @@ export function Sidebar({
 
   const isLpUser = user.role === "LP_INVESTOR";
   const { theme, setTheme } = useTheme();
+
+  // Lightweight unread count poll for sidebar badge
+  const { data: notifData } = useSWR(
+    user?.id ? `/api/notifications?userId=${user.id}` : null,
+    fetcher,
+    { refreshInterval: 30000 },
+  );
+  const unreadCount: number = notifData?.unreadCount ?? 0;
 
   return (
     <div className="w-52 bg-slate-900 flex flex-col flex-shrink-0 h-screen sticky top-0">
@@ -63,7 +78,7 @@ export function Sidebar({
               className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
                 portal === "lp"
                   ? "bg-indigo-600 text-white"
-                  : "text-slate-400"
+                  : "text-slate.400"
               }`}
             >
               LP Portal
@@ -93,6 +108,15 @@ export function Sidebar({
       </nav>
 
       <div className="p-3 border-t border-slate-700 space-y-2">
+        {/* Unread notification badge */}
+        {unreadCount > 0 && (
+          <div className="flex items-center gap-2 px-1">
+            <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0 animate-pulse" />
+            <span className="text-[10px] text-slate-400">
+              {unreadCount} unread notification{unreadCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-slate-500">Theme</span>
           <button

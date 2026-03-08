@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateCapitalCallSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { notifyInvestorsOnCapitalCall } from "@/lib/notification-delivery";
 
 // Valid forward-only status transitions
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -115,6 +116,11 @@ export async function PATCH(
         lineItems: { include: { investor: { select: { id: true, name: true } } } },
       },
     });
+
+    // Fire-and-forget: notify investors when status transitions to ISSUED
+    if (data!.status === "ISSUED" && existing.status !== "ISSUED") {
+      notifyInvestorsOnCapitalCall(id).catch(console.error);
+    }
 
     return NextResponse.json(updated);
   } catch (err) {

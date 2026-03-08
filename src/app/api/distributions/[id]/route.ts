@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { UpdateDistributionSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { recomputeAllInvestorCapitalAccounts } from "@/lib/capital-activity-engine";
+import { notifyInvestorsOnDistribution } from "@/lib/notification-delivery";
 
 // Valid forward-only status transitions
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -142,9 +143,11 @@ export async function PATCH(
       },
     });
 
-    // When marked PAID — recompute all investor capital accounts
+    // When marked PAID — recompute all investor capital accounts and notify investors
     if (data!.status === "PAID" && existing.status !== "PAID") {
       await recomputeAllInvestorCapitalAccounts(existing.entityId);
+      // Fire-and-forget: notify investors (never blocks the status change)
+      notifyInvestorsOnDistribution(id).catch(console.error);
     }
 
     return NextResponse.json(updated);

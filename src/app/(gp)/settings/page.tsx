@@ -12,6 +12,7 @@ import { AIGlobalConfig } from "@/components/features/settings/ai-global-config"
 import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline-editor";
 import { PermissionsTab } from "@/components/features/settings/permissions-tab";
 import { ServiceProviderManager } from "@/components/features/settings/service-provider-manager";
+import { IntegrationsTab } from "@/components/features/settings/integrations-tab";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -447,34 +448,40 @@ export default function SettingsPage() {
 
       {/* Tab 3: Integrations */}
       {tab === "integrations" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold mb-4">Accounting Integrations</h3>
-          <div className="space-y-3">
-            {accountingEntities?.map((e) => (
-              <div key={e.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
-                <div>
-                  <div className="text-sm font-medium">{e.name}</div>
-                  <div className="text-xs text-gray-500">
-                    {e.accountingConnection ? `Last sync: ${e.accountingConnection.lastSyncAt ? new Date(e.accountingConnection.lastSyncAt).toLocaleString() : "Never"}` : "Not connected"}
+        <div className="space-y-4">
+          {/* Accounting Integrations (QBO / Xero) */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold mb-4">Accounting Integrations</h3>
+            <div className="space-y-3">
+              {accountingEntities?.map((e) => (
+                <div key={e.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
+                  <div>
+                    <div className="text-sm font-medium">{e.name}</div>
+                    <div className="text-xs text-gray-500">
+                      {e.accountingConnection ? `Last sync: ${e.accountingConnection.lastSyncAt ? new Date(e.accountingConnection.lastSyncAt).toLocaleString() : "Never"}` : "Not connected"}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {e.accountingConnection && (
+                      <>
+                        <Badge color={e.accountingConnection.provider === "QBO" ? "green" : "blue"}>{e.accountingConnection.provider}</Badge>
+                        <Badge color={e.accountingConnection.syncStatus === "CONNECTED" ? "green" : e.accountingConnection.syncStatus === "ERROR" ? "red" : "gray"}>
+                          {e.accountingConnection.syncStatus}
+                        </Badge>
+                      </>
+                    )}
+                    {!e.accountingConnection && <Badge color="gray">Not Connected</Badge>}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  {e.accountingConnection && (
-                    <>
-                      <Badge color={e.accountingConnection.provider === "QBO" ? "green" : "blue"}>{e.accountingConnection.provider}</Badge>
-                      <Badge color={e.accountingConnection.syncStatus === "CONNECTED" ? "green" : e.accountingConnection.syncStatus === "ERROR" ? "red" : "gray"}>
-                        {e.accountingConnection.syncStatus}
-                      </Badge>
-                    </>
-                  )}
-                  {!e.accountingConnection && <Badge color="gray">Not Connected</Badge>}
-                </div>
-              </div>
-            ))}
-            {(!accountingEntities || accountingEntities.length === 0) && (
-              <div className="text-sm text-gray-400">No entities found.</div>
-            )}
+              ))}
+              {(!accountingEntities || accountingEntities.length === 0) && (
+                <div className="text-sm text-gray-400">No entities found.</div>
+              )}
+            </div>
           </div>
+
+          {/* Third-Party Integrations (Asana, Notion, Plaid, Google Calendar) */}
+          <IntegrationsTab firmId={firmId} />
         </div>
       )}
 
