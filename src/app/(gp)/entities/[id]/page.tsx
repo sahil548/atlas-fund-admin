@@ -41,6 +41,7 @@ export default function EntityDetailPage() {
   const { data: navData, mutate: mutateNav } = useSWR(id ? `/api/nav/${id}` : null, fetcher);
   const { data: metricsData } = useSWR(id ? `/api/entities/${id}/metrics` : null, fetcher);
   const { data: navHistory } = useSWR(id ? `/api/nav/${id}/history` : null, fetcher);
+  const { data: plaidData } = useSWR(id ? `/api/integrations/plaid/accounts?entityId=${id}` : null, fetcher);
   const [tab, setTab] = useState("overview");
   const [showCapCall, setShowCapCall] = useState(false);
   const [showDist, setShowDist] = useState(false);
@@ -427,6 +428,39 @@ export default function EntityDetailPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Plaid Bank Accounts card — only shown when a Plaid connection exists for this entity */}
+          {plaidData?.connected === true && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Bank Accounts (Plaid)</h3>
+                <Badge color="green">Connected</Badge>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {plaidData.accounts && plaidData.accounts.length > 0 ? (
+                  plaidData.accounts.map((acct: { accountId: string; name: string; officialName: string | null; type: string; subtype: string | null; currentBalance: number | null; availableBalance: number | null }) => (
+                    <div key={acct.accountId} className="px-4 py-3 flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-medium text-gray-900">{acct.name}</div>
+                        {acct.officialName && acct.officialName !== acct.name && (
+                          <div className="text-[10px] text-gray-400">{acct.officialName}</div>
+                        )}
+                        <div className="text-[10px] text-gray-500 mt-0.5 capitalize">{acct.type}{acct.subtype ? ` · ${acct.subtype}` : ""}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-semibold text-gray-900">{acct.currentBalance != null ? fmt(acct.currentBalance) : "—"}</div>
+                        {acct.availableBalance != null && acct.availableBalance !== acct.currentBalance && (
+                          <div className="text-[10px] text-gray-400">{fmt(acct.availableBalance)} available</div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-4 py-6 text-center text-sm text-gray-400">No accounts found</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

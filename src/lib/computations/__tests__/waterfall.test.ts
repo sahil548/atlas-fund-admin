@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { computeWaterfall, type WaterfallTierInput } from "../waterfall";
 
 // Standard 4-tier European waterfall configuration
