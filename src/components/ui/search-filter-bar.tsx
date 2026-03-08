@@ -30,6 +30,7 @@ export function SearchFilterBar({
 }: SearchFilterBarProps) {
   const [query, setQuery] = useState("");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevQueryRef = useRef(query);
 
   // Debounce search: fire onSearch 300ms after user stops typing
   const debouncedSearch = useCallback(
@@ -41,6 +42,9 @@ export function SearchFilterBar({
   );
 
   useEffect(() => {
+    // Only fire when query actually changes — skip mount and strict mode double-fire
+    if (prevQueryRef.current === query) return;
+    prevQueryRef.current = query;
     debouncedSearch(query);
   }, [query, debouncedSearch]);
 
