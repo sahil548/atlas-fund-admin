@@ -173,29 +173,35 @@ Plans:
 
 ## Phase 7: Notifications & Reports
 
-**Goal:** Enable notification delivery, report generation, and connect remaining integrations.
+**Goal:** Complete notification delivery (email + SMS), PDF/Excel report generation, and third-party integrations to finish Milestone 1. LP notification preferences from Phase 6 are respected. Reports are white-label and saved to LP document center.
 
 **Requirements:** NOTIF-01, NOTIF-02, NOTIF-03, INTEG-01, INTEG-02, REPORT-01, REPORT-02, REPORT-03, REPORT-04, REPORT-05, INTEG-03, INTEG-04, INTEG-05, INTEG-06
 
 **Success Criteria:**
-- [ ] Capital call notices delivered via email (SendGrid or SES)
+- [ ] Capital call notices delivered via email (Resend) and SMS (Twilio)
 - [ ] SMS notifications sent via Twilio for configured LPs
-- [ ] LP notification preferences respected (immediate vs daily/weekly digest)
+- [ ] LP notification preferences respected (channel + type toggles)
 - [x] Slack IC voting verified and polished (from Phase 1 verification) (completed 2026-03-06)
-- [ ] DocuSign packages can be sent for closing documents
-- [ ] Quarterly report PDF generates for any entity
+- [ ] DocuSign packages can be sent for closing documents with webhook status tracking
+- [ ] Quarterly report PDF generates for any entity (white-label, 4-6 pages)
 - [ ] Capital account statement exports to PDF
-- [ ] Any data table can export to Excel
-- [ ] K-1 documents can be uploaded and distributed to LPs
+- [ ] Fund summary one-pager PDF generates for any entity
+- [ ] Any data table can export to Excel (XLSX)
+- [ ] K-1 documents can be uploaded in bulk and auto-distributed to LPs
+- [ ] Search bars removed from list pages (AI command bar is universal search)
+- [ ] Asana, Notion, Plaid, Google Calendar integrations connected via Settings
 
-**Plans:**
-| # | Plan | Status |
-|---|------|--------|
-| 1 | Notification engine (email + SMS) | Not started |
-| 2 | PDF + Excel report generation | Not started |
-| 3 | External integrations (DocuSign, K-1) | Not started |
+**Plans:** 6 plans
 
-**Progress:** 0/3 plans complete
+Plans:
+- [ ] 07-01-PLAN.md — Wave 1: Notification delivery engine (email via Resend + SMS via Twilio) + notification bell polish (NOTIF-01, NOTIF-02, NOTIF-03, INTEG-01)
+- [ ] 07-02-PLAN.md — Wave 1: Excel export across all data tables + search bar removal (REPORT-03)
+- [ ] 07-03-PLAN.md — Wave 1: PDF report engine + quarterly report + capital account statement + fund summary + /reports page (REPORT-01, REPORT-02, REPORT-05)
+- [ ] 07-04-PLAN.md — Wave 2: K-1 bulk upload/distribution + report notification wiring (REPORT-04) (depends on 07-01, 07-03)
+- [ ] 07-05-PLAN.md — Wave 1: DocuSign real OAuth + envelope management + webhook + signing UI (INTEG-02)
+- [ ] 07-06-PLAN.md — Wave 1: Third-party integrations hub — Asana, Notion, Plaid, Google Calendar (INTEG-03, INTEG-04, INTEG-05, INTEG-06)
+
+**Progress:** 0/6 plans complete
 
 ---
 
