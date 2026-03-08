@@ -530,6 +530,11 @@ model Asset {
   sourceDealId String?    // Links back to the originating deal
   nextReview  DateTime?
 
+  // Phase 4: Performance attribution projections
+  projectedIRR      Float?   // From deal screening / GP override
+  projectedMultiple Float?   // Target MOIC/multiple
+  projectedMetrics  Json?    // Asset-class-specific: { capRate, cashOnCash, yieldToMaturity, ... }
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

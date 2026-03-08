@@ -299,6 +299,16 @@ export const UpdateAssetSchema = z.object({
   participationStructure: z.enum(PARTICIPATION_STRUCTURES).nullable().optional(),
   sector: z.string().optional(),
   incomeType: z.string().optional(),
+  // Phase 4: projection fields (GP manual override)
+  projectedIRR: z.number().nullable().optional(),
+  projectedMultiple: z.number().nullable().optional(),
+  projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
+});
+
+export const UpdateAssetProjectionsSchema = z.object({
+  projectedIRR: z.number().nullable().optional(),
+  projectedMultiple: z.number().nullable().optional(),
+  projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
 export const CreateValuationSchema = z.object({
