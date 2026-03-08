@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: Not started
+current_plan: 05 complete (DocuSign integration)
 status: unknown
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-03-08T06:05:09.503Z"
+stopped_at: Completed 07-03-PLAN.md (PDF report generation)
+last_updated: "2026-03-08T06:07:04.496Z"
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 29
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Atlas — GSD State
@@ -21,9 +21,9 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 6 of 7 (LP Portal) — IN PROGRESS
-- **Phase status:** Plan 05 complete — DocuSign OAuth + envelope creation + webhook + signed doc download + UI buttons
-- **Current Plan:** 05 complete (DocuSign integration)
+- **Phase:** 7 of 7 (Notifications & Reports) — IN PROGRESS
+- **Phase status:** Plan 03 complete — PDF report generation (quarterly, capital account, fund summary) via react-pdf + Vercel Blob + Document records + /reports page
+- **Current Plan:** 07-03 complete (PDF report generation)
 - **Active plan:** none
 
 ## Performance Metrics
@@ -51,6 +51,7 @@ progress:
 | Phase 06-lp-portal P01 | 25min | 2 tasks | 6 files |
 | Phase 07 P02 | 6min | 2 tasks | 14 files |
 | Phase 07 P05 | 10min | 2 tasks | 15 files |
+| Phase 07 P03 | 30 | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -176,6 +177,10 @@ progress:
 - **2026-03-07 (07-02):** SearchFilterBar renamed to FilterBar internally; SearchFilterBar alias kept for backward compat — zero call site changes needed
 - **2026-03-07 (07-02):** ExportButton uses children slot in FilterBar for GP list pages; LP pages get ExportButton directly in header area
 - **2026-03-07 (07-02):** xlsx XLSX.writeFile handles browser download internally — no manual blob/URL.createObjectURL needed
+- **2026-03-08 (07-03):** White-label PDFs: entity name only in headers/footers, no Atlas branding — per user decision from plan spec
+- **2026-03-08 (07-03):** IRR set to null in PDF templates for initial version — per-investor XIRR requires full ledger computation; fund-level TVPI/DPI/RVPI computed from aggregate called/distributed
+- **2026-03-08 (07-03):** Report naming: "{entity.name} — {ReportType} {period}" stored as Document.name — human-readable in Document Center
+- **2026-03-08 (07-03):** renderToBuffer called directly in API route — react-pdf fast enough for serverless (under 3s typical), no worker threads needed
 - **2026-03-08 (07-05):** Raw fetch for DocuSign (no SDK) — mirrors QBO Phase 5 pattern; DocuSign SDK has no TypeScript types
 - **2026-03-08 (07-05):** DocuSignConnection stored at firm level (not entity) — DocuSign accounts are firm-wide, not per-entity
 - **2026-03-08 (07-05):** fileUrl support added to esignature POST — closing checklist items store fileUrl directly, not via Document model
@@ -285,5 +290,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T06:05:09.499Z
-- **Stopped at:** Completed 07-05-PLAN.md
+- **Last session:** 2026-03-08T06:07:04.493Z
+- **Stopped at:** Completed 07-03-PLAN.md (PDF report generation)
