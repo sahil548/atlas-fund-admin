@@ -17,6 +17,7 @@
     "@prisma/client": "^7.4.2",
     "@vercel/blob": "^2.3.1",
     "dotenv": "^17.3.1",
+    "intuit-oauth": "^4.2.2",
     "jsonrepair": "^3.13.2",
     "lucide-react": "^0.575.0",
     "next": "16.1.6",
