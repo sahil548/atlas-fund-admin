@@ -6,11 +6,18 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser();
+
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "reports", "read_only")) return forbidden();
+    }
+
     const firmId =
       authUser?.firmId || req.nextUrl.searchParams.get("firmId");
 

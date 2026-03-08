@@ -4,11 +4,20 @@ import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 export async function GET(req: NextRequest) {
-  const firmId = req.nextUrl.searchParams.get("firmId");
+  const authUser = await getAuthUser();
+
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "documents", "read_only")) return forbidden();
+  }
+
+  const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
 
   const params = parsePaginationParams(req.nextUrl.searchParams, [
     "firmId", "cursor", "limit", "search", "category",
@@ -59,6 +68,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getAuthUser();
+    if (!authUser) return unauthorized();
+
+    if (authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "documents", "full")) return forbidden();
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const name = (formData.get("name") as string) || "Untitled";

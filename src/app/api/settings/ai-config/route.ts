@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateAIConfigSchema } from "@/lib/schemas";
 import { encryptApiKey } from "@/lib/ai-config";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 async function getFirmId(): Promise<string> {
   const authUser = await getAuthUser();
@@ -34,6 +35,12 @@ function configResponse(config: {
 }
 
 export async function GET(req: Request) {
+  const authUser = await getAuthUser();
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "settings", "read_only")) return forbidden();
+  }
+
   const firmId = await getFirmId();
 
   const config = await prisma.aIConfiguration.findUnique({
@@ -57,6 +64,12 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
+  const authUser = await getAuthUser();
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "settings", "full")) return forbidden();
+  }
+
   const firmId = await getFirmId();
 
   let body: unknown;

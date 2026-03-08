@@ -12,17 +12,21 @@
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export async function GET(req: Request) {
-  try {
-    const authUser = await getAuthUser();
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
 
+  if (authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "reports", "read_only")) return forbidden();
+  }
+
+  try {
     const { searchParams } = new URL(req.url);
     const entityId = searchParams.get("entityId") ?? undefined;
     const taxYear = searchParams.get("taxYear") ?? undefined;

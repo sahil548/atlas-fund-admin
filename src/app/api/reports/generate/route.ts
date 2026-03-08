@@ -8,7 +8,8 @@ import { renderToBuffer } from "@react-pdf/renderer";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { GenerateReportSchema } from "@/lib/schemas";
 import { notifyInvestorsOnReportAvailable } from "@/lib/notification-delivery";
 import { QuarterlyReport, type QuarterlyReportData } from "@/lib/pdf/quarterly-report";
@@ -32,8 +33,11 @@ function reportTypeLabel(type: string): string {
 export async function POST(req: Request) {
   try {
     const authUser = await getAuthUser();
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authUser) return unauthorized();
+
+    if (authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "reports", "full")) return forbidden();
     }
 
     const { data, error } = await parseBody(req, GenerateReportSchema);

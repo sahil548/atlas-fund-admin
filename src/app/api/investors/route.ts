@@ -2,12 +2,19 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateInvestorSchema } from "@/lib/schemas";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
 
 export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser();
+
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "investors", "read_only")) return forbidden();
+    }
+
     const firmId = req.nextUrl.searchParams.get("firmId") || authUser?.firmId;
 
     const params = parsePaginationParams(req.nextUrl.searchParams, [
@@ -70,6 +77,14 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: Request) {
   try {
+    const authUser = await getAuthUser();
+    if (!authUser) return unauthorized();
+
+    if (authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "investors", "full")) return forbidden();
+    }
+
     const { data, error } = await parseBody(req, CreateInvestorSchema);
     if (error) return error;
     const investor = await prisma.investor.create({ data: data! });

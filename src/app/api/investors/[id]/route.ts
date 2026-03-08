@@ -2,12 +2,21 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateInvestorSchema } from "@/lib/schemas";
+import { getAuthUser, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  const authUser = await getAuthUser();
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "investors", "read_only")) return forbidden();
+  }
+
   const investor = await prisma.investor.findUnique({
     where: { id },
     include: {
@@ -52,6 +61,13 @@ export async function GET(
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const authUser = await getAuthUser();
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "investors", "full")) return forbidden();
+  }
+
   const { data, error } = await parseBody(req, UpdateInvestorSchema);
   if (error) return error;
   const investor = await prisma.investor.update({ where: { id }, data: data! });
@@ -63,6 +79,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  const authUser = await getAuthUser();
+  if (authUser && authUser.role === "GP_TEAM") {
+    const perms = await getEffectivePermissions(authUser.id);
+    if (!checkPermission(perms, "investors", "full")) return forbidden();
+  }
+
   const investor = await prisma.investor.findUnique({
     where: { id },
     include: {

@@ -15,7 +15,8 @@
 import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
-import { getAuthUser } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnK1Available } from "@/lib/notification-delivery";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -82,8 +83,11 @@ function matchInvestor(
 export async function POST(req: Request) {
   try {
     const authUser = await getAuthUser();
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authUser) return unauthorized();
+
+    if (authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "reports", "full")) return forbidden();
     }
 
     const formData = await req.formData();
