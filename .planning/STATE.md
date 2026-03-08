@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_plan: 04-05
+current_plan: 05-lp-portal
 status: in_progress
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-03-08T00:50:34Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-03-08T01:15:00Z"
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 18
-  completed_plans: 17
+  completed_plans: 18
 ---
 
 # Atlas — GSD State
@@ -21,9 +21,9 @@ progress:
 
 ## Current Position
 - **Milestone:** 1 (GP Production Ready)
-- **Phase:** 4 of 7 (Asset Entity Polish) — IN PROGRESS
-- **Phase status:** Plans 01, 02, 03, 04 complete — side letter engine + RBAC + audit log + pagination/search/error boundaries + dashboard redesign done
-- **Current Plan:** 04-05 (next up, if it exists)
+- **Phase:** 4 of 7 (Asset Entity Polish) — COMPLETE
+- **Phase status:** Plans 01-05 all complete — side letter engine + RBAC + audit log + pagination/search/error boundaries + dashboard redesign + performance attribution done
+- **Current Plan:** Phase 5 (LP Portal) next
 - **Active plan:** none
 
 ## Performance Metrics
@@ -43,6 +43,7 @@ progress:
 | 04    | 02   | 15min    | 2     | 20    |
 | 04    | 03   | 45min    | 2     | 25    |
 | 04    | 04   | 50min    | 2     | 13    |
+| 04    | 05   | 30min    | 2     | 8     |
 
 ## Accumulated Context
 
@@ -88,6 +89,7 @@ progress:
   - GP_TEAM: configurable per-area permissions via Settings > Permissions tab
   - Audit log: CREATE_DEAL, KILL/CLOSE/REVIVE_DEAL, CREATE/UPDATE_ENTITY, CREATE_CAPITAL_CALL, CREATE_DISTRIBUTION
 - GP Dashboard redesign: BUILT in 04-04 (entity cards + portfolio aggregates + LP comparison view)
+- Performance attribution: BUILT in 04-05 (per-asset contribution to fund returns, projected vs actual comparison, entity attribution ranked by contribution)
 
 ### Patterns to Preserve
 - Route registry (`routes.ts`) is single source of truth — never bypass
@@ -149,6 +151,19 @@ progress:
 - **2026-03-08 (04-04):** Entity card expand/collapse uses CSS max-height transition — zero dependencies, smooth animation
 - **2026-03-08 (04-04):** PortfolioAggregates fetches from /portfolio-aggregates and distributes data as props to child components — single SWR call for entire bottom section
 - **2026-03-08 (04-04):** Top/bottom performers: assets with no IRR data excluded from performer lists — N/A values meaningless for ranking
+- **2026-03-08 (04-05):** Attribution via entity allocation weight: asset IRR contribution = (costBasis / totalEntityCostBasis) * assetIRR
+- **2026-03-08 (04-05):** XIRR fallback to cost basis: when no funded capital calls, uses entryDate + costBasis as synthetic outflow for IRR computation
+- **2026-03-08 (04-05):** Projection source is transparent in UI: "AI-extracted from CIM" vs "GP estimate" badge shows data provenance
+- **2026-03-08 (04-05):** IRR entered as percentage by GP (e.g. 15 for 15%), stored as decimal (0.15) — avoids common confusion between representations
+- **2026-03-08 (04-05):** PATCH on attribution route for GP overrides keeps projection updates separate from general PUT /api/assets/[id]
+
+### Phase 4 Performance Attribution (Plan 04-05)
+- computeAssetAttribution: XIRR from real capital calls/distributions (via entity allocation weighting) + projected metrics from AI deal metadata or GP overrides
+- computeEntityAttribution: aggregates all assets, assigns cost-basis contribution weights, ranks by weighted IRR contribution
+- Asset detail "Performance" tab: side-by-side projected vs actual with green/red variance arrows
+- GP can inline-edit projectedIRR and projectedMultiple; stored as decimal, entered as percentage
+- Empty state shown when no projections exist with helpful call-to-action
+- FIN-10 complete: each asset's contribution to fund returns is computed and rankable
 
 ### Phase 4 Dashboard Redesign (Plan 04-04)
 - GP Dashboard fully redesigned as "morning briefing": entity cards (NAV/IRR/TVPI/deployment) at top + portfolio overview (allocation/performers/deployment/activity) at bottom
@@ -234,5 +249,5 @@ progress:
 
 ## Session Continuity
 - **Initialized:** 2026-03-05
-- **Last session:** 2026-03-08T00:50:34Z
-- **Stopped at:** Completed 04-04-PLAN.md
+- **Last session:** 2026-03-08T01:15:00Z
+- **Stopped at:** Completed 04-05-PLAN.md

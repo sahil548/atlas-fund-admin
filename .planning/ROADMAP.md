@@ -7,7 +7,7 @@
 **Starting point:** Atlas is deployed on Vercel with real Clerk auth and real data. ~70% of features are built. Financial computation code exists but is unverified. Several features have never been tested end-to-end.
 
 **Total phases:** 7
-**Current phase:** 3 (Capital Activity) — Phases 1-2 complete
+**Current phase:** 5 (QBO/Xero Integration) — Phases 1-4 complete
 
 ---
 
@@ -88,10 +88,10 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Wave 1: Schema consolidation + capital call/distribution line item APIs + status workflows + transaction chains
-- [ ] 03-02-PLAN.md — Wave 2: Waterfall enhancement (configurable carry, pref return, clawback, GP co-invest) + fee calculation engine (depends on 03-01)
-- [ ] 03-03-PLAN.md — Wave 2: Metrics wiring to entity detail + GP dashboard + capital account ledger + NAV refinement (depends on 03-01)
+- [x] 03-02-PLAN.md — Wave 2: Waterfall enhancement (configurable carry, pref return, clawback, GP co-invest) + fee calculation engine (depends on 03-01)
+- [x] 03-03-PLAN.md — Wave 2: Metrics wiring to entity detail + GP dashboard + capital account ledger + NAV refinement (depends on 03-01)
 
-**Progress:** 1/3 plans complete
+**Progress:** 3/3 plans complete — PHASE COMPLETE
 
 ---
 
@@ -106,21 +106,22 @@ Plans:
 - [x] Fund-level and LP-level performance aggregated from underlying computations (FIN-08, 04-04)
 - [x] Cross-entity NAV dashboard shows all entities with expandable detail (ASSET-02, 04-04)
 - [x] LP comparison view shows all LPs with TVPI/DPI/RVPI/IRR per entity (FIN-09, 04-04)
+- [x] Each asset's contribution to fund returns computed and rankable with projected vs actual (FIN-10, 04-05)
 - [x] Role-based access enforced (GP_ADMIN full, GP_TEAM configurable, SERVICE_PROVIDER scoped)
 - [x] All data lists support pagination
 - [x] Error boundaries prevent full-page crashes
 - [x] AI endpoints have rate limiting
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans executed
 
 Plans:
 - [x] 04-01-PLAN.md — Wave 1: Side letter structured rules + fee adjustment engine + MFN detection (FIN-07)
 - [x] 04-02-PLAN.md — Wave 1: Role-based access enforcement + service provider scoping + audit logging (CORE-02, CORE-03)
 - [x] 04-03-PLAN.md — Wave 1: Pagination + search/filters + error boundaries + rate limiting (CORE-04, CORE-05, CORE-06)
 - [x] 04-04-PLAN.md — Wave 2: Dashboard redesign + cross-entity NAV + performance aggregation + LP comparison (FIN-08, FIN-09, ASSET-02)
-- [ ] 04-05-PLAN.md — Wave 2: Deal-level performance attribution with projected vs actual (FIN-10)
+- [x] 04-05-PLAN.md — Wave 2: Deal-level performance attribution with projected vs actual (FIN-10)
 
-**Progress:** 4/5 plans complete
+**Progress:** 5/5 plans complete — PHASE COMPLETE
 
 ---
 
