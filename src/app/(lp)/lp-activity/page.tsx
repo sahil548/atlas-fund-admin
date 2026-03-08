@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/lib/utils";
 import { useInvestor } from "@/components/providers/investor-provider";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -33,9 +34,22 @@ export default function LPActivityPage() {
     <div className="space-y-5">
       {/* Capital Account Running Ledger */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold">Capital Account</h3>
-          <div className="text-xs text-gray-500 mt-0.5">Running ledger of your contributions, distributions, and fees</div>
+        <div className="p-4 border-b border-gray-100 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Capital Account</h3>
+            <div className="text-xs text-gray-500 mt-0.5">Running ledger of your contributions, distributions, and fees</div>
+          </div>
+          <ExportButton
+            data={(capitalAccount?.ledger ?? []).map((entry: any) => ({
+              date: new Date(entry.date).toLocaleDateString(),
+              type: entry.type,
+              entity: entry.entityName,
+              description: entry.description,
+              amount: entry.amount,
+              runningBalance: entry.runningBalance,
+            }))}
+            fileName="LP_Activity_Export"
+          />
         </div>
 
         {/* Entity summaries */}

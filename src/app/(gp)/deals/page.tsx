@@ -11,6 +11,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
+import { ExportButton } from "@/components/ui/export-button";
 
 import {
   ASSET_CLASS_LABELS,
@@ -148,14 +149,27 @@ export default function DealsPage() {
         <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
       </div>
 
-      {/* Search + Filters */}
+      {/* Filters + Export */}
       <SearchFilterBar
-        onSearch={handleSearch}
         filters={DEAL_FILTERS}
         onFilterChange={handleFilterChange}
         activeFilters={activeFilters}
-        placeholder="Search deals..."
-      />
+      >
+        <ExportButton
+          data={deals.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            assetClass: d.assetClass,
+            stage: d.stage,
+            targetReturn: d.targetReturn ?? "",
+            targetSize: d.targetSize ?? "",
+            dealLead: d.dealLead?.name ?? "",
+            status: d.status ?? d.stage,
+            createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "",
+          }))}
+          fileName="Deals_Export"
+        />
+      </SearchFilterBar>
 
       {/* Pipeline Analytics */}
       {analytics && (

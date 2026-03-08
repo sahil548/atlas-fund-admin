@@ -8,6 +8,7 @@ import { CreateMeetingForm } from "@/components/features/meetings/create-meeting
 import Link from "next/link";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -147,14 +148,28 @@ export default function MeetingsPage() {
         <StatCard label="This Month" value={String(thisMonth)} small />
       </div>
 
-      {/* Search + Filters */}
+      {/* Filters + Export */}
       <SearchFilterBar
-        onSearch={handleSearch}
         filters={MEETING_FILTERS}
         onFilterChange={handleFilterChange}
         activeFilters={activeFilters}
-        placeholder="Search meetings..."
-      />
+      >
+        <ExportButton
+          data={allMeetings.map((m) => ({
+            id: m.id,
+            title: m.title,
+            date: new Date(m.meetingDate).toLocaleDateString(),
+            type: m.meetingType ?? "",
+            source: SOURCE_LABELS[m.source] ?? m.source,
+            hasTranscript: m.hasTranscript ? "Yes" : "No",
+            actionItems: m.actionItems,
+            asset: m.asset?.name ?? "",
+            deal: m.deal?.name ?? "",
+            entity: m.entity?.name ?? "",
+          }))}
+          fileName="Meetings_Export"
+        />
+      </SearchFilterBar>
 
       {/* Meeting Cards */}
       {allMeetings.length === 0 && !isLoading ? (

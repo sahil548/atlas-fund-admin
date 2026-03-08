@@ -19,6 +19,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { fmt } from "@/lib/utils";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -227,7 +228,6 @@ export default function DirectoryPage() {
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="p-3 border-b border-gray-100">
               <SearchFilterBar
-                onSearch={handleInvestorSearch}
                 filters={[
                   { key: "type", label: "Type", options: [
                     { value: "Individual", label: "Individual" },
@@ -237,8 +237,22 @@ export default function DirectoryPage() {
                 ]}
                 onFilterChange={handleInvestorFilter}
                 activeFilters={investorFilters}
-                placeholder="Search investors..."
-              />
+              >
+                <ExportButton
+                  data={allInvestors.map((inv: any) => ({
+                    id: inv.id,
+                    name: inv.name,
+                    type: inv.investorType,
+                    totalCommitted: inv.totalCommitted ?? 0,
+                    kycStatus: inv.kycStatus ?? "",
+                    email: inv.contact?.email ?? "",
+                    company: inv.company?.name ?? "",
+                    advisoryBoard: inv.advisoryBoard ? "Yes" : "No",
+                    contactPreference: inv.contactPreference ?? "",
+                  }))}
+                  fileName="Directory_Export"
+                />
+              </SearchFilterBar>
             </div>
             <table className="w-full text-xs">
               <thead className="bg-gray-50">

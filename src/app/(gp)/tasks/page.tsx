@@ -11,6 +11,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import Link from "next/link";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -194,14 +195,26 @@ export default function TasksPage() {
         <Button onClick={() => setShowCreate(true)}>+ New Task</Button>
       </div>
 
-      {/* Search + Filters */}
+      {/* Filters + Export */}
       <SearchFilterBar
-        onSearch={handleSearch}
         filters={TASK_FILTERS}
         onFilterChange={handleFilterChange}
         activeFilters={activeFilters}
-        placeholder="Search tasks..."
-      />
+      >
+        <ExportButton
+          data={allTasks.map((t: any) => ({
+            id: t.id,
+            title: t.title,
+            status: STATUS_LABELS[t.status] ?? t.status,
+            priority: t.priority ?? "MEDIUM",
+            assignee: t.assignee?.name ?? t.assigneeName ?? "",
+            dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "",
+            dealName: t.deal?.name ?? "",
+            entityName: t.entity?.name ?? "",
+          }))}
+          fileName="Tasks_Export"
+        />
+      </SearchFilterBar>
 
       <div className="flex gap-1 border-b border-gray-200 pb-0">
         {viewTabs.map((vt) => (

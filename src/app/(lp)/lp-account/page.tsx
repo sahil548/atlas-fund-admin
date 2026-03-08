@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { useInvestor } from "@/components/providers/investor-provider";
 import { useToast } from "@/components/ui/toast";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -226,6 +227,17 @@ export default function LPAccountPage() {
           </div>
           <div className="flex items-center gap-2">
             <Badge color="indigo">Computed from ledger</Badge>
+            <ExportButton
+              data={data.ledger.map((entry) => ({
+                date: new Date(entry.date).toLocaleDateString(),
+                type: entry.type,
+                entity: entry.entityName,
+                description: entry.description,
+                amount: entry.amount,
+                runningBalance: entry.runningBalance,
+              }))}
+              fileName="LP_Account_Export"
+            />
             <button
               onClick={handleRecompute}
               disabled={recomputing}

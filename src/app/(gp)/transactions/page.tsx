@@ -13,6 +13,7 @@ import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { fmt, pct } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -163,7 +164,7 @@ export default function TransactionsPage() {
       {/* Capital Calls Tab */}
       {tab === "calls" && (
         <div className="bg-white rounded-xl border border-gray-200">
-          {/* Filters */}
+          {/* Filters + Export */}
           <div className="flex gap-2 p-3 border-b border-gray-100">
             <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Entities</option>
@@ -173,6 +174,19 @@ export default function TransactionsPage() {
               <option value="">All Statuses</option>
               {["DRAFT", "ISSUED", "FUNDED", "PARTIALLY_FUNDED", "OVERDUE"].map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
             </select>
+            <ExportButton
+              data={filteredCalls.map((c) => ({
+                id: c.id,
+                callNumber: c.callNumber,
+                entity: c.entity?.name ?? "",
+                amount: c.amount,
+                callDate: new Date(c.callDate).toLocaleDateString(),
+                dueDate: new Date(c.dueDate).toLocaleDateString(),
+                status: c.status,
+                fundedPercent: c.fundedPercent,
+              }))}
+              fileName="CapitalCalls_Export"
+            />
           </div>
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
@@ -216,7 +230,7 @@ export default function TransactionsPage() {
       {/* Distributions Tab */}
       {tab === "distributions" && (
         <div className="bg-white rounded-xl border border-gray-200">
-          {/* Filters */}
+          {/* Filters + Export */}
           <div className="flex gap-2 p-3 border-b border-gray-100">
             <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Entities</option>
@@ -226,6 +240,23 @@ export default function TransactionsPage() {
               <option value="">All Statuses</option>
               {["DRAFT", "APPROVED", "PAID"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+            <ExportButton
+              data={filteredDists.map((d) => ({
+                id: d.id,
+                entity: d.entity?.name ?? "",
+                distributionDate: new Date(d.distributionDate).toLocaleDateString(),
+                grossAmount: d.grossAmount,
+                source: d.source ?? "",
+                returnOfCapital: d.returnOfCapital,
+                income: d.income,
+                longTermGain: d.longTermGain,
+                shortTermGain: d.shortTermGain,
+                carriedInterest: d.carriedInterest,
+                netToLPs: d.netToLPs,
+                status: d.status,
+              }))}
+              fileName="Distributions_Export"
+            />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">

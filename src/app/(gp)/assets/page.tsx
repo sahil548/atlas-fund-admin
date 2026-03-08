@@ -9,6 +9,7 @@ import { fmt, pct } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 import {
   ASSET_CLASS_LABELS,
@@ -121,12 +122,26 @@ export default function AssetsPage() {
         <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-semibold">All Assets ({allAssets.length})</h3>
           <SearchFilterBar
-            onSearch={handleSearch}
             filters={ASSET_FILTERS}
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
-            placeholder="Search assets..."
-          />
+          >
+            <ExportButton
+              data={allAssets.map((a: any) => ({
+                id: a.id,
+                name: a.name,
+                assetClass: a.assetClass,
+                entityName: a.entityAllocations?.map((ea: any) => ea.entity.name).join(", ") ?? "",
+                costBasis: a.costBasis,
+                fairValue: a.fairValue,
+                irr: a.irr ?? "",
+                moic: a.moic ?? "",
+                status: a.status,
+                createdAt: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "",
+              }))}
+              fileName="Assets_Export"
+            />
+          </SearchFilterBar>
         </div>
 
         {allAssets.length === 0 && !isLoading ? (

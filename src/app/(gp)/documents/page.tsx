@@ -12,6 +12,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -175,15 +176,29 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header with search + filters + upload button */}
+      {/* Header with filters + export + upload button */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <SearchFilterBar
-          onSearch={handleSearch}
           filters={DOC_FILTERS}
           onFilterChange={handleFilterChange}
           activeFilters={activeFilters}
-          placeholder="Search documents..."
-        />
+        >
+          <ExportButton
+            data={allDocs.map((d) => {
+              const assoc = association(d);
+              return {
+                id: d.id,
+                name: d.name,
+                category: d.category,
+                associatedWith: assoc.label,
+                associationType: assoc.type,
+                uploadDate: new Date(d.uploadDate).toLocaleDateString(),
+                fileSize: d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "",
+              };
+            })}
+            fileName="Documents_Export"
+          />
+        </SearchFilterBar>
         <Button onClick={() => setShowUpload(true)}>+ Upload Document</Button>
       </div>
 

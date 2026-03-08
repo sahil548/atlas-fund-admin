@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { useInvestor } from "@/components/providers/investor-provider";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -31,7 +32,20 @@ export default function LPDocumentsPage() {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h3 className="text-sm font-semibold mb-1">Document Center</h3>
+      <div className="flex items-center justify-between mb-1">
+        <h3 className="text-sm font-semibold">Document Center</h3>
+        <ExportButton
+          data={docs.map((doc) => ({
+            id: doc.id,
+            name: doc.name,
+            category: doc.category,
+            entity: doc.entity?.name ?? "General",
+            uploadDate: new Date(doc.uploadDate).toLocaleDateString(),
+            fileSize: doc.fileSize ? `${(doc.fileSize / 1024).toFixed(0)} KB` : "",
+          }))}
+          fileName="LP_Documents_Export"
+        />
+      </div>
       <div className="text-xs text-gray-500 mb-4">
         Reports, statements, and correspondence for your entities
       </div>

@@ -10,6 +10,7 @@ import { CreateEntityForm } from "@/components/features/entities/create-entity-f
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { ExportButton } from "@/components/ui/export-button";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -119,12 +120,25 @@ export default function EntitiesPage() {
           <h3 className="text-sm font-semibold">All Entities ({allEntities.length})</h3>
           <div className="flex items-center gap-3">
             <SearchFilterBar
-              onSearch={handleSearch}
               filters={ENTITY_FILTERS}
               onFilterChange={handleFilterChange}
               activeFilters={activeFilters}
-              placeholder="Search entities..."
-            />
+            >
+              <ExportButton
+                data={allEntities.map((e: any) => ({
+                  id: e.id,
+                  name: e.name,
+                  type: e.entityType,
+                  vintageYear: e.vintageYear ?? "",
+                  totalCommitted: e.totalCommitments ?? 0,
+                  totalCalled: e.totalCalled ?? 0,
+                  nav: e.nav ?? "",
+                  irr: e.irr ?? "",
+                  tvpi: e.tvpi ?? "",
+                }))}
+                fileName="Entities_Export"
+              />
+            </SearchFilterBar>
             <Button onClick={() => setShowCreate(true)}>+ Create Entity</Button>
           </div>
         </div>
