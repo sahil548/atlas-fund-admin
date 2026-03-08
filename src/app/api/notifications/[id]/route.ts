@@ -1,14 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const authUser = await getAuthUser();
+  if (!authUser) return unauthorized();
+
   const { id } = await params;
   const body = await req.json();
 
   if (body.action === "MARK_READ") {
+    // Verify the notification belongs to the authenticated user
+    const existing = await prisma.notification.findUnique({ where: { id } });
+    if (!existing || existing.userId !== authUser.id) return forbidden();
+
     const notification = await prisma.notification.update({
       where: { id },
       data: { isRead: true, readAt: new Date() },
@@ -17,9 +25,9 @@ export async function PATCH(
   }
 
   if (body.action === "MARK_ALL_READ") {
-    // id is the userId in this case
+    // Use session userId instead of path param to prevent IDOR
     await prisma.notification.updateMany({
-      where: { userId: id, isRead: false },
+      where: { userId: authUser.id, isRead: false },
       data: { isRead: true, readAt: new Date() },
     });
     return NextResponse.json({ success: true });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CreateAIPromptTemplateSchema } from "@/lib/schemas";
 import { DEFAULT_PROMPT_TEMPLATES } from "@/lib/default-prompt-templates";
-import { getAuthUser, forbidden } from "@/lib/auth";
+import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 
 async function getFirmId(): Promise<string> {
@@ -14,12 +14,13 @@ async function getFirmId(): Promise<string> {
 // GET — returns all templates (DB rows merged with defaults for uncustomized types)
 export async function GET(req: Request) {
   const authUser = await getAuthUser();
-  if (authUser && authUser.role === "GP_TEAM") {
+  if (!authUser) return unauthorized();
+  if (authUser.role === "GP_TEAM") {
     const perms = await getEffectivePermissions(authUser.id);
     if (!checkPermission(perms, "settings", "read_only")) return forbidden();
   }
 
-  const firmId = await getFirmId();
+  const firmId = authUser.firmId!;
   const url = new URL(req.url);
   const moduleFilter = url.searchParams.get("module");
 
@@ -66,12 +67,13 @@ export async function GET(req: Request) {
 // PUT — upsert a template by [firmId, type]
 export async function PUT(req: Request) {
   const authUser = await getAuthUser();
-  if (authUser && authUser.role === "GP_TEAM") {
+  if (!authUser) return unauthorized();
+  if (authUser.role === "GP_TEAM") {
     const perms = await getEffectivePermissions(authUser.id);
     if (!checkPermission(perms, "settings", "full")) return forbidden();
   }
 
-  const firmId = await getFirmId();
+  const firmId = authUser.firmId!;
 
   let body: unknown;
   try {
