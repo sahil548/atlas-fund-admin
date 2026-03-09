@@ -18,7 +18,7 @@ import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { useToast } from "@/components/ui/toast";
 import { LayoutList } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { formatDate, fmt } from "@/lib/utils";
 
 import {
   ASSET_CLASS_LABELS,
@@ -472,8 +472,11 @@ export default function DealsPage() {
               const items = deals.filter((p: any) => p.stage === s.k);
               return (
                 <div key={s.k} className={`${s.c} rounded-xl p-3 min-w-[260px] flex-1`}>
-                  <div className="text-xs font-semibold text-gray-700 mb-2 flex justify-between">
-                    {s.l} <span className="text-gray-400">{items.length}</span>
+                  <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 flex justify-between items-center">
+                    <span>{s.l} <span className="text-gray-400">({items.length})</span></span>
+                    {analytics?.valueByStage?.[s.k] ? (
+                      <span className="text-gray-400 font-normal">{fmt(analytics.valueByStage[s.k])}</span>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     {items.map((p: any) => {
@@ -558,7 +561,22 @@ export default function DealsPage() {
                             )}
                             <div className="mt-2 flex justify-between text-[10px] text-gray-500">
                               <span>{p.targetSize || ""}</span>
-                              <span>{p.counterparty || ""}</span>
+                              <div className="flex items-center gap-1.5">
+                                {p.daysInStage != null && (
+                                  <span
+                                    className={`font-medium ${
+                                      p.daysInStage > 30
+                                        ? "text-red-500"
+                                        : p.daysInStage >= 14
+                                          ? "text-amber-500"
+                                          : "text-gray-400"
+                                    }`}
+                                  >
+                                    {p.daysInStage}d
+                                  </span>
+                                )}
+                                <span>{p.counterparty || ""}</span>
+                              </div>
                             </div>
                           </Link>
                         </div>
