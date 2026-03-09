@@ -82,15 +82,15 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Document Intake Engine
 
-- [ ] **DOC-01**: Site-wide document upload extracts structured data via AI (CIMs, lease agreements, credit docs, K-1s)
-- [ ] **DOC-02**: Extracted data auto-tagged and linked to relevant deal, asset, or entity
+- [x] **DOC-01**: Site-wide document upload extracts structured data via AI (CIMs, lease agreements, credit docs, K-1s)
+- [x] **DOC-02**: Extracted data auto-tagged and linked to relevant deal, asset, or entity
 - [ ] **DOC-03**: Document processing status visible (processing, complete, failed) with extracted fields preview
 
 ### AI Configuration & Access
 
 - [x] **AICONF-01**: GP_ADMIN can set tenant-wide default LLM API key in Settings
 - [x] **AICONF-02**: GP_ADMIN can toggle AI access per user (enable/disable AI features per team member)
-- [ ] **AICONF-03**: Users with AI access enabled can set their own API key override in profile settings
+- [x] **AICONF-03**: Users with AI access enabled can set their own API key override in profile settings
 - [x] **AICONF-04**: AI features check user key first, fall back to tenant key, show "No API key configured" if neither exists
 - [x] **AICONF-05**: Service providers have AI access disabled by default
 
@@ -183,11 +183,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-08 | Phase 11 | Complete |
 | AICONF-01 | Phase 12 | Complete |
 | AICONF-02 | Phase 12 | Complete |
-| AICONF-03 | Phase 12 | Pending |
+| AICONF-03 | Phase 12 | Complete |
 | AICONF-04 | Phase 12 | Complete |
 | AICONF-05 | Phase 12 | Complete |
-| DOC-01 | Phase 12 | Pending |
-| DOC-02 | Phase 12 | Pending |
+| DOC-01 | Phase 12 | Complete |
+| DOC-02 | Phase 12 | Complete |
 | DOC-03 | Phase 12 | Pending |
 | DEAL-11 | Phase 13 | Pending |
 | DEAL-12 | Phase 13 | Pending |

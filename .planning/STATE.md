@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: planning
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-03-09T08:58:44.525Z"
-last_activity: 2026-03-09 — Phase 11 Plan 05 complete (PageHeader/SectionPanel adopted across all GP pages, dark mode verified)
+status: executing
+stopped_at: Completed 12-03-PLAN.md
+last_updated: "2026-03-09T09:08:41.000Z"
+last_activity: 2026-03-09 — Phase 12 Plan 03 complete (AI document extraction pipeline: extractDocumentFields(), auto-trigger on upload, retry endpoint)
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 30
-  completed_plans: 6
-  percent: 100
+  completed_plans: 8
+  percent: 64
 ---
 
 # Atlas — GSD State
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 12 of 19 — AI Configuration + Document Intake (IN PROGRESS)
-- **Plan:** 1 of 5 complete
+- **Plan:** 3 of 5 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 12 Plan 01 complete (schema foundation, getUserAIConfig fallback chain, AI toggle in Settings)
+- **Last activity:** 2026-03-09 — Phase 12 Plan 03 complete (AI document extraction pipeline: extractDocumentFields(), auto-trigger on upload, retry endpoint)
 
 Progress: [██████░░░░] 64% (42/66 plans)
 
@@ -39,6 +39,8 @@ Progress: [██████░░░░] 64% (42/66 plans)
 | v1.0 (1-10) | 36 | ~180min | ~5min |
 | 11-foundation | 5 | 41min | 8min |
 | Phase 12-ai-configuration-document-intake P01 | 18 | 4 tasks | 6 files |
+| Phase 12 P02 | 7 | 2 tasks | 4 files |
+| Phase 12 P03 | 7 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -56,6 +58,10 @@ Progress: [██████░░░░] 64% (42/66 plans)
 - **LP_INVESTOR AI:** Shown as N/A in toggle column — AI access not applicable to LP users
 - **createUserAIClient returns null:** when apiKey is null OR aiEnabled is false — callers must null-check result
 - **Force-reset note:** Schema migration wipes AiConfig table — tenant AI key must be re-entered in Settings after any force-reset
+- **AI extraction trigger pattern:** Fire-and-forget via .catch() — never await in upload handlers; use retry endpoint for guaranteed completion
+- **extractDocumentFields no-key behavior:** Sets extractionStatus=NONE (not FAILED) when no AI key configured — FAILED reserved for actual extraction errors
+- **Global /documents POST:** Now calls extractTextFromBuffer() before document creation (was missing before Plan 03)
+- **Retry endpoint:** POST /api/documents/[id]/extract?firmId=xxx — awaits synchronously, returns updated extractionStatus/extractedFields
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -84,6 +90,6 @@ Progress: [██████░░░░] 64% (42/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T08:58:44.522Z
-- **Stopped at:** Completed 12-01-PLAN.md
-- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-01-SUMMARY.md
+- **Last session:** 2026-03-09T09:46:53.312Z
+- **Stopped at:** Completed 12-03-PLAN.md
+- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-03-SUMMARY.md
