@@ -142,6 +142,7 @@ export default function DealsPage() {
     totalActiveDeals: number;
     totalClosedDeals: number;
     totalDeadDeals: number;
+    killReasonBreakdown?: Array<{ reason: string; count: number }>;
   } | undefined;
 
   return (
@@ -265,6 +266,27 @@ export default function DealsPage() {
                 </div>
               ))}
             </div>
+
+            {/* Top Kill Reasons mini-summary */}
+            {analytics.killReasonBreakdown && analytics.killReasonBreakdown.length > 0 && (
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold text-gray-700">Top Kill Reasons</span>
+                  <span className="text-[10px] text-gray-400">{analytics.totalDeadDeals} dead deal{analytics.totalDeadDeals !== 1 ? "s" : ""}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {analytics.killReasonBreakdown.slice(0, 3).map(({ reason, count }) => (
+                    <span
+                      key={reason}
+                      className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full bg-red-50 text-red-700 border border-red-100 dark:bg-red-950 dark:text-red-300 dark:border-red-900"
+                    >
+                      {reason}
+                      <span className="font-bold text-red-500">({count})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </SectionErrorBoundary>
       )}

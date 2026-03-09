@@ -220,6 +220,17 @@ export async function GET(req: NextRequest) {
     ? Math.min(100, Math.round((closedDeals.length / totalDeals) * 100))
     : 0;
 
+  // 6. Kill reason breakdown (dead deals only)
+  const deadDeals = deals.filter((d) => d.stage === "DEAD");
+  const killReasonMap: Record<string, number> = {};
+  for (const deal of deadDeals) {
+    const reason = (deal as any).killReason || "Unknown";
+    killReasonMap[reason] = (killReasonMap[reason] || 0) + 1;
+  }
+  const killReasonBreakdown = Object.entries(killReasonMap)
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count);
+
   return NextResponse.json({
     pipelineValueByStage,
     stageDistribution,
@@ -231,11 +242,13 @@ export async function GET(req: NextRequest) {
     conversionRates: { screeningToDD, ddToIC, icToClose },
     throughput: { enteringPerMonth, exitingPerMonth },
     funnelData,
+    killReasonBreakdown,
     summary: {
       totalPipelineValue,
       activeDeals: deals.filter((d) => ACTIVE_STAGES.includes(d.stage)).length,
       avgDaysToClose,
       overallConversion,
+      totalDeadDeals: deadDeals.length,
     },
   });
 }

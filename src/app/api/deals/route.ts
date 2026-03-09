@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
     select: {
       stage: true,
       targetSize: true,
+      killReason: true,
       screeningResult: { select: { id: true } },
     },
   });
@@ -128,6 +129,17 @@ export async function GET(req: NextRequest) {
   const ddToIC = pastScreening > 0 ? Math.min(100, Math.round((pastDD / pastScreening) * 100)) : 0;
   const icToClose = pastDD > 0 ? Math.min(100, Math.round((pastIC / pastDD) * 100)) : 0;
 
+  // Kill reason breakdown for dead deals
+  const deadDeals = allDeals.filter((d) => d.stage === "DEAD");
+  const killReasonMap: Record<string, number> = {};
+  for (const deal of deadDeals) {
+    const reason = deal.killReason || "Unknown";
+    killReasonMap[reason] = (killReasonMap[reason] || 0) + 1;
+  }
+  const killReasonBreakdown = Object.entries(killReasonMap)
+    .map(([reason, count]) => ({ reason, count }))
+    .sort((a, b) => b.count - a.count);
+
   return NextResponse.json({
     // Paginated deal list
     deals: paginated.data,
@@ -144,6 +156,7 @@ export async function GET(req: NextRequest) {
       totalActiveDeals: allDeals.filter((d) => !["CLOSED", "DEAD"].includes(d.stage)).length,
       totalClosedDeals: stageDistribution.CLOSED || 0,
       totalDeadDeals: stageDistribution.DEAD || 0,
+      killReasonBreakdown,
     },
   });
 }

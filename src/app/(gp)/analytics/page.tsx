@@ -64,6 +64,7 @@ export default function AnalyticsPage() {
     conversionRates,
     throughput,
     funnelData,
+    killReasonBreakdown,
     summary,
   } = data;
 
@@ -410,6 +411,83 @@ export default function AnalyticsPage() {
           </div>
         </div>
       )}
+
+      {/* Dead Deal Analysis — Kill Reason Breakdown */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-start justify-between mb-1">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Dead Deal Analysis
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Why deals are being killed — identify patterns to improve pipeline quality
+            </p>
+          </div>
+          {summary.totalDeadDeals > 0 && (
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Total dead deals</div>
+              <div className="text-lg font-bold text-red-600">{summary.totalDeadDeals}</div>
+            </div>
+          )}
+        </div>
+
+        {killReasonBreakdown && killReasonBreakdown.length > 0 ? (
+          <div className="mt-4">
+            <ResponsiveContainer
+              width="100%"
+              height={Math.max(200, killReasonBreakdown.length * 44)}
+            >
+              <BarChart
+                data={killReasonBreakdown}
+                layout="vertical"
+                margin={{ top: 0, right: 40, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fontSize: 11, fill: "#6b7280" }}
+                  axisLine={{ stroke: "#e5e7eb" }}
+                  allowDecimals={false}
+                />
+                <YAxis
+                  type="category"
+                  dataKey="reason"
+                  width={140}
+                  tick={{ fontSize: 11, fill: "#374151" }}
+                  axisLine={{ stroke: "#e5e7eb" }}
+                />
+                <Tooltip
+                  formatter={(value: any) => [
+                    `${value} deal${Number(value) !== 1 ? "s" : ""}`,
+                    "Count",
+                  ]}
+                  contentStyle={{
+                    fontSize: 12,
+                    borderRadius: 8,
+                    border: "1px solid #e5e7eb",
+                  }}
+                />
+                <Bar
+                  dataKey="count"
+                  name="Deals"
+                  fill="#ef4444"
+                  radius={[0, 4, 4, 0]}
+                  label={{
+                    position: "right",
+                    fontSize: 11,
+                    fill: "#6b7280",
+                    formatter: (v: any) => v,
+                  }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <div className="mt-4 h-32 flex items-center justify-center text-sm text-gray-400">
+            No dead deals to analyze — keep building!
+          </div>
+        )}
+      </div>
     </div>
   );
 }
