@@ -524,6 +524,13 @@ model User {
 
   slackUserId String?
 
+  // Fireflies per-user integration
+  firefliesApiKey     String?
+  firefliesApiKeyIV   String?
+  firefliesApiKeyTag  String?
+  firefliesEmail      String?
+  firefliesLastSync   DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1150,6 +1157,10 @@ model Deal {
   previousStage  DealStage?   // Stage before kill (for revive)
   dealMetadata   Json?        // AI-extracted structured data (size, target return, terms, structure)
 
+  // CRM sourcing attribution
+  sourcedByContactId  String?
+  sourcedByContact    Contact? @relation("DealSourceContact", fields: [sourcedByContactId], references: [id])
+
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -1170,9 +1181,11 @@ model Deal {
   dealEntities       DealEntity[]
   sourceAssets       Asset[]        @relation("AssetSourceDeal")
   contactInteractions ContactInteraction[] @relation("DealContactInteractions")
+  coInvestors         DealCoInvestor[]
 
   @@index([stage])
   @@index([firmId])
+  @@index([sourcedByContactId])
 }
 
 model ICProcess {
@@ -1545,6 +1558,8 @@ model Meeting {
   entityId      String?
   transcript    String?
   summary       String?
+  firefliesId   String?  @unique
+  firmId        String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -1745,6 +1760,7 @@ model Company {
   notes           String?
   contacts        Contact[]
   investorProfile Investor?
+  coinvestments   DealCoInvestor[]
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
@@ -1771,6 +1787,8 @@ model Contact {
 
   interactions    ContactInteraction[]
   tags            ContactTag[]
+  sourcedDeals    Deal[]            @relation("DealSourceContact")
+  coinvestments   DealCoInvestor[]
 
   @@index([firmId])
   @@index([companyId])
@@ -1811,6 +1829,27 @@ model ContactTag {
 
   @@unique([contactId, tag])
   @@index([firmId])
+}
+
+model DealCoInvestor {
+  id          String   @id @default(cuid())
+  dealId      String
+  contactId   String?
+  companyId   String?
+  role        String   // "Lead", "Participant", "Syndicate Member"
+  allocation  Float?
+  status      String   // "Interested", "Committed", "Funded", "Passed"
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  company     Company? @relation(fields: [companyId], references: [id])
+
+  @@index([dealId])
+  @@index([contactId])
+  @@index([companyId])
 }
 
 // ============================================================

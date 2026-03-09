@@ -208,10 +208,10 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
           {/* Existing overview content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Entity Allocations */}
+            {/* Vehicle Allocations */}
             {a.entityAllocations?.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="text-sm font-semibold mb-3">Entity Allocations</h3>
+                <h3 className="text-sm font-semibold mb-3">Vehicle Allocations</h3>
                 <div className="space-y-2">
                   {a.entityAllocations.map((ea: { entity: { id: string; name: string; type: string }; allocationPercent: number; costBasis: number | null }) => (
                     <div key={ea.entity.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
@@ -635,7 +635,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               ["Information Rights", "Quarterly financials + annual audit"],
               ["Review Schedule", a.nextReview ? formatDate(a.nextReview) : "Not scheduled"],
               ["Asset Class", ASSET_CLASS_LABELS[a.assetClass] || a.assetClass?.replace(/_/g, " ")],
-              ["Entities", a.entityAllocations?.map((ea: { entity: { name: string } }) => ea.entity.name).join(", ")],
+              ["Vehicles", a.entityAllocations?.map((ea: { entity: { name: string } }) => ea.entity.name).join(", ")],
             ].map(([k, v], i) => (
               <div key={i} className="flex justify-between py-2 border-b border-gray-50">
                 <span className="text-gray-500">{k}</span>

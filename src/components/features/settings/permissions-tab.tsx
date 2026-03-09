@@ -40,7 +40,7 @@ const LEVEL_COLORS: Record<PermissionLevel, string> = {
 
 const AREA_LABELS: Record<string, string> = {
   deals: "Deals",
-  entities: "Entities",
+  entities: "Vehicles",
   capital_activity: "Capital",
   investors: "Investors",
   documents: "Documents",

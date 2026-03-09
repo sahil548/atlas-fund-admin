@@ -117,8 +117,8 @@ export default function EntitiesPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Entities"
-        subtitle={`${allEntities.length} entities`}
+        title="Vehicles"
+        subtitle={`${allEntities.length} vehicles`}
         actions={
           <>
             <SearchFilterBar
@@ -138,10 +138,10 @@ export default function EntitiesPage() {
                   irr: e.irr ?? "",
                   tvpi: e.tvpi ?? "",
                 }))}
-                fileName="Entities_Export"
+                fileName="Vehicles_Export"
               />
             </SearchFilterBar>
-            <Button onClick={() => setShowCreate(true)}>+ Create Entity</Button>
+            <Button onClick={() => setShowCreate(true)}>+ Create Vehicle</Button>
           </>
         }
       />
@@ -150,7 +150,7 @@ export default function EntitiesPage() {
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Entity", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
+              {["Vehicle", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -162,9 +162,9 @@ export default function EntitiesPage() {
               <tr><td colSpan={9}>
                 <EmptyState
                   icon={<Building className="h-10 w-10" />}
-                  title={hasFilters ? "No results match your filters" : "No entities yet"}
-                  description={!hasFilters ? "Create your first entity to get started" : undefined}
-                  action={!hasFilters ? { label: "+ Create Entity", onClick: () => setShowCreate(true) } : undefined}
+                  title={hasFilters ? "No results match your filters" : "No vehicles yet"}
+                  description={!hasFilters ? "Create your first vehicle to get started" : undefined}
+                  action={!hasFilters ? { label: "+ Create Vehicle", onClick: () => setShowCreate(true) } : undefined}
                   filtered={hasFilters}
                   onClearFilters={hasFilters ? handleClearFilters : undefined}
                 />

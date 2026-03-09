@@ -252,7 +252,7 @@ export default function EntityDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/entities" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">&larr; All Entities</Link>
+          <Link href="/entities" className="text-xs text-indigo-600 hover:underline mb-1 inline-block">&larr; All Vehicles</Link>
           <h2 className="text-lg font-bold">{e.name}</h2>
           <div className="flex gap-2 mt-1">
             <Badge color={e.entityType === "MAIN_FUND" ? "indigo" : e.entityType === "SIDECAR" ? "purple" : "blue"}>{e.entityType?.replace(/_/g, " ")}</Badge>

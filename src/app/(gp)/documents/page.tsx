@@ -144,7 +144,7 @@ export default function DocumentsPage() {
 
   function association(d: Doc) {
     if (d.asset) return { label: d.asset.name, type: "Asset", href: `/assets/${d.asset.id}` };
-    if (d.entity) return { label: d.entity.name, type: "Entity", href: `/entities/${d.entity.id}` };
+    if (d.entity) return { label: d.entity.name, type: "Vehicle", href: `/entities/${d.entity.id}` };
     if (d.deal) return { label: d.deal.name, type: "Deal", href: `/deals/${d.deal.id}` };
     return { label: "General", type: "", href: "" };
   }
@@ -339,7 +339,7 @@ export default function DocumentsPage() {
             >
               <option value="">General</option>
               {entities && entities.length > 0 && (
-                <optgroup label="Entities">
+                <optgroup label="Vehicles">
                   {entities.map((e: any) => (
                     <option key={e.id} value={`entity:${e.id}`}>{e.name}</option>
                   ))}

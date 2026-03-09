@@ -24,7 +24,7 @@ export const APP_ROUTES: AppRoute[] = [
   // ── GP Navigation ──────────────────────────────────────────
   { path: "/dashboard", label: "Dashboard", description: "Main overview with KPIs, pipeline, and allocations", keywords: ["home", "overview", "kpi", "stats", "metrics"], icon: "LayoutDashboard", sidebarIcon: "\u25FB", portal: "gp", priority: 100 },
   { path: "/deals", label: "Deal Desk", description: "Deal pipeline, screening, IC review", keywords: ["deals", "pipeline", "screening", "ic", "investment", "opportunities"], icon: "Briefcase", sidebarIcon: "\u25C6", portal: "gp", priority: 95 },
-  { path: "/entities", label: "Entities", description: "Fund entities, sidecars, SPVs", keywords: ["funds", "vehicles", "sidecar", "spv", "formation", "llc", "lp"], icon: "Building2", sidebarIcon: "\u25A3", portal: "gp", priority: 92 },
+  { path: "/entities", label: "Vehicles", description: "Fund vehicles — funds, sidecars, SPVs", keywords: ["funds", "vehicles", "sidecar", "spv", "formation", "llc", "lp", "entities"], icon: "Building2", sidebarIcon: "\u25A3", portal: "gp", priority: 92 },
   { path: "/assets", label: "Assets", description: "Portfolio assets and investments", keywords: ["portfolio", "investments", "holdings", "real estate", "credit", "equity"], icon: "TrendingUp", sidebarIcon: "\u25C8", portal: "gp", priority: 90 },
   { path: "/directory", label: "Directory", description: "Contacts, companies, investors, team", keywords: ["contacts", "companies", "investors", "people", "crm", "team", "lp"], icon: "Users", sidebarIcon: "\u25A1", portal: "gp", priority: 88 },
   { path: "/documents", label: "Documents", description: "Document management and file storage", keywords: ["files", "docs", "pdf", "upload", "k1", "reports"], icon: "FileText", sidebarIcon: "\u25A5", portal: "gp", priority: 85 },
@@ -68,7 +68,7 @@ export function getPageTitle(pathname: string): string {
   // Detail page patterns
   if (pathname.startsWith("/assets/")) return "Asset Detail";
   if (pathname.startsWith("/deals/")) return "Deal Detail";
-  if (pathname.startsWith("/entities/")) return "Entity Detail";
+  if (pathname.startsWith("/entities/")) return "Vehicle Detail";
   if (pathname.startsWith("/investors/")) return "Investor Detail";
   if (pathname.startsWith("/companies/")) return "Company Detail";
   if (pathname.startsWith("/transactions/")) return "Transaction Detail";

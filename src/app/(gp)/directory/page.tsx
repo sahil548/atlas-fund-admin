@@ -265,7 +265,7 @@ export default function DirectoryPage() {
             <table className="w-full text-xs">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Investor", "Type", "Total Committed", "Entities", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
+                  {["Investor", "Type", "Total Committed", "Vehicles", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
                   ))}
                 </tr>
@@ -495,7 +495,7 @@ export default function DirectoryPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Investor", "Entity", "Terms", ""].map((h) => (
+                {["Investor", "Vehicle", "Terms", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
