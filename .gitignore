@@ -49,3 +49,6 @@ next-env.d.ts
 # uploaded files
 data/uploads/
 prisma/seed.ts.bak
+
+# claude code tooling
+.claude/
