@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 15-01-PLAN.md
-last_updated: "2026-03-09T20:54:35.987Z"
-last_activity: 2026-03-09 — Phase 14 Plan 05 complete (@dnd-kit tasks kanban board + sortable list view + context filter dropdown)
+stopped_at: Completed 13-05-PLAN.md
+last_updated: "2026-03-09T21:01:43.281Z"
+last_activity: 2026-03-09 — Phase 15 Plan 01 complete (schema fireflies fields + Vehicles rename + ENTITY-04 status transitions)
 progress:
   total_phases: 9
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 30
-  completed_plans: 19
-  percent: 77
+  completed_plans: 20
+  percent: 83
 ---
 
 # Atlas — GSD State
@@ -52,6 +52,7 @@ Progress: [████████░░] 83% (55/66 plans)
 | Phase 15 P00 | 1min | 1 tasks | 2 files |
 | Phase 14-asset-management-task-management P05 | 35 | 2 tasks | 5 files |
 | Phase 15-entity-management-meeting-intelligence P01 | 25 | 2 tasks | 11 files |
+| Phase 13-deal-desk-crm P05 | 14 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Progress: [████████░░] 83% (55/66 plans)
 - **CRM authorId as query param:** POST /contacts/[id]/interactions accepts authorId as query param — avoids Clerk dependency in dev mode; mirrors IC questions pattern
 - **CRM linked assets via Option C:** contact detail GET flattens deal.sourceAssets into linkedAssets array — zero extra DB queries, frontend reads contact.linkedAssets directly
 - **CRM tag dropdown dismiss:** useRef + mousedown event listener for outside-click dismissal of tag dropdown UI
+- **CRM co-investor seed FK ordering:** Deal.sourcedByContactId requires contacts to exist — use prisma.deal.update after contacts seeded (not inline on deal.create) to avoid ForeignKeyConstraintViolation
+- **CRM co-investor tab placement:** Co-Investors added as dedicated tab (not overview section) — deal overview already content-rich; tab gives full table real estate
+- **CRM co-investor search:** Contact/company mode toggle with live search-as-you-type dropdown; two separate API endpoints based on mode (contacts vs companies)
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -147,6 +151,6 @@ Progress: [████████░░] 83% (55/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:54:35.984Z
-- **Stopped at:** Completed 15-01-PLAN.md
+- **Last session:** 2026-03-09T21:01:43.278Z
+- **Stopped at:** Completed 13-05-PLAN.md
 - **Resume file:** None

@@ -100,8 +100,8 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [x] **CRM-02**: Contacts have interaction history log (calls, emails, meetings)
 - [x] **CRM-03**: Contacts can be tagged with relationship types (broker, co-investor, LP prospect, advisor)
 - [x] **CRM-04**: Contact pages show all linked deals, entities, and assets
-- [ ] **CRM-05**: Deal sourcing tracked — who referred what deal, broker relationships
-- [ ] **CRM-06**: Co-investor network tracked with deal participation history
+- [x] **CRM-05**: Deal sourcing tracked — who referred what deal, broker relationships
+- [x] **CRM-06**: Co-investor network tracked with deal participation history
 
 ### Task Management
 
@@ -199,8 +199,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRM-02 | Phase 13 | Complete |
 | CRM-03 | Phase 13 | Complete |
 | CRM-04 | Phase 13 | Complete |
-| CRM-05 | Phase 13 | Pending |
-| CRM-06 | Phase 13 | Pending |
+| CRM-05 | Phase 13 | Complete |
+| CRM-06 | Phase 13 | Complete |
 | ASSET-04 | Phase 14 | Pending |
 | ASSET-05 | Phase 14 | Pending |
 | ASSET-06 | Phase 14 | Complete |
