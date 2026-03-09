@@ -503,7 +503,7 @@ export default function DealDetailPage({
           />
         );
       case "Documents":
-        return <DealDocumentsTab deal={deal} />;
+        return <DealDocumentsTab deal={deal} firmId={firmId} />;
       case "Notes":
         return <DealNotesTab deal={deal} />;
       case "Due Diligence":

@@ -10,6 +10,9 @@ import { FormField } from "@/components/ui/form-field";
 import { FileUpload } from "@/components/ui/file-upload";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { DocumentStatusBadge } from "@/components/features/documents/document-status-badge";
+import { DocumentExtractionPanel } from "@/components/features/documents/document-extraction-panel";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -28,10 +31,12 @@ const DOC_CATEGORIES = [
 
 interface DealDocumentsTabProps {
   deal: any;
+  firmId: string;
 }
 
-export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
+export function DealDocumentsTab({ deal, firmId }: DealDocumentsTabProps) {
   const documents = deal.documents || [];
+  const toast = useToast();
   const [showUpload, setShowUpload] = useState(false);
   const [docName, setDocName] = useState("");
   const [docCategory, setDocCategory] = useState("OTHER");
@@ -39,12 +44,27 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<any>(null);
+  const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
 
   function formatSize(bytes: number | null | undefined) {
     if (!bytes) return "—";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  async function handleRetryExtraction(docId: string) {
+    const res = await fetch(`/api/documents/${docId}/extract?firmId=${firmId}`, {
+      method: "POST",
+    });
+    if (res.ok) {
+      toast.success("Re-extraction started");
+      mutate(`/api/deals/${deal.id}`);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const msg = typeof data.error === "string" ? data.error : "Retry failed";
+      toast.error(msg);
+    }
   }
 
   async function handleUpload() {
@@ -147,7 +167,7 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Document", "Category", "Size", "Upload Date"].map((h) => (
+              {["Document", "Category", "AI Status", "Size", "Upload Date"].map((h) => (
                 <th
                   key={h}
                   className="text-left px-3 py-2 font-semibold text-gray-600"
@@ -161,13 +181,21 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
             {(documents as any[]).map((d: any) => (
               <tr
                 key={d.id}
-                className="border-t border-gray-50 hover:bg-gray-50"
+                className={`border-t border-gray-50 hover:bg-gray-50 ${
+                  d.extractionStatus === "COMPLETE" ? "cursor-pointer" : ""
+                }`}
+                onClick={() =>
+                  d.extractionStatus === "COMPLETE" && setSelectedDoc(d)
+                }
               >
                 <td className="px-3 py-2.5 font-medium">
                   {d.fileUrl ? (
                     <button
                       type="button"
-                      onClick={() => setPreviewDoc(d)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPreviewDoc(d);
+                      }}
                       className="text-indigo-600 hover:underline cursor-pointer text-left"
                     >
                       {d.name}
@@ -180,6 +208,13 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
                   <Badge color="indigo">
                     {d.category?.replace(/_/g, " ")}
                   </Badge>
+                </td>
+                <td className="px-3 py-2.5">
+                  <DocumentStatusBadge
+                    status={d.extractionStatus || "NONE"}
+                    error={d.extractionError}
+                    onRetry={() => handleRetryExtraction(d.id)}
+                  />
                 </td>
                 <td className="px-3 py-2.5 text-gray-500">
                   {formatSize(d.fileSize)}
@@ -195,6 +230,20 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
         <div className="py-8 text-center text-sm text-gray-400">
           No documents yet.
         </div>
+      )}
+
+      {/* Extraction Panel */}
+      {selectedDoc && (
+        <DocumentExtractionPanel
+          document={selectedDoc}
+          firmId={firmId}
+          open={!!selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onUpdate={() => {
+            mutate(`/api/deals/${deal.id}`);
+            setSelectedDoc(null);
+          }}
+        />
       )}
     </div>
   );
