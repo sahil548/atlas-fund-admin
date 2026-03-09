@@ -113,21 +113,91 @@ describe("pct (regression)", () => {
 });
 
 // ============================================================
-// Component Tests — Placeholder blocks (filled in Task 2)
+// Component Export Tests — verify modules resolve and export
 // ============================================================
 
 describe("EmptyState", () => {
-  it.todo("exports EmptyState component");
+  it("exports EmptyState as a function", async () => {
+    const mod = await import("@/components/ui/empty-state");
+    expect(typeof mod.EmptyState).toBe("function");
+  });
 });
 
 describe("TableSkeleton", () => {
-  it.todo("exports TableSkeleton component");
+  it("exports TableSkeleton as a function", async () => {
+    const mod = await import("@/components/ui/table-skeleton");
+    expect(typeof mod.TableSkeleton).toBe("function");
+  });
 });
 
 describe("PageHeader", () => {
-  it.todo("exports PageHeader component");
+  it("exports PageHeader as a function", async () => {
+    const mod = await import("@/components/ui/page-header");
+    expect(typeof mod.PageHeader).toBe("function");
+  });
 });
 
 describe("SectionPanel", () => {
-  it.todo("exports SectionPanel component");
+  it("exports SectionPanel as a function", async () => {
+    const mod = await import("@/components/ui/section-panel");
+    expect(typeof mod.SectionPanel).toBe("function");
+  });
+});
+
+describe("StatCard dark mode", () => {
+  it("has dark: classes in source", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const src = fs.readFileSync(
+      path.resolve(__dirname, "../../components/ui/stat-card.tsx"),
+      "utf-8"
+    );
+    expect(src).toContain("dark:bg-gray-900");
+    expect(src).toContain("dark:border-gray-700");
+    expect(src).toContain("dark:text-gray-100");
+    expect(src).toContain("dark:text-gray-400");
+    expect(src).toContain("dark:text-emerald-400");
+    expect(src).toContain("dark:text-red-400");
+  });
+});
+
+// ============================================================
+// FOUND-03: No raw confirm() calls in source (grep-as-test)
+// Enable after Plan 02 completes confirm() migration
+// ============================================================
+
+describe.skip("FOUND-03: no browser confirm() calls", () => {
+  it("has no raw confirm( calls in src/ (excluding tests)", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const glob = await import("fs");
+
+    function walkDir(dir: string): string[] {
+      const files: string[] = [];
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== "__tests__") {
+          files.push(...walkDir(full));
+        } else if (entry.isFile() && /\.(tsx?|jsx?)$/.test(entry.name)) {
+          files.push(full);
+        }
+      }
+      return files;
+    }
+
+    const srcDir = path.resolve(__dirname, "../../");
+    const sourceFiles = walkDir(srcDir);
+    const violations: string[] = [];
+
+    for (const file of sourceFiles) {
+      const content = fs.readFileSync(file, "utf-8");
+      // Match confirm( but not ConfirmDialog, onConfirm, confirmLabel, etc.
+      const matches = content.match(/(?<![a-zA-Z])confirm\s*\(/g);
+      if (matches) {
+        violations.push(`${path.relative(srcDir, file)}: ${matches.length} confirm() call(s)`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
 });
