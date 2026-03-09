@@ -84,7 +84,7 @@ Plans:
   3. The GP can export the IC memo as a PDF and can perform bulk status actions (e.g., kill multiple dead deals at once) from the pipeline view
   4. Dead deal analytics surface the most common kill reasons so the GP can see patterns in why deals fall through
   5. A contact's detail page shows their full activity timeline, all linked deals/entities/assets, interaction history, relationship tags, deal sourcing attribution, and co-investment participation history
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 Plans:
 - [ ] 13-01-PLAN.md — Kanban pipeline enhancements (days-in-stage, column totals, View Asset link)
 - [ ] 13-02-PLAN.md — IC memo PDF export + dead deal analytics charts
@@ -104,7 +104,7 @@ Plans:
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
 **Plans:** 1/7 plans executed
 Plans:
-- [ ] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
+- [x] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
 - [ ] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
 - [ ] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
 - [ ] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
@@ -193,7 +193,7 @@ Plans:
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
 | 11. Foundation | v2.0 | Complete    | 2026-03-09 | 2026-03-09 |
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
-| 13. Deal Desk & CRM | 3/5 | In Progress|  | - |
+| 13. Deal Desk & CRM | 4/5 | In Progress|  | - |
 | 14. Asset Management & Task Management | 1/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/8 | Planned | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |

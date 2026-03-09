@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-09T20:41:36.103Z"
-last_activity: "2026-03-09 — Phase 13 Plan 03 complete (bulk deal actions: kanban checkbox multi-select + floating action bar + POST /api/deals/bulk for kill/assign/advance)"
+stopped_at: Completed 13-04-PLAN.md
+last_updated: "2026-03-09T20:43:47.958Z"
+last_activity: 2026-03-09 — Phase 14 Plan 02 complete (sortable asset table + monitoring panel with covenant breaches/lease expirations/loan maturities/overdue reviews + LeaseExpiryView table/timeline)
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 14
-  percent: 74
+  completed_plans: 16
+  percent: 76
 ---
 
 # Atlas — GSD State
@@ -19,7 +19,7 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 3 COMPLETE, Plan 4 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 4 COMPLETE, Plan 5 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
@@ -46,7 +46,9 @@ Progress: [████████░░] 76% (50/66 plans)
 | Phase 13-deal-desk-crm P01 | 3 | 2 tasks | 4 files |
 | Phase 13-deal-desk-crm P02 | 7min | 2 tasks | 6 files |
 | Phase 13-deal-desk-crm P03 | 25 | 2 tasks | 4 files |
+| Phase 14-asset-management-task-management P01 | 6 | 3 tasks | 11 files |
 | Phase 14-asset-management-task-management P02 | 8 | 2 tasks | 4 files |
+| Phase 13-deal-desk-crm P04 | 45 | 2 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -85,6 +87,10 @@ Progress: [████████░░] 76% (50/66 plans)
 - **Bulk advance boundary:** SCREENING→DUE_DILIGENCE and DUE_DILIGENCE→IC_REVIEW allowed; IC_REVIEW+ blocked (needs individual IC decisions) — enforced on both client and server
 - **Bulk kill schema:** No killedAt field exists on Deal model — only killReason (enum category) is written; killReasonText omitted in bulk (single shared reason suffices)
 - **Floating action bar z-index:** z-50 for action bar, toast provider uses z-[60] — bar sits below toasts intentionally
+- **CRM interaction named relations:** ContactInteraction uses @relation("FirmContactInteractions"), @relation("UserContactInteractions"), @relation("DealContactInteractions"), @relation("EntityContactInteractions") to avoid Prisma ambiguity on multi-relation models
+- **CRM authorId as query param:** POST /contacts/[id]/interactions accepts authorId as query param — avoids Clerk dependency in dev mode; mirrors IC questions pattern
+- **CRM linked assets via Option C:** contact detail GET flattens deal.sourceAssets into linkedAssets array — zero extra DB queries, frontend reads contact.linkedAssets directly
+- **CRM tag dropdown dismiss:** useRef + mousedown event listener for outside-click dismissal of tag dropdown UI
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -104,6 +110,11 @@ Progress: [████████░░] 76% (50/66 plans)
 - **Unrealized sort key:** Uses `_unrealized` sentinel key handled inline (fairValue - costBasis) — no API changes
 - **Monitoring panel self-fetching:** Panel accepts no props, fetches own data via SWR — clean separation from parent page
 - **Entities column non-sortable:** Multi-value join array not sortable as scalar
+- **getExitAutoTasks returns AutoTask[]:** Returns `{ title, priority }` objects (not strings) — API route destructures for prisma.task.create
+- **sortAssets uses T extends object:** Index-signature Sortable interface caused TypeScript errors with concrete test interfaces; `object` constraint is sufficient
+- **categorizeLeaseExpiry boundaries:** Day 90 = critical (<=90), day 91-180 = warning (<=180), day 181+ = safe
+- **Exit endpoint atomicity:** prisma.$transaction([asset.update, ...task.creates]) — returns [0] for updatedAsset
+- **MOIC guard:** exitProceeds / costBasis; returns 0 when costBasis === 0 (write-off edge case)
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -120,6 +131,6 @@ Progress: [████████░░] 76% (50/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:41:36.101Z
-- **Stopped at:** Completed 14-02-PLAN.md
+- **Last session:** 2026-03-09T20:43:47.956Z
+- **Stopped at:** Completed 13-04-PLAN.md
 - **Resume file:** None
