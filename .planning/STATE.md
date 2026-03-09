@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-03-09T20:15:24.967Z"
-last_activity: "2026-03-09 — Phase 12 Plan 05 complete (end-to-end verification: all 8 requirements confirmed working via browser testing + code inspection)"
+stopped_at: Completed 13-02-PLAN.md
+last_updated: "2026-03-09T20:19:52.703Z"
+last_activity: "2026-03-09 — Phase 13 Plan 01 complete (pipeline intelligence: daysInStage badges on kanban cards, column value headers, View Asset link on closed deals)"
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 11
-  percent: 69
+  completed_plans: 12
+  percent: 71
 ---
 
 # Atlas — GSD State
@@ -19,14 +19,14 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 1 COMPLETE, Plan 2 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 2 COMPLETE, Plan 3 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 13 of 19 — Deal Desk & CRM (In Progress)
-- **Plan:** 1 of 5 complete
+- **Plan:** 2 of 5 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 13 Plan 01 complete (pipeline intelligence: daysInStage badges on kanban cards, column value headers, View Asset link on closed deals)
+- **Last activity:** 2026-03-09 — Phase 13 Plan 02 complete (IC memo PDF export with @react-pdf/renderer + dead deal kill reason analytics chart and mini-summary)
 
 Progress: [███████░░░] 71% (47/66 plans)
 
@@ -44,6 +44,7 @@ Progress: [███████░░░] 71% (47/66 plans)
 | Phase 12-ai-configuration-document-intake P04 | 18 | 3 tasks | 6 files |
 | Phase 12-ai-configuration-document-intake P05 | 5 | 2 tasks | 0 files |
 | Phase 13-deal-desk-crm P01 | 3 | 2 tasks | 4 files |
+| Phase 13-deal-desk-crm P02 | 7min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Progress: [███████░░░] 71% (47/66 plans)
 - **Days-in-stage color thresholds:** gray <14d, amber 14-30d, red >30d — matches intuitive SLA for deal velocity monitoring
 - **Column header value:** Pulled from existing pipelineAnalytics.valueByStage already in SWR response — zero additional DB queries
 - **View Asset link:** Guarded by sourceAssets?.length > 0 — safe for legacy closed deals that predate the sourceAssets relation
+- **PDF dynamic import:** @react-pdf/renderer cannot run during SSR — use `await import("@react-pdf/renderer")` inside click handler for client-side only generation
+- **killReason in two APIs:** /deals page uses pipelineAnalytics from /api/deals (already fetched for kanban); /analytics page uses /api/analytics/pipeline — both compute independently
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -105,6 +108,6 @@ Progress: [███████░░░] 71% (47/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:15:24.965Z
-- **Stopped at:** Completed 13-01-PLAN.md
-- **Resume file:** None
+- **Last session:** 2026-03-09T20:19:52.700Z
+- **Stopped at:** Completed 13-02-PLAN.md
+- **Resume file:** .planning/phases/13-deal-desk-crm/13-02-SUMMARY.md

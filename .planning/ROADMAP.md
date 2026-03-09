@@ -84,7 +84,7 @@ Plans:
   3. The GP can export the IC memo as a PDF and can perform bulk status actions (e.g., kill multiple dead deals at once) from the pipeline view
   4. Dead deal analytics surface the most common kill reasons so the GP can see patterns in why deals fall through
   5. A contact's detail page shows their full activity timeline, all linked deals/entities/assets, interaction history, relationship tags, deal sourcing attribution, and co-investment participation history
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 Plans:
 - [ ] 13-01-PLAN.md — Kanban pipeline enhancements (days-in-stage, column totals, View Asset link)
 - [ ] 13-02-PLAN.md — IC memo PDF export + dead deal analytics charts
@@ -193,7 +193,7 @@ Plans:
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
 | 11. Foundation | v2.0 | Complete    | 2026-03-09 | 2026-03-09 |
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
-| 13. Deal Desk & CRM | 1/5 | In Progress|  | - |
+| 13. Deal Desk & CRM | 2/5 | In Progress|  | - |
 | 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/8 | Planned | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
