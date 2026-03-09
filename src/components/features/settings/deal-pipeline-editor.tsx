@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { getDefaultContent } from "@/lib/default-prompt-templates";
 
@@ -78,6 +79,7 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: "", description: "", instructions: "", scope: "UNIVERSAL" });
   const [creating, setCreating] = useState(false);
+  const [stageToDelete, setStageToDelete] = useState<{ id: string; name: string } | null>(null);
 
   // Sync prompt edits from loaded data
   useEffect(() => {
@@ -195,16 +197,22 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
     }
   }
 
-  async function handleDeleteCategory(cat: DDCategory) {
-    if (!confirm(`Delete "${cat.name}"? This cannot be undone.`)) return;
+  function handleDeleteCategory(cat: DDCategory) {
+    setStageToDelete({ id: cat.id, name: cat.name });
+  }
+
+  async function confirmDeleteCategory() {
+    if (!stageToDelete) return;
     try {
-      const res = await fetch(`/api/dd-categories?id=${cat.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/dd-categories?id=${stageToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed");
       mutate(categoriesKey);
       setExpandedCategoryId(null);
-      toast.success(`${cat.name} deleted`);
+      toast.success(`${stageToDelete.name} deleted`);
     } catch {
       toast.error("Failed to delete category");
+    } finally {
+      setStageToDelete(null);
     }
   }
 
@@ -554,6 +562,17 @@ export function DealPipelineEditor({ firmId }: DealPipelineEditorProps) {
         stepNum={2}
         label="IC Memo Prompt"
         sublabel="Final synthesis — combines all workstream outputs into an Investment Committee memo"
+      />
+
+      {/* Delete pipeline stage confirmation dialog */}
+      <ConfirmDialog
+        open={stageToDelete !== null}
+        onClose={() => setStageToDelete(null)}
+        onConfirm={confirmDeleteCategory}
+        title="Delete Pipeline Stage"
+        message={`Delete "${stageToDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
       />
     </div>
   );

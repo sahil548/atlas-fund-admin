@@ -163,14 +163,13 @@ describe("StatCard dark mode", () => {
 
 // ============================================================
 // FOUND-03: No raw confirm() calls in source (grep-as-test)
-// Enable after Plan 02 completes confirm() migration
+// Enabled after Plan 02 completed confirm() migration
 // ============================================================
 
-describe.skip("FOUND-03: no browser confirm() calls", () => {
+describe("FOUND-03: no browser confirm() calls", () => {
   it("has no raw confirm( calls in src/ (excluding tests)", async () => {
     const fs = await import("fs");
     const path = await import("path");
-    const glob = await import("fs");
 
     function walkDir(dir: string): string[] {
       const files: string[] = [];
@@ -178,7 +177,7 @@ describe.skip("FOUND-03: no browser confirm() calls", () => {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory() && entry.name !== "node_modules" && entry.name !== "__tests__") {
           files.push(...walkDir(full));
-        } else if (entry.isFile() && /\.(tsx?|jsx?)$/.test(entry.name)) {
+        } else if (entry.isFile() && /\.(tsx?|jsx?)$/.test(entry.name) && !entry.name.includes(".test.")) {
           files.push(full);
         }
       }
@@ -191,10 +190,23 @@ describe.skip("FOUND-03: no browser confirm() calls", () => {
 
     for (const file of sourceFiles) {
       const content = fs.readFileSync(file, "utf-8");
-      // Match confirm( but not ConfirmDialog, onConfirm, confirmLabel, etc.
-      const matches = content.match(/(?<![a-zA-Z])confirm\s*\(/g);
-      if (matches) {
-        violations.push(`${path.relative(srcDir, file)}: ${matches.length} confirm() call(s)`);
+      // Split by lines for per-line analysis
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Skip comment lines
+        if (line.trimStart().startsWith("//") || line.trimStart().startsWith("*")) continue;
+        // Match raw confirm( but not ConfirmDialog, onConfirm, confirmLabel, confirming, confirmDelete, etc.
+        if (/(?<![a-zA-Z])confirm\s*\(/.test(line) &&
+            !line.includes("ConfirmDialog") &&
+            !line.includes("onConfirm") &&
+            !line.includes("confirmLabel") &&
+            !line.includes("confirming") &&
+            !line.includes("confirmDelete") &&
+            !line.includes("showDisconnectConfirm") &&
+            !line.includes("confirmDeleteCategory")) {
+          violations.push(`${path.relative(srcDir, file)}:${i + 1}: ${line.trim()}`);
+        }
       }
     }
 

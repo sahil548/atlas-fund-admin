@@ -5,6 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
@@ -51,6 +52,7 @@ export function DDCategoryEditor({ firmId }: DDCategoryEditorProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: "", description: "", instructions: "", scope: "UNIVERSAL" });
   const [creating, setCreating] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; name: string } | null>(null);
 
   function getEditFields(cat: DDCategory) {
     return editFields[cat.id] || {
@@ -104,16 +106,22 @@ export function DDCategoryEditor({ firmId }: DDCategoryEditorProps) {
     }
   }
 
-  async function handleDelete(cat: DDCategory) {
-    if (!confirm(`Delete "${cat.name}"? This cannot be undone.`)) return;
+  function handleDelete(cat: DDCategory) {
+    setCategoryToDelete({ id: cat.id, name: cat.name });
+  }
+
+  async function confirmDelete() {
+    if (!categoryToDelete) return;
     try {
-      const res = await fetch(`/api/dd-categories?id=${cat.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/dd-categories?id=${categoryToDelete.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed");
       mutate(swrKey);
       setExpandedId(null);
-      toast.success(`${cat.name} deleted`);
+      toast.success(`${categoryToDelete.name} deleted`);
     } catch {
       toast.error("Failed to delete category");
+    } finally {
+      setCategoryToDelete(null);
     }
   }
 
@@ -347,6 +355,17 @@ export function DDCategoryEditor({ firmId }: DDCategoryEditorProps) {
           No DD categories configured. Click &ldquo;+ Add Category&rdquo; to create one.
         </p>
       )}
+
+      {/* Delete category confirmation dialog */}
+      <ConfirmDialog
+        open={categoryToDelete !== null}
+        onClose={() => setCategoryToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        message={`Delete "${categoryToDelete?.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
     </div>
   );
 }
