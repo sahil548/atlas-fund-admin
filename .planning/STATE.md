@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 12-03-PLAN.md
-last_updated: "2026-03-09T09:08:41.000Z"
-last_activity: 2026-03-09 — Phase 12 Plan 03 complete (AI document extraction pipeline: extractDocumentFields(), auto-trigger on upload, retry endpoint)
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-03-09T10:19:51.937Z"
+last_activity: "2026-03-09 — Phase 12 Plan 03 complete (AI document extraction pipeline: extractDocumentFields(), auto-trigger on upload, retry endpoint)"
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 30
-  completed_plans: 8
+  completed_plans: 9
   percent: 64
 ---
 
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 12 of 19 — AI Configuration + Document Intake (IN PROGRESS)
-- **Plan:** 3 of 5 complete
+- **Plan:** 4 of 5 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 12 Plan 03 complete (AI document extraction pipeline: extractDocumentFields(), auto-trigger on upload, retry endpoint)
+- **Last activity:** 2026-03-09 — Phase 12 Plan 04 complete (Document extraction UI: DocumentStatusBadge, DocumentExtractionPanel side panel, apply-fields API writing to parent records)
 
-Progress: [██████░░░░] 64% (42/66 plans)
+Progress: [███████░░░] 68% (45/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -41,6 +41,7 @@ Progress: [██████░░░░] 64% (42/66 plans)
 | Phase 12-ai-configuration-document-intake P01 | 18 | 4 tasks | 6 files |
 | Phase 12 P02 | 7 | 2 tasks | 4 files |
 | Phase 12 P03 | 7 | 2 tasks | 4 files |
+| Phase 12-ai-configuration-document-intake P04 | 18 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,10 @@ Progress: [██████░░░░] 64% (42/66 plans)
 - **extractDocumentFields no-key behavior:** Sets extractionStatus=NONE (not FAILED) when no AI key configured — FAILED reserved for actual extraction errors
 - **Global /documents POST:** Now calls extractTextFromBuffer() before document creation (was missing before Plan 03)
 - **Retry endpoint:** POST /api/documents/[id]/extract?firmId=xxx — awaits synchronously, returns updated extractionStatus/extractedFields
+- **DocumentExtractionPanel:** Right-side drawer (not modal) — panel closes on apply, onUpdate() triggers SWR revalidation
+- **apply-fields dual write:** Stores audit trail on Document.appliedFields AND writes to parent deal/asset/entity in same request (DOC-02)
+- **Fields without parent columns:** Go to Deal.dealMetadata or Asset.projectedMetrics JSON — no schema changes needed
+- **ConfirmDialog variant:** Use "primary" (not "default") — actual interface is "primary" | "danger"
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -90,6 +95,6 @@ Progress: [██████░░░░] 64% (42/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T09:46:53.312Z
-- **Stopped at:** Completed 12-03-PLAN.md
-- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-03-SUMMARY.md
+- **Last session:** 2026-03-09T10:19:51.935Z
+- **Stopped at:** Completed 12-04-PLAN.md
+- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-04-SUMMARY.md

@@ -84,7 +84,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 - [x] **DOC-01**: Site-wide document upload extracts structured data via AI (CIMs, lease agreements, credit docs, K-1s)
 - [x] **DOC-02**: Extracted data auto-tagged and linked to relevant deal, asset, or entity
-- [ ] **DOC-03**: Document processing status visible (processing, complete, failed) with extracted fields preview
+- [x] **DOC-03**: Document processing status visible (processing, complete, failed) with extracted fields preview
 
 ### AI Configuration & Access
 
@@ -188,7 +188,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AICONF-05 | Phase 12 | Complete |
 | DOC-01 | Phase 12 | Complete |
 | DOC-02 | Phase 12 | Complete |
-| DOC-03 | Phase 12 | Pending |
+| DOC-03 | Phase 12 | Complete |
 | DEAL-11 | Phase 13 | Pending |
 | DEAL-12 | Phase 13 | Pending |
 | DEAL-13 | Phase 13 | Pending |
