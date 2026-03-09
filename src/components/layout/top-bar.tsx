@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import useSWR from "swr";
 import { NotificationBell } from "@/components/ui/notification-bell";
 import { CommandBar } from "@/components/features/command-bar/command-bar";
+import { useUser } from "@/components/providers/user-provider";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -18,6 +20,7 @@ function timeAgo(dateStr: string | null): string {
 }
 
 export function TopBar({ title }: { title: string }) {
+  const { user } = useUser();
   const { data: connections } = useSWR("/api/accounting/connections", fetcher);
 
   const latestSync = connections
@@ -38,6 +41,14 @@ export function TopBar({ title }: { title: string }) {
         <NotificationBell />
         <span className="text-[10px] text-gray-500 whitespace-nowrap">QBO synced {syncLabel}</span>
         <span className={`w-2 h-2 rounded-full ${hasError ? "bg-red-400" : "bg-emerald-400"}`} />
+        {/* User avatar — click to navigate to profile page */}
+        <Link
+          href="/profile"
+          title={`${user.name} — View Profile`}
+          className="w-7 h-7 rounded-full bg-indigo-600 text-white text-[10px] font-bold flex items-center justify-center hover:bg-indigo-700 transition-colors shrink-0"
+        >
+          {user.initials || user.name?.slice(0, 2).toUpperCase() || "??"}
+        </Link>
       </div>
     </div>
   );

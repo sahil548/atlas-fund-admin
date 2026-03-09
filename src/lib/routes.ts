@@ -16,6 +16,8 @@ export interface AppRoute {
   priority: number; // command bar sort priority (higher = first)
   /** Optional role hint — middleware enforces actual access; this is for UI hints only */
   requiredRole?: "GP_ADMIN" | "GP_TEAM" | "SERVICE_PROVIDER" | "LP_INVESTOR";
+  /** When true, the route is not shown in the sidebar (e.g. accessed from top bar or direct link) */
+  hiddenFromSidebar?: boolean;
 }
 
 export const APP_ROUTES: AppRoute[] = [
@@ -33,6 +35,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: "/reports", label: "Reports", description: "Generate and download PDF reports for fund entities", keywords: ["reports", "pdf", "quarterly", "statement", "export", "generate", "fund summary", "capital account"], icon: "FileText", sidebarIcon: "\u25A4", portal: "gp", priority: 79 },
   { path: "/transactions", label: "Transactions", description: "Capital calls, distributions, and waterfall", keywords: ["capital", "transactions", "calls", "distributions", "waterfall", "capital calls", "capital activity"], icon: "DollarSign", sidebarIcon: "\u25C7", portal: "gp", priority: 78 },
   { path: "/settings", label: "Settings", description: "Platform configuration and preferences", keywords: ["settings", "config", "preferences", "api", "keys"], icon: "Settings", sidebarIcon: "\u2699", portal: "gp", priority: 60 },
+  { path: "/profile", label: "Profile", description: "Your profile and AI settings", keywords: ["profile", "ai", "settings", "api key", "personal"], icon: "User", sidebarIcon: "\u25CB", portal: "gp", priority: 90, hiddenFromSidebar: true },
 
   // ── LP Navigation ──────────────────────────────────────────
   { path: "/lp-dashboard", label: "My Overview", description: "LP investor overview", keywords: ["lp", "investor", "portal", "my overview"], icon: "LayoutDashboard", sidebarIcon: "\u25FB", portal: "lp", priority: 70 },
@@ -50,7 +53,7 @@ export const APP_ROUTES: AppRoute[] = [
  */
 export function getSidebarNav(portal: "gp" | "lp") {
   return APP_ROUTES
-    .filter((r) => r.portal === portal)
+    .filter((r) => r.portal === portal && !r.hiddenFromSidebar)
     .map((r) => ({ key: r.path, label: r.label, icon: r.sidebarIcon }));
 }
 
@@ -96,6 +99,6 @@ export function generateAIRouteList(): string {
  */
 export function getModuleRoutes() {
   return APP_ROUTES
-    .filter((r) => r.portal === "gp" && r.path !== "/settings")
+    .filter((r) => r.portal === "gp" && r.path !== "/settings" && !r.hiddenFromSidebar)
     .map((r) => ({ name: r.label, path: r.path, icon: r.icon }));
 }
