@@ -88,11 +88,11 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### AI Configuration & Access
 
-- [ ] **AICONF-01**: GP_ADMIN can set tenant-wide default LLM API key in Settings
-- [ ] **AICONF-02**: GP_ADMIN can toggle AI access per user (enable/disable AI features per team member)
+- [x] **AICONF-01**: GP_ADMIN can set tenant-wide default LLM API key in Settings
+- [x] **AICONF-02**: GP_ADMIN can toggle AI access per user (enable/disable AI features per team member)
 - [ ] **AICONF-03**: Users with AI access enabled can set their own API key override in profile settings
-- [ ] **AICONF-04**: AI features check user key first, fall back to tenant key, show "No API key configured" if neither exists
-- [ ] **AICONF-05**: Service providers have AI access disabled by default
+- [x] **AICONF-04**: AI features check user key first, fall back to tenant key, show "No API key configured" if neither exists
+- [x] **AICONF-05**: Service providers have AI access disabled by default
 
 ### Directory / CRM
 
@@ -181,11 +181,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FOUND-06 | Phase 11 | Complete |
 | FOUND-07 | Phase 11 | Complete |
 | FOUND-08 | Phase 11 | Complete |
-| AICONF-01 | Phase 12 | Pending |
-| AICONF-02 | Phase 12 | Pending |
+| AICONF-01 | Phase 12 | Complete |
+| AICONF-02 | Phase 12 | Complete |
 | AICONF-03 | Phase 12 | Pending |
-| AICONF-04 | Phase 12 | Pending |
-| AICONF-05 | Phase 12 | Pending |
+| AICONF-04 | Phase 12 | Complete |
+| AICONF-05 | Phase 12 | Complete |
 | DOC-01 | Phase 12 | Pending |
 | DOC-02 | Phase 12 | Pending |
 | DOC-03 | Phase 12 | Pending |

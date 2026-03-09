@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: planning
-stopped_at: Completed 11-05-PLAN.md (Phase 11 complete)
-last_updated: "2026-03-09T08:36:54.394Z"
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-03-09T08:58:44.525Z"
 last_activity: 2026-03-09 — Phase 11 Plan 05 complete (PageHeader/SectionPanel adopted across all GP pages, dark mode verified)
 progress:
   total_phases: 9
   completed_phases: 1
   total_plans: 30
-  completed_plans: 5
+  completed_plans: 6
   percent: 100
 ---
 
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 11 (Foundation) complete, Phase 12 next
+- **Current focus:** v2.0 Intelligence Platform — Phase 12 (AI Config + Document Intake) in progress
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 11 of 19 — Foundation (COMPLETE)
-- **Plan:** 5 of 5 (all plans complete)
-- **Status:** Ready to plan
-- **Last activity:** 2026-03-09 — Phase 11 Plan 05 complete (PageHeader/SectionPanel adopted across all GP pages, dark mode verified)
+- **Phase:** 12 of 19 — AI Configuration + Document Intake (IN PROGRESS)
+- **Plan:** 1 of 5 complete
+- **Status:** Executing
+- **Last activity:** 2026-03-09 — Phase 12 Plan 01 complete (schema foundation, getUserAIConfig fallback chain, AI toggle in Settings)
 
-Progress: [██████████] 100% (Phase 11)
+Progress: [██████░░░░] 64% (42/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -38,6 +38,7 @@ Progress: [██████████] 100% (Phase 11)
 |-------|-------|-------|----------|
 | v1.0 (1-10) | 36 | ~180min | ~5min |
 | 11-foundation | 5 | 41min | 8min |
+| Phase 12-ai-configuration-document-intake P01 | 18 | 4 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -48,6 +49,13 @@ Progress: [██████████] 100% (Phase 11)
 - **Integration scoping:** Accounting per-entity, Fireflies per-user, most others tenant-wide
 - **No code to GitHub:** Planning docs only for this milestone (no pushes)
 - **Schema discipline:** Treat schema changes as high-risk; prefer query/UI fixes over new Prisma fields
+
+### Phase 12 AI Config + Document Intake Decisions
+- **getUserAIConfig fallback chain:** personal key → tenant key → none; source field indicates origin ("user" | "tenant" | "none")
+- **SERVICE_PROVIDER AI default:** aiEnabled=false on creation (POST /api/users); GP_ADMIN/GP_TEAM default to true via schema
+- **LP_INVESTOR AI:** Shown as N/A in toggle column — AI access not applicable to LP users
+- **createUserAIClient returns null:** when apiKey is null OR aiEnabled is false — callers must null-check result
+- **Force-reset note:** Schema migration wipes AiConfig table — tenant AI key must be re-entered in Settings after any force-reset
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -76,6 +84,6 @@ Progress: [██████████] 100% (Phase 11)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T08:30:18Z
-- **Stopped at:** Completed 11-05-PLAN.md (Phase 11 complete)
-- **Resume file:** .planning/phases/11-foundation/11-05-SUMMARY.md
+- **Last session:** 2026-03-09T08:58:44.522Z
+- **Stopped at:** Completed 12-01-PLAN.md
+- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-01-SUMMARY.md
