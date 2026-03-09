@@ -48,7 +48,13 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
   3. Every destructive action (delete deal, kill deal, dissolve entity, remove LP) shows a ConfirmDialog with confirmation text — no browser-native confirm() popup appears anywhere in the app
   4. Page titles, subtitles, and section card wrappers look identical across all GP pages — no one-off heading styles or ad-hoc card borders
   5. All dates display consistently (e.g., "Mar 8, 2026") and all currency values display consistently (e.g., "$1.5M") across every page including dark mode
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 11-01-PLAN.md — Create shared components (EmptyState, TableSkeleton, PageHeader, SectionPanel), formatter functions, and Wave 0 tests
+- [ ] 11-02-PLAN.md — Migrate all 7 browser confirm() calls to ConfirmDialog component
+- [ ] 11-03-PLAN.md — Add skeleton loading and empty states to all 8 list pages
+- [ ] 11-04-PLAN.md — Consolidate date and currency formatting across all pages
+- [ ] 11-05-PLAN.md — Adopt PageHeader/SectionPanel across all GP pages + dark mode verification
 
 ### Phase 12: AI Configuration & Document Intake
 **Goal**: The tenant has a working AI key infrastructure and a document processing pipeline — admins control who gets AI access, users can set their own keys, and uploaded documents extract structured data automatically
@@ -162,7 +168,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
-| 11. Foundation | v2.0 | 0/TBD | Not started | - |
+| 11. Foundation | v2.0 | 0/5 | Planned | - |
 | 12. AI Configuration & Document Intake | v2.0 | 0/5 | Planned | - |
 | 13. Deal Desk & CRM | v2.0 | 0/TBD | Not started | - |
 | 14. Asset Management & Task Management | v2.0 | 0/TBD | Not started | - |
