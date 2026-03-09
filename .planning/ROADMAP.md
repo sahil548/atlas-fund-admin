@@ -48,7 +48,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
   3. Every destructive action (delete deal, kill deal, dissolve entity, remove LP) shows a ConfirmDialog with confirmation text — no browser-native confirm() popup appears anywhere in the app
   4. Page titles, subtitles, and section card wrappers look identical across all GP pages — no one-off heading styles or ad-hoc card borders
   5. All dates display consistently (e.g., "Mar 8, 2026") and all currency values display consistently (e.g., "$1.5M") across every page including dark mode
-**Plans:** 1/5 plans executed
+**Plans:** 3/5 plans executed
 Plans:
 - [ ] 11-01-PLAN.md — Create shared components (EmptyState, TableSkeleton, PageHeader, SectionPanel), formatter functions, and Wave 0 tests
 - [ ] 11-02-PLAN.md — Migrate all 7 browser confirm() calls to ConfirmDialog component
@@ -182,7 +182,7 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
-| 11. Foundation | 1/5 | In Progress|  | - |
+| 11. Foundation | 3/5 | In Progress|  | - |
 | 12. AI Configuration & Document Intake | v2.0 | 0/5 | Planned | - |
 | 13. Deal Desk & CRM | v2.0 | 0/5 | Planned | - |
 | 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
