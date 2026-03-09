@@ -102,11 +102,11 @@ Plans:
   3. The asset list can be sorted by any column (name, type, NAV, IRR, cost basis) with a single click
   4. A portfolio-level covenant breach monitor shows all breached covenants across all assets in one view, and lease expirations within 90 and 180 days are surfaced in a forward-looking calendar view
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
-**Plans:** 2/7 plans executed
+**Plans:** 3/7 plans executed
 Plans:
 - [x] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
 - [x] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
-- [ ] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
+- [x] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
 - [ ] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
 - [x] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
 - [ ] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
@@ -124,9 +124,9 @@ Plans:
   5. AI-generated meeting summaries and auto-extracted action items appear on each meeting record, action items are linked as tasks to the relevant deal or entity, and meetings surface in the activity feed for their linked context
 **Plans:** 3/8 plans executed
 Plans:
-- [ ] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
-- [ ] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
-- [ ] 15-02-PLAN.md — Vehicle list 4 view modes (Flat | Tree | Org Chart | Cards) with hierarchy visualization
+- [x] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
+- [x] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
+- [x] 15-02-PLAN.md — Vehicle list 4 view modes (Flat | Tree | Org Chart | Cards) with hierarchy visualization
 - [ ] 15-03-PLAN.md — Post-formation "What's Next" checklist + CSC-style structured regulatory filings tab
 - [ ] 15-04-PLAN.md — Fireflies per-user API key connection, encrypted storage, meeting sync route
 - [ ] 15-05-PLAN.md — Side letter management end-to-end verification

@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "stage-15-02": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['src/lib/vehicle-hierarchy.ts','src/components/features/entities/vehicle-tree-view.tsx','src/components/features/entities/vehicle-org-chart.tsx','src/components/features/entities/vehicle-cards-view.tsx','src/lib/__tests__/phase15-entity-hierarchy.test.ts','src/types/react-organizational-chart.d.ts','package.json'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\" && git commit -m 'feat(15-02): add vehicle hierarchy components + buildTree utility + ENTITY-01 tests'",
+    "stage-15-02-task2": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['src/app/(gp)/entities/page.tsx','.planning/phases/15-entity-management-meeting-intelligence/15-02-SUMMARY.md','.planning/STATE.md','.planning/ROADMAP.md'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\" && git commit -m 'feat(15-02): add 4 view mode toggle to Vehicles list page + update planning docs'",
     "stage-14-05": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['package-lock.json','src/app/api/tasks/route.ts','src/app/(gp)/tasks/page.tsx','src/components/features/tasks/tasks-list-view.tsx','src/components/features/tasks/tasks-kanban-view.tsx','.planning/phases/14-asset-management-task-management/14-05-SUMMARY.md','.planning/STATE.md','.planning/ROADMAP.md'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\""
   },
   "dependencies": {
@@ -32,6 +34,7 @@
     "prisma": "^7.4.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-organizational-chart": "^2.2.1",
     "recharts": "^3.7.0",
     "resend": "^6.9.3",
     "svix": "^1.86.0",

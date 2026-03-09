@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
@@ -11,8 +11,9 @@ import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { Video } from "lucide-react";
+import { Video, RefreshCw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -54,12 +55,14 @@ const MEETING_FILTERS = [
 ];
 
 export default function MeetingsPage() {
+  const toast = useToast();
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [cursor, setCursor] = useState<string | null>(null);
   const [allMeetings, setAllMeetings] = useState<Meeting[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -109,6 +112,41 @@ export default function MeetingsPage() {
     }
   }, [cursor, loadingMore, buildUrl]);
 
+  async function handleSyncMeetings() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/meetings/sync", { method: "POST" });
+      if (res.ok) {
+        const result = await res.json();
+        const { synced, skipped, connectedAccounts, errors } = result;
+        if (connectedAccounts === 0) {
+          toast.error(
+            "No Fireflies accounts connected. Connect your account in Profile settings."
+          );
+        } else if (synced === 0 && skipped > 0) {
+          toast.success(`All meetings already synced (${skipped} skipped)`);
+        } else {
+          const accountLabel = connectedAccounts === 1 ? "1 account" : `${connectedAccounts} accounts`;
+          toast.success(
+            `Synced ${synced} new meeting${synced !== 1 ? "s" : ""} from ${accountLabel}${skipped > 0 ? ` (${skipped} already imported)` : ""}`
+          );
+        }
+        if (errors && errors.length > 0) {
+          toast.error(`${errors.length} account(s) failed to sync`);
+        }
+        // Revalidate the meetings list to show newly synced meetings
+        mutate(buildUrl(null));
+      } else {
+        toast.error("Failed to sync meetings");
+      }
+    } catch {
+      toast.error("Failed to sync meetings");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   // Stats computed from loaded data
   const totalMeetings = allMeetings.length;
   const withTranscripts = allMeetings.filter((m) => m.hasTranscript).length;
@@ -154,6 +192,16 @@ export default function MeetingsPage() {
               }))}
               fileName="Meetings_Export"
             />
+            {/* Sync Meetings button — triggers Fireflies sync for all connected accounts */}
+            <button
+              onClick={handleSyncMeetings}
+              disabled={syncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
+              title="Sync meetings from all connected Fireflies accounts"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing..." : "Sync Meetings"}
+            </button>
             <button
               onClick={() => setShowCreate(true)}
               className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"

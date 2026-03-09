@@ -246,10 +246,15 @@ export default function AssetsPage() {
                 return (
                   <tr
                     key={a.id}
-                    className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+                    className={cn("border-t border-gray-50 hover:bg-gray-50 cursor-pointer", a.status === "EXITED" && "opacity-60")}
                     onClick={() => (window.location.href = `/assets/${a.id}`)}
                   >
-                    <td className="px-3 py-2.5 font-medium text-indigo-700">{a.name}</td>
+                    <td className="px-3 py-2.5 font-medium text-indigo-700">
+                      <span className="inline-flex items-center gap-1.5">
+                        {a.name}
+                        {a.status === "EXITED" && <Badge color="gray">EXITED</Badge>}
+                      </span>
+                    </td>
                     <td className="px-3 py-2.5">
                       <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
                     </td>

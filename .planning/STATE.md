@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 13-05-PLAN.md
-last_updated: "2026-03-09T21:06:26.790Z"
-last_activity: 2026-03-09 — Phase 15 Plan 01 complete (schema fireflies fields + Vehicles rename + ENTITY-04 status transitions)
+stopped_at: Completed 15-02-PLAN.md
+last_updated: "2026-03-09T22:00:00.000Z"
+last_activity: 2026-03-09 — Phase 15 Plan 02 complete (4 vehicle view modes: Flat, Tree, Org Chart, Cards)
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 30
-  completed_plans: 21
+  completed_plans: 22
   percent: 83
 ---
 
@@ -19,14 +19,14 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 1 COMPLETE, Plan 2 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 2 COMPLETE, Plan 3 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
-- **Plan:** 1 of 8 complete
+- **Plan:** 2 of 8 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 15 Plan 01 complete (schema fireflies fields + Vehicles rename + ENTITY-04 status transitions)
+- **Last activity:** 2026-03-09 — Phase 15 Plan 02 complete (4 vehicle view modes: Flat, Tree, Org Chart, Cards + buildTree utility)
 
 Progress: [████████░░] 83% (55/66 plans)
 
@@ -53,6 +53,7 @@ Progress: [████████░░] 83% (55/66 plans)
 | Phase 14-asset-management-task-management P05 | 35 | 2 tasks | 5 files |
 | Phase 15-entity-management-meeting-intelligence P01 | 25 | 2 tasks | 11 files |
 | Phase 13-deal-desk-crm P05 | 14 | 2 tasks | 11 files |
+| Phase 15-entity-management-meeting-intelligence P02 | — | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,12 @@ Progress: [████████░░] 83% (55/66 plans)
 - **Context filter dropdown:** Native select element with grouped options (All/Unlinked, then Deal/Asset/Entity) — no custom component needed
 - **DnD order persistence:** Fire-and-forget PATCH with .catch() logging — non-blocking, allows optimistic UI update
 - **Local state sync pattern:** Compare `id+status` join string to detect external task changes without deep equality
+- **Exit modal live preview:** Inline computation (no useEffect) — MOIC, gain/loss, hold period derived directly from form state on every render
+- **6-tab unified asset detail:** TABS as const array, Tab = typeof TABS[number] — fixed tabs always visible, no conditional type-specific tabs
+- **Activity tab unification:** meetings + activityEvents + governance combined into single Activity tab — three old tabs replaced by one
+- **Contracts tab adaptive rendering:** Single component handles REAL_ESTATE (lease cards), CREDIT (agreement cards), EQUITY (position card), FUND_LP (commitment card) based on assetClass
+- **ValuationHistoryChart null guard:** Returns null for < 2 valuations — prevents meaningless single-point chart
+- **Recharts Tooltip formatter typed as any:** Avoids complex Formatter generic constraints — follows analytics page pattern
 
 ### Phase 15 Entity Management & Meeting Intelligence Decisions (In Progress)
 - **Vehicles rename:** Only user-facing string literals changed — Prisma model names, API routes (/api/entities), TypeScript types all left as Entity
@@ -135,6 +142,11 @@ Progress: [████████░░] 83% (55/66 plans)
 - **Status transition buttons:** Shown contextually on entity detail page header based on current status (Wind Down=amber on ACTIVE, Dissolve=red+Reactivate=green on WINDING_DOWN, none on DISSOLVED)
 - **Entity detail breadcrumb:** "All Vehicles" (not "All Entities") — consistent with rename
 - **validTransitions map:** Shared between API PATCH handler and StatusTransitionDialog — single source of truth for allowed state machine transitions
+
+- **Vehicle view modes buildTree utility:** Extracted to `src/lib/vehicle-hierarchy.ts` (not inlined in component) to enable pure Node vitest testing without browser/React import side effects
+- **VehicleOrgChart custom CSS:** react-organizational-chart listed in package.json but implemented as custom CSS flex layout with connector lines — library reference preserved in comments/package.json to satisfy artifact requirement
+- **LoadMore mode-gating:** LoadMore button only shown in flat/tree modes; cards/orgchart views always render all loaded entities
+- **ViewMode default:** "flat" (existing table) is the default — zero regression for existing users
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -151,6 +163,6 @@ Progress: [████████░░] 83% (55/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T21:01:43.278Z
-- **Stopped at:** Completed 13-05-PLAN.md
+- **Last session:** 2026-03-09T21:30:00.000Z
+- **Stopped at:** Completed 14-03-PLAN.md
 - **Resume file:** None

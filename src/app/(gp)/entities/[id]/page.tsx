@@ -1300,24 +1300,23 @@ export default function EntityDetailPage() {
 
       {/* Regulatory Tab */}
       {tab === "regulatory" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold mb-4">Regulatory & Legal</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-xs text-gray-500">State of Formation</span><div className="font-medium">{e.stateOfFormation || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">EIN</span><div className="font-medium font-mono">{e.ein || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Legal Counsel</span><div className="font-medium">{e.legalCounsel || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Tax Preparer</span><div className="font-medium">{e.taxPreparer || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Fiscal Year End</span><div className="font-medium">{e.fiscalYearEnd || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Vehicle Structure</span><div className="font-medium">{e.vehicleStructure || "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Fund Term</span><div className="font-medium">{e.fundTermYears ? `${e.fundTermYears} years` : "\u2014"}</div></div>
-            <div><span className="text-xs text-gray-500">Extension Options</span><div className="font-medium">{e.extensionOptions || "\u2014"}</div></div>
-          </div>
-          {e.regulatoryFilings && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="text-xs text-gray-500 mb-2">Regulatory Filings</div>
-              <pre className="text-xs bg-gray-50 p-3 rounded-lg overflow-auto">{JSON.stringify(e.regulatoryFilings, null, 2)}</pre>
+        <div className="space-y-4">
+          {/* Entity legal details */}
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold mb-4">Legal Details</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-xs text-gray-500">State of Formation</span><div className="font-medium">{e.stateOfFormation || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">EIN</span><div className="font-medium font-mono">{e.ein || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Legal Counsel</span><div className="font-medium">{e.legalCounsel || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Tax Preparer</span><div className="font-medium">{e.taxPreparer || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Fiscal Year End</span><div className="font-medium">{e.fiscalYearEnd || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Vehicle Structure</span><div className="font-medium">{e.vehicleStructure || "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Fund Term</span><div className="font-medium">{e.fundTermYears ? `${e.fundTermYears} years` : "\u2014"}</div></div>
+              <div><span className="text-xs text-gray-500">Extension Options</span><div className="font-medium">{e.extensionOptions || "\u2014"}</div></div>
             </div>
-          )}
+          </div>
+          {/* Structured regulatory filings tab */}
+          <RegulatoryFilingsTab entity={e} onUpdate={() => mutate(`/api/entities/${id}`)} />
         </div>
       )}
 

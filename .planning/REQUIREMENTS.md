@@ -29,12 +29,12 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Asset Management — Holding Type Completion
 
-- [ ] **ASSET-04**: GP can record asset exit (exit date, exit proceeds, final MOIC) and mark asset as EXITED
-- [ ] **ASSET-05**: Asset detail pages show context-appropriate controls based on holding type (LP positions vs direct assets vs co-investments)
+- [x] **ASSET-04**: GP can record asset exit (exit date, exit proceeds, final MOIC) and mark asset as EXITED
+- [x] **ASSET-05**: Asset detail pages show context-appropriate controls based on holding type (LP positions vs direct assets vs co-investments)
 - [x] **ASSET-06**: Asset list supports column sorting
 - [x] **ASSET-07**: Covenant breach monitor shows portfolio-level view across all assets
 - [x] **ASSET-08**: Lease expiry forward view shows expirations in 90/180 day windows
-- [ ] **ASSET-09**: Valuation history chart displays on asset detail page
+- [x] **ASSET-09**: Valuation history chart displays on asset detail page
 
 ### Entity Management — Structure & Navigation
 
@@ -201,12 +201,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRM-04 | Phase 13 | Complete |
 | CRM-05 | Phase 13 | Complete |
 | CRM-06 | Phase 13 | Complete |
-| ASSET-04 | Phase 14 | Pending |
-| ASSET-05 | Phase 14 | Pending |
+| ASSET-04 | Phase 14 | Complete |
+| ASSET-05 | Phase 14 | Complete |
 | ASSET-06 | Phase 14 | Complete |
 | ASSET-07 | Phase 14 | Complete |
 | ASSET-08 | Phase 14 | Complete |
-| ASSET-09 | Phase 14 | Pending |
+| ASSET-09 | Phase 14 | Complete |
 | TASK-01 | Phase 14 | Pending |
 | TASK-02 | Phase 14 | Pending |
 | TASK-03 | Phase 14 | Pending |

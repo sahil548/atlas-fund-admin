@@ -613,6 +613,44 @@ export const UpdateAccountMappingSchema = z.object({
   atlasAccountType: AtlasAccountBucketEnum,
 });
 
+// ── Regulatory Filings ─────────────────────────────────
+
+export const RegulatoryFilingSchema = z.object({
+  id: z.string(),
+  filingType: z.enum(["FORM_D", "FORM_D_AMENDMENT", "STATE_BLUE_SKY", "ANNUAL_REPORT", "BOI_FINCEN", "ENTITY_FILING", "OTHER"]),
+  jurisdiction: z.string(),
+  filedDate: z.string().optional().nullable(),
+  dueDate: z.string().optional().nullable(),
+  status: z.enum(["PENDING", "FILED", "OVERDUE", "NOT_DUE"]),
+  filingNumber: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  documentUrl: z.string().optional().nullable(),
+});
+
+export const JurisdictionRecordSchema = z.object({
+  id: z.string(),
+  jurisdiction: z.string(),
+  registeredWithAgency: z.string().optional().nullable(),
+  authorizationDate: z.string().optional().nullable(),
+  jurisdictionId: z.string().optional().nullable(),
+  status: z.enum(["ACTIVE", "INACTIVE", "WITHDRAWN"]),
+  statusDate: z.string().optional().nullable(),
+});
+
+export const EntityRegulatoryDataSchema = z.object({
+  ctaClassification: z.string().optional().nullable(),
+  fincenId: z.string().optional().nullable(),
+  registeredAgentContactId: z.string().optional().nullable(),
+  goodStanding: z.enum(["GOOD", "AT_RISK", "NOT_IN_GOOD_STANDING"]).optional().nullable(),
+  goodStandingOverride: z.boolean().optional(),
+  jurisdictions: z.array(JurisdictionRecordSchema).optional().default([]),
+  filings: z.array(RegulatoryFilingSchema).optional().default([]),
+});
+
+export type RegulatoryFiling = z.infer<typeof RegulatoryFilingSchema>;
+export type JurisdictionRecord = z.infer<typeof JurisdictionRecordSchema>;
+export type EntityRegulatoryData = z.infer<typeof EntityRegulatoryDataSchema>;
+
 // ── Entities ───────────────────────────────────────────
 
 export const UpdateEntitySchema = z.object({

@@ -3,6 +3,8 @@
  * Wave 0 stubs — filled in by Plans 01-03, 05
  */
 
+import { EntityRegulatoryDataSchema, JurisdictionRecordSchema } from "@/lib/schemas";
+
 // Status transition logic (mirrors the API and dialog implementation)
 const validTransitions: Record<string, string[]> = {
   ACTIVE: ["WINDING_DOWN"],
@@ -16,26 +18,72 @@ function isValidTransition(from: string, to: string): boolean {
 
 describe("Phase 15: Entity Hierarchy", () => {
   describe("ENTITY-01: Vehicle view modes", () => {
-    it.skip("buildTree nests child entities under parent by parentEntityId", () => {
-      // Plan 02 fills this in
+    it("buildTree nests child entities under parent by parentEntityId", async () => {
+      const { buildTree } = await import("@/lib/vehicle-hierarchy");
+      const entities = [
+        { id: "fund-1", name: "Main Fund", parentEntityId: null },
+        { id: "spv-1", name: "SPV Alpha", parentEntityId: "fund-1" },
+        { id: "spv-2", name: "SPV Beta", parentEntityId: "fund-1" },
+      ];
+      const roots = buildTree(entities);
+      expect(roots).toHaveLength(1);
+      expect(roots[0].id).toBe("fund-1");
+      expect(roots[0].childEntities).toHaveLength(2);
     });
 
-    it.skip("buildTree returns entities without parentEntityId as roots", () => {
-      // Plan 02 fills this in
+    it("buildTree returns entities without parentEntityId as roots", async () => {
+      const { buildTree } = await import("@/lib/vehicle-hierarchy");
+      const entities = [
+        { id: "fund-1", name: "Fund A", parentEntityId: null },
+        { id: "fund-2", name: "Fund B", parentEntityId: null },
+      ];
+      const roots = buildTree(entities);
+      expect(roots).toHaveLength(2);
     });
   });
 
   describe("ENTITY-03: Regulatory filings data", () => {
-    it.skip("EntityRegulatoryDataSchema validates complete filing record", () => {
-      // Plan 03 fills this in
+    it("EntityRegulatoryDataSchema validates complete filing record", () => {
+      const data = {
+        filings: [{
+          id: "f1",
+          filingType: "FORM_D",
+          jurisdiction: "Federal",
+          filedDate: "2025-01-15",
+          dueDate: null,
+          status: "FILED",
+          filingNumber: "D-12345",
+          notes: null,
+          documentUrl: null,
+        }],
+        jurisdictions: [],
+      };
+      expect(EntityRegulatoryDataSchema.safeParse(data).success).toBe(true);
     });
 
-    it.skip("EntityRegulatoryDataSchema rejects invalid filing status", () => {
-      // Plan 03 fills this in
+    it("EntityRegulatoryDataSchema rejects invalid filing status", () => {
+      const data = {
+        filings: [{
+          id: "f1",
+          filingType: "FORM_D",
+          jurisdiction: "Federal",
+          status: "INVALID_STATUS",
+        }],
+      };
+      expect(EntityRegulatoryDataSchema.safeParse(data).success).toBe(false);
     });
 
-    it.skip("JurisdictionRecordSchema validates jurisdiction record", () => {
-      // Plan 03 fills this in
+    it("JurisdictionRecordSchema validates jurisdiction record", () => {
+      const data = {
+        id: "j1",
+        jurisdiction: "Delaware",
+        registeredWithAgency: "Division of Corporations",
+        authorizationDate: "2024-06-01",
+        jurisdictionId: "LLC-123456",
+        status: "ACTIVE",
+        statusDate: "2024-06-01",
+      };
+      expect(JurisdictionRecordSchema.safeParse(data).success).toBe(true);
     });
   });
 
