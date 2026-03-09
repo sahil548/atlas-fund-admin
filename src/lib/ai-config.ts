@@ -237,6 +237,84 @@ export async function getCategoryInstructions(
   return template?.defaultInstructions || null;
 }
 
+// ── User AI config fallback chain ──────────────────────
+// Implements: user key → tenant key → none (CONTEXT.md locked decision)
+
+export interface UserAIConfig {
+  provider: string;
+  model: string;
+  apiKey: string | null;
+  source: "user" | "tenant" | "none";
+  aiEnabled: boolean;
+}
+
+interface PersonalAIConfig {
+  provider?: string;
+  model?: string;
+  apiKey?: string;
+  apiKeyIV?: string;
+  apiKeyTag?: string;
+}
+
+export async function getUserAIConfig(userId: string, firmId: string): Promise<UserAIConfig> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { aiEnabled: true, personalAiConfig: true }
+  });
+
+  // If AI is disabled for this user by admin, return immediately.
+  // Personal key is preserved but dormant per CONTEXT.md locked decision.
+  if (!user?.aiEnabled) {
+    return { provider: "openai", model: "gpt-4o", apiKey: null, source: "none", aiEnabled: false };
+  }
+
+  // Check user's own key first (fallback chain step 1)
+  const personal = user.personalAiConfig as PersonalAIConfig | null;
+  if (personal?.apiKey && personal?.apiKeyIV && personal?.apiKeyTag) {
+    try {
+      const apiKey = decryptApiKey(personal.apiKey, personal.apiKeyIV, personal.apiKeyTag);
+      return {
+        provider: personal.provider || "openai",
+        model: personal.model || "gpt-4o",
+        apiKey,
+        source: "user",
+        aiEnabled: true,
+      };
+    } catch (err) {
+      console.error("[ai-config] Failed to decrypt personal API key:", err);
+      // Fall through to tenant key
+    }
+  }
+
+  // Fall back to tenant config (fallback chain step 2)
+  const tenantConfig = await getAIConfig(firmId);
+  if (tenantConfig.apiKey) {
+    return {
+      provider: tenantConfig.provider,
+      model: tenantConfig.model,
+      apiKey: tenantConfig.apiKey,
+      source: "tenant",
+      aiEnabled: true,
+    };
+  }
+
+  // No key configured anywhere (fallback chain step 3)
+  return { provider: "openai", model: "gpt-4o", apiKey: null, source: "none", aiEnabled: true };
+}
+
+export async function createUserAIClient(
+  userId: string,
+  firmId: string
+): Promise<{ client: OpenAI | AnthropicCompat; model: string } | null> {
+  const config = await getUserAIConfig(userId, firmId);
+  if (!config.apiKey || !config.aiEnabled) return null;
+
+  if (config.provider === "anthropic") {
+    return { client: new AnthropicCompat(config.apiKey), model: config.model };
+  }
+  return { client: new OpenAI({ apiKey: config.apiKey }), model: config.model };
+}
+
 // ── Connection test ────────────────────────────────────
 
 export async function testConnection(
