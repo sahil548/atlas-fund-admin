@@ -21,33 +21,58 @@ interface Props {
   asset: any;
 }
 
-// Type-aware review suggestions
-const reviewSuggestions: Record<string, string[]> = {
-  REAL_ESTATE: [
-    "Check lease expirations and renewal status",
-    "Review market comp update",
-    "Verify tenant payment status",
-    "Update NOI and cap rate",
-  ],
-  CREDIT: [
-    "Verify covenant compliance status",
-    "Review payment history",
-    "Check maturity timeline and refinance options",
-    "Update interest rate if reset occurred",
-  ],
-  EQUITY: [
-    "Review latest company financials",
-    "Check valuation against last round",
-    "Prepare for board meeting if applicable",
-    "Update milestone progress",
-  ],
-  VENTURE: [
-    "Review latest company financials",
-    "Check valuation against last round",
-    "Prepare for board meeting if applicable",
-    "Update milestone progress",
-  ],
-};
+// Review suggestions keyed by participation structure (primary) + asset class (secondary for Direct/GP)
+// LP investors care about GP reports & NAV — not operational details they can't control
+function getReviewSuggestions(participationStructure: string | null | undefined, assetClass: string): string[] {
+  if (participationStructure === "LP_STAKE_SILENT_PARTNER") {
+    return [
+      "Review latest GP report / quarterly letter",
+      "Reconcile NAV statement against internal records",
+      "Check capital call / distribution notices",
+      "Verify unfunded commitment balance",
+    ];
+  }
+  if (participationStructure === "CO_INVEST_JV_PARTNERSHIP") {
+    return [
+      "Review co-invest sponsor update",
+      "Reconcile valuation against sponsor marks",
+      "Check for upcoming capital call or distribution",
+      "Review side letter terms and compliance",
+    ];
+  }
+  // Direct / GP — operational details matter, key by asset class
+  const directSuggestions: Record<string, string[]> = {
+    REAL_ESTATE: [
+      "Check lease expirations and renewal pipeline",
+      "Review tenant payment and delinquency status",
+      "Update NOI, cap rate, and occupancy",
+      "Review capex budget vs actuals",
+    ],
+    CREDIT: [
+      "Verify covenant compliance status",
+      "Review payment history and any defaults",
+      "Check maturity timeline and refinance options",
+      "Update interest rate if reset occurred",
+    ],
+    EQUITY: [
+      "Review latest company financials",
+      "Check valuation against last round",
+      "Prepare for board meeting if applicable",
+      "Update milestone progress",
+    ],
+    VENTURE: [
+      "Review latest company financials",
+      "Check valuation against last round",
+      "Prepare for board meeting if applicable",
+      "Update milestone progress",
+    ],
+  };
+  return directSuggestions[assetClass] ?? [
+    "Review latest valuation and performance",
+    "Verify compliance and reporting status",
+    "Update investment thesis notes",
+  ];
+}
 
 function computeNextReview(reviewFrequency: string | null | undefined): Date {
   const now = new Date();
@@ -80,7 +105,7 @@ export function AssetOverviewTab({ asset: a }: Props) {
       )
     : null;
   const isReviewDue = reviewDaysRemaining !== null && reviewDaysRemaining <= 7;
-  const suggestions = reviewSuggestions[a.assetClass] ?? [];
+  const suggestions = getReviewSuggestions(a.participationStructure, a.assetClass);
 
   async function handleMarkReviewed() {
     setMarkingReview(true);
@@ -219,12 +244,21 @@ export function AssetOverviewTab({ asset: a }: Props) {
           </div>
         </div>
 
-        {/* Type-Specific Management Panel */}
-        {a.assetClass === "REAL_ESTATE" && <REManagementPanel asset={a} />}
-        {a.assetClass === "CREDIT" && <CreditManagementPanel asset={a} />}
-        {a.participationStructure === "LP_POSITION" && <FundLPPanel asset={a} />}
-        {(a.assetClass === "EQUITY" || a.assetClass === "VENTURE") &&
-          a.participationStructure !== "LP_POSITION" && (
+        {/* Type-Specific Management Panel — participation structure takes precedence */}
+        {/* LP/Co-Invest: passive investor panels (GP reports, NAV, commitments) */}
+        {(a.participationStructure === "LP_STAKE_SILENT_PARTNER" ||
+          a.participationStructure === "CO_INVEST_JV_PARTNERSHIP") && (
+          <FundLPPanel asset={a} />
+        )}
+        {/* Direct/GP: operational panels by asset class */}
+        {a.participationStructure === "DIRECT_GP" && a.assetClass === "REAL_ESTATE" && (
+          <REManagementPanel asset={a} />
+        )}
+        {a.participationStructure === "DIRECT_GP" && a.assetClass === "CREDIT" && (
+          <CreditManagementPanel asset={a} />
+        )}
+        {a.participationStructure === "DIRECT_GP" &&
+          (a.assetClass === "EQUITY" || a.assetClass === "VENTURE") && (
             <EquityManagementPanel asset={a} />
           )}
 

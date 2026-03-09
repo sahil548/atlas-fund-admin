@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 14-04-PLAN.md
-last_updated: "2026-03-09T22:05:00Z"
-last_activity: 2026-03-09 — Phase 14 Plan 04 complete (Holding-type management panels + Mark Reviewed + review suggestions)
+stopped_at: Completed 15-06-PLAN.md
+last_updated: "2026-03-09T23:10:00Z"
+last_activity: 2026-03-09 — Phase 15 Plan 06 complete (MeetingDetailCard + context linking + auto-task sync)
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 30
-  completed_plans: 23
-  percent: 84
+  completed_plans: 24
+  percent: 85
 ---
 
 # Atlas — GSD State
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 4 COMPLETE, Plan 5 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 06 COMPLETE, Plan 07 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
-- **Plan:** 4 of 8 complete
+- **Plan:** 6 of 8 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 14 Plan 04 complete (Holding-type management panels: RE/FundLP/Credit/Equity + Mark Reviewed + type-aware suggestions)
+- **Last activity:** 2026-03-09 — Phase 15 Plan 06 complete (MeetingDetailCard rich cards + context linking API + action item task creation + sync auto-tasks)
 
-Progress: [████████░░] 83% (55/66 plans)
+Progress: [████████░░] 85% (56/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -56,6 +56,7 @@ Progress: [████████░░] 83% (55/66 plans)
 | Phase 15-entity-management-meeting-intelligence P02 | — | 2 tasks | 8 files |
 | Phase 15-entity-management-meeting-intelligence P04 | 19min | 2 tasks | 7 files |
 | Phase 14-asset-management-task-management P04 | 35min | 2 tasks | 7 files |
+| Phase 15-entity-management-meeting-intelligence P06 | 30min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,11 @@ Progress: [████████░░] 83% (55/66 plans)
 - **decisions JSON field structure:** `{ actionItemsText, actionItemsList, keywords }` — allows Plan 06 MeetingDetailCard to read `meeting.decisions.actionItemsList` as array for checklist rendering
 - **Fireflies connection validation:** PUT handler calls fetchFirefliesUser to validate key against Fireflies API before encrypting and storing — prevents invalid keys
 - **parseActionItems strips prefixes:** regex `^\d+[.)]\s*` strips "1. " or "1) " numbered prefixes; filters lines < 4 characters
+- **MeetingDetailCard actionItemsList fallback:** reads decisions.actionItemsList array (Plan 04 structure); falls back to actionItems count display when list unavailable
+- **Action item to task pattern:** POST /api/tasks with contextType=MEETING, contextId=meeting.id; local checkedItems Set<number> tracks converted items (no DB column needed)
+- **Context link UI approach:** ID-input dropdown (not search autocomplete) — simpler; can be upgraded to search later
+- **MTG-04 via existing infrastructure:** entity/deal APIs already include meetings; entity Meetings tab surfaces linked meetings; no new activity feed infrastructure needed
+- **Sync auto-task contextType:** tasks created from Fireflies sync have contextType=MEETING to identify their origin; entityId/dealId null at sync time
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -175,6 +181,6 @@ Progress: [████████░░] 83% (55/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T22:05:00Z
-- **Stopped at:** Completed 14-04-PLAN.md
+- **Last session:** 2026-03-09T23:10:00Z
+- **Stopped at:** Completed 15-06-PLAN.md
 - **Resume file:** None

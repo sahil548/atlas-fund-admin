@@ -114,9 +114,9 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 ### Meeting Intelligence
 
 - [x] **MTG-01**: Fireflies integration via per-user OAuth — each GP team member connects their own Fireflies account
-- [ ] **MTG-02**: Meeting summaries auto-generated from transcripts via AI
+- [x] **MTG-02**: Meeting summaries auto-generated from transcripts via AI
 - [x] **MTG-03**: Action items auto-extracted from meetings and created as linked tasks
-- [ ] **MTG-04**: Meetings linked to deal/entity context and surfaced in activity feeds
+- [x] **MTG-04**: Meetings linked to deal/entity context and surfaced in activity feeds
 - [x] **MTG-05**: Aggregated meeting view across all connected team members' Fireflies accounts
 
 ### Supporting Modules — Reports, Accounting, Settings
@@ -218,9 +218,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENTITY-04 | Phase 15 | Complete |
 | ENTITY-05 | Phase 15 | Complete |
 | MTG-01 | Phase 15 | Complete |
-| MTG-02 | Phase 15 | Pending |
+| MTG-02 | Phase 15 | Complete |
 | MTG-03 | Phase 15 | Complete |
-| MTG-04 | Phase 15 | Pending |
+| MTG-04 | Phase 15 | Complete |
 | MTG-05 | Phase 15 | Complete |
 | CAP-01 | Phase 16 | Pending |
 | CAP-02 | Phase 16 | Pending |
