@@ -42,7 +42,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [ ] **ENTITY-02**: Formation workflow provides "what's next" guidance after completion
 - [x] **ENTITY-03**: Regulatory filings tab has structured add/edit form (not empty shell)
 - [x] **ENTITY-04**: GP can transition entity status (ACTIVE → WINDING_DOWN → DISSOLVED)
-- [ ] **ENTITY-05**: Side letter management wiring verified end-to-end
+- [x] **ENTITY-05**: Side letter management wiring verified end-to-end
 
 ### Capital Activity — Workflow Completion
 
@@ -216,7 +216,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ENTITY-02 | Phase 15 | Pending |
 | ENTITY-03 | Phase 15 | Complete |
 | ENTITY-04 | Phase 15 | Complete |
-| ENTITY-05 | Phase 15 | Pending |
+| ENTITY-05 | Phase 15 | Complete |
 | MTG-01 | Phase 15 | Complete |
 | MTG-02 | Phase 15 | Pending |
 | MTG-03 | Phase 15 | Complete |
