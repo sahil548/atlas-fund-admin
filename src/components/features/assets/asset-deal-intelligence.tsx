@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { fmt } from "@/lib/utils";
+import { fmt, formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -116,7 +116,7 @@ export function AssetDealIntelligence({ deal, asset }: AssetDealIntelligenceProp
               )}
             </div>
             <span className="text-xs text-gray-400">
-              Generated {deal.screeningResult?.memoGeneratedAt ? new Date(deal.screeningResult.memoGeneratedAt).toLocaleDateString() : "—"}
+              Generated {deal.screeningResult?.memoGeneratedAt ? formatDate(deal.screeningResult.memoGeneratedAt) : "—"}
             </span>
           </button>
 

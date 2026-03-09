@@ -6,7 +6,7 @@ import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fmt } from "@/lib/utils";
+import { fmt, formatDate } from "@/lib/utils";
 import { CreateCapitalCallForm } from "@/components/features/capital/create-capital-call-form";
 import { CreateDistributionForm } from "@/components/features/capital/create-distribution-form";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
@@ -330,7 +330,7 @@ export default function EntityDetailPage() {
                   {/* Due date */}
                   {task.dueDate && (
                     <span className="text-[10px] text-gray-400">
-                      {new Date(task.dueDate).toLocaleDateString()}
+                      {formatDate(task.dueDate)}
                     </span>
                   )}
                   {/* Status badge */}
@@ -744,7 +744,7 @@ export default function EntityDetailPage() {
                 <tbody>
                   {navHistory.map((snap: { id: string; periodDate: string; costBasisNAV: number; economicNAV: number; unrealizedGain?: number; accruedCarry?: number }) => (
                     <tr key={snap.id} className="border-t border-gray-50 hover:bg-gray-50">
-                      <td className="px-3 py-2.5">{new Date(snap.periodDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5">{formatDate(snap.periodDate)}</td>
                       <td className="px-3 py-2.5 font-medium">{fmt(snap.costBasisNAV)}</td>
                       <td className="px-3 py-2.5 font-bold text-indigo-700">{fmt(snap.economicNAV)}</td>
                       <td className="px-3 py-2.5 text-emerald-600">{snap.unrealizedGain != null ? `+${fmt(snap.unrealizedGain)}` : "\u2014"}</td>
@@ -777,8 +777,8 @@ export default function EntityDetailPage() {
                   <>
                     <tr key={c.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}>
                       <td className="px-3 py-2.5 font-medium text-indigo-700">{c.callNumber}</td>
-                      <td className="px-3 py-2.5">{new Date(c.callDate).toLocaleDateString()}</td>
-                      <td className="px-3 py-2.5">{new Date(c.dueDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5">{formatDate(c.callDate)}</td>
+                      <td className="px-3 py-2.5">{formatDate(c.dueDate)}</td>
                       <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
                       <td className="px-3 py-2.5">{c.purpose || "\u2014"}</td>
                       <td className="px-3 py-2.5"><Badge color={c.status === "FUNDED" ? "green" : c.status === "ISSUED" ? "amber" : c.status === "OVERDUE" ? "red" : "gray"}>{c.status}</Badge></td>
@@ -810,7 +810,7 @@ export default function EntityDetailPage() {
                                     <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
                                     <td className="py-1.5 pr-3 font-medium">{fmt(li.amount)}</td>
                                     <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
-                                    <td className="py-1.5 pr-3">{li.paidDate ? new Date(li.paidDate).toLocaleDateString() : "\u2014"}</td>
+                                    <td className="py-1.5 pr-3">{formatDate(li.paidDate)}</td>
                                     <td className="py-1.5">
                                       {li.status !== "Funded" && (
                                         <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
@@ -844,7 +844,7 @@ export default function EntityDetailPage() {
                 {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; distributionType?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number; status: string; lineItems?: any[] }) => (
                   <Fragment key={d.id}>
                     <tr className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
-                      <td className="px-3 py-2.5">{new Date(d.distributionDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2.5">{formatDate(d.distributionDate)}</td>
                       <td className="px-3 py-2.5"><Badge color="blue">{d.distributionType || d.source || "\u2014"}</Badge></td>
                       <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
                       <td className="px-3 py-2.5 text-blue-600">{fmt(d.returnOfCapital)}</td>
@@ -976,7 +976,7 @@ export default function EntityDetailPage() {
               <div key={m.id} className="p-3 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs text-gray-400 mr-2">{new Date(m.meetingDate).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400 mr-2">{formatDate(m.meetingDate)}</span>
                     {m.meetingType && <Badge color={m.meetingType === "IC Meeting" ? "amber" : m.meetingType === "DD Session" ? "blue" : "purple"}>{m.meetingType}</Badge>}
                   </div>
                   <div className="flex gap-1.5">
@@ -1045,7 +1045,7 @@ export default function EntityDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge color="gray">{d.category}</Badge>
-                  <span className="text-xs text-gray-400">{new Date(d.uploadDate).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{formatDate(d.uploadDate)}</span>
                 </div>
               </div>
             ))}

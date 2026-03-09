@@ -10,7 +10,7 @@ import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
-import { fmt } from "@/lib/utils";
+import { fmt, formatDate } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -250,7 +250,7 @@ export default function InvestorDetailPage() {
                     <span className="text-sm font-bold">{fmt(item.amount)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {item.capitalCall.entity.name} &middot; Due {new Date(item.capitalCall.dueDate).toLocaleDateString()}
+                    {item.capitalCall.entity.name} &middot; Due {formatDate(item.capitalCall.dueDate)}
                     {item.capitalCall.purpose && ` \u00B7 ${item.capitalCall.purpose}`}
                   </div>
                 </div>
@@ -272,7 +272,7 @@ export default function InvestorDetailPage() {
                     <span className="text-sm font-bold">{fmt(item.netAmount)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    {item.distribution.entity.name} &middot; {new Date(item.distribution.distributionDate).toLocaleDateString()}
+                    {item.distribution.entity.name} &middot; {formatDate(item.distribution.distributionDate)}
                     {item.income > 0 && <span className="text-emerald-600 ml-2">Income: {fmt(item.income)}</span>}
                     {item.returnOfCapital > 0 && <span className="text-blue-600 ml-2">ROC: {fmt(item.returnOfCapital)}</span>}
                   </div>
@@ -297,7 +297,7 @@ export default function InvestorDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge color="gray">{d.category}</Badge>
-                  <span className="text-xs text-gray-400">{new Date(d.uploadDate).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{formatDate(d.uploadDate)}</span>
                 </div>
               </div>
             ))}
@@ -351,7 +351,7 @@ export default function InvestorDetailPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-gray-500">
-                        {new Date(a.createdAt).toLocaleDateString()}
+                        {formatDate(a.createdAt)}
                       </td>
                       <td className="px-4 py-3">
                         <button

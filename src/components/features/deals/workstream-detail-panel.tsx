@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -271,7 +272,7 @@ export function WorkstreamDetailPanel({
                 className="text-xs mt-0.5 w-full text-left border border-gray-200 rounded px-2 py-1 hover:border-gray-400"
               >
                 {ws.dueDate
-                  ? new Date(ws.dueDate).toLocaleDateString()
+                  ? formatDate(ws.dueDate)
                   : "Set date..."}
               </button>
             )}
@@ -326,7 +327,7 @@ export function WorkstreamDetailPanel({
                           {comment.author?.name || "Unknown"}
                         </span>
                         <span className="text-[10px] text-gray-400">
-                          {new Date(comment.createdAt).toLocaleDateString()}{" "}
+                          {formatDate(comment.createdAt)}{" "}
                           {new Date(comment.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
@@ -359,7 +360,7 @@ export function WorkstreamDetailPanel({
                                 {reply.author?.name || "Unknown"}
                               </span>
                               <span className="text-[10px] text-gray-400">
-                                {new Date(reply.createdAt).toLocaleDateString()}
+                                {formatDate(reply.createdAt)}
                               </span>
                             </div>
                             <p className="text-[11px] text-gray-600 mt-0.5 whitespace-pre-wrap">

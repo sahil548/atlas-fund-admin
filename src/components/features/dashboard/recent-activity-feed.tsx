@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatDateShort } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -27,10 +28,7 @@ function timeAgo(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  return formatDateShort(dateStr);
 }
 
 const ACTIVITY_TYPE_CONFIG: Record<

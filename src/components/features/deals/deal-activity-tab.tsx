@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { useToast } from "@/components/ui/toast";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -322,7 +323,7 @@ export function DealActivityTab({ deal }: DealActivityTabProps) {
                     </Badge>
                     {dateStr && (
                       <span className="text-[10px] text-gray-400">
-                        {new Date(dateStr).toLocaleDateString()}{" "}
+                        {formatDate(dateStr)}{" "}
                         {new Date(dateStr).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",

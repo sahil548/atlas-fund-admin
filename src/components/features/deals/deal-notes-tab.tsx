@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { mutate } from "swr";
 import { useUser } from "@/components/providers/user-provider";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -69,7 +70,7 @@ export function DealNotesTab({ deal }: DealNotesTabProps) {
                   {n.author?.name || "System"}
                 </span>
                 <span className="text-[10px] text-gray-400">
-                  {new Date(n.createdAt).toLocaleDateString()}{" "}
+                  {formatDate(n.createdAt)}{" "}
                   {new Date(n.createdAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

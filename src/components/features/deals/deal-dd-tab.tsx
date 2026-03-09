@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { mutate } from "swr";
 import { AddWorkstreamForm } from "./add-workstream-form";
 import { WorkstreamDetailPanel } from "./workstream-detail-panel";
+import { formatDate, formatDateShort } from "@/lib/utils";
 
 // Workstream and task shapes come from API JSON responses with complex nested
 // structures — remaining any usages below are for those API response fields only.
@@ -743,10 +744,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                                 : "text-gray-500"
                             }`}
                           >
-                            {new Date(ws.dueDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            })}
+                            {formatDateShort(ws.dueDate)}
                           </span>
                         ) : (
                           <span className="text-[10px] text-gray-300">--</span>
@@ -1366,7 +1364,7 @@ function TaskDetailPanel({
                           {comment.author?.name || "Unknown"}
                         </span>
                         <span className="text-[10px] text-gray-400">
-                          {new Date(comment.createdAt).toLocaleDateString()}{" "}
+                          {formatDate(comment.createdAt)}{" "}
                           {new Date(comment.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
@@ -1399,7 +1397,7 @@ function TaskDetailPanel({
                                 {reply.author?.name || "Unknown"}
                               </span>
                               <span className="text-[10px] text-gray-400">
-                                {new Date(reply.createdAt).toLocaleDateString()}{" "}
+                                {formatDate(reply.createdAt)}{" "}
                                 {new Date(reply.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             </div>
@@ -1553,7 +1551,7 @@ function TaskDetailPanel({
           )}
           {task.createdAt && (
             <div className="text-[10px] text-gray-400">
-              Created {new Date(task.createdAt).toLocaleDateString()}
+              Created {formatDate(task.createdAt)}
             </div>
           )}
         </div>

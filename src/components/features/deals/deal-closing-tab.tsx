@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { DocuSignButton } from "@/components/features/deals/docusign-button";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -267,7 +268,7 @@ export function DealClosingTab({ deal, onCloseDeal }: DealClosingTabProps) {
                   {/* Due date */}
                   {item.dueDate && (
                     <span className="text-[10px] text-gray-500">
-                      {new Date(item.dueDate).toLocaleDateString()}
+                      {formatDate(item.dueDate)}
                     </span>
                   )}
 

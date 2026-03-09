@@ -6,6 +6,7 @@ import useSWR, { mutate } from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { useToast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -391,11 +392,7 @@ export default function ReportsPage() {
                         <div className="text-xs text-gray-500 mt-0.5">
                           {doc.entity?.name || "Unknown entity"}
                           {" · "}
-                          {new Date(doc.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {formatDate(doc.createdAt)}
                           {doc.fileSize ? ` · ${formatBytes(doc.fileSize)}` : ""}
                         </div>
                       </div>
@@ -620,11 +617,7 @@ export default function ReportsPage() {
                           {doc.entity?.name || "Unknown entity"}
                           {doc.investor?.name ? ` · ${doc.investor.name}` : " · Unmatched"}
                           {" · "}
-                          {new Date(doc.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
+                          {formatDate(doc.createdAt)}
                         </div>
                       </div>
                     </div>

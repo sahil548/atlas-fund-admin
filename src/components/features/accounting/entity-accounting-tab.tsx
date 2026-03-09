@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccountMappingPanel } from "./account-mapping-panel";
 import { TrialBalanceView } from "./trial-balance-view";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -287,7 +288,7 @@ export function EntityAccountingTab({ entityId, entityName, connection: initialC
               NAV uses real GL data
             </span>
             <span className="text-xs text-gray-400">
-              (as of {new Date(glDataAsOf).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })})
+              (as of {formatDate(glDataAsOf)})
             </span>
           </div>
         ) : (

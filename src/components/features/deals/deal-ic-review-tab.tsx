@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/components/providers/user-provider";
 import { mutate } from "swr";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -230,7 +231,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                   <div className="text-right text-xs text-gray-500">
                     <div>by {deal.icProcess.decidedBy.name}</div>
                     {deal.icProcess.decidedAt && (
-                      <div>{new Date(deal.icProcess.decidedAt).toLocaleDateString()}</div>
+                      <div>{formatDate(deal.icProcess.decidedAt)}</div>
                     )}
                   </div>
                 )}
@@ -405,7 +406,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                           {v.vote.replace(/_/g, " ")}
                         </Badge>
                         <span className="text-[10px] text-gray-400">
-                          {new Date(v.votedAt).toLocaleDateString()}
+                          {formatDate(v.votedAt)}
                         </span>
                       </div>
                       {(v.conditions || v.notes) && (
@@ -463,7 +464,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium">{q.author?.name}</span>
                         <span className="text-[10px] text-gray-400">
-                          {new Date(q.createdAt).toLocaleDateString()}
+                          {formatDate(q.createdAt)}
                         </span>
                       </div>
                       <p className="text-sm text-gray-700 mt-0.5">{q.content}</p>
@@ -502,7 +503,7 @@ export function DealICReviewTab({ deal }: DealICReviewTabProps) {
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-medium">{r.author?.name}</span>
                             <span className="text-[10px] text-gray-400">
-                              {new Date(r.createdAt).toLocaleDateString()}
+                              {formatDate(r.createdAt)}
                             </span>
                           </div>
                           <p className="text-xs text-gray-600 mt-0.5">{r.content}</p>

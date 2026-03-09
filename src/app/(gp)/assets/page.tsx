@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { CreateAssetForm } from "@/components/features/assets/create-asset-form";
-import { fmt, pct } from "@/lib/utils";
+import { fmt, pct, formatDate } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
@@ -139,7 +139,7 @@ export default function AssetsPage() {
                 irr: a.irr ?? "",
                 moic: a.moic ?? "",
                 status: a.status,
-                createdAt: a.createdAt ? new Date(a.createdAt).toLocaleDateString() : "",
+                createdAt: formatDate(a.createdAt),
               }))}
               fileName="Assets_Export"
             />

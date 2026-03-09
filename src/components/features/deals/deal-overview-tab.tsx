@@ -16,6 +16,7 @@ import {
   PARTICIPATION_LABELS,
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
+import { formatDate } from "@/lib/utils";
 
 // Memo sections, previous versions, and workstream shapes come from JSON fields —
 // remaining any usages below are for those API response fields only.
@@ -430,7 +431,7 @@ export function DealOverviewTab({
                       <option value="">v{currentMemoVersion} (Current)</option>
                       {[...previousMemoVersions].reverse().map((v: any) => (
                         <option key={v.version} value={v.version}>
-                          v{v.version} ({new Date(v.memoGeneratedAt).toLocaleDateString()})
+                          v{v.version} ({formatDate(v.memoGeneratedAt)})
                         </option>
                       ))}
                     </select>
@@ -511,7 +512,7 @@ export function DealOverviewTab({
 
                       {hasMemo && sr?.memoGeneratedAt && (
                         <div className="text-[10px] text-gray-400 pt-1 border-t border-gray-100">
-                          Generated {new Date(sr.memoGeneratedAt).toLocaleDateString()} · v{currentMemoVersion}
+                          Generated {formatDate(sr.memoGeneratedAt)} · v{currentMemoVersion}
                         </div>
                       )}
                     </div>

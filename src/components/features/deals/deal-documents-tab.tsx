@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { FileUpload } from "@/components/ui/file-upload";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
+import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -184,7 +185,7 @@ export function DealDocumentsTab({ deal }: DealDocumentsTabProps) {
                   {formatSize(d.fileSize)}
                 </td>
                 <td className="px-3 py-2.5 text-gray-500">
-                  {new Date(d.uploadDate).toLocaleDateString()}
+                  {formatDate(d.uploadDate)}
                 </td>
               </tr>
             ))}
