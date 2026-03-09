@@ -9,14 +9,14 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Foundation — Shared Components & Patterns
 
-- [ ] **FOUND-01**: All list pages show actionable empty states with CTAs (not blank white space)
-- [ ] **FOUND-02**: All data tables show skeleton loading states instead of "Loading..." text
+- [x] **FOUND-01**: All list pages show actionable empty states with CTAs (not blank white space)
+- [x] **FOUND-02**: All data tables show skeleton loading states instead of "Loading..." text
 - [ ] **FOUND-03**: All destructive actions use ConfirmDialog component (no browser confirm() dialogs)
-- [ ] **FOUND-04**: Shared PageHeader component standardizes title + subtitle pattern across all pages
-- [ ] **FOUND-05**: Shared SectionPanel component standardizes card wrapper pattern across all pages
-- [ ] **FOUND-06**: Consistent date formatting (date-fns) across all pages
-- [ ] **FOUND-07**: Consistent number/currency formatting across all pages
-- [ ] **FOUND-08**: Dark mode parity — all new and modified components have dark: variants
+- [x] **FOUND-04**: Shared PageHeader component standardizes title + subtitle pattern across all pages
+- [x] **FOUND-05**: Shared SectionPanel component standardizes card wrapper pattern across all pages
+- [x] **FOUND-06**: Consistent date formatting (date-fns) across all pages
+- [x] **FOUND-07**: Consistent number/currency formatting across all pages
+- [x] **FOUND-08**: Dark mode parity — all new and modified components have dark: variants
 
 ### Deal Desk — Pipeline Completeness
 
@@ -173,14 +173,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 11 | Pending |
-| FOUND-02 | Phase 11 | Pending |
+| FOUND-01 | Phase 11 | Complete |
+| FOUND-02 | Phase 11 | Complete |
 | FOUND-03 | Phase 11 | Pending |
-| FOUND-04 | Phase 11 | Pending |
-| FOUND-05 | Phase 11 | Pending |
-| FOUND-06 | Phase 11 | Pending |
-| FOUND-07 | Phase 11 | Pending |
-| FOUND-08 | Phase 11 | Pending |
+| FOUND-04 | Phase 11 | Complete |
+| FOUND-05 | Phase 11 | Complete |
+| FOUND-06 | Phase 11 | Complete |
+| FOUND-07 | Phase 11 | Complete |
+| FOUND-08 | Phase 11 | Complete |
 | AICONF-01 | Phase 12 | Pending |
 | AICONF-02 | Phase 12 | Pending |
 | AICONF-03 | Phase 12 | Pending |

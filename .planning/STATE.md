@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: planning
-stopped_at: Phase 15 context gathered
-last_updated: "2026-03-09T07:39:05.886Z"
-last_activity: 2026-03-08 — v2.0 roadmap created (9 phases, 79 requirements mapped)
+status: executing
+stopped_at: Completed 11-01-PLAN.md
+last_updated: "2026-03-09T07:50:15Z"
+last_activity: 2026-03-09 — Phase 11 Plan 01 complete (foundation components + formatters)
 progress:
   total_phases: 9
   completed_phases: 0
-  total_plans: 11
-  completed_plans: 0
-  percent: 0
+  total_plans: 19
+  completed_plans: 1
+  percent: 5
 ---
 
 # Atlas — GSD State
@@ -19,24 +19,25 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 11 (Foundation) ready to plan
+- **Current focus:** v2.0 Intelligence Platform — Phase 11 (Foundation) executing
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 11 of 19 — Foundation (not started)
-- **Plan:** —
-- **Status:** Ready to plan Phase 11
-- **Last activity:** 2026-03-08 — v2.0 roadmap created (9 phases, 79 requirements mapped)
+- **Phase:** 11 of 19 — Foundation (in progress)
+- **Plan:** 2 of 5 (Plan 01 complete, Plan 02 next)
+- **Status:** Executing Phase 11
+- **Last activity:** 2026-03-09 — Phase 11 Plan 01 complete (foundation components + formatters)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 5%
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
-- v2.0 plans completed: 0
+- v2.0 plans completed: 1
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | v1.0 (1-10) | 36 | ~180min | ~5min |
+| 11-foundation | 1 | 3min | 3min |
 
 ## Accumulated Context
 
@@ -47,6 +48,12 @@ Progress: [░░░░░░░░░░] 0%
 - **Integration scoping:** Accounting per-entity, Fireflies per-user, most others tenant-wide
 - **No code to GitHub:** Planning docs only for this milestone (no pushes)
 - **Schema discipline:** Treat schema changes as high-risk; prefer query/UI fixes over new Prisma fields
+
+### Phase 11 Foundation Decisions
+- **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
+- **Component test strategy:** Dynamic import to verify exports (node vitest env, no jsdom)
+- **formatRelativeTime cutoff:** 7+ days falls back to absolute date format
+- **Dark mode pattern:** Every light color class paired with dark: class (gray-900/100, gray-200/700, gray-100/800)
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -63,6 +70,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T07:39:05.880Z
-- **Stopped at:** Phase 15 context gathered
-- **Resume file:** .planning/phases/15-entity-management-meeting-intelligence/15-CONTEXT.md
+- **Last session:** 2026-03-09T07:50:15Z
+- **Stopped at:** Completed 11-01-PLAN.md
+- **Resume file:** .planning/phases/11-foundation/11-01-SUMMARY.md
