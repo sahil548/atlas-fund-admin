@@ -55,6 +55,7 @@ export async function GET(
       meetings: { orderBy: { meetingDate: "desc" } },
       notes: { orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" } },
+      sourceAssets: { select: { id: true, name: true } },
       dealLead: { select: { id: true, name: true, initials: true } },
       targetEntity: {
         select: {

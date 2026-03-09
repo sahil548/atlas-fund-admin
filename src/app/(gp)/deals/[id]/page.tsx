@@ -666,8 +666,16 @@ export default function DealDetailPage({
       )}
 
       {isClosed && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700 font-medium">
-          This deal has been closed — the asset has been created and booked.
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-700 font-medium flex items-center justify-between">
+          <span>This deal has been closed — the asset has been created and booked.</span>
+          {deal.sourceAssets?.length > 0 && (
+            <Link
+              href={`/assets/${deal.sourceAssets[0].id}`}
+              className="text-emerald-800 dark:text-emerald-300 font-semibold hover:underline ml-4 flex-shrink-0"
+            >
+              View Asset &rarr;
+            </Link>
+          )}
         </div>
       )}
 
