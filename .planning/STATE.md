@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 15-00-PLAN.md
-last_updated: "2026-03-09T20:44:51.943Z"
-last_activity: 2026-03-09 — Phase 14 Plan 02 complete (sortable asset table + monitoring panel with covenant breaches/lease expirations/loan maturities/overdue reviews + LeaseExpiryView table/timeline)
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-09T20:54:35.987Z"
+last_activity: 2026-03-09 — Phase 14 Plan 05 complete (@dnd-kit tasks kanban board + sortable list view + context filter dropdown)
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 17
-  percent: 76
+  completed_plans: 19
+  percent: 77
 ---
 
 # Atlas — GSD State
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 4 COMPLETE, Plan 5 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 1 COMPLETE, Plan 2 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 14 of 19 — Asset Management & Task Management (In Progress)
-- **Plan:** 2 of 7 complete
+- **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
+- **Plan:** 1 of 8 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 14 Plan 02 complete (sortable asset table + monitoring panel with covenant breaches/lease expirations/loan maturities/overdue reviews + LeaseExpiryView table/timeline)
+- **Last activity:** 2026-03-09 — Phase 15 Plan 01 complete (schema fireflies fields + Vehicles rename + ENTITY-04 status transitions)
 
-Progress: [████████░░] 76% (50/66 plans)
+Progress: [████████░░] 83% (55/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -50,6 +50,8 @@ Progress: [████████░░] 76% (50/66 plans)
 | Phase 14-asset-management-task-management P02 | 8 | 2 tasks | 4 files |
 | Phase 13-deal-desk-crm P04 | 45 | 2 tasks | 17 files |
 | Phase 15 P00 | 1min | 1 tasks | 2 files |
+| Phase 14-asset-management-task-management P05 | 35 | 2 tasks | 5 files |
+| Phase 15-entity-management-meeting-intelligence P01 | 25 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -116,6 +118,19 @@ Progress: [████████░░] 76% (50/66 plans)
 - **categorizeLeaseExpiry boundaries:** Day 90 = critical (<=90), day 91-180 = warning (<=180), day 181+ = safe
 - **Exit endpoint atomicity:** prisma.$transaction([asset.update, ...task.creates]) — returns [0] for updatedAsset
 - **MOIC guard:** exitProceeds / costBasis; returns 0 when costBasis === 0 (write-off edge case)
+- **@dnd-kit activation constraint:** distance:5 prevents accidental drags on click — pointer must move 5px to trigger drag
+- **Kanban column detection:** taskColumnMap (taskId → columnId) built from localTasks before each drag — handles both card-on-card drops and column drops
+- **Context filter dropdown:** Native select element with grouped options (All/Unlinked, then Deal/Asset/Entity) — no custom component needed
+- **DnD order persistence:** Fire-and-forget PATCH with .catch() logging — non-blocking, allows optimistic UI update
+- **Local state sync pattern:** Compare `id+status` join string to detect external task changes without deep equality
+
+### Phase 15 Entity Management & Meeting Intelligence Decisions (In Progress)
+- **Vehicles rename:** Only user-facing string literals changed — Prisma model names, API routes (/api/entities), TypeScript types all left as Entity
+- **STATUS_TRANSITION audit action:** Added to AuditAction union type; logAudit provides proper type safety for entity status transitions
+- **DISSOLVED transition:** Shows warning about outstanding obligations (unfunded capital calls, active assets) but does NOT block — GP can proceed; obligations remain for record-keeping
+- **Status transition buttons:** Shown contextually on entity detail page header based on current status (Wind Down=amber on ACTIVE, Dissolve=red+Reactivate=green on WINDING_DOWN, none on DISSOLVED)
+- **Entity detail breadcrumb:** "All Vehicles" (not "All Entities") — consistent with rename
+- **validTransitions map:** Shared between API PATCH handler and StatusTransitionDialog — single source of truth for allowed state machine transitions
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -132,6 +147,6 @@ Progress: [████████░░] 76% (50/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:44:51.940Z
-- **Stopped at:** Completed 15-00-PLAN.md
+- **Last session:** 2026-03-09T20:54:35.984Z
+- **Stopped at:** Completed 15-01-PLAN.md
 - **Resume file:** None

@@ -102,13 +102,13 @@ Plans:
   3. The asset list can be sorted by any column (name, type, NAV, IRR, cost basis) with a single click
   4. A portfolio-level covenant breach monitor shows all breached covenants across all assets in one view, and lease expirations within 90 and 180 days are surfaced in a forward-looking calendar view
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
-**Plans:** 1/7 plans executed
+**Plans:** 2/7 plans executed
 Plans:
 - [x] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
-- [ ] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
+- [x] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
 - [ ] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
 - [ ] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
-- [ ] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
+- [x] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
 - [ ] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
 - [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task assignment email notification
 
@@ -122,7 +122,7 @@ Plans:
   3. Regulatory filings can be added and edited through a structured form (not an empty shell tab) and entity status can be transitioned (ACTIVE → WINDING_DOWN → DISSOLVED) via UI controls
   4. Each GP team member can connect their own Fireflies account via OAuth — meetings from all connected accounts appear in an aggregated meeting view in Atlas
   5. AI-generated meeting summaries and auto-extracted action items appear on each meeting record, action items are linked as tasks to the relevant deal or entity, and meetings surface in the activity feed for their linked context
-**Plans:** 1/8 plans executed
+**Plans:** 2/8 plans executed
 Plans:
 - [ ] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
 - [ ] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
@@ -195,7 +195,7 @@ Plans:
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 13. Deal Desk & CRM | 4/5 | In Progress|  | - |
 | 14. Asset Management & Task Management | 1/7 | In Progress|  | - |
-| 15. Entity Management & Meeting Intelligence | 1/8 | In Progress|  | - |
+| 15. Entity Management & Meeting Intelligence | 2/8 | In Progress|  | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |
 | 18. AI Features | v2.0 | 0/TBD | Not started | - |
