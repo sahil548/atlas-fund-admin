@@ -44,12 +44,31 @@ export async function GET(req: NextRequest) {
         icProcess: { include: { votes: true } },
         dealLead: { select: { id: true, name: true, initials: true } },
         closingChecklist: { select: { id: true, status: true } },
+        activities: {
+          where: { activityType: { contains: "STAGE" } },
+          select: { activityType: true, createdAt: true, metadata: true },
+          orderBy: { createdAt: "desc" },
+        },
       },
     }),
     prisma.deal.count({ where }),
   ]);
 
-  const paginated = buildPaginatedResult(rawDeals, params.limit, total);
+  // Compute daysInStage for each deal
+  const now = new Date();
+  const dealsWithDaysInStage = rawDeals.map((deal) => {
+    const stageEntry = deal.activities.find(
+      (a) => a.activityType.includes("STAGE") && (a.metadata as any)?.newStage === deal.stage,
+    );
+    const enteredAt = stageEntry ? new Date(stageEntry.createdAt) : new Date(deal.createdAt);
+    const daysInStage = Math.max(0, Math.floor((now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24)));
+    // Strip raw activities before returning to client
+    const { activities, ...rest } = deal;
+    void activities; // suppress unused var warning
+    return { ...rest, daysInStage };
+  });
+
+  const paginated = buildPaginatedResult(dealsWithDaysInStage, params.limit, total);
 
   // Compute analytics from the full set (not paginated)
   const allDeals = await prisma.deal.findMany({
