@@ -3,9 +3,8 @@
 import { useCallback, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { StatCard } from "@/components/ui/stat-card";
-import { Badge } from "@/components/ui/badge";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
-import Link from "next/link";
+import { MeetingDetailCard } from "@/components/features/meetings/meeting-detail-card";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
@@ -29,21 +28,17 @@ interface Meeting {
   source: string;
   hasTranscript: boolean;
   actionItems: number;
-  decisions: string[] | null;
+  decisions: { actionItemsText?: string | null; actionItemsList?: string[]; keywords?: string[] } | string[] | null;
   summary: string | null;
   asset?: { id: string; name: string } | null;
   deal?: { id: string; name: string } | null;
   entity?: { id: string; name: string } | null;
+  dealId?: string | null;
+  entityId?: string | null;
+  assetId?: string | null;
 }
 
-const MEETING_TYPES = ["IC Meeting", "DD Session", "GP Review", "Portfolio Review", "Board Meeting"];
 const SOURCES = ["FIREFLIES", "MANUAL", "ZOOM", "TEAMS"];
-
-const TYPE_COLORS: Record<string, string> = {
-  "IC Meeting": "red", "DD Session": "orange", "GP Review": "purple",
-  "Portfolio Review": "blue", "Board Meeting": "indigo",
-};
-const SOURCE_COLORS: Record<string, string> = { FIREFLIES: "purple", MANUAL: "gray", ZOOM: "blue", TEAMS: "indigo" };
 const SOURCE_LABELS: Record<string, string> = { FIREFLIES: "Fireflies", MANUAL: "Manual", ZOOM: "Zoom", TEAMS: "Teams" };
 
 const MEETING_FILTERS = [
@@ -243,50 +238,11 @@ export default function MeetingsPage() {
       ) : (
         <div className="space-y-2">
           {allMeetings.map((m) => (
-            <div key={m.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold text-gray-900">{m.title}</h3>
-                    {m.meetingType && <Badge color={TYPE_COLORS[m.meetingType] || "gray"}>{m.meetingType}</Badge>}
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-                    <span>{formatDate(m.meetingDate)}</span>
-                    <span className="text-gray-300">|</span>
-                    <Badge color={SOURCE_COLORS[m.source] || "gray"}>{SOURCE_LABELS[m.source] || m.source}</Badge>
-                    <span className="text-gray-300">|</span>
-                    <span>{m.hasTranscript ? "Transcript available" : "No transcript"}</span>
-                    <span className="text-gray-300">|</span>
-                    <span>{m.actionItems} action item{m.actionItems !== 1 ? "s" : ""}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    {m.asset && (
-                      <Link href={`/assets/${m.asset.id}`} className="text-[10px] text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded">
-                        Asset: {m.asset.name}
-                      </Link>
-                    )}
-                    {m.deal && (
-                      <Link href={`/deals/${m.deal.id}`} className="text-[10px] text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded">
-                        Deal: {m.deal.name}
-                      </Link>
-                    )}
-                    {m.entity && (
-                      <Link href={`/entities/${m.entity.id}`} className="text-[10px] text-blue-600 hover:text-blue-800 bg-blue-50 px-2 py-0.5 rounded">
-                        Entity: {m.entity.name}
-                      </Link>
-                    )}
-                  </div>
-                  {m.decisions && Array.isArray(m.decisions) && m.decisions.length > 0 && (
-                    <div className="flex items-center gap-1 mt-2 flex-wrap">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-wide">Decisions:</span>
-                      {m.decisions.map((d, i) => (
-                        <span key={i} className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">{d}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <MeetingDetailCard
+              key={m.id}
+              meeting={m}
+              onUpdated={() => mutate(buildUrl(null))}
+            />
           ))}
         </div>
       )}

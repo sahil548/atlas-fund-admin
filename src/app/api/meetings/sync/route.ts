@@ -56,7 +56,7 @@ export async function POST(_req: Request) {
         const actionItemsText = transcript.summary?.action_items ?? null;
         const actionItems = parseActionItems(actionItemsText);
 
-        await prisma.meeting.create({
+        const newMeeting = await prisma.meeting.create({
           data: {
             title: transcript.title || "Untitled Meeting",
             meetingDate: new Date(transcript.date),
@@ -78,9 +78,26 @@ export async function POST(_req: Request) {
             actionItems: actionItems.length,
             firefliesId: transcript.id,
             firmId: authUser.firmId,
-            // dealId, entityId, assetId left null — AI linking handled in Plan 06
+            // dealId, entityId, assetId left null — linked later via context link UI
           },
         });
+
+        // MTG-03: Auto-create TODO tasks from parsed action items
+        // contextType=MEETING identifies tasks that originated from a meeting sync
+        if (actionItems.length > 0) {
+          await prisma.task.createMany({
+            data: actionItems.map((title, index) => ({
+              title,
+              status: "TODO" as const,
+              priority: "MEDIUM" as const,
+              contextType: "MEETING",
+              contextId: newMeeting.id,
+              order: index,
+              // entityId and dealId are null at sync time — linked later when meeting is linked
+            })),
+          });
+        }
+
         totalSynced++;
       }
 
