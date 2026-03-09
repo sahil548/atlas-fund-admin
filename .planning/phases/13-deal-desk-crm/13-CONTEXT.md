@@ -74,6 +74,12 @@ Requirements: DEAL-11, DEAL-12, DEAL-13, DEAL-14, DEAL-15, DEAL-16, CRM-01, CRM-
 - Bulk assign shows GP team member picker
 - Bulk stage advance moves all selected to next stage (validates all are in same stage)
 
+### Team Connections on Contact Page
+- Contact detail page shows which GP team members have interacted with this contact
+- Based on logged interactions (ContactInteraction) and deal involvement
+- Inspired by Affinity's Connections tab — shows relationship strength per team member
+- Data foundation built in Phase 13 (interaction logging provides the data); AI summary layer in Phase 18
+
 ### Claude's Discretion
 - Contact detail page tab names and exact tab structure
 - Exact layout/spacing of contact header card
@@ -83,6 +89,7 @@ Requirements: DEAL-11, DEAL-12, DEAL-13, DEAL-14, DEAL-15, DEAL-16, CRM-01, CRM-
 - Floating action bar visual design and positioning
 - Empty state designs for contact pages with no interactions/deals
 - How to handle days-in-stage when no DealActivity record exists (fallback logic)
+- Team connections display format (strength bars, simple list, or badges)
 
 </decisions>
 
@@ -124,6 +131,7 @@ Requirements: DEAL-11, DEAL-12, DEAL-13, DEAL-14, DEAL-15, DEAL-16, CRM-01, CRM-
 - IC memo PDF should be professional enough to share with external parties (co-investors, advisors)
 - Bulk actions use the Gmail/Notion pattern: checkboxes appear, floating bar at bottom with actions
 - "Deals Sourced" and "Co-Investments" are explicitly separate sections on the contact page — different relationship types
+- Reference: Affinity CRM (calafiagroup.affinity.co) is the current CRM — 1,928 people, 1,147 organizations. Contact detail has Overview (details + linked opportunities + activity timeline with AI summarize), Connections (team relationship strength), Introductions (who introduced who), Notes, Files, News & Insights. Global search (Cmd+K) searches across people, orgs, opportunities, lists, notes with preview panel.
 
 </specifics>
 
@@ -132,8 +140,11 @@ Requirements: DEAL-11, DEAL-12, DEAL-13, DEAL-14, DEAL-15, DEAL-16, CRM-01, CRM-
 
 - Network graph visualization for co-investor relationships — decided against for now, use simple tables
 - Fireflies auto-import of meetings to contact timeline — Phase 15 (Meeting Intelligence)
-- AI-powered relationship insights or deal sourcing suggestions — Phase 18 (AI Features)
-- Contact search/filtering beyond directory table — not discussed, potential future enhancement
+- **AI CRM Intelligence (Phase 18)** — user wants full AI layer on top of Phase 13's data foundation:
+  - AI-powered contact search via command bar: natural language queries like "who do I know at Marcus & Millichap" or "find all brokers in California"
+  - AI relationship summary button on contact detail page: generates summary of interactions, deals, touchpoints, how introduced (like Affinity's Summarize button)
+  - AI web enrichment on contact pages: LinkedIn profile data, company news & deals, public filings (SEC, real estate records) — similar to Affinity's "News & Insights" tab
+  - All three features extend existing command bar (Cmd+K) and contact detail page built in Phase 13
 
 </deferred>
 
