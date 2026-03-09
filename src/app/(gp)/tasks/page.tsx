@@ -15,6 +15,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CheckSquare } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -203,7 +204,7 @@ export default function TasksPage() {
               status: STATUS_LABELS[t.status] ?? t.status,
               priority: t.priority ?? "MEDIUM",
               assignee: t.assignee?.name ?? t.assigneeName ?? "",
-              dueDate: t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "",
+              dueDate: t.dueDate ? formatDate(t.dueDate) : "",
               dealName: t.deal?.name ?? "",
               entityName: t.entity?.name ?? "",
             }))}
@@ -287,7 +288,7 @@ export default function TasksPage() {
                   <td className="px-4 py-2.5 text-gray-500">
                     {task.dueDate ? (
                       <span className={new Date(task.dueDate) < now && task.status !== "DONE" ? "text-red-600 font-medium" : ""}>
-                        {new Date(task.dueDate).toLocaleDateString()}
+                        {formatDate(task.dueDate)}
                       </span>
                     ) : (
                       <span className="text-gray-300">—</span>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createAIClient, getModelForFirm } from "@/lib/ai-config";
 import { generateAIRouteList } from "@/lib/routes";
+import { fmt } from "@/lib/utils";
 import type { AIResponse, DatabaseContext, SearchResult } from "./command-bar-types";
 
 /**
@@ -103,13 +104,6 @@ async function gatherContext(firmId: string): Promise<DatabaseContext> {
   };
 }
 
-function formatCurrency(n: number): string {
-  if (n >= 1e9) return `$${(n / 1e9).toFixed(1)}B`;
-  if (n >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;
-  if (n >= 1e3) return `$${(n / 1e3).toFixed(0)}K`;
-  return `$${n.toLocaleString()}`;
-}
-
 function buildSystemPrompt(ctx: DatabaseContext): string {
   const stageBreakdown = Object.entries(ctx.dealsByStage)
     .map(([stage, count]) => `${stage}: ${count}`)
@@ -138,10 +132,10 @@ CURRENT PORTFOLIO STATE:
 - Deals: ${ctx.totalDeals} total (${stageBreakdown || "none"})
 - Entities: ${ctx.totalEntities} (${entityBreakdown || "none"})
 - Assets: ${ctx.totalAssets} active (${assetBreakdown || "none"})
-  - Total Fair Value: ${formatCurrency(ctx.totalFairValue)}
-  - Total Cost Basis: ${formatCurrency(ctx.totalCostBasis)}
-  - Unrealized Gain: ${formatCurrency(ctx.totalFairValue - ctx.totalCostBasis)}
-- Investors: ${ctx.investorCount} LPs (${formatCurrency(ctx.totalCommitted)} committed)
+  - Total Fair Value: ${fmt(ctx.totalFairValue)}
+  - Total Cost Basis: ${fmt(ctx.totalCostBasis)}
+  - Unrealized Gain: ${fmt(ctx.totalFairValue - ctx.totalCostBasis)}
+- Investors: ${ctx.investorCount} LPs (${fmt(ctx.totalCommitted)} committed)
 - Tasks: ${taskBreakdown || "none"}
 
 RECENT ACTIVITY:

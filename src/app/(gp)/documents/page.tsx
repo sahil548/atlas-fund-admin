@@ -17,6 +17,7 @@ import { DocuSignSend } from "@/components/features/documents/docusign-send";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FileText } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -192,7 +193,7 @@ export default function DocumentsPage() {
                 category: d.category,
                 associatedWith: assoc.label,
                 associationType: assoc.type,
-                uploadDate: new Date(d.uploadDate).toLocaleDateString(),
+                uploadDate: formatDate(d.uploadDate),
                 fileSize: d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "",
               };
             })}
@@ -254,7 +255,7 @@ export default function DocumentsPage() {
                       )}
                       {assoc.type && <span className="text-gray-400 ml-1">({assoc.type})</span>}
                     </td>
-                    <td className="px-3 py-2.5 text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2.5 text-gray-500">{formatDate(d.uploadDate)}</td>
                     <td className="px-3 py-2.5 text-gray-500">{d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "\u2014"}</td>
                     <td className="px-3 py-2.5">
                       {d.fileUrl && (

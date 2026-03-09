@@ -14,7 +14,7 @@ import { LogIncomeForm } from "@/components/features/assets/log-income-form";
 import { AssetDealIntelligence } from "@/components/features/assets/asset-deal-intelligence";
 import { AssetOriginatedFrom } from "@/components/features/assets/asset-originated-from";
 import { AssetPerformanceTab } from "@/components/features/assets/asset-performance-tab";
-import { fmt, pct, cn } from "@/lib/utils";
+import { fmt, pct, cn, formatDate, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
@@ -255,7 +255,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 <h3 className="text-sm font-semibold mb-3">Valuation History</h3>
                 {a.valuations.map((v: { id: string; valuationDate: string; method: string; fairValue: number; moic: number; status: string }) => (
                   <div key={v.id} className="flex items-center gap-3 mb-2">
-                    <span className="text-xs text-gray-400 w-20">{new Date(v.valuationDate).toLocaleDateString()}</span>
+                    <span className="text-xs text-gray-400 w-20">{formatDate(v.valuationDate)}</span>
                     <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
                       <div className="bg-indigo-500 h-full rounded-full" style={{ width: `${(v.fairValue / a.valuations[0].fairValue) * 100}%` }} />
                     </div>
@@ -276,7 +276,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                   <div key={cf.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${cf.isPrincipal ? "bg-blue-400" : "bg-emerald-400"}`} />
-                      <span className="text-xs text-gray-600">{new Date(cf.date).toLocaleDateString()}</span>
+                      <span className="text-xs text-gray-600">{formatDate(cf.date)}</span>
                       <span className="text-xs">{cf.incomeType}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 <h3 className="text-sm font-semibold mb-3">Activity Timeline</h3>
                 {a.activityEvents.map((e: { id: string; eventDate: string; description: string; eventType: string }) => (
                   <div key={e.id} className="flex items-center gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                    <span className="text-[10px] text-gray-400 w-16">{new Date(e.eventDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                    <span className="text-[10px] text-gray-400 w-16">{formatDateShort(e.eventDate)}</span>
                     <Badge color={e.eventType === "meeting" ? "purple" : e.eventType === "task" ? "green" : e.eventType === "document" ? "blue" : "orange"}>
                       {e.eventType}
                     </Badge>
@@ -342,7 +342,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                   {a.creditAgreements?.flatMap((ag: { payments: { id: string; date: string; paymentType: string; amount: number; status: string }[] }) => ag.payments).map((p: { id: string; date: string; paymentType: string; amount: number; status: string }) => (
                     <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{new Date(p.date).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-500">{formatDate(p.date)}</span>
                         <span className="text-xs">{p.paymentType}</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -498,7 +498,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                     </div>
                     {a.nextReview && (
                       <div className="text-xs text-amber-600 mt-2">
-                        Next review: {new Date(a.nextReview).toLocaleDateString()}
+                        Next review: {formatDate(a.nextReview)}
                       </div>
                     )}
                   </div>
@@ -522,7 +522,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             <div key={m.id} className="p-3 border border-gray-100 rounded-lg mb-2 hover:border-indigo-200 cursor-pointer">
               <div className="flex justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-400">{new Date(m.meetingDate).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{formatDate(m.meetingDate)}</span>
                   <span className="text-sm font-medium">{m.title}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -550,7 +550,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 </span>
                 <div>
                   <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
-                  <div className="text-[10px] text-gray-500">Due: {t.dueDate ? new Date(t.dueDate).toLocaleDateString() : "---"} · {t.assigneeName}</div>
+                  <div className="text-[10px] text-gray-500">Due: {t.dueDate ? formatDate(t.dueDate) : "---"} · {t.assigneeName}</div>
                 </div>
               </div>
               <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
@@ -574,7 +574,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
                 <span className="text-gray-400">&#128196;</span>
                 <div>
                   <div className="text-sm">{d.name}</div>
-                  <div className="text-[10px] text-gray-500">{new Date(d.uploadDate).toLocaleDateString()}</div>
+                  <div className="text-[10px] text-gray-500">{formatDate(d.uploadDate)}</div>
                 </div>
               </div>
               <Badge>{d.category}</Badge>
@@ -602,7 +602,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
               <tbody>
                 {a.valuations.map((v: { id: string; valuationDate: string; method: string; fairValue: number; moic: number; status: string }) => (
                   <tr key={v.id} className="border-t border-gray-50">
-                    <td className="px-3 py-2.5">{new Date(v.valuationDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2.5">{formatDate(v.valuationDate)}</td>
                     <td className="px-3 py-2.5">{v.method.replace(/_/g, " ")}</td>
                     <td className="px-3 py-2.5 font-medium">{fmt(v.fairValue)}</td>
                     <td className="px-3 py-2.5">{v.moic?.toFixed(2)}x</td>
@@ -633,7 +633,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             {[
               ["Board Seat", a.hasBoardSeat ? "Yes -- JK represents" : "None"],
               ["Information Rights", "Quarterly financials + annual audit"],
-              ["Review Schedule", a.nextReview ? new Date(a.nextReview).toLocaleDateString() : "Not scheduled"],
+              ["Review Schedule", a.nextReview ? formatDate(a.nextReview) : "Not scheduled"],
               ["Asset Class", ASSET_CLASS_LABELS[a.assetClass] || a.assetClass?.replace(/_/g, " ")],
               ["Entities", a.entityAllocations?.map((ea: { entity: { name: string } }) => ea.entity.name).join(", ")],
             ].map(([k, v], i) => (

@@ -16,7 +16,7 @@ import { CreateCompanyForm } from "@/components/features/companies/create-compan
 import { CreateContactForm } from "@/components/features/contacts/create-contact-form";
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
 import { useFirm } from "@/components/providers/firm-provider";
-import { fmt } from "@/lib/utils";
+import { fmt, formatDate } from "@/lib/utils";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -450,7 +450,7 @@ export default function DirectoryPage() {
                   <td className="px-4 py-3 text-gray-600">{u.email}</td>
                   <td className="px-4 py-3"><Badge color={u.role === "GP_ADMIN" ? "indigo" : u.role === "GP_TEAM" ? "blue" : u.role === "LP_INVESTOR" ? "green" : "orange"}>{u.role?.replace(/_/g, " ")}</Badge></td>
                   <td className="px-4 py-3"><Badge color={u.isActive ? "green" : "red"}>{u.isActive ? "Active" : "Inactive"}</Badge></td>
-                  <td className="px-4 py-3 text-gray-500">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "\u2014"}</td>
+                  <td className="px-4 py-3 text-gray-500">{formatDate(u.createdAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <Button variant="secondary" size="sm" onClick={() => { setEditingUser(u); setShowEditUser(true); }}>Edit</Button>

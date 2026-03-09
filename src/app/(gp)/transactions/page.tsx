@@ -11,7 +11,7 @@ import { CreateDistributionForm } from "@/components/features/capital/create-dis
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
-import { fmt, pct } from "@/lib/utils";
+import { fmt, pct, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
@@ -186,8 +186,8 @@ export default function TransactionsPage() {
                 callNumber: c.callNumber,
                 entity: c.entity?.name ?? "",
                 amount: c.amount,
-                callDate: new Date(c.callDate).toLocaleDateString(),
-                dueDate: new Date(c.dueDate).toLocaleDateString(),
+                callDate: formatDate(c.callDate),
+                dueDate: formatDate(c.dueDate),
                 status: c.status,
                 fundedPercent: c.fundedPercent,
               }))}
@@ -226,8 +226,8 @@ export default function TransactionsPage() {
                     <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
                     <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
                     <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
-                    <td className="px-3 py-2 text-gray-500">{new Date(c.callDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-gray-500">{new Date(c.dueDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 text-gray-500">{formatDate(c.callDate)}</td>
+                    <td className="px-3 py-2 text-gray-500">{formatDate(c.dueDate)}</td>
                     <td className="px-3 py-2"><Badge color={CC_STATUS_COLORS[c.status] || "gray"}>{c.status.replace(/_/g, " ")}</Badge></td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function TransactionsPage() {
               data={filteredDists.map((d) => ({
                 id: d.id,
                 entity: d.entity?.name ?? "",
-                distributionDate: new Date(d.distributionDate).toLocaleDateString(),
+                distributionDate: formatDate(d.distributionDate),
                 grossAmount: d.grossAmount,
                 source: d.source ?? "",
                 returnOfCapital: d.returnOfCapital,
@@ -310,7 +310,7 @@ export default function TransactionsPage() {
                   filteredDists.map((d) => (
                     <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
                       <td className="px-3 py-2 font-medium text-gray-900">{d.entity?.name}</td>
-                      <td className="px-3 py-2 text-gray-500">{new Date(d.distributionDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(d.distributionDate)}</td>
                       <td className="px-3 py-2 text-right font-medium">{fmt(d.grossAmount)}</td>
                       <td className="px-3 py-2 text-gray-600 max-w-[140px] truncate">{d.source || "—"}</td>
                       <td className="px-3 py-2 text-right text-gray-500">{d.returnOfCapital ? fmt(d.returnOfCapital) : "—"}</td>

@@ -14,6 +14,7 @@ import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LayoutList } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 import {
   ASSET_CLASS_LABELS,
@@ -159,7 +160,7 @@ export default function DealsPage() {
               targetSize: d.targetSize ?? "",
               dealLead: d.dealLead?.name ?? "",
               status: d.status ?? d.stage,
-              createdAt: d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "",
+              createdAt: d.createdAt ? formatDate(d.createdAt) : "",
             }))}
             fileName="Deals_Export"
           />

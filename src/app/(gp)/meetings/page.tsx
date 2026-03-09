@@ -11,6 +11,7 @@ import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Video } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -139,7 +140,7 @@ export default function MeetingsPage() {
             data={allMeetings.map((m) => ({
               id: m.id,
               title: m.title,
-              date: new Date(m.meetingDate).toLocaleDateString(),
+              date: formatDate(m.meetingDate),
               type: m.meetingType ?? "",
               source: SOURCE_LABELS[m.source] ?? m.source,
               hasTranscript: m.hasTranscript ? "Yes" : "No",
@@ -198,7 +199,7 @@ export default function MeetingsPage() {
                     {m.meetingType && <Badge color={TYPE_COLORS[m.meetingType] || "gray"}>{m.meetingType}</Badge>}
                   </div>
                   <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-                    <span>{new Date(m.meetingDate).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+                    <span>{formatDate(m.meetingDate)}</span>
                     <span className="text-gray-300">|</span>
                     <Badge color={SOURCE_COLORS[m.source] || "gray"}>{SOURCE_LABELS[m.source] || m.source}</Badge>
                     <span className="text-gray-300">|</span>

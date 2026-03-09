@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
+import { fmt } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -100,14 +101,6 @@ export function SideLetterRulesPanel({ sideLetterId, investorName, entityName }:
   const netFee = SAMPLE_STANDARD_FEE - feeDiscountAmt;
   const netCarry = carryOverrideRule?.value ?? SAMPLE_STANDARD_CARRY_PCT;
 
-  function formatCurrency(n: number) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(n);
-  }
-
   // ── Add Rule ───────────────────────────────────────────────────────────────
   async function handleAddRule() {
     if (!addForm.ruleType) {
@@ -196,7 +189,7 @@ export function SideLetterRulesPanel({ sideLetterId, investorName, entityName }:
         <div className="space-y-1.5">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Standard management fee</span>
-            <span className="font-medium text-gray-900">{formatCurrency(SAMPLE_STANDARD_FEE)}</span>
+            <span className="font-medium text-gray-900">{fmt(SAMPLE_STANDARD_FEE)}</span>
           </div>
           {feeDiscountRule?.value != null && (
             <div className="flex justify-between text-sm">
@@ -204,13 +197,13 @@ export function SideLetterRulesPanel({ sideLetterId, investorName, entityName }:
                 Side letter discount ({feeDiscountRule.value}%)
               </span>
               <span className="font-medium text-green-700">
-                -{formatCurrency(feeDiscountAmt)}
+                -{fmt(feeDiscountAmt)}
               </span>
             </div>
           )}
           <div className="border-t border-gray-300 pt-1.5 flex justify-between text-sm font-semibold">
             <span className="text-gray-900">Net management fee</span>
-            <span className="text-gray-900">{formatCurrency(netFee)}</span>
+            <span className="text-gray-900">{fmt(netFee)}</span>
           </div>
 
           <div className="mt-2 pt-2 border-t border-gray-200 flex justify-between text-sm">

@@ -14,6 +14,7 @@ import { PermissionsTab } from "@/components/features/settings/permissions-tab";
 import { ServiceProviderManager } from "@/components/features/settings/service-provider-manager";
 import { IntegrationsTab } from "@/components/features/settings/integrations-tab";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatDate } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -383,7 +384,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><span className="text-gray-500 text-xs">Created</span><div className="font-medium text-sm">{new Date(firm.createdAt).toLocaleDateString()}</div></div>
+                  <div><span className="text-gray-500 text-xs">Created</span><div className="font-medium text-sm">{formatDate(firm.createdAt)}</div></div>
                   <div><span className="text-gray-500 text-xs">Firm ID</span><div className="font-medium font-mono text-xs">{firm.id}</div></div>
                 </div>
                 <div className="flex gap-2 pt-2">
@@ -398,7 +399,7 @@ export default function SettingsPage() {
                   <div><span className="text-gray-500 text-xs">Legal Name</span><div className="font-medium">{firm.legalName || "\u2014"}</div></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div><span className="text-gray-500 text-xs">Created</span><div className="font-medium">{new Date(firm.createdAt).toLocaleDateString()}</div></div>
+                  <div><span className="text-gray-500 text-xs">Created</span><div className="font-medium">{formatDate(firm.createdAt)}</div></div>
                   <div><span className="text-gray-500 text-xs">Firm ID</span><div className="font-medium font-mono text-xs">{firm.id}</div></div>
                 </div>
               </div>
@@ -446,7 +447,7 @@ export default function SettingsPage() {
                       <Badge color={u.isActive ? "green" : "red"}>{u.isActive ? "Active" : "Inactive"}</Badge>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-gray-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                  <td className="px-3 py-2.5 text-gray-500">{formatDate(u.createdAt)}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-2">
                       <button className="text-indigo-600 hover:underline text-xs" onClick={() => startEditUser(u)}>Edit</button>

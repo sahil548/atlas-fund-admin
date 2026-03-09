@@ -3,7 +3,7 @@
 import { useState } from "react";
 import useSWR from "swr";
 import { useToast } from "@/components/ui/toast";
-import { cn } from "@/lib/utils";
+import { cn, fmt } from "@/lib/utils";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -60,14 +60,6 @@ function formatPeriodLabel(dateStr: string): string {
     month: "short",
     year: "numeric",
     timeZone: "UTC",
-  });
-}
-
-function formatCurrency(n: number): string {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
   });
 }
 
@@ -212,7 +204,7 @@ export function TrialBalanceView({ connectionId }: Props) {
           <div>
             <p className="text-xs font-semibold text-red-800">Trial balance is out of balance</p>
             <p className="text-xs text-red-700 mt-0.5">
-              Difference: {formatCurrency(imbalanceAmount)}. Check with your bookkeeper.
+              Difference: {fmt(imbalanceAmount)}. Check with your bookkeeper.
             </p>
           </div>
         </div>
@@ -298,7 +290,7 @@ export function TrialBalanceView({ connectionId }: Props) {
                       "text-xs font-medium",
                       isUnmapped ? "text-amber-700" : "text-gray-700"
                     )}>
-                      {formatCurrency(bucket.total)}
+                      {fmt(bucket.total)}
                     </span>
                     {!isEmpty && (
                       <svg
@@ -337,16 +329,16 @@ export function TrialBalanceView({ connectionId }: Props) {
                           >
                             <td className="px-4 py-2 text-gray-700">{acct.accountName}</td>
                             <td className="px-4 py-2 text-right text-gray-600">
-                              {acct.debit > 0 ? formatCurrency(acct.debit) : "—"}
+                              {acct.debit > 0 ? fmt(acct.debit) : "—"}
                             </td>
                             <td className="px-4 py-2 text-right text-gray-600">
-                              {acct.credit > 0 ? formatCurrency(acct.credit) : "—"}
+                              {acct.credit > 0 ? fmt(acct.credit) : "—"}
                             </td>
                             <td className={cn(
                               "px-4 py-2 text-right font-medium",
                               acct.balance < 0 ? "text-red-600" : "text-gray-800"
                             )}>
-                              {formatCurrency(acct.balance)}
+                              {fmt(acct.balance)}
                             </td>
                           </tr>
                         ))}
@@ -366,11 +358,11 @@ export function TrialBalanceView({ connectionId }: Props) {
           <div className="flex items-center gap-6">
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wide">Total Debits</div>
-              <div className="text-sm font-semibold text-gray-800">{formatCurrency(data.totalDebits)}</div>
+              <div className="text-sm font-semibold text-gray-800">{fmt(data.totalDebits)}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wide">Total Credits</div>
-              <div className="text-sm font-semibold text-gray-800">{formatCurrency(data.totalCredits)}</div>
+              <div className="text-sm font-semibold text-gray-800">{fmt(data.totalCredits)}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -387,7 +379,7 @@ export function TrialBalanceView({ connectionId }: Props) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 <span className="text-xs font-medium text-red-700">
-                  Out of balance by {formatCurrency(imbalanceAmount)}
+                  Out of balance by {fmt(imbalanceAmount)}
                 </span>
               </>
             )}
