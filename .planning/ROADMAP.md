@@ -102,7 +102,7 @@ Plans:
   3. The asset list can be sorted by any column (name, type, NAV, IRR, cost basis) with a single click
   4. A portfolio-level covenant breach monitor shows all breached covenants across all assets in one view, and lease expirations within 90 and 180 days are surfaced in a forward-looking calendar view
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
-**Plans:** 7 plans
+**Plans:** 1/7 plans executed
 Plans:
 - [ ] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
 - [ ] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
@@ -194,7 +194,7 @@ Plans:
 | 11. Foundation | v2.0 | Complete    | 2026-03-09 | 2026-03-09 |
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 13. Deal Desk & CRM | 3/5 | In Progress|  | - |
-| 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
+| 14. Asset Management & Task Management | 1/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/8 | Planned | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |

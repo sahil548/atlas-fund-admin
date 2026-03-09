@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-03-09T20:22:24.584Z"
-last_activity: 2026-03-09 — Phase 13 Plan 02 complete (IC memo PDF export with @react-pdf/renderer + dead deal kill reason analytics chart and mini-summary)
+stopped_at: Completed 14-02-PLAN.md
+last_updated: "2026-03-09T20:41:36.103Z"
+last_activity: "2026-03-09 — Phase 13 Plan 03 complete (bulk deal actions: kanban checkbox multi-select + floating action bar + POST /api/deals/bulk for kill/assign/advance)"
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 13
-  percent: 71
+  completed_plans: 14
+  percent: 74
 ---
 
 # Atlas — GSD State
@@ -23,12 +23,12 @@ progress:
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 13 of 19 — Deal Desk & CRM (In Progress)
-- **Plan:** 3 of 5 complete
+- **Phase:** 14 of 19 — Asset Management & Task Management (In Progress)
+- **Plan:** 2 of 7 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 13 Plan 03 complete (bulk deal actions: kanban checkbox multi-select + floating action bar + POST /api/deals/bulk for kill/assign/advance)
+- **Last activity:** 2026-03-09 — Phase 14 Plan 02 complete (sortable asset table + monitoring panel with covenant breaches/lease expirations/loan maturities/overdue reviews + LeaseExpiryView table/timeline)
 
-Progress: [███████░░░] 74% (49/66 plans)
+Progress: [████████░░] 76% (50/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -46,6 +46,7 @@ Progress: [███████░░░] 74% (49/66 plans)
 | Phase 13-deal-desk-crm P01 | 3 | 2 tasks | 4 files |
 | Phase 13-deal-desk-crm P02 | 7min | 2 tasks | 6 files |
 | Phase 13-deal-desk-crm P03 | 25 | 2 tasks | 4 files |
+| Phase 14-asset-management-task-management P02 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,13 @@ Progress: [███████░░░] 74% (49/66 plans)
 - **PageHeader adoption:** List pages get title only (no breadcrumbs); detail pages get breadcrumb trails in future phases
 - **SectionPanel scope:** Skipped on dashboard/analytics/settings (complex layouts); applied only where white-card pattern exists
 
+### Phase 14 Asset Management & Task Management Decisions (In Progress)
+- **Covenant breach status:** Uses `BREACH` (not `BREACHED`) — matching actual `CovenantStatus` enum in schema
+- **Monitoring panel default:** Collapsed by default — shows badge count in header; disappears entirely when totalAlerts === 0
+- **Unrealized sort key:** Uses `_unrealized` sentinel key handled inline (fairValue - costBasis) — no API changes
+- **Monitoring panel self-fetching:** Panel accepts no props, fetches own data via SWR — clean separation from parent page
+- **Entities column non-sortable:** Multi-value join array not sortable as scalar
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -112,6 +120,6 @@ Progress: [███████░░░] 74% (49/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:22:24.582Z
-- **Stopped at:** Completed 13-03-PLAN.md
+- **Last session:** 2026-03-09T20:41:36.101Z
+- **Stopped at:** Completed 14-02-PLAN.md
 - **Resume file:** None
