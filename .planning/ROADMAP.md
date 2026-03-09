@@ -25,7 +25,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 ### Phases
 
 - [x] **Phase 11: Foundation** - Shared component standardization that ripples across all 30 pages
-- [ ] **Phase 12: AI Configuration & Document Intake** - Infrastructure for all AI features: key management, access control, document processing engine
+- [x] **Phase 12: AI Configuration & Document Intake** - Infrastructure for all AI features: key management, access control, document processing engine
 - [ ] **Phase 13: Deal Desk & CRM** - Pipeline completeness and contact/relationship intelligence
 - [ ] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
 - [ ] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration
@@ -66,13 +66,13 @@ Plans:
   3. When a user uploads a CIM, lease agreement, credit document, or K-1 to any upload point in the app, the document goes through AI extraction automatically — no manual trigger needed
   4. Extracted fields (deal terms, lease dates, credit covenants, LP tax info) are tagged and linked to the relevant deal, asset, or entity automatically
   5. The GP can see document processing status (processing / complete / failed) and preview the extracted fields before they are applied
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 Plans:
-- [ ] 12-01-PLAN.md — Schema foundation, AI config fallback chain, admin AI toggle
-- [ ] 12-02-PLAN.md — Profile page with personal AI settings
-- [ ] 12-03-PLAN.md — Document extraction engine and upload endpoint wiring
-- [ ] 12-04-PLAN.md — Document status UI and extraction preview side panel
-- [ ] 12-05-PLAN.md — End-to-end verification checkpoint
+- [x] 12-01-PLAN.md — Schema foundation, AI config fallback chain, admin AI toggle
+- [x] 12-02-PLAN.md — Profile page with personal AI settings
+- [x] 12-03-PLAN.md — Document extraction engine and upload endpoint wiring
+- [x] 12-04-PLAN.md — Document status UI and extraction preview side panel
+- [x] 12-05-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 13: Deal Desk & CRM
 **Goal**: The deal pipeline shows complete deal intelligence at a glance and the contact directory tracks relationship context, deal sourcing, and co-investor history
@@ -192,7 +192,7 @@ Plans:
 |-------|-----------|----------------|--------|-----------|
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
 | 11. Foundation | v2.0 | Complete    | 2026-03-09 | 2026-03-09 |
-| 12. AI Configuration & Document Intake | 4/5 | In Progress|  | - |
+| 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 13. Deal Desk & CRM | v2.0 | 0/5 | Planned | - |
 | 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/8 | Planned | - |
