@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { CreateAssetForm } from "@/components/features/assets/create-asset-form";
-import { fmt, pct, formatDate } from "@/lib/utils";
+import { AssetMonitoringPanel } from "@/components/features/assets/asset-monitoring-panel";
+import { fmt, pct, formatDate, cn } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
@@ -48,6 +49,20 @@ const ASSET_FILTERS = [
   },
 ];
 
+const SORTABLE_COLUMNS: { key: string; label: string }[] = [
+  { key: "name", label: "Asset" },
+  { key: "assetClass", label: "Asset Class" },
+  { key: "capitalInstrument", label: "Instrument" },
+  { key: "participationStructure", label: "Participation" },
+  { key: "sector", label: "Sector" },
+  { key: "costBasis", label: "Cost Basis" },
+  { key: "fairValue", label: "Fair Value" },
+  { key: "_unrealized", label: "Unrealized" },
+  { key: "moic", label: "MOIC" },
+  { key: "irr", label: "IRR" },
+  { key: "status", label: "Status" },
+];
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 export default function AssetsPage() {
@@ -60,6 +75,17 @@ export default function AssetsPage() {
   const [cursor, setCursor] = useState<string | null>(null);
   const [allAssets, setAllAssets] = useState<any[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [sortKey, setSortKey] = useState<string>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  function handleSort(key: string) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -80,6 +106,23 @@ export default function AssetsPage() {
       setCursor(result.nextCursor ?? null);
     },
     revalidateOnFocus: false,
+  });
+
+  const sortedAssets = [...allAssets].sort((a, b) => {
+    let valA: any;
+    let valB: any;
+    if (sortKey === "_unrealized") {
+      valA = (a.fairValue ?? 0) - (a.costBasis ?? 0);
+      valB = (b.fairValue ?? 0) - (b.costBasis ?? 0);
+    } else {
+      valA = a[sortKey] ?? "";
+      valB = b[sortKey] ?? "";
+    }
+    const cmp =
+      typeof valA === "number" && typeof valB === "number"
+        ? valA - valB
+        : String(valA).localeCompare(String(valB));
+    return sortDir === "asc" ? cmp : -cmp;
   });
 
   const handleSearch = useCallback((q: string) => {
@@ -119,6 +162,23 @@ export default function AssetsPage() {
     setCursor(null);
   };
 
+  function SortHeader({ colKey, children }: { colKey: string; children: React.ReactNode }) {
+    const isActive = sortKey === colKey;
+    return (
+      <th
+        className={cn(
+          "text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none",
+          "hover:text-gray-900 hover:bg-gray-100 transition-colors",
+          isActive && "text-indigo-700",
+        )}
+        onClick={() => handleSort(colKey)}
+      >
+        {children}
+        {isActive ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+      </th>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -150,13 +210,20 @@ export default function AssetsPage() {
         }
       />
 
+      <AssetMonitoringPanel />
+
       <SectionPanel noPadding className="overflow-hidden">
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Asset", "Asset Class", "Instrument", "Participation", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Status", ""].map((h) => (
-                <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+              {SORTABLE_COLUMNS.map((col) => (
+                <SortHeader key={col.key} colKey={col.key}>
+                  {col.label}
+                </SortHeader>
               ))}
+              {/* Non-sortable: Entities, Actions */}
+              <th className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">Entities</th>
+              <th className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap"></th>
             </tr>
           </thead>
           <tbody>
@@ -174,7 +241,7 @@ export default function AssetsPage() {
                 />
               </td></tr>
             ) : (
-              allAssets.map((a: any) => {
+              sortedAssets.map((a: any) => {
                 const ur = a.fairValue - a.costBasis;
                 return (
                   <tr
@@ -201,11 +268,6 @@ export default function AssetsPage() {
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-gray-600">{a.sector}</td>
-                    <td className="px-3 py-2.5">
-                      {a.entityAllocations?.map((ea: any) => (
-                        <span key={ea.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{ea.entity.name}</span>
-                      ))}
-                    </td>
                     <td className="px-3 py-2.5">{fmt(a.costBasis)}</td>
                     <td className="px-3 py-2.5 font-medium">{fmt(a.fairValue)}</td>
                     <td className={`px-3 py-2.5 font-medium ${ur > 0 ? "text-emerald-700" : "text-gray-500"}`}>
@@ -217,6 +279,11 @@ export default function AssetsPage() {
                     <td className="px-3 py-2.5 text-emerald-700">{a.irr ? pct(a.irr) : "—"}</td>
                     <td className="px-3 py-2.5">
                       <Badge color={a.status === "ACTIVE" ? "green" : "purple"}>{a.status?.toLowerCase()}</Badge>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      {a.entityAllocations?.map((ea: any) => (
+                        <span key={ea.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{ea.entity.name}</span>
+                      ))}
                     </td>
                     <td className="px-3 py-2.5">
                       <Button
