@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ const CONTACT_TYPE_LABELS: Record<string, string> = { INTERNAL: "Internal", EXTE
 
 export default function DirectoryPage() {
   const { firmId } = useFirm();
+  const router = useRouter();
   const [tab, setTab] = useState<"investors" | "companies" | "contacts" | "team" | "sideLetters">("investors");
   const toast = useToast();
 
@@ -392,11 +394,15 @@ export default function DirectoryPage() {
             </thead>
             <tbody>
               {(contacts || []).map((c: any) => (
-                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr
+                  key={c.id}
+                  className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => router.push(`/contacts/${c.id}`)}
+                >
                   <td className="px-4 py-3 font-medium">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{c.firstName?.[0]}{c.lastName?.[0]}</span>
-                      {c.firstName} {c.lastName}
+                      <span className="text-indigo-700 hover:underline">{c.firstName} {c.lastName}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-600">{c.title || "\u2014"}</td>
@@ -406,15 +412,15 @@ export default function DirectoryPage() {
                   <td className="px-4 py-3"><Badge color={c.type === "INTERNAL" ? "blue" : "gray"}>{CONTACT_TYPE_LABELS[c.type] || c.type}</Badge></td>
                   <td className="px-4 py-3">
                     {c.investorProfile ? (
-                      <Link href={`/investors/${c.investorProfile.id}`}><Badge color="green">Investor</Badge></Link>
+                      <Link href={`/investors/${c.investorProfile.id}`} onClick={(e) => e.stopPropagation()}><Badge color="green">Investor</Badge></Link>
                     ) : (
-                      <button onClick={() => addInvestorProfile("contact", c)} className="text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline">+ Add Investor Profile</button>
+                      <button onClick={(e) => { e.stopPropagation(); addInvestorProfile("contact", c); }} className="text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline">+ Add Investor Profile</button>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Button variant="secondary" size="sm" onClick={() => { setEditingContact(c); setShowEditContact(true); }}>Edit</Button>
-                      <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeleteTarget({ type: "contact", id: c.id, name: `${c.firstName} ${c.lastName}` })}>Delete</button>
+                      <Button variant="secondary" size="sm" onClick={(e) => { e.stopPropagation(); setEditingContact(c); setShowEditContact(true); }}>Edit</Button>
+                      <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "contact", id: c.id, name: `${c.firstName} ${c.lastName}` }); }}>Delete</button>
                     </div>
                   </td>
                 </tr>
