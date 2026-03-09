@@ -60,7 +60,13 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
   3. When a user uploads a CIM, lease agreement, credit document, or K-1 to any upload point in the app, the document goes through AI extraction automatically — no manual trigger needed
   4. Extracted fields (deal terms, lease dates, credit covenants, LP tax info) are tagged and linked to the relevant deal, asset, or entity automatically
   5. The GP can see document processing status (processing / complete / failed) and preview the extracted fields before they are applied
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 12-01-PLAN.md — Schema foundation, AI config fallback chain, admin AI toggle
+- [ ] 12-02-PLAN.md — Profile page with personal AI settings
+- [ ] 12-03-PLAN.md — Document extraction engine and upload endpoint wiring
+- [ ] 12-04-PLAN.md — Document status UI and extraction preview side panel
+- [ ] 12-05-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 13: Deal Desk & CRM
 **Goal**: The deal pipeline shows complete deal intelligence at a glance and the contact directory tracks relationship context, deal sourcing, and co-investor history
@@ -157,7 +163,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 |-------|-----------|----------------|--------|-----------|
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
 | 11. Foundation | v2.0 | 0/TBD | Not started | - |
-| 12. AI Configuration & Document Intake | v2.0 | 0/TBD | Not started | - |
+| 12. AI Configuration & Document Intake | v2.0 | 0/5 | Planned | - |
 | 13. Deal Desk & CRM | v2.0 | 0/TBD | Not started | - |
 | 14. Asset Management & Task Management | v2.0 | 0/TBD | Not started | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/TBD | Not started | - |
