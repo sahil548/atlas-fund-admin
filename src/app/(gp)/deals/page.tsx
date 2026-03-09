@@ -12,6 +12,8 @@ import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { ExportButton } from "@/components/ui/export-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LayoutList } from "lucide-react";
 
 import {
   ASSET_CLASS_LABELS,
@@ -117,20 +119,16 @@ export default function DealsPage() {
     }
   }, [cursor, loadingMore, buildUrl]);
 
-  if (isLoading && allDeals.length === 0) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Loading deals...
-      </div>
-    );
-  }
-
   const deals = allDeals;
   const hasMore = !!cursor;
+  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setActiveFilters({});
+    setAllDeals([]);
+    setCursor(null);
+  };
 
   const analytics = data?.pipelineAnalytics as {
     stageDistribution: Record<string, number>;
@@ -265,18 +263,31 @@ export default function DealsPage() {
       )}
 
       {/* Kanban Pipeline — 4 columns */}
-      {deals.length === 0 && !isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-          <p className="text-sm text-gray-500">No deals found</p>
-          <p className="text-xs text-gray-400">
-            {search || Object.values(activeFilters).some(Boolean)
-              ? "Try different search terms or clear filters"
-              : "Create your first deal to get started"}
-          </p>
-          {!search && !Object.values(activeFilters).some(Boolean) && (
-            <Button onClick={() => setShowCreate(true)} className="mt-2">+ New Deal</Button>
-          )}
+      {isLoading && deals.length === 0 ? (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {stages.map((s) => (
+            <div key={s.k} className={`${s.c} rounded-xl p-3 min-w-[260px] flex-1`}>
+              <div className="text-xs font-semibold text-gray-700 mb-2">{s.l}</div>
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
+                    <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-3/4 mb-2" />
+                    <div className="h-3 bg-gray-100 dark:bg-gray-700 rounded animate-pulse w-1/2" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
+      ) : deals.length === 0 ? (
+        <EmptyState
+          icon={<LayoutList className="h-10 w-10" />}
+          title={hasFilters ? "No results match your filters" : "No deals yet"}
+          description={!hasFilters ? "Create your first deal to start tracking your pipeline" : undefined}
+          action={!hasFilters ? { label: "+ New Deal", onClick: () => setShowCreate(true) } : undefined}
+          filtered={hasFilters}
+          onClearFilters={hasFilters ? handleClearFilters : undefined}
+        />
       ) : (
         <>
           <div className="flex gap-3 overflow-x-auto pb-2">

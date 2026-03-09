@@ -12,6 +12,9 @@ import Link from "next/link";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CheckSquare } from "lucide-react";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -176,17 +179,13 @@ export default function TasksPage() {
     { key: "overdue", label: `Overdue (${overdueCount})` },
   ];
 
-  if (isLoading && allTasks.length === 0) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Loading tasks...
-      </div>
-    );
-  }
+  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
+  const handleClearFilters = () => {
+    setSearch("");
+    setActiveFilters({});
+    setAllTasks([]);
+    setCursor(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -228,33 +227,34 @@ export default function TasksPage() {
         ))}
       </div>
 
-      {filtered.length === 0 && !isLoading ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-          <p className="text-sm text-gray-500">No tasks found</p>
-          <p className="text-xs text-gray-400">
-            {search || Object.values(activeFilters).some(Boolean)
-              ? "Try different search terms or clear filters"
-              : viewTab === "my" ? "No tasks assigned to you" : viewTab === "overdue" ? "No overdue tasks" : "Create your first task"}
-          </p>
-          {viewTab === "all" && !search && !Object.values(activeFilters).some(Boolean) && (
-            <Button onClick={() => setShowCreate(true)} className="mt-2">+ New Task</Button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-gray-50 text-gray-500 text-left">
-                <th className="px-4 py-2.5 font-medium">Title</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium">Priority</th>
-                <th className="px-4 py-2.5 font-medium">Context</th>
-                <th className="px-4 py-2.5 font-medium">Assignee</th>
-                <th className="px-4 py-2.5 font-medium">Due Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((task: any) => (
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-left">
+              <th className="px-4 py-2.5 font-medium">Title</th>
+              <th className="px-4 py-2.5 font-medium">Status</th>
+              <th className="px-4 py-2.5 font-medium">Priority</th>
+              <th className="px-4 py-2.5 font-medium">Context</th>
+              <th className="px-4 py-2.5 font-medium">Assignee</th>
+              <th className="px-4 py-2.5 font-medium">Due Date</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading && allTasks.length === 0 ? (
+              <TableSkeleton columns={6} />
+            ) : filtered.length === 0 ? (
+              <tr><td colSpan={6}>
+                <EmptyState
+                  icon={<CheckSquare className="h-10 w-10" />}
+                  title={hasFilters ? "No results match your filters" : viewTab === "my" ? "No tasks assigned to you" : viewTab === "overdue" ? "No overdue tasks" : "No tasks yet"}
+                  description={!hasFilters && viewTab === "all" ? "Create a task to start tracking your to-dos" : undefined}
+                  action={!hasFilters && viewTab === "all" ? { label: "+ New Task", onClick: () => setShowCreate(true) } : undefined}
+                  filtered={hasFilters}
+                  onClearFilters={hasFilters ? handleClearFilters : undefined}
+                />
+              </td></tr>
+            ) : (
+              filtered.map((task: any) => (
                 <tr key={task.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2.5">
                     <div className="font-medium text-gray-900">{task.title}</div>
@@ -294,11 +294,11 @@ export default function TasksPage() {
                     )}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onLoadMore={handleLoadMore} />
 
