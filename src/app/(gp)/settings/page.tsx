@@ -13,6 +13,7 @@ import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline
 import { PermissionsTab } from "@/components/features/settings/permissions-tab";
 import { ServiceProviderManager } from "@/components/features/settings/service-provider-manager";
 import { IntegrationsTab } from "@/components/features/settings/integrations-tab";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -77,6 +78,11 @@ export default function SettingsPage() {
   const [addMemberUserId, setAddMemberUserId] = useState("");
   const [addMemberRole, setAddMemberRole] = useState("VOTER");
   const [addingMember, setAddingMember] = useState(false);
+
+  // Unified confirm dialog state (handles deactivate, delete structure, remove member)
+  type ConfirmAction = { title: string; message: string; onConfirm: () => Promise<void> } | null;
+  const [pendingAction, setPendingAction] = useState<ConfirmAction>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const tabs = [
     { key: "firm" as const, label: "Firm Profile" },
@@ -172,27 +178,33 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDeactivateUser(u: User) {
+  function handleDeactivateUser(u: User) {
     const action = u.isActive ? "deactivate" : "reactivate";
-    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} ${u.name}?`)) return;
-    try {
-      const res = await fetch(`/api/users/${u.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !u.isActive }),
-      });
-      if (res.ok) {
-        toast.success(`${u.name} ${action}d`);
-        setEditingUser(null);
-        mutate("/api/users");
-      } else {
-        const data = await res.json();
-        const msg = typeof data.error === "string" ? data.error : `Failed to ${action} user`;
-        toast.error(msg);
-      }
-    } catch {
-      toast.error(`Failed to ${action} user`);
-    }
+    const actionLabel = action.charAt(0).toUpperCase() + action.slice(1);
+    setPendingAction({
+      title: `${actionLabel} User`,
+      message: `${actionLabel} ${u.name}?`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/users/${u.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isActive: !u.isActive }),
+          });
+          if (res.ok) {
+            toast.success(`${u.name} ${action}d`);
+            setEditingUser(null);
+            mutate("/api/users");
+          } else {
+            const data = await res.json();
+            const msg = typeof data.error === "string" ? data.error : `Failed to ${action} user`;
+            toast.error(msg);
+          }
+        } catch {
+          toast.error(`Failed to ${action} user`);
+        }
+      },
+    });
   }
 
   // ── Decision Structure handlers ──
@@ -247,21 +259,26 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleDeleteStructure(id: string, name: string) {
-    if (!confirm(`Delete decision structure "${name}"? This cannot be undone.`)) return;
-    try {
-      const res = await fetch(`/api/decision-structures/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Structure deleted");
-        mutate(`/api/decision-structures?firmId=${firmId}`);
-      } else {
-        const data = await res.json();
-        const msg = typeof data.error === "string" ? data.error : "Failed to delete structure";
-        toast.error(msg);
-      }
-    } catch {
-      toast.error("Failed to delete structure");
-    }
+  function handleDeleteStructure(id: string, name: string) {
+    setPendingAction({
+      title: "Delete Decision Structure",
+      message: `Delete "${name}"? This cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/decision-structures/${id}`, { method: "DELETE" });
+          if (res.ok) {
+            toast.success("Structure deleted");
+            mutate(`/api/decision-structures?firmId=${firmId}`);
+          } else {
+            const data = await res.json();
+            const msg = typeof data.error === "string" ? data.error : "Failed to delete structure";
+            toast.error(msg);
+          }
+        } catch {
+          toast.error("Failed to delete structure");
+        }
+      },
+    });
   }
 
   async function handleAddMember(structureId: string) {
@@ -291,21 +308,26 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleRemoveMember(structureId: string, userId: string, userName: string) {
-    if (!confirm(`Remove ${userName} from this structure?`)) return;
-    try {
-      const res = await fetch(`/api/decision-structures/${structureId}/members?userId=${userId}`, { method: "DELETE" });
-      if (res.ok) {
-        toast.success("Member removed");
-        mutate(`/api/decision-structures?firmId=${firmId}`);
-      } else {
-        const data = await res.json();
-        const msg = typeof data.error === "string" ? data.error : "Failed to remove member";
-        toast.error(msg);
-      }
-    } catch {
-      toast.error("Failed to remove member");
-    }
+  function handleRemoveMember(structureId: string, userId: string, userName: string) {
+    setPendingAction({
+      title: "Remove Member",
+      message: `Remove ${userName} from this structure?`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/decision-structures/${structureId}/members?userId=${userId}`, { method: "DELETE" });
+          if (res.ok) {
+            toast.success("Member removed");
+            mutate(`/api/decision-structures?firmId=${firmId}`);
+          } else {
+            const data = await res.json();
+            const msg = typeof data.error === "string" ? data.error : "Failed to remove member";
+            toast.error(msg);
+          }
+        } catch {
+          toast.error("Failed to remove member");
+        }
+      },
+    });
   }
 
   function startEditStructure(s: DecisionStructure) {
@@ -934,6 +956,26 @@ export default function SettingsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Unified Confirm Dialog for destructive actions */}
+      <ConfirmDialog
+        open={pendingAction !== null}
+        onClose={() => setPendingAction(null)}
+        onConfirm={async () => {
+          setConfirming(true);
+          try {
+            await pendingAction!.onConfirm();
+          } finally {
+            setConfirming(false);
+            setPendingAction(null);
+          }
+        }}
+        title={pendingAction?.title ?? ""}
+        message={pendingAction?.message ?? ""}
+        confirmLabel="Confirm"
+        variant="danger"
+        loading={confirming}
+      />
     </div>
   );
 }

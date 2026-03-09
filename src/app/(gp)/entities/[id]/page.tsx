@@ -14,6 +14,7 @@ import { CreateTemplateForm } from "@/components/features/waterfall/create-templ
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { useToast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityAccountingTab } from "@/components/features/accounting/entity-accounting-tab";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -65,6 +66,8 @@ export default function EntityDetailPage() {
   // NAV proxy edit state
   const [proxyEdit, setProxyEdit] = useState<{ cashPercent: string; otherAssetsPercent: string; liabilitiesPercent: string } | null>(null);
   const [savingProxy, setSavingProxy] = useState(false);
+  // Distribution confirm dialog state
+  const [distributionToConfirm, setDistributionToConfirm] = useState<string | null>(null);
   const toast = useToast();
 
   if (isLoading || !entity) return <div className="text-sm text-gray-400">Loading...</div>;
@@ -856,7 +859,7 @@ export default function EntityDetailPage() {
                             <button onClick={() => handleDistStatusTransition(d.id, "APPROVED")} className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Approve</button>
                           )}
                           {d.status === "APPROVED" && (
-                            <button onClick={() => { if (confirm("Mark distribution as paid?")) handleDistStatusTransition(d.id, "PAID"); }} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Mark Paid</button>
+                            <button onClick={() => setDistributionToConfirm(d.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Mark Paid</button>
                           )}
                         </div>
                       </td>
@@ -1190,6 +1193,22 @@ export default function EntityDetailPage() {
       <CreateTemplateForm open={showTemplate} onClose={() => setShowTemplate(false)} />
       {e.waterfallTemplate && <AddTierForm open={showAddTier} onClose={() => setShowAddTier(false)} templateId={e.waterfallTemplate.id} nextOrder={(e.waterfallTemplate.tiers?.length || 0) + 1} />}
       {editTier && e.waterfallTemplate && <EditTierForm open={!!editTier} onClose={() => setEditTier(null)} templateId={e.waterfallTemplate.id} tier={editTier} />}
+
+      {/* Distribution paid confirmation dialog */}
+      <ConfirmDialog
+        open={distributionToConfirm !== null}
+        onClose={() => setDistributionToConfirm(null)}
+        onConfirm={async () => {
+          if (distributionToConfirm) {
+            await handleDistStatusTransition(distributionToConfirm, "PAID");
+          }
+          setDistributionToConfirm(null);
+        }}
+        title="Mark Distribution as Paid"
+        message="Mark this distribution as paid? This action cannot be undone."
+        confirmLabel="Mark Paid"
+        variant="danger"
+      />
     </div>
   );
 }

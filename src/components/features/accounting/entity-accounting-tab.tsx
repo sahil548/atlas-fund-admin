@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { AccountMappingPanel } from "./account-mapping-panel";
 import { TrialBalanceView } from "./trial-balance-view";
 
@@ -56,6 +57,7 @@ export function EntityAccountingTab({ entityId, entityName, connection: initialC
   const [showMappingPanel, setShowMappingPanel] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
 
   // SWR for live connection data (re-fetches after sync/disconnect)
   const { data: navData, mutate: mutateNav } = useSWR<any>(
@@ -106,7 +108,6 @@ export function EntityAccountingTab({ entityId, entityName, connection: initialC
   }
 
   async function handleDisconnect() {
-    if (!confirm("Disconnect this QBO connection? Account mapping history will be preserved.")) return;
     setIsDisconnecting(true);
     try {
       const res = await fetch("/api/integrations/qbo/disconnect", {
@@ -204,7 +205,7 @@ export function EntityAccountingTab({ entityId, entityName, connection: initialC
                   {isSyncing ? "Syncing..." : "Sync Now"}
                 </Button>
                 <button
-                  onClick={handleDisconnect}
+                  onClick={() => setShowDisconnectConfirm(true)}
                   disabled={isDisconnecting}
                   className="px-3 py-1.5 text-xs text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50"
                 >
@@ -317,6 +318,20 @@ export function EntityAccountingTab({ entityId, entityName, connection: initialC
         )}
       </div>
 
+      {/* Disconnect QBO confirmation dialog */}
+      <ConfirmDialog
+        open={showDisconnectConfirm}
+        onClose={() => setShowDisconnectConfirm(false)}
+        onConfirm={async () => {
+          setShowDisconnectConfirm(false);
+          await handleDisconnect();
+        }}
+        title="Disconnect QuickBooks"
+        message="Disconnect this QBO connection? Account mapping history will be preserved."
+        confirmLabel="Disconnect"
+        variant="danger"
+        loading={isDisconnecting}
+      />
     </div>
   );
 }
