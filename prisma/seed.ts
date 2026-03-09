@@ -2410,6 +2410,9 @@ End with credit risk rating, key covenant concerns, and recommended structural p
   // ── LP Users (portal access accounts) ──────────────────
   console.log("Creating LP users...");
 
+  // Note: SERVICE_PROVIDER users get aiEnabled=false explicitly on creation (via API POST handler).
+  // LP_INVESTOR users: aiEnabled defaults to true in schema but AI access is N/A for LP users (shown as N/A in UI).
+  // No SERVICE_PROVIDER users are seeded — they would be invited via the UI which handles aiEnabled=false.
   await prisma.user.createMany({
     data: [
       { id: "user-lp-calpers", firmId: firm.id, email: "michael.chen@calpers.ca.gov", name: "Michael Chen", role: "LP_INVESTOR", initials: "MC", contactId: "contact-calpers-mc" },

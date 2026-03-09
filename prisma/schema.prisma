@@ -264,6 +264,14 @@ enum DocumentCategory {
   OTHER
 }
 
+enum ExtractionStatus {
+  NONE
+  PENDING
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
 enum IncomeType {
   INTEREST
   DIVIDEND
@@ -505,6 +513,11 @@ model User {
 
   // GP_TEAM configurable permissions per area (null = use defaults)
   permissions Json?
+
+  // AI access control — admin toggles this per user
+  aiEnabled        Boolean  @default(true)
+  // Personal AI config override — { provider, model, apiKey, apiKeyIV, apiKeyTag }
+  personalAiConfig Json?
 
   slackUserId String?
 
@@ -1518,6 +1531,11 @@ model Document {
   fileSize      Int?
   mimeType      String?
   extractedText String?
+  // AI extraction pipeline fields
+  extractionStatus ExtractionStatus @default(NONE)
+  extractedFields  Json?    // Raw AI output: { fieldKey: { aiValue, label } }[]
+  appliedFields    Json?    // Audit record: { fieldKey: { aiValue, appliedValue, appliedAt } }[]
+  extractionError  String?  // Error message if FAILED
   assetId       String?
   entityId    String?
   dealId      String?
