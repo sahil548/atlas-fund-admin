@@ -7,6 +7,7 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fmt, formatDate } from "@/lib/utils";
+import { InlineTaskAdd } from "@/components/features/tasks/inline-task-add";
 import { CreateCapitalCallForm } from "@/components/features/capital/create-capital-call-form";
 import { CreateDistributionForm } from "@/components/features/capital/create-distribution-form";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
@@ -19,10 +20,62 @@ import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityAccountingTab } from "@/components/features/accounting/entity-accounting-tab";
 import { StatusTransitionDialog } from "@/components/features/entities/status-transition-dialog";
+import { PostFormationChecklist } from "@/components/features/entities/post-formation-checklist";
+import { RegulatoryFilingsTab } from "@/components/features/entities/regulatory-filings-tab";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
+
+function EntityTasksSection({ entityId, entityName }: { entityId: string; entityName: string }) {
+  const tasksKey = `/api/tasks?entityId=${entityId}`;
+  const { data, isLoading } = useSWR(tasksKey, fetcher);
+  const tasks: any[] = data?.data ?? [];
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold">Tasks</h3>
+        {tasks.length > 0 && (
+          <span className="text-xs text-gray-400">{tasks.length} task{tasks.length !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="text-xs text-gray-400 text-center py-4">Loading tasks...</div>
+      ) : tasks.length > 0 ? (
+        <div className="space-y-2">
+          {tasks.map((t: any) => (
+            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
+                  {t.status === "DONE" ? "\u2713" : ""}
+                </span>
+                <div>
+                  <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
+                  <div className="text-[10px] text-gray-500">
+                    Due: {t.dueDate ? formatDate(t.dueDate) : "---"} · {t.assignee?.name || t.assigneeName || "Unassigned"}
+                  </div>
+                </div>
+              </div>
+              <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
+                {t.status.toLowerCase().replace("_", " ")}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-400 text-center py-6">No tasks yet</div>
+      )}
+      <InlineTaskAdd
+        contextType="entity"
+        contextId={entityId}
+        entityId={entityId}
+        contextLabel={entityName}
+        onTaskCreated={() => mutate(tasksKey)}
+      />
+    </div>
+  );
+}
 
 const baseTabs = [
   { key: "overview", label: "Overview" },
@@ -35,6 +88,7 @@ const baseTabs = [
   { key: "fundraising", label: "Fundraising" },
   { key: "regulatory", label: "Regulatory" },
   { key: "accounting", label: "Accounting" },
+  { key: "tasks", label: "Tasks" },
 ];
 
 interface Tier { id: string; tierOrder: number; name: string; description?: string; splitLP?: number; splitGP?: number; hurdleRate?: number; appliesTo?: string }
@@ -459,6 +513,10 @@ export default function EntityDetailPage() {
       {/* Overview Tab */}
       {tab === "overview" && (
         <div className="space-y-4">
+          {/* Post-formation checklist — shown for FORMED/REGISTERED entities */}
+          {(e.formationStatus === "FORMED" || e.formationStatus === "REGISTERED") && (
+            <PostFormationChecklist entity={e} onTabChange={setTab} />
+          )}
           {/* Primary metric cards (6) */}
           <div className="grid grid-cols-3 xl:grid-cols-6 gap-3">
             {[
@@ -1278,6 +1336,10 @@ export default function EntityDetailPage() {
             providerCompanyName: e.accountingConnection.providerCompanyName,
           } : null}
         />
+      )}
+
+      {tab === "tasks" && (
+        <EntityTasksSection entityId={e.id} entityName={e.name} />
       )}
 
       {/* Modals */}

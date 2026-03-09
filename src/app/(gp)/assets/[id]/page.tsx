@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/ui/stat-card";
@@ -9,11 +9,13 @@ import { Tabs } from "@/components/ui/tabs";
 import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { LogValuationForm } from "@/components/features/assets/log-valuation-form";
 import { CreateTaskForm } from "@/components/features/assets/create-task-form";
+import { InlineTaskAdd } from "@/components/features/tasks/inline-task-add";
 import { UploadDocumentForm } from "@/components/features/assets/upload-document-form";
 import { LogIncomeForm } from "@/components/features/assets/log-income-form";
 import { AssetDealIntelligence } from "@/components/features/assets/asset-deal-intelligence";
 import { AssetOriginatedFrom } from "@/components/features/assets/asset-originated-from";
 import { AssetPerformanceTab } from "@/components/features/assets/asset-performance-tab";
+import { ExitAssetModal } from "@/components/features/assets/exit-asset-modal";
 import { fmt, pct, cn, formatDate, formatDateShort } from "@/lib/utils";
 import Link from "next/link";
 
@@ -41,6 +43,56 @@ function getScoreLevel(score: number): string {
   return "low";
 }
 
+function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: string }) {
+  const tasksKey = `/api/tasks?assetId=${assetId}`;
+  const { data, isLoading } = useSWR(tasksKey, fetcher);
+  const tasks: any[] = data?.data ?? [];
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold">Tasks</h3>
+        {tasks.length > 0 && (
+          <span className="text-xs text-gray-400">{tasks.length} task{tasks.length !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="text-xs text-gray-400 text-center py-4">Loading tasks...</div>
+      ) : tasks.length > 0 ? (
+        <div className="space-y-2">
+          {tasks.map((t: any) => (
+            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
+                  {t.status === "DONE" ? "\u2713" : ""}
+                </span>
+                <div>
+                  <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
+                  <div className="text-[10px] text-gray-500">
+                    Due: {t.dueDate ? formatDate(t.dueDate) : "---"} · {t.assignee?.name || t.assigneeName || "Unassigned"}
+                  </div>
+                </div>
+              </div>
+              <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
+                {t.status.toLowerCase().replace("_", " ")}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-400 text-center py-6">No tasks yet</div>
+      )}
+      <InlineTaskAdd
+        contextType="asset"
+        contextId={assetId}
+        assetId={assetId}
+        contextLabel={assetName}
+        onTaskCreated={() => mutate(tasksKey)}
+      />
+    </div>
+  );
+}
+
 export default function AssetDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { data: a, isLoading } = useSWR(`/api/assets/${id}`, fetcher);
@@ -50,6 +102,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [showLogIncome, setShowLogIncome] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
   const [aiIntelExpanded, setAiIntelExpanded] = useState(false);
 
   if (isLoading || !a) return <div className="text-sm text-gray-400">Loading...</div>;
@@ -101,6 +154,9 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
           <div className="flex gap-2">
+            {a.status === "ACTIVE" && (
+              <Button variant="secondary" size="sm" onClick={() => setShowExitModal(true)}>Record Exit</Button>
+            )}
             <Button variant="secondary" size="sm" onClick={() => setShowEditAsset(true)}>Edit Asset</Button>
           </div>
         </div>
@@ -126,6 +182,50 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       {/* Overview Tab */}
       {tab === "overview" && (
         <div className="space-y-4">
+          {/* Exit Performance Card */}
+          {a.status === "EXITED" && a.exitDate && a.exitProceeds != null && (
+            <div className={`rounded-xl border p-5 ${(a.exitProceeds - a.costBasis) >= 0 ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-sm font-semibold text-gray-900">Exit Performance</h3>
+                <Badge color="gray">EXITED</Badge>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase mb-1">Entry Date</div>
+                  <div className="text-sm font-semibold">{a.entryDate ? formatDate(a.entryDate) : "---"}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase mb-1">Exit Date</div>
+                  <div className="text-sm font-semibold">{formatDate(a.exitDate)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase mb-1">Total Invested</div>
+                  <div className="text-sm font-semibold">{fmt(a.costBasis)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase mb-1">Exit Proceeds</div>
+                  <div className="text-sm font-semibold">{fmt(a.exitProceeds)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] text-gray-500 uppercase mb-1">Final MOIC</div>
+                  <div className={`text-xl font-bold ${(a.exitProceeds - a.costBasis) >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                    {a.moic ? `${a.moic.toFixed(2)}x` : "---"}
+                  </div>
+                </div>
+              </div>
+              {a.irr != null && (
+                <div className="mt-3 pt-3 border-t border-gray-200 flex gap-4 text-xs">
+                  <span className="text-gray-500">Final IRR: <span className="font-semibold text-gray-800">{pct(a.irr)}</span></span>
+                  {a.entryDate && (
+                    <span className="text-gray-500">Hold period: <span className="font-semibold text-gray-800">
+                      {Math.floor((new Date(a.exitDate).getTime() - new Date(a.entryDate).getTime()) / (1000 * 60 * 60 * 24))} days
+                    </span></span>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* AI Deal Intelligence section (collapsed by default) */}
           {screening && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -537,28 +637,7 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Tasks Tab */}
       {tab === "tasks" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold">Tasks</h3>
-            <Button variant="secondary" size="sm" onClick={() => setShowCreateTask(true)}>+ Task</Button>
-          </div>
-          {a.tasks?.length > 0 ? a.tasks.map((t: { id: string; title: string; status: string; dueDate: string; assigneeName: string }) => (
-            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
-              <div className="flex items-center gap-3">
-                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
-                  {t.status === "DONE" ? "\u2713" : ""}
-                </span>
-                <div>
-                  <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
-                  <div className="text-[10px] text-gray-500">Due: {t.dueDate ? formatDate(t.dueDate) : "---"} · {t.assigneeName}</div>
-                </div>
-              </div>
-              <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
-                {t.status.toLowerCase().replace("_", " ")}
-              </Badge>
-            </div>
-          )) : <div className="text-xs text-gray-400 text-center py-6">No tasks yet</div>}
-        </div>
+        <AssetTasksTab assetId={id} assetName={a.name} />
       )}
 
       {/* Documents Tab */}
@@ -651,6 +730,12 @@ export default function AssetDetailPage({ params }: { params: Promise<{ id: stri
       <CreateTaskForm open={showCreateTask} onClose={() => setShowCreateTask(false)} assetId={a.id} />
       <UploadDocumentForm open={showUploadDoc} onClose={() => setShowUploadDoc(false)} assetId={a.id} />
       <LogIncomeForm open={showLogIncome} onClose={() => setShowLogIncome(false)} assetId={a.id} entityId={a.entityAllocations?.[0]?.entity?.id || ""} />
+      <ExitAssetModal
+        asset={{ id: a.id, name: a.name, costBasis: a.costBasis, entryDate: a.entryDate, status: a.status }}
+        isOpen={showExitModal}
+        onClose={() => setShowExitModal(false)}
+        onSuccess={() => mutate(`/api/assets/${id}`)}
+      />
     </div>
   );
 }

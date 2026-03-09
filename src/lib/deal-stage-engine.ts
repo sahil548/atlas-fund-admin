@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { postICReviewToSlack } from "@/lib/slack";
 import { notifyGPTeam } from "@/lib/notifications";
+import { getDDAutoTasks, getClosingAutoTasks } from "@/lib/deal-auto-tasks";
 
 /**
  * Central stage engine for deal workflow transitions.
@@ -40,6 +41,23 @@ export async function checkAndAdvanceDeal(dealId: string) {
           metadata: { fromStage: "IC_REVIEW", toStage: "CLOSING", decision },
         },
       });
+
+      // Auto-create closing checklist tasks
+      const closingTasksForIC = getClosingAutoTasks();
+      const assigneeIdForIC = deal.dealLeadId || null;
+      for (const autoTask of closingTasksForIC) {
+        await prisma.task.create({
+          data: {
+            title: autoTask.title,
+            status: "TODO",
+            priority: autoTask.priority,
+            assigneeId: assigneeIdForIC,
+            dealId: deal.id,
+            contextType: "deal",
+            contextId: deal.id,
+          },
+        });
+      }
 
       // Non-blocking notification
       notifyGPTeam({
@@ -556,6 +574,23 @@ export async function advanceToClosing(dealId: string) {
       },
     },
   });
+
+  // Auto-create closing checklist tasks
+  const closingTasks = getClosingAutoTasks();
+  const assigneeId = deal.dealLeadId || null;
+  for (const autoTask of closingTasks) {
+    await prisma.task.create({
+      data: {
+        title: autoTask.title,
+        status: "TODO",
+        priority: autoTask.priority,
+        assigneeId,
+        dealId: deal.id,
+        contextType: "deal",
+        contextId: deal.id,
+      },
+    });
+  }
 
   notifyGPTeam({
     type: "STAGE_CHANGE",

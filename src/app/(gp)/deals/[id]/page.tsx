@@ -11,6 +11,7 @@ import { EditDealForm } from "@/components/features/deals/edit-deal-form";
 import { KillDealModal } from "@/components/features/deals/kill-deal-modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 // Tab components
@@ -22,6 +23,7 @@ import { DealActivityTab } from "@/components/features/deals/deal-activity-tab";
 import { DealICReviewTab } from "@/components/features/deals/deal-ic-review-tab";
 import { DealClosingTab } from "@/components/features/deals/deal-closing-tab";
 import { DealCoInvestorsSection } from "@/components/features/deals/deal-co-investors-section";
+import { InlineTaskAdd } from "@/components/features/tasks/inline-task-add";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -65,13 +67,14 @@ const NAME_TO_TYPE: Record<string, string> = {
 
 /* ── Stage-dependent tab visibility ──────────────── */
 const stageTabs: Record<string, string[]> = {
-  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity", "Co-Investors"],
+  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity", "Tasks", "Co-Investors"],
   DUE_DILIGENCE: [
     "Overview",
     "Due Diligence",
     "Documents",
     "Notes",
     "Activity",
+    "Tasks",
     "Co-Investors",
   ],
   IC_REVIEW: [
@@ -81,6 +84,7 @@ const stageTabs: Record<string, string[]> = {
     "Notes",
     "Activity",
     "IC Review",
+    "Tasks",
     "Co-Investors",
   ],
   CLOSING: [
@@ -91,6 +95,7 @@ const stageTabs: Record<string, string[]> = {
     "Activity",
     "IC Review",
     "Closing",
+    "Tasks",
     "Co-Investors",
   ],
   CLOSED: [
@@ -101,17 +106,68 @@ const stageTabs: Record<string, string[]> = {
     "Activity",
     "IC Review",
     "Closing",
+    "Tasks",
     "Co-Investors",
   ],
 };
 
 function getDeadTabs(deal: any): string[] {
-  const tabs = ["Overview", "Due Diligence", "Documents", "Notes", "Activity"];
+  const tabs = ["Overview", "Due Diligence", "Documents", "Notes", "Activity", "Tasks"];
   if (deal.icProcess) {
     tabs.push("IC Review");
   }
   tabs.push("Co-Investors");
   return tabs;
+}
+
+function DealTasksTab({ dealId, dealName }: { dealId: string; dealName: string }) {
+  const tasksKey = `/api/tasks?dealId=${dealId}`;
+  const { data, isLoading } = useSWR(tasksKey, fetcher);
+  const tasks: any[] = data?.data ?? [];
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-sm font-semibold">Tasks</h3>
+        {tasks.length > 0 && (
+          <span className="text-xs text-gray-400">{tasks.length} task{tasks.length !== 1 ? "s" : ""}</span>
+        )}
+      </div>
+      {isLoading ? (
+        <div className="text-xs text-gray-400 text-center py-4">Loading tasks...</div>
+      ) : tasks.length > 0 ? (
+        <div className="space-y-2">
+          {tasks.map((t: any) => (
+            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
+                  {t.status === "DONE" ? "\u2713" : ""}
+                </span>
+                <div>
+                  <div className={`text-sm ${t.status === "DONE" ? "text-gray-400 line-through" : ""}`}>{t.title}</div>
+                  <div className="text-[10px] text-gray-500">
+                    Due: {t.dueDate ? formatDate(t.dueDate) : "---"} · {t.assignee?.name || t.assigneeName || "Unassigned"}
+                  </div>
+                </div>
+              </div>
+              <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
+                {t.status.toLowerCase().replace("_", " ")}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-gray-400 text-center py-6">No tasks yet</div>
+      )}
+      <InlineTaskAdd
+        contextType="deal"
+        contextId={dealId}
+        dealId={dealId}
+        contextLabel={dealName}
+        onTaskCreated={() => mutate(tasksKey)}
+      />
+    </div>
+  );
 }
 
 export interface AnalysisProgress {
@@ -522,6 +578,8 @@ export default function DealDetailPage({
         return <DealClosingTab deal={deal} onCloseDeal={() => setShowCloseDeal(true)} />;
       case "Co-Investors":
         return <DealCoInvestorsSection dealId={deal.id} />;
+      case "Tasks":
+        return <DealTasksTab dealId={deal.id} dealName={deal.name} />;
       default:
         return null;
     }

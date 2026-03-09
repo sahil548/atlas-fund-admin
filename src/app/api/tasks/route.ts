@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
         include: {
           assignee: { select: { id: true, name: true, initials: true } },
           deal: { select: { id: true, name: true } },
+          asset: { select: { id: true, name: true } },
           entity: { select: { id: true, name: true } },
         },
       }),
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
       include: {
         assignee: { select: { id: true, name: true, initials: true } },
         deal: { select: { id: true, name: true } },
+        asset: { select: { id: true, name: true } },
         entity: { select: { id: true, name: true } },
       },
     });
@@ -138,6 +140,7 @@ export async function PATCH(req: NextRequest) {
       include: {
         assignee: { select: { id: true, name: true, initials: true } },
         deal: { select: { id: true, name: true } },
+        asset: { select: { id: true, name: true } },
         entity: { select: { id: true, name: true } },
       },
     });

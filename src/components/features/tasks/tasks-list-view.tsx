@@ -79,15 +79,17 @@ function SortableTaskRow({ task, onStatusToggle }: SortableTaskRowProps) {
       </td>
       <td className="px-3 py-2.5 text-gray-500 text-xs">
         {task.deal ? (
-          <Link href={`/deals/${task.deal.id}`} className="text-indigo-600 hover:underline">
-            {task.deal.name}
+          <Link href={`/deals/${task.dealId || task.deal.id}`} className="text-indigo-600 hover:underline">
+            Deal: {task.deal.name}
+          </Link>
+        ) : task.asset ? (
+          <Link href={`/assets/${task.assetId || task.asset.id}`} className="text-indigo-600 hover:underline">
+            Asset: {task.asset.name}
           </Link>
         ) : task.entity ? (
-          <Link href={`/entities/${task.entity.id}`} className="text-indigo-600 hover:underline">
-            {task.entity.name}
+          <Link href={`/entities/${task.entityId || task.entity.id}`} className="text-indigo-600 hover:underline">
+            Entity: {task.entity.name}
           </Link>
-        ) : task.contextType ? (
-          <span>{task.contextType}</span>
         ) : (
           <span className="text-gray-300">—</span>
         )}

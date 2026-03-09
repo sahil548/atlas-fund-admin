@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { DDAnalyzeRequestSchema } from "@/lib/schemas";
 import { recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
+import { getDDAutoTasks } from "@/lib/deal-auto-tasks";
 import { type DealContext } from "@/lib/deal-types";
 import { getAuthUser } from "@/lib/auth";
 import {
@@ -307,6 +308,23 @@ export async function POST(
           metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" },
         },
       });
+
+      // Auto-create DD checklist tasks
+      const ddTasks = getDDAutoTasks();
+      const assigneeId = deal.dealLead?.id || null;
+      for (const autoTask of ddTasks) {
+        await prisma.task.create({
+          data: {
+            title: autoTask.title,
+            status: "TODO",
+            priority: autoTask.priority,
+            assigneeId,
+            dealId: id,
+            contextType: "deal",
+            contextId: id,
+          },
+        });
+      }
     }
   } else {
     // ── Workstream analysis → update/create workstream + tasks ──
