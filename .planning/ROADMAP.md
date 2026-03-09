@@ -102,7 +102,15 @@ Plans:
   3. The asset list can be sorted by any column (name, type, NAV, IRR, cost basis) with a single click
   4. A portfolio-level covenant breach monitor shows all breached covenants across all assets in one view, and lease expirations within 90 and 180 days are surfaced in a forward-looking calendar view
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
-**Plans**: TBD
+**Plans:** 7 plans
+Plans:
+- [ ] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
+- [ ] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
+- [ ] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
+- [ ] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
+- [ ] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
+- [ ] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
+- [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task email notifications (assignment + overdue templates)
 
 ### Phase 15: Entity Management & Meeting Intelligence
 **Goal**: The entity list shows parent-child fund structure clearly, formation workflows guide GPs to next steps, and each GP team member can connect their own Fireflies account so meeting transcripts flow into Atlas automatically
@@ -177,7 +185,7 @@ Plans:
 | 11. Foundation | 1/5 | In Progress|  | - |
 | 12. AI Configuration & Document Intake | v2.0 | 0/5 | Planned | - |
 | 13. Deal Desk & CRM | v2.0 | 0/5 | Planned | - |
-| 14. Asset Management & Task Management | v2.0 | 0/TBD | Not started | - |
+| 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
 | 15. Entity Management & Meeting Intelligence | v2.0 | 0/TBD | Not started | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |
