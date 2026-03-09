@@ -46,7 +46,7 @@ created: 2026-03-09
 | 15-03-01 | 03 | 2 | ENTITY-02/03 (checklist + schemas) | unit + build | `npx jest --testPathPattern="phase15-entity-hierarchy" -x && npm run build` | W0 stub | pending |
 | 15-03-02 | 03 | 2 | ENTITY-02/03 (regulatory tab + wire) | build | `npm run build` | n/a | pending |
 | 15-04-01 | 04 | 2 | MTG-01/05 (fireflies lib + routes) | unit + build | `npx jest --testPathPattern="phase15-fireflies-sync" -x && npm run build` | W0 stub | pending |
-| 15-04-02 | 04 | 2 | MTG-01/05 (settings UI + sync button) | build | `npm run build` | n/a | pending |
+| 15-04-02 | 04 | 2 | MTG-01/05 (profile page UI + sync button) | build | `npm run build` | n/a | pending |
 | 15-05-01 | 05 | 2 | ENTITY-05 (side letter verify) | manual + build | `npm run build` | existing code | pending |
 | 15-06-01 | 06 | 3 | MTG-02/03/04 (meeting card + link API) | unit + build | `npx jest --testPathPattern="phase15-fireflies-sync" -x && npm run build` | W0 stub | pending |
 | 15-06-02 | 06 | 3 | MTG-02/03/04 (integrate + auto-tasks) | full suite + build | `npx jest --testPathPattern="phase15" --no-coverage && npm run build` | W0 stub | pending |
@@ -71,7 +71,7 @@ Both created by Plan 00, Wave 0. All subsequent plans depend_on 15-00.
 |----------|-------------|------------|-------------------|
 | Side letter CRUD round-trip | ENTITY-05 | Verifying existing Phase 4 wiring, not new code | Create side letter, view on entity, edit terms, confirm changes persist |
 | AI summary generation from transcript | MTG-02 | Requires live AI API key | Connect Fireflies, sync a meeting with transcript, verify AI summary appears on meeting card |
-| End-to-end Fireflies connect -> sync -> meeting appears | MTG-01/03/04/05 | Integration test across real Fireflies API | Enter Fireflies API key in profile, trigger sync, verify meetings appear in aggregated view with correct entity/deal links |
+| End-to-end Fireflies connect -> sync -> meeting appears | MTG-01/03/04/05 | Integration test across real Fireflies API | Enter Fireflies API key in user profile page (/profile), trigger sync, verify meetings appear in aggregated view with correct entity/deal links |
 
 ---
 
