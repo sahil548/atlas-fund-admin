@@ -103,6 +103,50 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const body = await req.json();
 
+  if (body.action === "TRANSITION_STATUS") {
+    const { newStatus, reason } = body;
+    const validTransitions: Record<string, string[]> = {
+      ACTIVE: ["WINDING_DOWN"],
+      WINDING_DOWN: ["DISSOLVED", "ACTIVE"],
+      DISSOLVED: [],
+    };
+
+    const entityForTransition = await prisma.entity.findUnique({
+      where: { id },
+      select: { status: true, firmId: true },
+    });
+    if (!entityForTransition) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    if (!validTransitions[entityForTransition.status]?.includes(newStatus)) {
+      return NextResponse.json({ error: "Invalid status transition" }, { status: 400 });
+    }
+
+    // Check for outstanding obligations (informational warnings, not blockers)
+    const [outstandingCalls, activeAssets] = await Promise.all([
+      prisma.capitalCall.count({ where: { entityId: id, status: { not: "FUNDED" } } }),
+      prisma.assetEntityAllocation.count({ where: { entityId: id } }),
+    ]);
+
+    await prisma.entity.update({ where: { id }, data: { status: newStatus } });
+
+    if (authUserForPatch) {
+      logAudit(authUserForPatch.firmId, authUserForPatch.id, "STATUS_TRANSITION", "Entity", id, {
+        from: entityForTransition.status,
+        to: newStatus,
+        reason: reason || null,
+      });
+    }
+
+    return NextResponse.json({
+      status: newStatus,
+      warnings: {
+        outstandingCalls,
+        activeAssets,
+      },
+    });
+  }
+
   if (body.action === "MARK_FORMED") {
     // Validate all formation tasks are DONE
     const tasks = await prisma.task.findMany({

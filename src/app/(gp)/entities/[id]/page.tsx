@@ -16,6 +16,7 @@ import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { useToast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityAccountingTab } from "@/components/features/accounting/entity-accounting-tab";
+import { StatusTransitionDialog } from "@/components/features/entities/status-transition-dialog";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -68,6 +69,8 @@ export default function EntityDetailPage() {
   const [savingProxy, setSavingProxy] = useState(false);
   // Distribution confirm dialog state
   const [distributionToConfirm, setDistributionToConfirm] = useState<string | null>(null);
+  // Status transition dialog state
+  const [statusTransitionTarget, setStatusTransitionTarget] = useState<string | null>(null);
   const toast = useToast();
 
   if (isLoading || !entity) return <div className="text-sm text-gray-400">Loading...</div>;
@@ -263,7 +266,38 @@ export default function EntityDetailPage() {
             {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
           </div>
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Status transition buttons */}
+          {e.status === "ACTIVE" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setStatusTransitionTarget("WINDING_DOWN")}
+              className="text-amber-700 border-amber-300 bg-amber-50 hover:bg-amber-100"
+            >
+              Wind Down
+            </Button>
+          )}
+          {e.status === "WINDING_DOWN" && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setStatusTransitionTarget("ACTIVE")}
+                className="text-green-700 border-green-300 bg-green-50 hover:bg-green-100"
+              >
+                Reactivate
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setStatusTransitionTarget("DISSOLVED")}
+                className="text-red-700 border-red-300 bg-red-50 hover:bg-red-100"
+              >
+                Dissolve
+              </Button>
+            </>
+          )}
           <Link
             href={`/reports?entityId=${e.id}`}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
@@ -1209,6 +1243,18 @@ export default function EntityDetailPage() {
         confirmLabel="Mark Paid"
         variant="danger"
       />
+
+      {/* Status Transition Dialog */}
+      {statusTransitionTarget && (
+        <StatusTransitionDialog
+          entityId={id}
+          currentStatus={e.status}
+          targetStatus={statusTransitionTarget}
+          open={!!statusTransitionTarget}
+          onClose={() => setStatusTransitionTarget(null)}
+          onSuccess={() => mutate(`/api/entities/${id}`)}
+        />
+      )}
     </div>
   );
 }

@@ -24,7 +24,8 @@ export type AuditAction =
   | "UPDATE_PERMISSIONS"
   | "UPDATE_ENTITY_ACCESS"
   | "CREATE_DOCUMENT"
-  | "DELETE_DOCUMENT";
+  | "DELETE_DOCUMENT"
+  | "STATUS_TRANSITION";
 
 /**
  * Log an auditable action.
