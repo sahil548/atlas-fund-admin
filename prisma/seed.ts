@@ -1140,6 +1140,148 @@ async function main() {
   });
 
   // ============================================================
+  // ADDITIONAL DEALS — Dead, Closed, and Stale (for richer testing)
+  // ============================================================
+  console.log("Creating additional deals (dead, closed, stale)...");
+
+  const deal6 = await prisma.deal.create({
+    data: {
+      id: "deal-6",
+      firmId: firm.id,
+      name: "Pinnacle Logistics",
+      assetClass: "DIVERSIFIED", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Logistics",
+      stage: "DEAD",
+      targetSize: "$18-22M",
+      targetCheckSize: "$8-10M",
+      targetReturn: "2.0-2.5x MOIC / 18-22% IRR",
+      dealLeadId: "user-jk",
+      counterparty: "Pinnacle Transport Inc.",
+      aiScore: 65,
+      aiFlag: "Cyclical revenue, thin margins",
+      killReason: "Pricing",
+      killReasonText: "Seller expectations at 9x EBITDA well above our 6-7x comfort zone. Unable to bridge the valuation gap after two rounds of negotiation.",
+      previousStage: "DUE_DILIGENCE",
+      description: "Platform acquisition of regional third-party logistics provider specializing in cold-chain delivery.",
+    },
+  });
+
+  const deal7 = await prisma.deal.create({
+    data: {
+      id: "deal-7",
+      firmId: firm.id,
+      name: "GreenLeaf Cannabis REIT",
+      assetClass: "REAL_ESTATE", capitalInstrument: "EQUITY", participationStructure: "LP_STAKE_SILENT_PARTNER",
+      sector: "Cannabis",
+      stage: "DEAD",
+      targetSize: "$25M",
+      targetCheckSize: "$10M",
+      targetReturn: "1.5-2.0x MOIC / 15% IRR",
+      dealLeadId: "user-sm",
+      gpName: "GreenLeaf Properties",
+      aiScore: 42,
+      aiFlag: "Federal regulatory risk, banking partner uncertainty",
+      killReason: "Risk",
+      killReasonText: "IC voted unanimously to decline. Federal legalization timeline too uncertain and banking partner pulled out mid-diligence.",
+      previousStage: "IC_REVIEW",
+      description: "Cannabis-focused REIT investing in grow facilities and dispensary real estate across 5 legalized states.",
+    },
+  });
+
+  const deal8 = await prisma.deal.create({
+    data: {
+      id: "deal-8",
+      firmId: firm.id,
+      name: "TerraVerde Renewable Energy",
+      assetClass: "INFRASTRUCTURE", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Renewable Energy",
+      stage: "DEAD",
+      targetSize: "$50M",
+      targetCheckSize: "$20M",
+      targetReturn: "2.0x MOIC / 14% IRR",
+      dealLeadId: "user-al",
+      counterparty: "TerraVerde Holdings LLC",
+      aiScore: 71,
+      aiFlag: "Strong assets but sponsor governance concerns",
+      killReason: "Sponsor",
+      killReasonText: "Background check revealed ongoing litigation against GP principal. Compliance flagged as unacceptable counterparty risk.",
+      previousStage: "DUE_DILIGENCE",
+      description: "Co-investment in a portfolio of 6 solar farms and 2 wind installations totaling 320 MW of capacity.",
+    },
+  });
+
+  const deal9 = await prisma.deal.create({
+    data: {
+      id: "deal-9",
+      firmId: firm.id,
+      entityId: "entity-1",
+      name: "Cascade Timber Holdings",
+      assetClass: "REAL_ESTATE", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Timber / Natural Resources",
+      stage: "CLOSED",
+      targetSize: "$35M",
+      targetCheckSize: "$15M",
+      targetReturn: "1.8-2.2x MOIC / 12-15% IRR",
+      dealLeadId: "user-jk",
+      counterparty: "Cascade Forest Products Inc.",
+      aiScore: 91,
+      aiFlag: "Low correlation, strong cash yield, inflation hedge",
+      description: "Acquisition of 42,000 acres of timberland in the Pacific Northwest with existing harvest and carbon credit revenue streams.",
+      investmentRationale: "Trophy timberland asset with dual income from sustainable harvest and carbon credits. Low correlation to equity markets. Strong inflation hedge.",
+    },
+  });
+
+  const deal10 = await prisma.deal.create({
+    data: {
+      id: "deal-10",
+      firmId: firm.id,
+      name: "SilverLake Data Centers",
+      assetClass: "INFRASTRUCTURE", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Technology Infrastructure",
+      stage: "DUE_DILIGENCE",
+      targetSize: "$100M",
+      targetCheckSize: "$25M",
+      targetReturn: "2.5-3.0x MOIC / 20-25% IRR",
+      dealLeadId: "user-al",
+      counterparty: "SilverLake Infrastructure Group",
+      aiScore: 85,
+      aiFlag: "AI demand tailwind, power cost risk",
+      description: "Majority investment in a portfolio of 4 Tier III+ data centers in the Sun Belt region, positioned for AI/GPU workload expansion.",
+      investmentRationale: "Explosive demand from AI compute needs. 95% occupancy with 3-year committed leases from hyperscalers. Power contracts locked through 2029.",
+    },
+  });
+
+  // Link Cascade Timber closed deal → NovaTech as source asset (for testing View Asset link)
+  // Actually create a dedicated asset for Cascade Timber
+  const assetCascade = await prisma.asset.create({
+    data: {
+      id: "asset-cascade",
+      name: "Cascade Timber Holdings",
+      assetClass: "REAL_ESTATE", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Timber / Natural Resources",
+      status: "ACTIVE",
+      costBasis: 15_000_000,
+      fairValue: 17_200_000,
+      moic: 1.15,
+      irr: 0.12,
+      incomeType: "Harvest + Carbon Credits",
+      hasBoardSeat: true,
+      entryDate: new Date("2025-11-01"),
+      sourceDealId: "deal-9",
+      nextReview: new Date("2026-06-01"),
+    },
+  });
+
+  await prisma.assetEntityAllocation.create({
+    data: {
+      id: "alloc-cascade",
+      assetId: assetCascade.id,
+      entityId: "entity-1",
+      allocationPercent: 100,
+    },
+  });
+
+  // ============================================================
   // DD CATEGORY TEMPLATES (firm-level library)
   // Must be created before workstreams since workstreams are derived from templates
   // ============================================================
@@ -1744,8 +1886,8 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       { dealId: deal1.id, activityType: "CALL", description: "Diligence call with industry expert on defense manufacturing market", createdAt: new Date("2026-02-15") },
       { dealId: deal1.id, activityType: "STAGE_CHANGE", description: "Deal sent to IC Review", metadata: { fromStage: "DUE_DILIGENCE", toStage: "IC_REVIEW" }, createdAt: new Date("2026-02-27") },
       // Deal 2 (Due Diligence)
-      { dealId: deal2.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 74/100. Recommendation: PROCEED_WITH_CAUTION.", metadata: { score: 74, recommendation: "PROCEED_WITH_CAUTION" }, createdAt: new Date("2026-02-10") },
-      { dealId: deal2.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2026-02-10") },
+      { dealId: deal2.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 74/100. Recommendation: PROCEED_WITH_CAUTION.", metadata: { score: 74, recommendation: "PROCEED_WITH_CAUTION" }, createdAt: new Date("2026-01-25") },
+      { dealId: deal2.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2026-01-25") },
       { dealId: deal2.id, activityType: "MEETING", description: "Initial management meeting with Beacon Healthcare Group CEO and CFO", metadata: { meetingType: "Management Meeting" }, createdAt: new Date("2026-02-15") },
       { dealId: deal2.id, activityType: "CALL", description: "Healthcare regulatory expert call — reimbursement risk assessment", createdAt: new Date("2026-02-19") },
       { dealId: deal2.id, activityType: "DOCUMENT_UPLOADED", description: "Patient volume data and payer mix analysis uploaded", createdAt: new Date("2026-02-20") },
@@ -1756,6 +1898,40 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       { dealId: deal4.id, activityType: "MEETING", description: "Sponsor meeting with Ridgeline Capital Partners principals", metadata: { meetingType: "Sponsor Meeting" }, createdAt: new Date("2026-02-14") },
       { dealId: deal4.id, activityType: "DOCUMENT_UPLOADED", description: "Appraisal report and Phase I ESA uploaded", createdAt: new Date("2026-02-16") },
       { dealId: deal4.id, activityType: "CALL", description: "Call with property management company on tenant relationships", createdAt: new Date("2026-02-21") },
+
+      // Deal 6 (Dead - Pinnacle Logistics) — killed at DD after 45 days
+      { dealId: deal6.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 65/100. Recommendation: PROCEED_WITH_CAUTION.", metadata: { score: 65, recommendation: "PROCEED_WITH_CAUTION" }, createdAt: new Date("2025-11-10") },
+      { dealId: deal6.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2025-11-12") },
+      { dealId: deal6.id, activityType: "MEETING", description: "Management presentation with Pinnacle Transport CEO", metadata: { meetingType: "Management Presentation" }, createdAt: new Date("2025-11-20") },
+      { dealId: deal6.id, activityType: "CALL", description: "Valuation discussion with seller's advisor — significant gap on EBITDA multiple", createdAt: new Date("2025-12-05") },
+      { dealId: deal6.id, activityType: "STAGE_CHANGE", description: "Deal killed — moved to Dead stage", metadata: { fromStage: "DUE_DILIGENCE", toStage: "DEAD" }, createdAt: new Date("2025-12-27") },
+
+      // Deal 7 (Dead - GreenLeaf Cannabis) — killed at IC Review
+      { dealId: deal7.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 42/100. Recommendation: HIGH_RISK.", metadata: { score: 42, recommendation: "HIGH_RISK" }, createdAt: new Date("2025-10-05") },
+      { dealId: deal7.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2025-10-08") },
+      { dealId: deal7.id, activityType: "STAGE_CHANGE", description: "Deal advanced to IC Review", metadata: { fromStage: "DUE_DILIGENCE", toStage: "IC_REVIEW" }, createdAt: new Date("2025-11-15") },
+      { dealId: deal7.id, activityType: "STAGE_CHANGE", description: "Deal killed at IC — unanimous decline", metadata: { fromStage: "IC_REVIEW", toStage: "DEAD" }, createdAt: new Date("2025-11-22") },
+
+      // Deal 8 (Dead - TerraVerde) — killed at DD due to sponsor issues
+      { dealId: deal8.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 71/100. Recommendation: PROCEED.", metadata: { score: 71, recommendation: "PROCEED" }, createdAt: new Date("2025-12-01") },
+      { dealId: deal8.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2025-12-03") },
+      { dealId: deal8.id, activityType: "MEETING", description: "Meeting with TerraVerde management team on project pipeline", metadata: { meetingType: "Management Meeting" }, createdAt: new Date("2025-12-10") },
+      { dealId: deal8.id, activityType: "STAGE_CHANGE", description: "Deal killed — compliance flagged sponsor risk", metadata: { fromStage: "DUE_DILIGENCE", toStage: "DEAD" }, createdAt: new Date("2026-01-08") },
+
+      // Deal 9 (Closed - Cascade Timber) — full lifecycle completed
+      { dealId: deal9.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 91/100. Recommendation: STRONG_PROCEED.", metadata: { score: 91, recommendation: "STRONG_PROCEED" }, createdAt: new Date("2025-07-15") },
+      { dealId: deal9.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2025-07-18") },
+      { dealId: deal9.id, activityType: "MEETING", description: "Site visit to Pacific Northwest timberland parcels", metadata: { meetingType: "Site Visit" }, createdAt: new Date("2025-08-05") },
+      { dealId: deal9.id, activityType: "STAGE_CHANGE", description: "Deal advanced to IC Review", metadata: { fromStage: "DUE_DILIGENCE", toStage: "IC_REVIEW" }, createdAt: new Date("2025-09-01") },
+      { dealId: deal9.id, activityType: "STAGE_CHANGE", description: "IC approved — deal advanced to Closing", metadata: { fromStage: "IC_REVIEW", toStage: "CLOSING" }, createdAt: new Date("2025-09-15") },
+      { dealId: deal9.id, activityType: "DOCUMENT_UPLOADED", description: "Signed PSA and timber cruise report uploaded", createdAt: new Date("2025-10-10") },
+      { dealId: deal9.id, activityType: "STAGE_CHANGE", description: "Deal closed — $15M deployed", metadata: { fromStage: "CLOSING", toStage: "CLOSED" }, createdAt: new Date("2025-11-01") },
+
+      // Deal 10 (SilverLake Data Centers) — stale in DD for 35+ days
+      { dealId: deal10.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 85/100. Recommendation: PROCEED.", metadata: { score: 85, recommendation: "PROCEED" }, createdAt: new Date("2026-01-20") },
+      { dealId: deal10.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2026-01-22") },
+      { dealId: deal10.id, activityType: "MEETING", description: "Tour of Tier III+ data center facilities in Texas and Arizona", metadata: { meetingType: "Site Visit" }, createdAt: new Date("2026-02-05") },
+      { dealId: deal10.id, activityType: "CALL", description: "Power cost analysis call with utility consultant", createdAt: new Date("2026-02-15") },
     ],
   });
 

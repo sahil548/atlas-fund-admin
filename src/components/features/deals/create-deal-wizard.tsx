@@ -69,9 +69,8 @@ export function CreateDealWizard({ open, onClose }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcher);
   const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcher);
-  const { data: entities } = useSWR(`/api/entities?firmId=${firmId}`, (url: string) =>
-    fetcher(url).then((r: any) => Array.isArray(r?.data) ? r.data : Array.isArray(r) ? r : []),
-  );
+  const { data: entitiesRaw } = useSWR(`/api/entities?firmId=${firmId}`, fetcher);
+  const entities = Array.isArray(entitiesRaw) ? entitiesRaw : Array.isArray(entitiesRaw?.data) ? entitiesRaw.data : [];
 
   // Step 1: Deal Identity
   const [identity, setIdentity] = useState({

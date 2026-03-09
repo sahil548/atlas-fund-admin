@@ -94,12 +94,27 @@ export async function GET(req: NextRequest) {
 
   function parseTargetSize(s: string | null): number {
     if (!s) return 0;
-    const cleaned = s.replace(/[^0-9.BMKbmk]/g, "");
-    const num = parseFloat(cleaned);
+    // Handle range formats like "$30-40M" by taking midpoint
+    const rangeMatch = s.match(/\$?([\d.]+)\s*[-–]\s*\$?([\d.]+)\s*([BMKbmk])?/);
+    if (rangeMatch) {
+      const lo = parseFloat(rangeMatch[1]);
+      const hi = parseFloat(rangeMatch[2]);
+      const mid = (lo + hi) / 2;
+      const suffix = (rangeMatch[3] || "").toUpperCase();
+      if (suffix === "B") return mid * 1_000_000_000;
+      if (suffix === "M") return mid * 1_000_000;
+      if (suffix === "K") return mid * 1_000;
+      return mid;
+    }
+    // Single value like "$10M" or "$15M LP"
+    const singleMatch = s.match(/([\d.]+)\s*([BMKbmk])?/);
+    if (!singleMatch) return 0;
+    const num = parseFloat(singleMatch[1]);
     if (isNaN(num)) return 0;
-    if (/[Bb]/.test(s)) return num * 1_000_000_000;
-    if (/[Mm]/.test(s)) return num * 1_000_000;
-    if (/[Kk]/.test(s)) return num * 1_000;
+    const suffix = (singleMatch[2] || "").toUpperCase();
+    if (suffix === "B") return num * 1_000_000_000;
+    if (suffix === "M") return num * 1_000_000;
+    if (suffix === "K") return num * 1_000;
     return num;
   }
 

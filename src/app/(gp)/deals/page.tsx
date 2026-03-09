@@ -310,6 +310,7 @@ export default function DealsPage() {
     totalActiveDeals: number;
     totalClosedDeals: number;
     totalDeadDeals: number;
+    killReasonBreakdown?: Array<{ reason: string; count: number }>;
   } | undefined;
 
   const anySelected = selectedDealIds.size > 0;
@@ -435,6 +436,21 @@ export default function DealsPage() {
                 </div>
               ))}
             </div>
+
+            {/* Top Kill Reasons */}
+            {analytics.killReasonBreakdown && analytics.killReasonBreakdown.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-medium text-gray-500">Top Kill Reasons:</span>
+                {analytics.killReasonBreakdown.slice(0, 3).map((kr) => (
+                  <span
+                    key={kr.reason}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-medium"
+                  >
+                    {kr.reason} ({kr.count})
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </SectionErrorBoundary>
       )}

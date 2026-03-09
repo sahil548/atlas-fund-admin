@@ -76,8 +76,9 @@ export function DealEntitySection({ dealId }: DealEntitySectionProps) {
   const linkedEntities: any[] = dealEntities || [];
   const linkedEntityIds = new Set(linkedEntities.map((de: any) => de.entityId));
 
-  // Available entities not yet linked
-  const availableEntities = (allEntities || []).filter(
+  // Available entities not yet linked (API returns { data: [...] })
+  const entityList = Array.isArray(allEntities) ? allEntities : Array.isArray(allEntities?.data) ? allEntities.data : [];
+  const availableEntities = entityList.filter(
     (e: any) => !linkedEntityIds.has(e.id)
   );
 
