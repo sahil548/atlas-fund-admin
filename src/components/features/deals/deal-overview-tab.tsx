@@ -17,6 +17,7 @@ import {
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
 import { formatDate } from "@/lib/utils";
+import { FileDown } from "lucide-react";
 
 // Memo sections, previous versions, and workstream shapes come from JSON fields —
 // remaining any usages below are for those API response fields only.
@@ -141,6 +142,7 @@ export function DealOverviewTab({
   const [fullMemoExpanded, setFullMemoExpanded] = useState(false);
   const [selectedMemoVersion, setSelectedMemoVersion] = useState<number | null>(null);
   const [extracting, setExtracting] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
   const toast = useToast();
 
   const isScreening = deal.stage === "SCREENING";
@@ -211,6 +213,42 @@ export function DealOverviewTab({
       mutate(`/api/deals/${deal.id}`);
     } catch {
       toast.error("Failed to save field");
+    }
+  }
+
+  // Download IC Memo as PDF
+  async function exportMemoPDF() {
+    if (!sr?.memo || typeof window === "undefined") return;
+    setExportingPDF(true);
+    try {
+      const { pdf } = await import("@react-pdf/renderer");
+      const { ICMemoPDF } = await import("@/lib/pdf/ic-memo");
+      const memo = sr.memo;
+      const memoData = {
+        dealName: deal.name,
+        recommendation: memo.recommendation ?? null,
+        executiveSummary: memo.summary ?? null,
+        sections: Array.isArray(memo.sections) ? memo.sections : [],
+        generatedAt: sr.memoGeneratedAt ?? new Date().toISOString(),
+        dealLead: deal.dealLead?.name ?? null,
+        targetSize: deal.targetSize ?? null,
+        assetClass: deal.assetClass ? (ASSET_CLASS_LABELS[deal.assetClass] || deal.assetClass) : null,
+        stage: deal.stage ?? null,
+      };
+      const blob = await pdf(<ICMemoPDF data={memoData} />).toBlob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `IC_Memo_${deal.name.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      toast.error("Failed to export PDF");
+    } finally {
+      setExportingPDF(false);
     }
   }
 
@@ -435,6 +473,18 @@ export function DealOverviewTab({
                         </option>
                       ))}
                     </select>
+                  )}
+                  {hasMemo && !isAnalyzing && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      loading={exportingPDF}
+                      onClick={exportMemoPDF}
+                      title="Download IC Memo as PDF"
+                    >
+                      <FileDown className="w-3.5 h-3.5 mr-1" />
+                      Export PDF
+                    </Button>
                   )}
                   {!isAnalyzing && (
                     <Button
