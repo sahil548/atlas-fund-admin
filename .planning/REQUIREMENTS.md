@@ -25,7 +25,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [x] **DEAL-13**: Closed deal page shows "View Asset" navigation link to the created asset
 - [x] **DEAL-14**: IC memo can be exported as PDF
 - [x] **DEAL-15**: Dead deal reasons surfaced in pipeline analytics
-- [ ] **DEAL-16**: GP can perform bulk deal status actions (e.g., kill multiple deals)
+- [x] **DEAL-16**: GP can perform bulk deal status actions (e.g., kill multiple deals)
 
 ### Asset Management — Holding Type Completion
 
@@ -194,7 +194,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEAL-13 | Phase 13 | Complete |
 | DEAL-14 | Phase 13 | Complete |
 | DEAL-15 | Phase 13 | Complete |
-| DEAL-16 | Phase 13 | Pending |
+| DEAL-16 | Phase 13 | Complete |
 | CRM-01 | Phase 13 | Pending |
 | CRM-02 | Phase 13 | Pending |
 | CRM-03 | Phase 13 | Pending |

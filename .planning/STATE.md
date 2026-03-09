@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 13-02-PLAN.md
-last_updated: "2026-03-09T20:19:52.703Z"
-last_activity: "2026-03-09 — Phase 13 Plan 01 complete (pipeline intelligence: daysInStage badges on kanban cards, column value headers, View Asset link on closed deals)"
+stopped_at: Completed 13-03-PLAN.md
+last_updated: "2026-03-09T20:22:24.584Z"
+last_activity: 2026-03-09 — Phase 13 Plan 02 complete (IC memo PDF export with @react-pdf/renderer + dead deal kill reason analytics chart and mini-summary)
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 12
+  completed_plans: 13
   percent: 71
 ---
 
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 2 COMPLETE, Plan 3 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 3 COMPLETE, Plan 4 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 13 of 19 — Deal Desk & CRM (In Progress)
-- **Plan:** 2 of 5 complete
+- **Plan:** 3 of 5 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 13 Plan 02 complete (IC memo PDF export with @react-pdf/renderer + dead deal kill reason analytics chart and mini-summary)
+- **Last activity:** 2026-03-09 — Phase 13 Plan 03 complete (bulk deal actions: kanban checkbox multi-select + floating action bar + POST /api/deals/bulk for kill/assign/advance)
 
-Progress: [███████░░░] 71% (47/66 plans)
+Progress: [███████░░░] 74% (49/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -45,6 +45,7 @@ Progress: [███████░░░] 71% (47/66 plans)
 | Phase 12-ai-configuration-document-intake P05 | 5 | 2 tasks | 0 files |
 | Phase 13-deal-desk-crm P01 | 3 | 2 tasks | 4 files |
 | Phase 13-deal-desk-crm P02 | 7min | 2 tasks | 6 files |
+| Phase 13-deal-desk-crm P03 | 25 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,9 @@ Progress: [███████░░░] 71% (47/66 plans)
 - **View Asset link:** Guarded by sourceAssets?.length > 0 — safe for legacy closed deals that predate the sourceAssets relation
 - **PDF dynamic import:** @react-pdf/renderer cannot run during SSR — use `await import("@react-pdf/renderer")` inside click handler for client-side only generation
 - **killReason in two APIs:** /deals page uses pipelineAnalytics from /api/deals (already fetched for kanban); /analytics page uses /api/analytics/pipeline — both compute independently
+- **Bulk advance boundary:** SCREENING→DUE_DILIGENCE and DUE_DILIGENCE→IC_REVIEW allowed; IC_REVIEW+ blocked (needs individual IC decisions) — enforced on both client and server
+- **Bulk kill schema:** No killedAt field exists on Deal model — only killReason (enum category) is written; killReasonText omitted in bulk (single shared reason suffices)
+- **Floating action bar z-index:** z-50 for action bar, toast provider uses z-[60] — bar sits below toasts intentionally
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -108,6 +112,6 @@ Progress: [███████░░░] 71% (47/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T20:19:52.700Z
-- **Stopped at:** Completed 13-02-PLAN.md
-- **Resume file:** .planning/phases/13-deal-desk-crm/13-02-SUMMARY.md
+- **Last session:** 2026-03-09T20:22:24.582Z
+- **Stopped at:** Completed 13-03-PLAN.md
+- **Resume file:** None
