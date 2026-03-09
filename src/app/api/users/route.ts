@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
       firmId: true,
       contactId: true,
       inviteStatus: true,
+      aiEnabled: true,
       contact: { select: { id: true, firstName: true, lastName: true } },
     },
   });
@@ -60,6 +61,9 @@ export async function POST(req: NextRequest) {
     .toUpperCase()
     .slice(0, 2);
 
+  // SERVICE_PROVIDER users get AI disabled by default (locked decision: AI access = off for service providers)
+  const aiEnabled = data!.role === "SERVICE_PROVIDER" ? false : true;
+
   const user = await prisma.user.create({
     data: {
       name,
@@ -68,6 +72,7 @@ export async function POST(req: NextRequest) {
       firmId: data!.firmId,
       contactId: data!.contactId,
       initials,
+      aiEnabled,
     },
   });
   return NextResponse.json(user, { status: 201 });

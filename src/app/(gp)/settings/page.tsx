@@ -21,7 +21,7 @@ const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new E
 
 interface Firm { id: string; name: string; legalName: string | null }
 interface AccountingEntity { id: string; name: string; accountingConnection?: { provider: string; syncStatus: string; lastSyncAt: string | null } | null }
-interface User { id: string; name: string; email: string; role: string; isActive: boolean; initials: string | null; createdAt: string; inviteStatus?: string }
+interface User { id: string; name: string; email: string; role: string; isActive: boolean; initials: string | null; createdAt: string; inviteStatus?: string; aiEnabled: boolean }
 interface DecisionMember { id: string; userId: string; role: string | null; user: { id: string; name: string; initials: string | null } }
 interface DecisionStructure {
   id: string;
@@ -207,6 +207,21 @@ export default function SettingsPage() {
         }
       },
     });
+  }
+
+  async function handleToggleAI(u: User) {
+    const newValue = !u.aiEnabled;
+    const res = await fetch(`/api/users/${u.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiEnabled: newValue }),
+    });
+    if (res.ok) {
+      toast.success(`AI access ${newValue ? "enabled" : "disabled"} for ${u.name}`);
+      mutate("/api/users");
+    } else {
+      toast.error("Failed to update AI access");
+    }
   }
 
   // ── Decision Structure handlers ──
@@ -423,7 +438,7 @@ export default function SettingsPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50">
               <tr>
-                {["Name", "Email", "Role", "Status", "Joined", "Actions"].map((h) => (
+                {["Name", "Email", "Role", "Status", "AI Access", "Joined", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -450,6 +465,23 @@ export default function SettingsPage() {
                       <Badge color={u.isActive ? "green" : "red"}>{u.isActive ? "Active" : "Inactive"}</Badge>
                     )}
                   </td>
+                  <td className="px-3 py-2.5">
+                    {u.role === "LP_INVESTOR" ? (
+                      <span className="text-gray-300 text-[10px]">N/A</span>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleAI(u)}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                          u.aiEnabled ? "bg-indigo-600" : "bg-gray-200 dark:bg-gray-600"
+                        }`}
+                        title={u.aiEnabled ? "AI enabled — click to disable" : "AI disabled — click to enable"}
+                      >
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                          u.aiEnabled ? "translate-x-5" : "translate-x-1"
+                        }`} />
+                      </button>
+                    )}
+                  </td>
                   <td className="px-3 py-2.5 text-gray-500">{formatDate(u.createdAt)}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-2">
@@ -465,7 +497,7 @@ export default function SettingsPage() {
                 </tr>
               ))}
               {(!users || users.length === 0) && (
-                <tr><td colSpan={6} className="px-3 py-8 text-center text-gray-400">No users found.</td></tr>
+                <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">No users found.</td></tr>
               )}
             </tbody>
           </table>

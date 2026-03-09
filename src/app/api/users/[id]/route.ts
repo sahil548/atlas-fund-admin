@@ -11,6 +11,7 @@ const UpdateUserSchema = z.object({
   initials: z.string().optional(),
   isActive: z.boolean().optional(),
   contactId: z.string().nullable().optional(),
+  aiEnabled: z.boolean().optional(),
 });
 
 export async function GET(
