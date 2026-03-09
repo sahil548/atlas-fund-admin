@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const dealsWithDaysInStage = rawDeals.map((deal) => {
     const stageEntry = deal.activities.find(
-      (a) => a.activityType.includes("STAGE") && (a.metadata as any)?.newStage === deal.stage,
+      (a) => a.activityType.includes("STAGE") && ((a.metadata as any)?.toStage === deal.stage || (a.metadata as any)?.newStage === deal.stage),
     );
     const enteredAt = stageEntry ? new Date(stageEntry.createdAt) : new Date(deal.createdAt);
     const daysInStage = Math.max(0, Math.floor((now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24)));
