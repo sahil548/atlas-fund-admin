@@ -270,9 +270,11 @@ export async function getUserAIConfig(userId: string, firmId: string): Promise<U
 
   // Check user's own key first (fallback chain step 1)
   const personal = user.personalAiConfig as PersonalAIConfig | null;
-  if (personal?.apiKey && personal?.apiKeyIV && personal?.apiKeyTag) {
+  // Note: apiKeyIV/apiKeyTag may be empty strings when AI_ENCRYPTION_KEY is not set
+  // (dev mode stores plaintext). Only require apiKey to be truthy.
+  if (personal?.apiKey) {
     try {
-      const apiKey = decryptApiKey(personal.apiKey, personal.apiKeyIV, personal.apiKeyTag);
+      const apiKey = decryptApiKey(personal.apiKey, personal.apiKeyIV || "", personal.apiKeyTag || "");
       return {
         provider: personal.provider || "openai",
         model: personal.model || "gpt-4o",

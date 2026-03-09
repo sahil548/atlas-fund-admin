@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { DocumentStatusBadge } from "@/components/features/documents/document-status-badge";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -35,6 +36,7 @@ interface Doc {
   fileSize: number | null;
   fileUrl: string | null;
   mimeType: string | null;
+  extractionStatus?: string | null;
   asset?: { id: string; name: string } | null;
   entity?: { id: string; name: string } | null;
   deal?: { id: string; name: string } | null;
@@ -216,16 +218,16 @@ export default function DocumentsPage() {
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
-              {["Document", "Category", "Associated With", "Upload Date", "Size", "Actions"].map((h) => (
+              {["Document", "Category", "AI Status", "Associated With", "Upload Date", "Size", "Actions"].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {isLoading && allDocs.length === 0 ? (
-              <TableSkeleton columns={6} />
+              <TableSkeleton columns={7} />
             ) : allDocs.length === 0 ? (
-              <tr><td colSpan={6}>
+              <tr><td colSpan={7}>
                 <EmptyState
                   icon={<FileText className="h-10 w-10" />}
                   title={hasFilters ? "No results match your filters" : "No documents yet"}
@@ -251,6 +253,9 @@ export default function DocumentsPage() {
                     </td>
                     <td className="px-3 py-2.5">
                       <Badge color={categoryColors[d.category] || "gray"}>{d.category}</Badge>
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <DocumentStatusBadge status={d.extractionStatus || "NONE"} />
                     </td>
                     <td className="px-3 py-2.5">
                       {assoc.href ? (
