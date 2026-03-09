@@ -32,12 +32,12 @@ Progress: [████████░░] 80%
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
-- v2.0 plans completed: 2
+- v2.0 plans completed: 3
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | v1.0 (1-10) | 36 | ~180min | ~5min |
-| 11-foundation | 2 | 11min | 5.5min |
+| 11-foundation | 3 | 18min | 6min |
 
 ## Accumulated Context
 
@@ -56,6 +56,8 @@ Progress: [████████░░] 80%
 - **Dark mode pattern:** Every light color class paired with dark: class (gray-900/100, gray-200/700, gray-100/800)
 - **Unified ConfirmAction pattern:** Settings page uses single state + single dialog for 3 destructive actions
 - **FOUND-03 regression test:** Grep-as-test with per-line analysis prevents future confirm() additions
+- **Skeleton loading pattern:** Table pages use TableSkeleton in tbody; kanban/card pages use inline skeleton divs
+- **EmptyState on all list pages:** Every list page distinguishes true-empty (with CTA) from filtered-empty (with Clear filters)
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -72,6 +74,6 @@ Progress: [████████░░] 80%
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T08:01:43Z
-- **Stopped at:** Completed 11-02-PLAN.md
-- **Resume file:** .planning/phases/11-foundation/11-02-SUMMARY.md
+- **Last session:** 2026-03-09T08:01:13Z
+- **Stopped at:** Completed 11-03-PLAN.md
+- **Resume file:** .planning/phases/11-foundation/11-03-SUMMARY.md
