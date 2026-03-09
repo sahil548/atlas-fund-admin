@@ -311,6 +311,12 @@ export const UpdateAssetProjectionsSchema = z.object({
   projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 
+export const ExitAssetSchema = z.object({
+  exitDate: z.string().min(1, "Exit date is required"),
+  exitProceeds: z.number().positive("Exit proceeds must be positive"),
+  exitNotes: z.string().optional(),
+});
+
 export const CreateValuationSchema = z.object({
   assetId: z.string().min(1),
   valuationDate: z.string().min(1, "Date is required"),

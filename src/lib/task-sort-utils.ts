@@ -5,10 +5,6 @@
 
 export type SortDirection = "asc" | "desc";
 
-export interface Sortable {
-  [key: string]: unknown;
-}
-
 /**
  * Sort an array of objects by a given key and direction.
  * Null / undefined values always sort to the end regardless of direction.
@@ -17,7 +13,7 @@ export interface Sortable {
  * @param sortKey - Object key to sort by
  * @param sortDir - "asc" or "desc"
  */
-export function sortAssets<T extends Sortable>(
+export function sortAssets<T extends object>(
   items: T[],
   sortKey: keyof T,
   sortDir: SortDirection,
