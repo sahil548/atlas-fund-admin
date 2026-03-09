@@ -182,11 +182,12 @@ export function DealDocumentsTab({ deal, firmId }: DealDocumentsTabProps) {
               <tr
                 key={d.id}
                 className={`border-t border-gray-50 hover:bg-gray-50 ${
-                  d.extractionStatus === "COMPLETE" ? "cursor-pointer" : ""
+                  d.extractionStatus && d.extractionStatus !== "PENDING" && d.extractionStatus !== "PROCESSING" ? "cursor-pointer" : ""
                 }`}
-                onClick={() =>
-                  d.extractionStatus === "COMPLETE" && setSelectedDoc(d)
-                }
+                onClick={() => {
+                  const s = d.extractionStatus;
+                  if (s && s !== "PENDING" && s !== "PROCESSING") setSelectedDoc(d);
+                }}
               >
                 <td className="px-3 py-2.5 font-medium">
                   {d.fileUrl ? (

@@ -21,6 +21,7 @@ import { SectionPanel } from "@/components/ui/section-panel";
 import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { DocumentStatusBadge } from "@/components/features/documents/document-status-badge";
+import { DocumentExtractionPanel } from "@/components/features/documents/document-extraction-panel";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -37,6 +38,8 @@ interface Doc {
   fileUrl: string | null;
   mimeType: string | null;
   extractionStatus?: string | null;
+  extractedFields?: Record<string, unknown> | null;
+  extractionError?: string | null;
   asset?: { id: string; name: string } | null;
   entity?: { id: string; name: string } | null;
   deal?: { id: string; name: string } | null;
@@ -81,6 +84,7 @@ export default function DocumentsPage() {
   const [uploadForm, setUploadForm] = useState({ name: "", category: "FINANCIAL", associateWith: "" });
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<Doc | null>(null);
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -241,10 +245,19 @@ export default function DocumentsPage() {
               allDocs.map((d) => {
                 const assoc = association(d);
                 return (
-                  <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
+                  <tr
+                    key={d.id}
+                    className={`border-t border-gray-50 hover:bg-gray-50 ${
+                      d.extractionStatus && d.extractionStatus !== "PENDING" && d.extractionStatus !== "PROCESSING" ? "cursor-pointer" : ""
+                    }`}
+                    onClick={() => {
+                      const s = d.extractionStatus;
+                      if (s && s !== "PENDING" && s !== "PROCESSING") setSelectedDoc(d);
+                    }}
+                  >
                     <td className="px-3 py-2.5 font-medium">
                       {d.fileUrl ? (
-                        <button type="button" onClick={() => setPreviewDoc(d)} className="text-indigo-600 hover:underline cursor-pointer text-left">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setPreviewDoc(d); }} className="text-indigo-600 hover:underline cursor-pointer text-left">
                           {d.name}
                         </button>
                       ) : (
@@ -349,6 +362,32 @@ export default function DocumentsPage() {
         onClose={() => setPreviewDoc(null)}
         document={previewDoc}
       />
+
+      {/* AI Summary Panel */}
+      {selectedDoc && (
+        <DocumentExtractionPanel
+          document={{
+            id: selectedDoc.id,
+            name: selectedDoc.name,
+            category: selectedDoc.category,
+            extractionStatus: selectedDoc.extractionStatus || "NONE",
+            extractedFields: (selectedDoc.extractedFields as Record<string, unknown>) || null,
+            extractionError: selectedDoc.extractionError || null,
+            dealId: selectedDoc.deal?.id,
+            assetId: selectedDoc.asset?.id,
+            entityId: selectedDoc.entity?.id,
+          }}
+          firmId={firmId}
+          open={!!selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onUpdate={() => {
+            setAllDocs([]);
+            setCursor(null);
+            mutate(buildUrl(null));
+            setSelectedDoc(null);
+          }}
+        />
+      )}
     </div>
   );
 }

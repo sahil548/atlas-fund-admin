@@ -17,7 +17,7 @@ export function DocumentStatusBadge({
     case "PENDING":
       return <Badge color="yellow">Processing</Badge>;
     case "COMPLETE":
-      return <Badge color="green">Extracted</Badge>;
+      return <Badge color="green">Summarized</Badge>;
     case "FAILED":
       return (
         <span className="inline-flex items-center gap-1">
@@ -36,6 +36,7 @@ export function DocumentStatusBadge({
         </span>
       );
     default:
-      return null; // NONE -- don't show badge for non-extractable docs
+      // NONE — show a subtle indicator that summarization is available
+      return <Badge color="gray">Not processed</Badge>;
   }
 }

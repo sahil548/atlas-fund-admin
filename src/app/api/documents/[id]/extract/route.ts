@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/auth";
-import { extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
+import { extractDocumentFields } from "@/lib/document-extraction";
 
 // Allow time for AI extraction — up to 60 seconds
 export const maxDuration = 60;
@@ -39,13 +39,6 @@ export async function POST(
   if (!doc.extractedText) {
     return NextResponse.json(
       { error: "No extracted text available for AI processing" },
-      { status: 400 },
-    );
-  }
-
-  if (!shouldExtractAI(doc.category)) {
-    return NextResponse.json(
-      { error: "Document category does not support AI extraction" },
       { status: 400 },
     );
   }
