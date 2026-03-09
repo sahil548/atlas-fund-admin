@@ -9,6 +9,9 @@ import { CreateAssetForm } from "@/components/features/assets/create-asset-form"
 import { fmt, pct } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Package } from "lucide-react";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 
@@ -104,19 +107,15 @@ export default function AssetsPage() {
     }
   }, [cursor, loadingMore, buildUrl]);
 
-  if (isLoading && allAssets.length === 0) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Loading assets...
-      </div>
-    );
-  }
-
   const hasMore = !!cursor;
+  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setActiveFilters({});
+    setAllAssets([]);
+    setCursor(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -147,29 +146,30 @@ export default function AssetsPage() {
           </SearchFilterBar>
         </div>
 
-        {allAssets.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-            <p className="text-sm text-gray-500">No assets found</p>
-            <p className="text-xs text-gray-400">
-              {search || Object.values(activeFilters).some(Boolean)
-                ? "Try different search terms or clear filters"
-                : "Add your first asset to get started"}
-            </p>
-            {!search && !Object.values(activeFilters).some(Boolean) && (
-              <Button size="sm" onClick={() => setShowCreate(true)} className="mt-2">+ Add Asset</Button>
-            )}
-          </div>
-        ) : (
-          <table className="w-full text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Asset", "Asset Class", "Instrument", "Participation", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Status", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allAssets.map((a: any) => {
+        <table className="w-full text-xs">
+          <thead className="bg-gray-50">
+            <tr>
+              {["Asset", "Asset Class", "Instrument", "Participation", "Sector", "Entities", "Cost Basis", "Fair Value", "Unrealized", "MOIC", "IRR", "Status", ""].map((h) => (
+                <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && allAssets.length === 0 ? (
+              <TableSkeleton columns={13} />
+            ) : allAssets.length === 0 ? (
+              <tr><td colSpan={13}>
+                <EmptyState
+                  icon={<Package className="h-10 w-10" />}
+                  title={hasFilters ? "No results match your filters" : "No assets yet"}
+                  description={!hasFilters ? "Add your first asset to start tracking portfolio performance" : undefined}
+                  action={!hasFilters ? { label: "+ Add Asset", onClick: () => setShowCreate(true) } : undefined}
+                  filtered={hasFilters}
+                  onClearFilters={hasFilters ? handleClearFilters : undefined}
+                />
+              </td></tr>
+            ) : (
+              allAssets.map((a: any) => {
                 const ur = a.fairValue - a.costBasis;
                 return (
                   <tr
@@ -228,10 +228,10 @@ export default function AssetsPage() {
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        )}
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />

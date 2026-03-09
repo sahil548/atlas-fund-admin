@@ -18,6 +18,9 @@ import { CreateSideLetterForm } from "@/components/features/side-letters/create-
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt } from "@/lib/utils";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Users } from "lucide-react";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 
@@ -186,17 +189,13 @@ export default function DirectoryPage() {
     { key: "sideLetters" as const, label: "Side Letters", count: sideLetters?.length || 0 },
   ];
 
-  if (investorsLoading && allInvestors.length === 0 && tab === "investors") {
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Loading directory...
-      </div>
-    );
-  }
+  const hasInvestorFilters = !!(investorSearch || Object.values(investorFilters).some(Boolean));
+  const handleClearInvestorFilters = () => {
+    setInvestorSearch("");
+    setInvestorFilters({});
+    setAllInvestors([]);
+    setInvestorCursor(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -263,40 +262,50 @@ export default function DirectoryPage() {
                 </tr>
               </thead>
               <tbody>
-                {allInvestors.map((inv: InvestorRow) => (
-                  <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50">
-                    <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
-                    <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
-                    <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
-                    <td className="px-3 py-2.5">
-                      {inv.commitments?.map((c) => (
-                        <span key={c.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{c.entity.name}</span>
-                      ))}
-                    </td>
-                    <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
-                    <td className="px-3 py-2.5">
-                      {inv.contact ? (
-                        <span className="text-xs text-indigo-600">{inv.contact.firstName} {inv.contact.lastName}</span>
-                      ) : inv.company ? (
-                        <span className="text-xs text-indigo-600">{inv.company.name}</span>
-                      ) : (
-                        <span className="text-gray-400">{"\u2014"}</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">{"\u2014"}</span>}</td>
-                    <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
-                    <td className="px-3 py-2.5">
-                      <div className="flex gap-2">
-                        <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEditInvestor(true); }}>Edit</button>
-                        <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "investor", id: inv.id, name: inv.name }); }}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {allInvestors.length === 0 && !investorsLoading && (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">
-                    {investorSearch || Object.values(investorFilters).some(Boolean) ? "No investors match your search" : "No investors yet"}
+                {investorsLoading && allInvestors.length === 0 ? (
+                  <TableSkeleton columns={9} />
+                ) : allInvestors.length === 0 ? (
+                  <tr><td colSpan={9}>
+                    <EmptyState
+                      icon={<Users className="h-10 w-10" />}
+                      title={hasInvestorFilters ? "No results match your filters" : "No investors yet"}
+                      description={!hasInvestorFilters ? "Add your first investor to get started" : undefined}
+                      action={!hasInvestorFilters ? { label: "+ Add Investor", onClick: () => setShowCreateInvestor(true) } : undefined}
+                      filtered={hasInvestorFilters}
+                      onClearFilters={hasInvestorFilters ? handleClearInvestorFilters : undefined}
+                    />
                   </td></tr>
+                ) : (
+                  allInvestors.map((inv: InvestorRow) => (
+                    <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
+                      <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
+                      <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
+                      <td className="px-3 py-2.5">
+                        {inv.commitments?.map((c) => (
+                          <span key={c.entity.name} className="text-[10px] bg-gray-100 px-1 py-0.5 rounded mr-1">{c.entity.name}</span>
+                        ))}
+                      </td>
+                      <td className="px-3 py-2.5"><Badge color={inv.kycStatus === "Verified" ? "green" : "red"}>{inv.kycStatus}</Badge></td>
+                      <td className="px-3 py-2.5">
+                        {inv.contact ? (
+                          <span className="text-xs text-indigo-600">{inv.contact.firstName} {inv.contact.lastName}</span>
+                        ) : inv.company ? (
+                          <span className="text-xs text-indigo-600">{inv.company.name}</span>
+                        ) : (
+                          <span className="text-gray-400">{"\u2014"}</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">{inv.advisoryBoard ? <Badge color="indigo">Yes</Badge> : <span className="text-gray-400">{"\u2014"}</span>}</td>
+                      <td className="px-3 py-2.5"><Badge color={inv.contactPreference === "text" ? "purple" : "blue"}>{inv.contactPreference === "text" ? "Text" : "Email"}</Badge></td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex gap-2">
+                          <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={(e) => { e.stopPropagation(); setEditingInvestor(inv); setShowEditInvestor(true); }}>Edit</button>
+                          <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "investor", id: inv.id, name: inv.name }); }}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -347,7 +356,16 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!companies || companies.length === 0) && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No companies yet.</td></tr>
+                <tr><td colSpan={7}>
+                  <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title={companyTypeFilter ? "No results match your filters" : "No companies yet"}
+                    description={!companyTypeFilter ? "Add your first company to get started" : undefined}
+                    action={!companyTypeFilter ? { label: "+ Add Company", onClick: () => setShowCreateCompany(true) } : undefined}
+                    filtered={!!companyTypeFilter}
+                    onClearFilters={companyTypeFilter ? () => setCompanyTypeFilter("") : undefined}
+                  />
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -395,7 +413,14 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!contacts || contacts.length === 0) && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No contacts yet.</td></tr>
+                <tr><td colSpan={8}>
+                  <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title="No contacts yet"
+                    description="Add your first contact to get started"
+                    action={{ label: "+ Add Contact", onClick: () => setShowCreateContact(true) }}
+                  />
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -437,7 +462,14 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!users || users.length === 0) && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No team members yet.</td></tr>
+                <tr><td colSpan={6}>
+                  <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title="No team members yet"
+                    description="Add your first team member to get started"
+                    action={{ label: "+ Add Team Member", onClick: () => setShowCreateUser(true) }}
+                  />
+                </td></tr>
               )}
             </tbody>
           </table>
@@ -467,7 +499,14 @@ export default function DirectoryPage() {
                 </tr>
               ))}
               {(!sideLetters || sideLetters.length === 0) && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No side letters yet.</td></tr>
+                <tr><td colSpan={4}>
+                  <EmptyState
+                    icon={<Users className="h-10 w-10" />}
+                    title="No side letters yet"
+                    description="Add your first side letter to get started"
+                    action={{ label: "+ Add Side Letter", onClick: () => setShowCreateSideLetter(true) }}
+                  />
+                </td></tr>
               )}
             </tbody>
           </table>

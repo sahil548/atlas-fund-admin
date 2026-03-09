@@ -9,6 +9,9 @@ import { fmt } from "@/lib/utils";
 import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Building } from "lucide-react";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 
@@ -99,19 +102,15 @@ export default function EntitiesPage() {
     }
   }, [cursor, loadingMore, buildUrl]);
 
-  if (isLoading && allEntities.length === 0) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-gray-400">
-        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Loading entities...
-      </div>
-    );
-  }
-
   const hasMore = !!cursor;
+  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
+
+  const handleClearFilters = () => {
+    setSearch("");
+    setActiveFilters({});
+    setAllEntities([]);
+    setCursor(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -143,29 +142,30 @@ export default function EntitiesPage() {
           </div>
         </div>
 
-        {allEntities.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-            <p className="text-sm text-gray-500">No entities found</p>
-            <p className="text-xs text-gray-400">
-              {search || Object.values(activeFilters).some(Boolean)
-                ? "Try different search terms or clear filters"
-                : "Create your first entity to get started"}
-            </p>
-            {!search && !Object.values(activeFilters).some(Boolean) && (
-              <Button onClick={() => setShowCreate(true)} className="mt-2">+ Create Entity</Button>
-            )}
-          </div>
-        ) : (
-          <table className="w-full text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                {["Entity", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {allEntities.map((e: any) => (
+        <table className="w-full text-xs">
+          <thead className="bg-gray-50">
+            <tr>
+              {["Entity", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
+                <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && allEntities.length === 0 ? (
+              <TableSkeleton columns={9} />
+            ) : allEntities.length === 0 ? (
+              <tr><td colSpan={9}>
+                <EmptyState
+                  icon={<Building className="h-10 w-10" />}
+                  title={hasFilters ? "No results match your filters" : "No entities yet"}
+                  description={!hasFilters ? "Create your first entity to get started" : undefined}
+                  action={!hasFilters ? { label: "+ Create Entity", onClick: () => setShowCreate(true) } : undefined}
+                  filtered={hasFilters}
+                  onClearFilters={hasFilters ? handleClearFilters : undefined}
+                />
+              </td></tr>
+            ) : (
+              allEntities.map((e: any) => (
                 <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50">
                   <td className="px-3 py-2.5">
                     <Link href={`/entities/${e.id}`} className="font-medium text-indigo-700 hover:underline">{e.name}</Link>
@@ -196,10 +196,10 @@ export default function EntitiesPage() {
                     </Link>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />

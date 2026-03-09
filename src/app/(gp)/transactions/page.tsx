@@ -14,6 +14,9 @@ import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { fmt, pct } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
+import { TableSkeleton } from "@/components/ui/table-skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ArrowLeftRight } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -56,9 +59,9 @@ type Tab = "calls" | "distributions" | "waterfall";
 export default function TransactionsPage() {
   const { firmId } = useFirm();
   const toast = useToast();
-  const { data: capitalCalls = [] } = useSWR<CapitalCall[]>("/api/capital-calls", fetcher);
-  const { data: distributions = [] } = useSWR<Distribution[]>("/api/distributions", fetcher);
-  const { data: templates = [] } = useSWR<WaterfallTemplate[]>("/api/waterfall-templates", fetcher);
+  const { data: capitalCalls = [], isLoading: callsLoading } = useSWR<CapitalCall[]>("/api/capital-calls", fetcher);
+  const { data: distributions = [], isLoading: distsLoading } = useSWR<Distribution[]>("/api/distributions", fetcher);
+  const { data: templates = [], isLoading: templatesLoading } = useSWR<WaterfallTemplate[]>("/api/waterfall-templates", fetcher);
   const { data: entities = [] } = useSWR<Entity[]>(`/api/entities?firmId=${firmId}`, (url: string) =>
     fetcher(url).then((r: any) => r.data ?? r),
   );
@@ -102,6 +105,9 @@ export default function TransactionsPage() {
     }
     setCalcLoading(false);
   }
+
+  const hasFilters = !!(entityFilter || statusFilter);
+  const handleClearFilters = () => { setEntityFilter(""); setStatusFilter(""); };
 
   // Stats
   const totalCalled = capitalCalls.reduce((s, c) => s + c.amount, 0);
@@ -201,26 +207,38 @@ export default function TransactionsPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredCalls.map((c) => (
-                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
-                  <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
-                  <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
-                  <td className="px-3 py-2 text-gray-500">{new Date(c.callDate).toLocaleDateString()}</td>
-                  <td className="px-3 py-2 text-gray-500">{new Date(c.dueDate).toLocaleDateString()}</td>
-                  <td className="px-3 py-2"><Badge color={CC_STATUS_COLORS[c.status] || "gray"}>{c.status.replace(/_/g, " ")}</Badge></td>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[80px]">
-                        <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${c.fundedPercent}%` }} />
+              {callsLoading && capitalCalls.length === 0 ? (
+                <TableSkeleton columns={7} />
+              ) : filteredCalls.length === 0 ? (
+                <tr><td colSpan={7}>
+                  <EmptyState
+                    icon={<ArrowLeftRight className="h-10 w-10" />}
+                    title={hasFilters ? "No results match your filters" : "No capital calls yet"}
+                    description={!hasFilters ? "Issue your first capital call to get started" : undefined}
+                    action={!hasFilters ? { label: "+ Capital Call", onClick: () => setShowCreateCC(true) } : undefined}
+                    filtered={hasFilters}
+                    onClearFilters={hasFilters ? handleClearFilters : undefined}
+                  />
+                </td></tr>
+              ) : (
+                filteredCalls.map((c) => (
+                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
+                    <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
+                    <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
+                    <td className="px-3 py-2 text-gray-500">{new Date(c.callDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2 text-gray-500">{new Date(c.dueDate).toLocaleDateString()}</td>
+                    <td className="px-3 py-2"><Badge color={CC_STATUS_COLORS[c.status] || "gray"}>{c.status.replace(/_/g, " ")}</Badge></td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[80px]">
+                          <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${c.fundedPercent}%` }} />
+                        </div>
+                        <span className="text-gray-500">{c.fundedPercent}%</span>
                       </div>
-                      <span className="text-gray-500">{c.fundedPercent}%</span>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredCalls.length === 0 && (
-                <tr><td colSpan={7} className="px-3 py-8 text-center text-gray-400">No capital calls found.</td></tr>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -275,22 +293,34 @@ export default function TransactionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredDists.map((d) => (
-                  <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium text-gray-900">{d.entity?.name}</td>
-                    <td className="px-3 py-2 text-gray-500">{new Date(d.distributionDate).toLocaleDateString()}</td>
-                    <td className="px-3 py-2 text-right font-medium">{fmt(d.grossAmount)}</td>
-                    <td className="px-3 py-2 text-gray-600 max-w-[140px] truncate">{d.source || "—"}</td>
-                    <td className="px-3 py-2 text-right text-gray-500">{d.returnOfCapital ? fmt(d.returnOfCapital) : "—"}</td>
-                    <td className="px-3 py-2 text-right text-gray-500">{d.income ? fmt(d.income) : "—"}</td>
-                    <td className="px-3 py-2 text-right text-gray-500">{d.longTermGain ? fmt(d.longTermGain) : "—"}</td>
-                    <td className="px-3 py-2 text-right text-gray-500">{d.carriedInterest ? fmt(d.carriedInterest) : "—"}</td>
-                    <td className="px-3 py-2 text-right font-semibold text-emerald-700">{fmt(d.netToLPs)}</td>
-                    <td className="px-3 py-2"><Badge color={DIST_STATUS_COLORS[d.status] || "gray"}>{d.status}</Badge></td>
-                  </tr>
-                ))}
-                {filteredDists.length === 0 && (
-                  <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-400">No distributions found.</td></tr>
+                {distsLoading && distributions.length === 0 ? (
+                  <TableSkeleton columns={10} />
+                ) : filteredDists.length === 0 ? (
+                  <tr><td colSpan={10}>
+                    <EmptyState
+                      icon={<ArrowLeftRight className="h-10 w-10" />}
+                      title={hasFilters ? "No results match your filters" : "No distributions yet"}
+                      description={!hasFilters ? "Record your first distribution to get started" : undefined}
+                      action={!hasFilters ? { label: "+ Distribution", onClick: () => setShowCreateDist(true) } : undefined}
+                      filtered={hasFilters}
+                      onClearFilters={hasFilters ? handleClearFilters : undefined}
+                    />
+                  </td></tr>
+                ) : (
+                  filteredDists.map((d) => (
+                    <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
+                      <td className="px-3 py-2 font-medium text-gray-900">{d.entity?.name}</td>
+                      <td className="px-3 py-2 text-gray-500">{new Date(d.distributionDate).toLocaleDateString()}</td>
+                      <td className="px-3 py-2 text-right font-medium">{fmt(d.grossAmount)}</td>
+                      <td className="px-3 py-2 text-gray-600 max-w-[140px] truncate">{d.source || "—"}</td>
+                      <td className="px-3 py-2 text-right text-gray-500">{d.returnOfCapital ? fmt(d.returnOfCapital) : "—"}</td>
+                      <td className="px-3 py-2 text-right text-gray-500">{d.income ? fmt(d.income) : "—"}</td>
+                      <td className="px-3 py-2 text-right text-gray-500">{d.longTermGain ? fmt(d.longTermGain) : "—"}</td>
+                      <td className="px-3 py-2 text-right text-gray-500">{d.carriedInterest ? fmt(d.carriedInterest) : "—"}</td>
+                      <td className="px-3 py-2 text-right font-semibold text-emerald-700">{fmt(d.netToLPs)}</td>
+                      <td className="px-3 py-2"><Badge color={DIST_STATUS_COLORS[d.status] || "gray"}>{d.status}</Badge></td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
@@ -504,11 +534,24 @@ export default function TransactionsPage() {
               </div>
             );
           })}
-          {templates.length === 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-sm text-gray-400">
-              No waterfall templates found. Create one to get started.
+          {templatesLoading && templates.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200">
+              <div className="space-y-3 p-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
+                ))}
+              </div>
             </div>
-          )}
+          ) : templates.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200">
+              <EmptyState
+                icon={<ArrowLeftRight className="h-10 w-10" />}
+                title="No waterfall templates yet"
+                description="Create a template to define your distribution waterfall"
+                action={{ label: "+ New Template", onClick: () => setShowCreateTemplate(true) }}
+              />
+            </div>
+          ) : null}
         </div>
       )}
 
