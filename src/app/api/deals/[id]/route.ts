@@ -57,6 +57,14 @@ export async function GET(
       activities: { orderBy: { createdAt: "desc" } },
       sourceAssets: { select: { id: true, name: true } },
       dealLead: { select: { id: true, name: true, initials: true } },
+      sourcedByContact: { select: { id: true, firstName: true, lastName: true } },
+      coInvestors: {
+        include: {
+          contact: { select: { id: true, firstName: true, lastName: true, email: true } },
+          company: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: "asc" },
+      },
       targetEntity: {
         select: {
           id: true, name: true, entityType: true, vehicleStructure: true, status: true,
@@ -126,6 +134,7 @@ export async function PUT(
   if (data!.investmentRationale !== undefined) updateData.investmentRationale = data!.investmentRationale;
   if (data!.additionalContext !== undefined) updateData.additionalContext = data!.additionalContext;
   if ((data as any).dealMetadata !== undefined) updateData.dealMetadata = (data as any).dealMetadata;
+  if (data!.sourcedByContactId !== undefined) updateData.sourcedByContactId = data!.sourcedByContactId;
 
   const deal = await prisma.deal.update({ where: { id }, data: updateData });
   return NextResponse.json(deal);

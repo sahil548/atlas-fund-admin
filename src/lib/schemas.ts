@@ -52,6 +52,7 @@ export const CreateDealSchema = z.object({
   source: optionalStr,
   counterparty: optionalStr,
   entityId: optionalStr,
+  sourcedByContactId: optionalStr,
   description: optionalStr,
   thesisNotes: optionalStr,
   investmentRationale: optionalStr,
@@ -72,6 +73,7 @@ export const UpdateDealSchema = z.object({
   source: z.string().optional(),
   counterparty: z.string().optional(),
   entityId: z.string().nullable().optional(),
+  sourcedByContactId: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   thesisNotes: z.string().nullable().optional(),
   investmentRationale: z.string().nullable().optional(),
@@ -801,4 +803,29 @@ export const AuditLogQuerySchema = z.object({
   endDate: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
   cursor: z.string().optional(),
+});
+
+// ── Deal Co-Investors ─────────────────────────────────
+
+const CO_INVESTOR_ROLES = ["Lead", "Participant", "Syndicate Member"] as const;
+const CO_INVESTOR_STATUSES = ["Interested", "Committed", "Funded", "Passed"] as const;
+
+export const CreateCoInvestorSchema = z
+  .object({
+    contactId: z.string().optional(),
+    companyId: z.string().optional(),
+    role: z.enum(CO_INVESTOR_ROLES),
+    allocation: z.number().positive().optional(),
+    status: z.enum(CO_INVESTOR_STATUSES),
+    notes: z.string().optional(),
+  })
+  .refine((data) => data.contactId || data.companyId, {
+    message: "Either contactId or companyId must be provided",
+  });
+
+export const UpdateCoInvestorSchema = z.object({
+  role: z.enum(CO_INVESTOR_ROLES).optional(),
+  allocation: z.number().positive().nullable().optional(),
+  status: z.enum(CO_INVESTOR_STATUSES).optional(),
+  notes: z.string().nullable().optional(),
 });

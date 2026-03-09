@@ -17,6 +17,7 @@ async function main() {
   await prisma.investorUserAccess.deleteMany();
   await prisma.aIPromptTemplate.deleteMany();
   await prisma.aIConfiguration.deleteMany();
+  await prisma.dealCoInvestor.deleteMany();
   await prisma.contactInteraction.deleteMany();
   await prisma.contactTag.deleteMany();
   await prisma.contact.deleteMany();
@@ -2578,6 +2579,37 @@ End with credit risk rating, key covenant concerns, and recommended structural p
     ],
   });
   console.log("✓ Contact tags seeded");
+
+  // ============================================================
+  // DEAL CO-INVESTORS (CRM co-investor tracking)
+  // ============================================================
+  console.log("Creating deal co-investors...");
+
+  await prisma.dealCoInvestor.createMany({
+    data: [
+      // deal-1 (Apex Manufacturing): Robert Chen as Lead co-investor, David Morse as Participant
+      { id: "dci-1", dealId: "deal-1", contactId: "contact-1", role: "Lead", allocation: 5_000_000, status: "Committed", notes: "Robert confirmed $5M commitment at last board call." },
+      { id: "dci-2", dealId: "deal-1", contactId: "contact-3", role: "Participant", allocation: 3_000_000, status: "Interested", notes: "David Morse from Ridgeline expressed interest; awaiting formal LOI." },
+      // deal-2 (Beacon Health): Lisa Park (co-investor from Healthcare network)
+      { id: "dci-3", dealId: "deal-2", contactId: "contact-2", role: "Syndicate Member", allocation: 2_000_000, status: "Interested", notes: "Lisa has healthcare connections; exploring participation." },
+      // deal-4 (Ridgeline Senior Debt): David Morse (co-invest from Ridgeline), Robert Chen funded
+      { id: "dci-4", dealId: "deal-4", contactId: "contact-3", role: "Lead", allocation: 4_000_000, status: "Funded", notes: "David Morse co-invested at SOFR+350. Wired funds 2026-01-10." },
+      { id: "dci-5", dealId: "deal-4", contactId: "contact-1", role: "Participant", allocation: 2_000_000, status: "Committed", notes: "Robert Chen participating alongside. Docs signed." },
+      // deal-5 (Nordic Wind): Erik Johansson as Syndicate Member
+      { id: "dci-6", dealId: "deal-5", contactId: "contact-4", role: "Syndicate Member", allocation: 1_500_000, status: "Passed", notes: "Erik passed — conflict of interest as fund employee." },
+    ],
+  });
+  console.log("✓ Deal co-investors seeded");
+
+  // ============================================================
+  // DEAL SOURCING ATTRIBUTION (update after contacts are seeded)
+  // ============================================================
+  console.log("Setting deal sourcing attribution...");
+
+  await prisma.deal.update({ where: { id: "deal-3" }, data: { sourcedByContactId: "contact-5" } }); // UrbanNest sourced by Maria Santos
+  await prisma.deal.update({ where: { id: "deal-4" }, data: { sourcedByContactId: "contact-3" } }); // Ridgeline sourced by David Morse
+  await prisma.deal.update({ where: { id: "deal-5" }, data: { sourcedByContactId: "contact-4" } }); // Nordic Wind sourced by Erik Johansson
+  console.log("✓ Deal sourcing attribution seeded");
 
   console.log("Seeding complete!");
 }

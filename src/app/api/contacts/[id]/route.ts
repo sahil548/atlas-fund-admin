@@ -35,6 +35,14 @@ export async function GET(
         },
         orderBy: { date: "desc" },
       },
+      sourcedDeals: {
+        select: { id: true, name: true, stage: true, targetSize: true, createdAt: true },
+      },
+      coinvestments: {
+        include: {
+          deal: { select: { id: true, name: true, stage: true, targetSize: true } },
+        },
+      },
     },
   });
 
