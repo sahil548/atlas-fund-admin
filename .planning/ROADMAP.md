@@ -122,7 +122,7 @@ Plans:
   3. Regulatory filings can be added and edited through a structured form (not an empty shell tab) and entity status can be transitioned (ACTIVE → WINDING_DOWN → DISSOLVED) via UI controls
   4. Each GP team member can connect their own Fireflies account via OAuth — meetings from all connected accounts appear in an aggregated meeting view in Atlas
   5. AI-generated meeting summaries and auto-extracted action items appear on each meeting record, action items are linked as tasks to the relevant deal or entity, and meetings surface in the activity feed for their linked context
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 Plans:
 - [ ] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
 - [ ] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
@@ -195,7 +195,7 @@ Plans:
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 13. Deal Desk & CRM | 4/5 | In Progress|  | - |
 | 14. Asset Management & Task Management | 1/7 | In Progress|  | - |
-| 15. Entity Management & Meeting Intelligence | v2.0 | 0/8 | Planned | - |
+| 15. Entity Management & Meeting Intelligence | 1/8 | In Progress|  | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |
 | 18. AI Features | v2.0 | 0/TBD | Not started | - |
