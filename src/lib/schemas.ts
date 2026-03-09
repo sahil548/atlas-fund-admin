@@ -305,6 +305,8 @@ export const UpdateAssetSchema = z.object({
   projectedIRR: z.number().nullable().optional(),
   projectedMultiple: z.number().nullable().optional(),
   projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
+  // Phase 14-04: review schedule fields
+  nextReview: z.string().nullable().optional(),
 });
 
 export const UpdateAssetProjectionsSchema = z.object({

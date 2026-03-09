@@ -67,13 +67,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { data, error } = await parseBody(req, UpdateAssetSchema);
   if (error) return error;
-  const { projectedMetrics, ...rest } = data!;
+  const { projectedMetrics, nextReview, ...rest } = data!;
   const asset = await prisma.asset.update({
     where: { id },
     data: {
       ...rest,
       ...(projectedMetrics !== undefined
         ? { projectedMetrics: projectedMetrics as Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput }
+        : {}),
+      ...(nextReview !== undefined
+        ? { nextReview: nextReview ? new Date(nextReview) : null }
         : {}),
     },
   });
