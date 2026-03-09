@@ -39,7 +39,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 ### Entity Management — Structure & Navigation
 
 - [x] **ENTITY-01**: Entity list shows parent-child hierarchy (fund → SPV → sidecar relationships)
-- [ ] **ENTITY-02**: Formation workflow provides "what's next" guidance after completion
+- [x] **ENTITY-02**: Formation workflow provides "what's next" guidance after completion
 - [x] **ENTITY-03**: Regulatory filings tab has structured add/edit form (not empty shell)
 - [x] **ENTITY-04**: GP can transition entity status (ACTIVE → WINDING_DOWN → DISSOLVED)
 - [x] **ENTITY-05**: Side letter management wiring verified end-to-end
@@ -213,7 +213,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TASK-04 | Phase 14 | Pending |
 | TASK-05 | Phase 14 | Pending |
 | ENTITY-01 | Phase 15 | Complete |
-| ENTITY-02 | Phase 15 | Pending |
+| ENTITY-02 | Phase 15 | Complete |
 | ENTITY-03 | Phase 15 | Complete |
 | ENTITY-04 | Phase 15 | Complete |
 | ENTITY-05 | Phase 15 | Complete |
