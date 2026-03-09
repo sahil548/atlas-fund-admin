@@ -110,7 +110,7 @@ Plans:
 - [ ] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
 - [ ] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
 - [ ] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
-- [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task email notifications (assignment + overdue templates)
+- [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task assignment email notification
 
 ### Phase 15: Entity Management & Meeting Intelligence
 **Goal**: The entity list shows parent-child fund structure clearly with multiple view modes, formation workflows guide GPs to next steps, the regulatory tab provides CSC-style structured compliance tracking, all user-facing "Entities" labels are renamed to "Vehicles", and each GP team member can connect their own Fireflies account so meeting transcripts flow into Atlas with AI-generated summaries and auto-created tasks
