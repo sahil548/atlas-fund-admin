@@ -9,6 +9,7 @@ import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { AccountMappingPanel } from "@/components/features/accounting/account-mapping-panel";
 import { TrialBalanceView } from "@/components/features/accounting/trial-balance-view";
 import { useToast } from "@/components/ui/toast";
+import { PageHeader } from "@/components/ui/page-header";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -121,6 +122,9 @@ export default function AccountingPage() {
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <PageHeader title="Accounting" />
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-4">
         <StatCard

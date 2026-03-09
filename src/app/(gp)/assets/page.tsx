@@ -14,6 +14,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Package } from "lucide-react";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionPanel } from "@/components/ui/section-panel";
 
 import {
   ASSET_CLASS_LABELS,
@@ -119,9 +121,10 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="text-sm font-semibold">All Assets ({allAssets.length})</h3>
+      <PageHeader
+        title="Assets"
+        subtitle={`${allAssets.length} assets`}
+        actions={
           <SearchFilterBar
             filters={ASSET_FILTERS}
             onFilterChange={handleFilterChange}
@@ -144,8 +147,10 @@ export default function AssetsPage() {
               fileName="Assets_Export"
             />
           </SearchFilterBar>
-        </div>
+        }
+      />
 
+      <SectionPanel noPadding className="overflow-hidden">
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
@@ -232,7 +237,7 @@ export default function AssetsPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </SectionPanel>
 
       <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />
 

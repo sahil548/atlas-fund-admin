@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeftRight } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
@@ -136,13 +137,15 @@ export default function TransactionsPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-bold text-gray-900">Transactions</h1>
-        <div className="flex gap-2">
-          <button onClick={() => setShowCreateCC(true)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700">+ Capital Call</button>
-          <button onClick={() => setShowCreateDist(true)} className="px-3 py-1.5 bg-white text-gray-700 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50">+ Distribution</button>
-        </div>
-      </div>
+      <PageHeader
+        title="Transactions"
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setShowCreateCC(true)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700">+ Capital Call</button>
+            <button onClick={() => setShowCreateDist(true)} className="px-3 py-1.5 bg-white text-gray-700 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50">+ Distribution</button>
+          </div>
+        }
+      />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-4 gap-3">

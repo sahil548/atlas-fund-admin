@@ -13,6 +13,7 @@ import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { LayoutList } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -143,30 +144,33 @@ export default function DealsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold">Deal Pipeline</h2>
-        <SearchFilterBar
-          filters={DEAL_FILTERS}
-          onFilterChange={handleFilterChange}
-          activeFilters={activeFilters}
-        >
-          <ExportButton
-            data={deals.map((d: any) => ({
-              id: d.id,
-              name: d.name,
-              assetClass: d.assetClass,
-              stage: d.stage,
-              targetReturn: d.targetReturn ?? "",
-              targetSize: d.targetSize ?? "",
-              dealLead: d.dealLead?.name ?? "",
-              status: d.status ?? d.stage,
-              createdAt: d.createdAt ? formatDate(d.createdAt) : "",
-            }))}
-            fileName="Deals_Export"
-          />
-          <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
-        </SearchFilterBar>
-      </div>
+      <PageHeader
+        title="Deal Pipeline"
+        subtitle={`${data?.total ?? deals.length} deals`}
+        actions={
+          <SearchFilterBar
+            filters={DEAL_FILTERS}
+            onFilterChange={handleFilterChange}
+            activeFilters={activeFilters}
+          >
+            <ExportButton
+              data={deals.map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                assetClass: d.assetClass,
+                stage: d.stage,
+                targetReturn: d.targetReturn ?? "",
+                targetSize: d.targetSize ?? "",
+                dealLead: d.dealLead?.name ?? "",
+                status: d.status ?? d.stage,
+                createdAt: d.createdAt ? formatDate(d.createdAt) : "",
+              }))}
+              fileName="Deals_Export"
+            />
+            <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
+          </SearchFilterBar>
+        }
+      />
 
       {/* Pipeline Analytics */}
       {analytics && (

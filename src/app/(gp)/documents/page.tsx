@@ -16,6 +16,8 @@ import { ExportButton } from "@/components/ui/export-button";
 import { DocuSignSend } from "@/components/features/documents/docusign-send";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { SectionPanel } from "@/components/ui/section-panel";
 import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -178,36 +180,39 @@ export default function DocumentsPage() {
   return (
     <div className="space-y-4">
       {/* Header with filters + export + upload button */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SearchFilterBar
-          filters={DOC_FILTERS}
-          onFilterChange={handleFilterChange}
-          activeFilters={activeFilters}
-        >
-          <ExportButton
-            data={allDocs.map((d) => {
-              const assoc = association(d);
-              return {
-                id: d.id,
-                name: d.name,
-                category: d.category,
-                associatedWith: assoc.label,
-                associationType: assoc.type,
-                uploadDate: formatDate(d.uploadDate),
-                fileSize: d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "",
-              };
-            })}
-            fileName="Documents_Export"
-          />
-        </SearchFilterBar>
-        <Button onClick={() => setShowUpload(true)}>+ Upload Document</Button>
-      </div>
+      <PageHeader
+        title="Documents"
+        subtitle={`${allDocs.length} documents`}
+        actions={
+          <>
+            <SearchFilterBar
+              filters={DOC_FILTERS}
+              onFilterChange={handleFilterChange}
+              activeFilters={activeFilters}
+            >
+              <ExportButton
+                data={allDocs.map((d) => {
+                  const assoc = association(d);
+                  return {
+                    id: d.id,
+                    name: d.name,
+                    category: d.category,
+                    associatedWith: assoc.label,
+                    associationType: assoc.type,
+                    uploadDate: formatDate(d.uploadDate),
+                    fileSize: d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "",
+                  };
+                })}
+                fileName="Documents_Export"
+              />
+            </SearchFilterBar>
+            <Button onClick={() => setShowUpload(true)}>+ Upload Document</Button>
+          </>
+        }
+      />
 
       {/* Document list */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
-          <h3 className="text-sm font-semibold">All Documents ({allDocs.length})</h3>
-        </div>
+      <SectionPanel noPadding className="overflow-hidden">
         <table className="w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
@@ -273,7 +278,7 @@ export default function DocumentsPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </SectionPanel>
 
       <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onLoadMore={handleLoadMore} />
 

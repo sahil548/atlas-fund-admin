@@ -5,6 +5,7 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
 import { fmt } from "@/lib/utils";
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import {
   BarChart,
   Bar,
@@ -99,20 +100,18 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Pipeline Analytics</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Deal flow metrics and pipeline health indicators
-          </p>
-        </div>
-        <Link
-          href="/deals"
-          className="text-xs text-indigo-600 hover:underline font-medium"
-        >
-          &larr; Back to Pipeline
-        </Link>
-      </div>
+      <PageHeader
+        title="Pipeline Analytics"
+        subtitle="Deal flow metrics and pipeline health indicators"
+        actions={
+          <Link
+            href="/deals"
+            className="text-xs text-indigo-600 hover:underline font-medium"
+          >
+            &larr; Back to Pipeline
+          </Link>
+        }
+      />
 
       {/* Summary Stats Row */}
       <div className="grid grid-cols-4 gap-4">

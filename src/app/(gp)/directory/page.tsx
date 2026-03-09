@@ -23,6 +23,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Users } from "lucide-react";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
+import { PageHeader } from "@/components/ui/page-header";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -200,25 +201,31 @@ export default function DirectoryPage() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-1">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${
-                tab === t.key ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-              }`}
-            >
-              {t.label} ({t.count})
-            </button>
-          ))}
-        </div>
-        {tab === "investors" && <Button onClick={() => setShowCreateInvestor(true)}>+ Add Investor</Button>}
-        {tab === "companies" && <Button onClick={() => setShowCreateCompany(true)}>+ Add Company</Button>}
-        {tab === "contacts" && <Button onClick={() => setShowCreateContact(true)}>+ Add Contact</Button>}
-        {tab === "team" && <Button onClick={() => setShowCreateUser(true)}>+ Add Team Member</Button>}
-        {tab === "sideLetters" && <Button onClick={() => setShowCreateSideLetter(true)}>+ Add Side Letter</Button>}
+      <PageHeader
+        title="Directory"
+        actions={
+          <>
+            {tab === "investors" && <Button onClick={() => setShowCreateInvestor(true)}>+ Add Investor</Button>}
+            {tab === "companies" && <Button onClick={() => setShowCreateCompany(true)}>+ Add Company</Button>}
+            {tab === "contacts" && <Button onClick={() => setShowCreateContact(true)}>+ Add Contact</Button>}
+            {tab === "team" && <Button onClick={() => setShowCreateUser(true)}>+ Add Team Member</Button>}
+            {tab === "sideLetters" && <Button onClick={() => setShowCreateSideLetter(true)}>+ Add Side Letter</Button>}
+          </>
+        }
+      />
+
+      <div className="flex gap-1">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${
+              tab === t.key ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {t.label} ({t.count})
+          </button>
+        ))}
       </div>
 
       {/* Investors Tab */}

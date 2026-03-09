@@ -14,6 +14,7 @@ import { PermissionsTab } from "@/components/features/settings/permissions-tab";
 import { ServiceProviderManager } from "@/components/features/settings/service-provider-manager";
 import { IntegrationsTab } from "@/components/features/settings/integrations-tab";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
@@ -343,6 +344,8 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-4">
+      <PageHeader title="Settings" />
+
       <div className="flex gap-1 flex-wrap">
         {tabs.map((t) => (
           <button

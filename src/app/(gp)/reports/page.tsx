@@ -6,6 +6,7 @@ import useSWR, { mutate } from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { useToast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -219,12 +220,10 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">Reports</h2>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Generate PDF reports and distribute K-1 tax documents to investors
-        </p>
-      </div>
+      <PageHeader
+        title="Reports"
+        subtitle="Generate PDF reports and distribute K-1 tax documents to investors"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Generate Report Panel */}

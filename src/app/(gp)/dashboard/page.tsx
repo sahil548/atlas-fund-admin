@@ -7,6 +7,7 @@ import { EntityCard } from "@/components/features/dashboard/entity-card";
 import { PortfolioAggregates } from "@/components/features/dashboard/portfolio-aggregates";
 import { LPComparisonView } from "@/components/features/dashboard/lp-comparison-view";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
+import { PageHeader } from "@/components/ui/page-header";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,6 +37,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <PageHeader title="Dashboard" />
+
       {/* ── Your Entities section ─────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">

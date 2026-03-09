@@ -10,6 +10,7 @@ import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Video } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -129,36 +130,39 @@ export default function MeetingsPage() {
   return (
     <div className="space-y-4">
       {/* Header + Filters */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-lg font-bold text-gray-900">Meetings</h1>
-        <SearchFilterBar
-          filters={MEETING_FILTERS}
-          onFilterChange={handleFilterChange}
-          activeFilters={activeFilters}
-        >
-          <ExportButton
-            data={allMeetings.map((m) => ({
-              id: m.id,
-              title: m.title,
-              date: formatDate(m.meetingDate),
-              type: m.meetingType ?? "",
-              source: SOURCE_LABELS[m.source] ?? m.source,
-              hasTranscript: m.hasTranscript ? "Yes" : "No",
-              actionItems: m.actionItems,
-              asset: m.asset?.name ?? "",
-              deal: m.deal?.name ?? "",
-              entity: m.entity?.name ?? "",
-            }))}
-            fileName="Meetings_Export"
-          />
-          <button
-            onClick={() => setShowCreate(true)}
-            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"
+      <PageHeader
+        title="Meetings"
+        subtitle={`${allMeetings.length} meetings`}
+        actions={
+          <SearchFilterBar
+            filters={MEETING_FILTERS}
+            onFilterChange={handleFilterChange}
+            activeFilters={activeFilters}
           >
-            + Log Meeting
-          </button>
-        </SearchFilterBar>
-      </div>
+            <ExportButton
+              data={allMeetings.map((m) => ({
+                id: m.id,
+                title: m.title,
+                date: formatDate(m.meetingDate),
+                type: m.meetingType ?? "",
+                source: SOURCE_LABELS[m.source] ?? m.source,
+                hasTranscript: m.hasTranscript ? "Yes" : "No",
+                actionItems: m.actionItems,
+                asset: m.asset?.name ?? "",
+                deal: m.deal?.name ?? "",
+                entity: m.entity?.name ?? "",
+              }))}
+              fileName="Meetings_Export"
+            />
+            <button
+              onClick={() => setShowCreate(true)}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"
+            >
+              + Log Meeting
+            </button>
+          </SearchFilterBar>
+        }
+      />
 
       {/* Stat Cards */}
       <div className="grid grid-cols-4 gap-3">
