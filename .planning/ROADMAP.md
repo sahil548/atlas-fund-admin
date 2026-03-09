@@ -113,7 +113,7 @@ Plans:
 - [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task email notifications (assignment + overdue templates)
 
 ### Phase 15: Entity Management & Meeting Intelligence
-**Goal**: The entity list shows parent-child fund structure clearly, formation workflows guide GPs to next steps, and each GP team member can connect their own Fireflies account so meeting transcripts flow into Atlas automatically
+**Goal**: The entity list shows parent-child fund structure clearly with multiple view modes, formation workflows guide GPs to next steps, the regulatory tab provides CSC-style structured compliance tracking, all user-facing "Entities" labels are renamed to "Vehicles", and each GP team member can connect their own Fireflies account so meeting transcripts flow into Atlas with AI-generated summaries and auto-created tasks
 **Depends on**: Phase 11
 **Requirements**: ENTITY-01, ENTITY-02, ENTITY-03, ENTITY-04, ENTITY-05, MTG-01, MTG-02, MTG-03, MTG-04, MTG-05
 **Success Criteria** (what must be TRUE):
@@ -122,7 +122,15 @@ Plans:
   3. Regulatory filings can be added and edited through a structured form (not an empty shell tab) and entity status can be transitioned (ACTIVE → WINDING_DOWN → DISSOLVED) via UI controls
   4. Each GP team member can connect their own Fireflies account via OAuth — meetings from all connected accounts appear in an aggregated meeting view in Atlas
   5. AI-generated meeting summaries and auto-extracted action items appear on each meeting record, action items are linked as tasks to the relevant deal or entity, and meetings surface in the activity feed for their linked context
-**Plans**: TBD
+**Plans:** 7 plans
+Plans:
+- [ ] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
+- [ ] 15-02-PLAN.md — Vehicle list 4 view modes (Flat | Tree | Org Chart | Cards) with hierarchy visualization
+- [ ] 15-03-PLAN.md — Post-formation "What's Next" checklist + CSC-style structured regulatory filings tab
+- [ ] 15-04-PLAN.md — Fireflies per-user API key connection, encrypted storage, meeting sync route
+- [ ] 15-05-PLAN.md — Side letter management end-to-end verification
+- [ ] 15-06-PLAN.md — Rich meeting cards with AI summaries, action item task creation, context linking
+- [ ] 15-07-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 16: Capital Activity
 **Goal**: GPs can advance capital calls and distributions through their full status lifecycle via UI buttons, see which investors have paid, attach documents, and run waterfall scenarios without committing them
@@ -186,7 +194,7 @@ Plans:
 | 12. AI Configuration & Document Intake | v2.0 | 0/5 | Planned | - |
 | 13. Deal Desk & CRM | v2.0 | 0/5 | Planned | - |
 | 14. Asset Management & Task Management | v2.0 | 0/7 | Planned | - |
-| 15. Entity Management & Meeting Intelligence | v2.0 | 0/TBD | Not started | - |
+| 15. Entity Management & Meeting Intelligence | v2.0 | 0/7 | Planned | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |
 | 18. AI Features | v2.0 | 0/TBD | Not started | - |
