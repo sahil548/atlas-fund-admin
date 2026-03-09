@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
+import { sendEmail } from "@/lib/email";
+import { taskAssignedEmailHtml } from "@/lib/email-templates";
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,12 +65,24 @@ export async function GET(req: NextRequest) {
           deal: { select: { id: true, name: true } },
           asset: { select: { id: true, name: true } },
           entity: { select: { id: true, name: true } },
+          checklistItems: { select: { isChecked: true } },
         },
       }),
       prisma.task.count({ where }),
     ]);
 
-    const paginated = buildPaginatedResult(rawTasks, params.limit, total);
+    // Compute checklist progress and strip the raw checklistItems array
+    const tasksWithProgress = rawTasks.map((task) => {
+      const { checklistItems, ...rest } = task;
+      const checklistTotal = checklistItems.length;
+      const checklistCompleted = checklistItems.filter((i) => i.isChecked).length;
+      return {
+        ...rest,
+        checklistProgress: { total: checklistTotal, completed: checklistCompleted },
+      };
+    });
+
+    const paginated = buildPaginatedResult(tasksWithProgress, params.limit, total);
 
     return NextResponse.json({
       data: paginated.data,
@@ -122,6 +136,21 @@ export async function PATCH(req: NextRequest) {
     if (!body.id)
       return NextResponse.json({ error: "id required" }, { status: 400 });
 
+    // Fetch existing task before update to detect assignee change
+    const existingTask = await prisma.task.findUnique({
+      where: { id: body.id },
+      select: {
+        assigneeId: true,
+        title: true,
+        dueDate: true,
+        contextType: true,
+        contextId: true,
+        deal: { select: { name: true } },
+        asset: { select: { name: true } },
+        entity: { select: { name: true } },
+      },
+    });
+
     const data: Record<string, unknown> = {};
     if (body.title !== undefined) data.title = body.title;
     if (body.description !== undefined) data.description = body.description;
@@ -144,6 +173,48 @@ export async function PATCH(req: NextRequest) {
         entity: { select: { id: true, name: true } },
       },
     });
+
+    // Send assignment email when assignee changes to a new person
+    if (
+      body.assigneeId &&
+      body.assigneeId !== existingTask?.assigneeId
+    ) {
+      const assignee = await prisma.user.findUnique({
+        where: { id: body.assigneeId },
+        select: { email: true, name: true },
+      });
+      if (assignee?.email) {
+        const contextLabel = existingTask?.deal?.name
+          ? `Deal: ${existingTask.deal.name}`
+          : existingTask?.asset?.name
+          ? `Asset: ${existingTask.asset.name}`
+          : existingTask?.entity?.name
+          ? `Entity: ${existingTask.entity.name}`
+          : undefined;
+
+        try {
+          await sendEmail({
+            to: assignee.email,
+            subject: `Task assigned: ${existingTask?.title || body.title || "New task"}`,
+            html: taskAssignedEmailHtml({
+              assigneeName: assignee.name || "Team member",
+              taskTitle: existingTask?.title || body.title || "Task",
+              dueDate: existingTask?.dueDate
+                ? new Date(existingTask.dueDate).toLocaleDateString()
+                : undefined,
+              contextLabel,
+              priority: body.priority,
+              portalUrl:
+                process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+            }),
+          });
+        } catch (emailErr) {
+          // Log but don't fail the PATCH — email is best-effort
+          console.error("[tasks] Failed to send task assignment email:", emailErr);
+        }
+      }
+    }
+
     return NextResponse.json(task);
   } catch (err) {
     console.error("[tasks] PATCH Error:", err);

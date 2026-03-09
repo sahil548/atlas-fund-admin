@@ -24,6 +24,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import Link from "next/link";
 import { CheckSquare, GripVertical } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
+import { ChecklistProgressBadge } from "@/components/features/tasks/task-checklist-items";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -62,7 +63,15 @@ function SortableTaskRow({ task, onStatusToggle }: SortableTaskRowProps) {
         </button>
       </td>
       <td className="px-3 py-2.5">
-        <div className="font-medium text-gray-900 text-xs">{task.title}</div>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-gray-900 text-xs">{task.title}</span>
+          {task.checklistProgress && task.checklistProgress.total > 0 && (
+            <ChecklistProgressBadge
+              total={task.checklistProgress.total}
+              completed={task.checklistProgress.completed}
+            />
+          )}
+        </div>
         {task.description && (
           <div className="text-gray-400 mt-0.5 truncate max-w-[280px] text-xs">{task.description}</div>
         )}

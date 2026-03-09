@@ -4,6 +4,7 @@ import {
   distributionPaidEmailHtml,
   reportAvailableEmailHtml,
   k1AvailableEmailHtml,
+  taskAssignedEmailHtml,
 } from "@/lib/email-templates";
 
 // ── capitalCallEmailHtml ────────────────────────────────────
@@ -171,6 +172,65 @@ describe("k1AvailableEmailHtml", () => {
 
   it("includes mobile-responsive meta viewport tag", () => {
     const html = k1AvailableEmailHtml(baseArgs);
+    expect(html).toContain('name="viewport"');
+  });
+});
+
+// ── taskAssignedEmailHtml ─────────────────────────────────
+
+describe("taskAssignedEmailHtml", () => {
+  const baseArgs = {
+    assigneeName: "Sarah Mitchell",
+    taskTitle: "Review investment memo",
+    portalUrl: "http://localhost:3000",
+  };
+
+  it("renders assignee name and task title", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
+    expect(html).toContain("Sarah Mitchell");
+    expect(html).toContain("Review investment memo");
+  });
+
+  it("includes due date when provided", () => {
+    const html = taskAssignedEmailHtml({ ...baseArgs, dueDate: "March 31, 2025" });
+    expect(html).toContain("March 31, 2025");
+    expect(html).toContain("Due:");
+  });
+
+  it("includes context label when provided", () => {
+    const html = taskAssignedEmailHtml({ ...baseArgs, contextLabel: "Deal: Acme Acquisition" });
+    expect(html).toContain("Acme Acquisition");
+    expect(html).toContain("Context:");
+  });
+
+  it("omits due date section when not provided", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
+    expect(html).not.toContain("Due:");
+  });
+
+  it("omits context label section when not provided", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
+    expect(html).not.toContain("Context:");
+  });
+
+  it("includes priority when provided", () => {
+    const html = taskAssignedEmailHtml({ ...baseArgs, priority: "HIGH" });
+    expect(html).toContain("HIGH");
+    expect(html).toContain("Priority:");
+  });
+
+  it("omits priority section when not provided", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
+    expect(html).not.toContain("Priority:");
+  });
+
+  it("includes a link to the tasks page", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
+    expect(html).toContain("http://localhost:3000/tasks");
+  });
+
+  it("includes mobile-responsive meta viewport tag", () => {
+    const html = taskAssignedEmailHtml(baseArgs);
     expect(html).toContain('name="viewport"');
   });
 });

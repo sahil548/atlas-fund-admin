@@ -197,3 +197,38 @@ export function k1AvailableEmailHtml({
 
   return baseLayout(entityName, content);
 }
+
+export function taskAssignedEmailHtml({
+  assigneeName,
+  taskTitle,
+  dueDate,
+  contextLabel,
+  priority,
+  portalUrl,
+}: {
+  assigneeName: string;
+  taskTitle: string;
+  dueDate?: string;
+  contextLabel?: string;
+  priority?: string;
+  portalUrl: string;
+}): string {
+  const content = `
+    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin: 0 0 16px 0;">Task Assigned to You</h2>
+    <p style="font-size: 14px; color: #374151; margin: 0 0 16px 0;">Hi ${assigneeName},</p>
+    <p style="font-size: 14px; color: #374151; margin: 0 0 20px 0;">A task has been assigned to you:</p>
+
+    <div style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+      <p style="font-size: 15px; font-weight: 600; color: #111827; margin: 0 0 10px 0;">${taskTitle}</p>
+      ${dueDate ? `<p style="font-size: 13px; color: #6b7280; margin: 0 0 6px 0;"><strong style="color: #374151;">Due:</strong> ${dueDate}</p>` : ""}
+      ${contextLabel ? `<p style="font-size: 13px; color: #6b7280; margin: 0 0 6px 0;"><strong style="color: #374151;">Context:</strong> ${contextLabel}</p>` : ""}
+      ${priority ? `<p style="font-size: 13px; color: #6b7280; margin: 0;"><strong style="color: #374151;">Priority:</strong> ${priority}</p>` : ""}
+    </div>
+
+    <a href="${portalUrl}/tasks" style="display: inline-block; background: #4f46e5; color: #ffffff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600;">
+      View Tasks
+    </a>
+  `;
+
+  return baseLayout("Atlas Fund Administration", content);
+}

@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { formatDate, cn } from "@/lib/utils";
+import { ChecklistProgressBadge } from "@/components/features/tasks/task-checklist-items";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -100,8 +101,16 @@ function KanbanCard({ task, isDragOverlay = false }: KanbanCardProps) {
         isOverdue && "border-l-2 border-l-red-400",
       )}
     >
-      <div className="text-xs font-medium text-gray-900 line-clamp-2">
-        {task.title}
+      <div className="flex items-start justify-between gap-1">
+        <div className="text-xs font-medium text-gray-900 line-clamp-2 flex-1">
+          {task.title}
+        </div>
+        {task.checklistProgress && task.checklistProgress.total > 0 && (
+          <ChecklistProgressBadge
+            total={task.checklistProgress.total}
+            completed={task.checklistProgress.completed}
+          />
+        )}
       </div>
 
       {/* Context link */}
