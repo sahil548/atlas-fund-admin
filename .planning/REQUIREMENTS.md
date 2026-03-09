@@ -1,11 +1,11 @@
-# Requirements: Atlas v1.1
+# Requirements: Atlas v2.0
 
 **Defined:** 2026-03-08
 **Core Value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
 
-## v1.1 Requirements
+## v2.0 Requirements
 
-Requirements for v1.1 Module Deep Pass. Each maps to roadmap phases.
+Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Foundation — Shared Components & Patterns
 
@@ -173,13 +173,93 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| FOUND-01 | Phase 11 | Pending |
+| FOUND-02 | Phase 11 | Pending |
+| FOUND-03 | Phase 11 | Pending |
+| FOUND-04 | Phase 11 | Pending |
+| FOUND-05 | Phase 11 | Pending |
+| FOUND-06 | Phase 11 | Pending |
+| FOUND-07 | Phase 11 | Pending |
+| FOUND-08 | Phase 11 | Pending |
+| AICONF-01 | Phase 12 | Pending |
+| AICONF-02 | Phase 12 | Pending |
+| AICONF-03 | Phase 12 | Pending |
+| AICONF-04 | Phase 12 | Pending |
+| AICONF-05 | Phase 12 | Pending |
+| DOC-01 | Phase 12 | Pending |
+| DOC-02 | Phase 12 | Pending |
+| DOC-03 | Phase 12 | Pending |
+| DEAL-11 | Phase 13 | Pending |
+| DEAL-12 | Phase 13 | Pending |
+| DEAL-13 | Phase 13 | Pending |
+| DEAL-14 | Phase 13 | Pending |
+| DEAL-15 | Phase 13 | Pending |
+| DEAL-16 | Phase 13 | Pending |
+| CRM-01 | Phase 13 | Pending |
+| CRM-02 | Phase 13 | Pending |
+| CRM-03 | Phase 13 | Pending |
+| CRM-04 | Phase 13 | Pending |
+| CRM-05 | Phase 13 | Pending |
+| CRM-06 | Phase 13 | Pending |
+| ASSET-04 | Phase 14 | Pending |
+| ASSET-05 | Phase 14 | Pending |
+| ASSET-06 | Phase 14 | Pending |
+| ASSET-07 | Phase 14 | Pending |
+| ASSET-08 | Phase 14 | Pending |
+| ASSET-09 | Phase 14 | Pending |
+| TASK-01 | Phase 14 | Pending |
+| TASK-02 | Phase 14 | Pending |
+| TASK-03 | Phase 14 | Pending |
+| TASK-04 | Phase 14 | Pending |
+| TASK-05 | Phase 14 | Pending |
+| ENTITY-01 | Phase 15 | Pending |
+| ENTITY-02 | Phase 15 | Pending |
+| ENTITY-03 | Phase 15 | Pending |
+| ENTITY-04 | Phase 15 | Pending |
+| ENTITY-05 | Phase 15 | Pending |
+| MTG-01 | Phase 15 | Pending |
+| MTG-02 | Phase 15 | Pending |
+| MTG-03 | Phase 15 | Pending |
+| MTG-04 | Phase 15 | Pending |
+| MTG-05 | Phase 15 | Pending |
+| CAP-01 | Phase 16 | Pending |
+| CAP-02 | Phase 16 | Pending |
+| CAP-03 | Phase 16 | Pending |
+| CAP-04 | Phase 16 | Pending |
+| CAP-05 | Phase 16 | Pending |
+| CAP-06 | Phase 16 | Pending |
+| LP-04 | Phase 17 | Pending |
+| LP-05 | Phase 17 | Pending |
+| LP-06 | Phase 17 | Pending |
+| LP-07 | Phase 17 | Pending |
+| LP-08 | Phase 17 | Pending |
+| LP-09 | Phase 17 | Pending |
+| AI-01 | Phase 18 | Pending |
+| AI-02 | Phase 18 | Pending |
+| AI-03 | Phase 18 | Pending |
+| AI-04 | Phase 18 | Pending |
+| AI-05 | Phase 18 | Pending |
+| AI-06 | Phase 18 | Pending |
+| AI-07 | Phase 18 | Pending |
+| AI-08 | Phase 18 | Pending |
+| DASH-01 | Phase 19 | Pending |
+| DASH-02 | Phase 19 | Pending |
+| DASH-03 | Phase 19 | Pending |
+| DASH-04 | Phase 19 | Pending |
+| SUPP-01 | Phase 19 | Pending |
+| SUPP-02 | Phase 19 | Pending |
+| SUPP-03 | Phase 19 | Pending |
+| SUPP-04 | Phase 19 | Pending |
+| SUPP-05 | Phase 19 | Pending |
+| SUPP-06 | Phase 19 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 73 total
-- Mapped to phases: 0
-- Unmapped: 73 ⚠️
+- v2.0 requirements: 79 total (8 FOUND + 6 DEAL + 6 ASSET + 5 ENTITY + 6 CAP + 6 LP + 4 DASH + 8 AI + 3 DOC + 5 AICONF + 6 CRM + 5 TASK + 5 MTG + 6 SUPP)
+- Mapped to phases: 79
+- Unmapped: 0 ✓
+
+**Note:** REQUIREMENTS.md header listed 73 requirements. Actual count from requirement IDs is 79. The discrepancy of 6 is confirmed by listing all IDs — 79 is the correct count.
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after initial definition*
+*Last updated: 2026-03-08 — traceability filled after roadmap creation*

@@ -87,6 +87,10 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v1
 | Fee adjustments | Side letter adjustments informational-only | Base fees unchanged, details in JSON |
 | Pagination | Cursor-based with SWR accumulation | Complex pages need direct control |
 | Fire-and-forget | Audit logging, notifications, NAV snapshots | Never block primary operations |
+| LLM API keys | Tenant default + per-user override | Admin controls access, users bring own key |
+| Fireflies integration | Per-user OAuth | Each GP member connects own account |
+| Integration scoping | Accounting per-entity, Fireflies per-user, most others tenant-wide | Matches real-world access patterns |
+| AI access control | Admin toggle per user, service providers disabled by default | Prevents unauthorized token burn |
 
 ---
 
@@ -107,7 +111,7 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v1
 - Multi-currency support (USD only)
 - Secondary market transaction support
 - Automated wire initiation
-- Full CRM (we have internal Company/Contact models)
+- Full external CRM integration (building internal CRM in v2.0)
 - Investor onboarding / subscription doc workflow
 - Advanced analytics / benchmarking
 - White-labeling / custom branding
@@ -116,15 +120,19 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v1
 
 ---
 
-## Current Milestone: v1.1 Module Deep Pass
+## Current Milestone: v2.0 Intelligence Platform
 
-**Goal:** Module-by-module deep pass across all areas of Atlas — filling feature gaps and polishing UI/UX to production quality, with equal weight on functionality and user experience.
+**Goal:** Transform Atlas from a fund operations tool into an AI-powered operating system with relationship intelligence, meeting capture, document intake, and a command center — while polishing every module to production quality.
 
 **Target features:**
-- Deep pass on every module: Deals, Assets, Entities, Capital Activity, LP Portal, Dashboard, Accounting, Settings, Integrations
-- Fill missing CRUD operations, incomplete workflows, orphaned UI
-- Polish layouts, spacing, consistency, responsiveness, empty states
-- Fix any issues surfaced by codebase scan
+- AI command bar with natural language queries and action execution
+- Document intake engine with AI extraction across all upload points
+- CRM/directory with relationship tracking and deal sourcing
+- Task management deeply integrated with deal/asset/entity context
+- Meeting intelligence via Fireflies per-user OAuth
+- AI-assisted deal analysis, portfolio monitoring, and LP communications
+- Module-by-module polish: empty states, skeletons, formatting, dark mode
+- Feature gap closure across all existing modules
 
 ---
 
@@ -136,4 +144,4 @@ v1.0 requirements archived: [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-RE
 
 ---
 
-*Last updated: 2026-03-08 after v1.1 milestone started*
+*Last updated: 2026-03-08 after v2.0 milestone started*
