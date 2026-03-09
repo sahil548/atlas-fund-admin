@@ -6,6 +6,7 @@ import { writeFile, mkdir } from "fs/promises";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -87,11 +88,14 @@ export async function POST(req: Request) {
     let fileUrl: string | null = null;
     let fileSize: number | null = null;
     let mimeType: string | null = null;
+    let buffer: Buffer | null = null;
+    let originalFileName: string | null = null;
 
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+      buffer = Buffer.from(bytes);
       const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
+      originalFileName = file.name;
       mimeType = file.type || "application/octet-stream";
       fileSize = buffer.length;
 
@@ -110,6 +114,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // Extract text content from in-memory buffer (must happen before document creation)
+    let extractedText: string | null = null;
+    if (buffer && originalFileName && mimeType) {
+      try {
+        const text = await extractTextFromBuffer(buffer, originalFileName, mimeType);
+        if (text.length > 0) extractedText = text;
+      } catch (err) {
+        console.error("[documents] Text extraction failed:", err);
+      }
+    }
+
     const doc = await prisma.document.create({
       data: {
         name,
@@ -121,8 +136,22 @@ export async function POST(req: Request) {
         fileUrl,
         fileSize,
         mimeType,
+        extractedText,
       },
     });
+
+    // Trigger AI extraction async (fire-and-forget) — locked decision: auto-extract on upload
+    // NEVER await this — the upload response must return immediately
+    // NOTE: On Vercel serverless, background work may be killed after response.
+    // Use POST /api/documents/[id]/extract for guaranteed extraction on failure.
+    const firmId = authUser?.firmId || new URL(req.url).searchParams.get("firmId") || null;
+    if (doc.extractedText && firmId && shouldExtractAI(doc.category)) {
+      extractDocumentFields(doc.id, doc.category, doc.extractedText, firmId, authUser?.id)
+        .catch((err) => {
+          console.error("[documents] Background AI extraction error:", err);
+        });
+    }
+
     return NextResponse.json(doc, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";

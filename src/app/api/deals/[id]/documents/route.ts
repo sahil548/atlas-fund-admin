@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
-import { extractTextFromBuffer } from "@/lib/document-extraction";
+import { getAuthUser } from "@/lib/auth";
+import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
 
 // Allow time for PDF text extraction on Vercel serverless
 export const maxDuration = 60;
@@ -25,6 +26,9 @@ export async function GET(
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
+    const authUser = await getAuthUser();
+    const firmId = new URL(req.url).searchParams.get("firmId") || authUser?.firmId || null;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const name = (formData.get("name") as string) || "Untitled";
@@ -76,6 +80,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const document = await prisma.document.create({
       data: {
         name,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         category: category as any,
         dealId: id,
         fileUrl,
@@ -84,6 +89,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         extractedText,
       },
     });
+
+    // Trigger AI extraction async (fire-and-forget) — locked decision: auto-extract on upload
+    // NEVER await this — the upload response must return immediately
+    // NOTE: On Vercel serverless, background work may be killed after response.
+    // Use POST /api/documents/[id]/extract for guaranteed extraction on failure.
+    if (extractedText && firmId && shouldExtractAI(document.category)) {
+      extractDocumentFields(document.id, document.category, extractedText, firmId, authUser?.id)
+        .catch((err) => {
+          console.error("[deal-docs] Background AI extraction error:", err);
+        });
+    }
+
     return NextResponse.json(document, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";
