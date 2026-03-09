@@ -14,20 +14,27 @@ export async function GET(req: NextRequest) {
     const assigneeId = sp.get("assigneeId");
     const dealId = sp.get("dealId");
     const entityId = sp.get("entityId");
+    const assetId = sp.get("assetId");
 
     const params = parsePaginationParams(sp, [
       "firmId", "cursor", "limit", "search", "contextType", "contextId",
-      "assigneeId", "status", "priority", "dealId", "entityId",
+      "assigneeId", "status", "priority", "dealId", "entityId", "assetId",
     ]);
 
     const baseWhere: Record<string, unknown> = {};
-    if (contextType) baseWhere.contextType = contextType;
+    // contextType=none means unlinked tasks (no context assigned)
+    if (contextType === "none") {
+      baseWhere.contextType = null;
+    } else if (contextType) {
+      baseWhere.contextType = contextType;
+    }
     if (contextId) baseWhere.contextId = contextId;
     if (assigneeId) baseWhere.assigneeId = assigneeId;
     if (params.filters?.status) baseWhere.status = params.filters.status;
     if (params.filters?.priority) baseWhere.priority = params.filters.priority;
     if (dealId) baseWhere.dealId = dealId;
     if (entityId) baseWhere.entityId = entityId;
+    if (assetId) baseWhere.assetId = assetId;
 
     if (firmId && !dealId && !entityId) {
       baseWhere.OR = [
@@ -123,6 +130,7 @@ export async function PATCH(req: NextRequest) {
     if (body.dueDate !== undefined)
       data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.notes !== undefined) data.notes = body.notes;
+    if (body.order !== undefined) data.order = body.order;
 
     const task = await prisma.task.update({
       where: { id: body.id },

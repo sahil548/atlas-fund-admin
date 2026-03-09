@@ -8,15 +8,14 @@ import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/components/providers/user-provider";
 import { useFirm } from "@/components/providers/firm-provider";
-import Link from "next/link";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
-import { TableSkeleton } from "@/components/ui/table-skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
-import { CheckSquare } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { CheckSquare, LayoutList, LayoutGrid } from "lucide-react";
+import { formatDate, cn } from "@/lib/utils";
+import { TasksListView } from "@/components/features/tasks/tasks-list-view";
+import { TasksKanbanView } from "@/components/features/tasks/tasks-kanban-view";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -24,9 +23,7 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const STATUS_COLORS: Record<string, string> = { TODO: "gray", IN_PROGRESS: "yellow", DONE: "green" };
 const STATUS_LABELS: Record<string, string> = { TODO: "To Do", IN_PROGRESS: "In Progress", DONE: "Done" };
-const PRIORITY_COLORS: Record<string, string> = { LOW: "gray", MEDIUM: "blue", HIGH: "orange", URGENT: "red" };
 const STATUS_CYCLE = ["TODO", "IN_PROGRESS", "DONE"];
 
 const TASK_FILTERS = [
@@ -58,9 +55,13 @@ export default function TasksPage() {
   const { firmId } = useFirm();
   const { data: users = [] } = useSWR(firmId ? `/api/users?firmId=${firmId}` : null, fetcher);
   const [viewTab, setViewTab] = useState<"my" | "all" | "overdue">("all");
+  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM", assigneeId: "", dueDate: "" });
+
+  // Context filter state
+  const [contextFilter, setContextFilter] = useState<{ type: "all" | "deal" | "asset" | "entity" | "none"; id?: string; name?: string }>({ type: "all" });
 
   // Pagination state
   const [search, setSearch] = useState("");
@@ -72,6 +73,15 @@ export default function TasksPage() {
   const { userId: currentUserId } = useUser();
   const now = new Date();
 
+  // Fetch context options for dropdown
+  const { data: dealsData } = useSWR(firmId ? `/api/deals?firmId=${firmId}&limit=100` : null, fetcher);
+  const { data: assetsData } = useSWR(firmId ? `/api/assets?firmId=${firmId}&limit=100` : null, fetcher);
+  const { data: entitiesData } = useSWR(firmId ? `/api/entities?firmId=${firmId}&limit=100` : null, fetcher);
+
+  const deals: any[] = dealsData?.data ?? [];
+  const assets: any[] = assetsData?.data ?? [];
+  const entities: any[] = entitiesData?.data ?? [];
+
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
       const params = new URLSearchParams({ limit: "50" });
@@ -79,10 +89,20 @@ export default function TasksPage() {
       for (const [k, v] of Object.entries(activeFilters)) {
         if (v) params.set(k, v);
       }
+      // Apply context filter
+      if (contextFilter.type === "deal" && contextFilter.id) {
+        params.set("dealId", contextFilter.id);
+      } else if (contextFilter.type === "asset" && contextFilter.id) {
+        params.set("assetId", contextFilter.id);
+      } else if (contextFilter.type === "entity" && contextFilter.id) {
+        params.set("entityId", contextFilter.id);
+      } else if (contextFilter.type === "none") {
+        params.set("contextType", "none");
+      }
       if (currentCursor) params.set("cursor", currentCursor);
       return `/api/tasks?${params.toString()}`;
     },
-    [search, activeFilters],
+    [search, activeFilters, contextFilter],
   );
 
   const { isLoading } = useSWR(buildUrl(null), fetcher, {
@@ -127,20 +147,42 @@ export default function TasksPage() {
     return true;
   });
 
-  async function toggleStatus(task: any) {
-    const idx = STATUS_CYCLE.indexOf(task.status);
-    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+  async function handleStatusChange(taskId: string, newStatus: string) {
     try {
       await fetch("/api/tasks", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: task.id, status: next }),
+        body: JSON.stringify({ id: taskId, status: newStatus }),
       });
-      // Update local state
-      setAllTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status: next } : t)));
+      setAllTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t)));
     } catch {
       toast.error("Failed to update status");
     }
+  }
+
+  async function toggleStatus(task: any) {
+    const idx = STATUS_CYCLE.indexOf(task.status);
+    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+    await handleStatusChange(task.id, next);
+  }
+
+  async function handleReorder(tasks: any[]) {
+    // tasks is the reordered array — PATCH each with new index
+    tasks.forEach((task, idx) => {
+      if (task.order !== idx) {
+        fetch("/api/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: task.id, order: idx }),
+        }).catch(() => console.error("Failed to persist order for task", task.id));
+      }
+    });
+    setAllTasks((prev) => {
+      // Merge reordered tasks back into allTasks (other view filter tasks remain)
+      const reorderedIds = new Set(tasks.map((t) => t.id));
+      const others = prev.filter((t) => !reorderedIds.has(t.id));
+      return [...tasks, ...others];
+    });
   }
 
   async function handleCreate() {
@@ -181,13 +223,42 @@ export default function TasksPage() {
     { key: "overdue", label: `Overdue (${overdueCount})` },
   ];
 
-  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
+  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean) || contextFilter.type !== "all");
   const handleClearFilters = () => {
     setSearch("");
     setActiveFilters({});
+    setContextFilter({ type: "all" });
     setAllTasks([]);
     setCursor(null);
   };
+
+  // Build context filter dropdown options
+  const contextOptions = [
+    { value: "all", label: "All Tasks" },
+    { value: "none", label: "Unlinked only" },
+    ...deals.map((d: any) => ({ value: `deal:${d.id}`, label: `Deal: ${d.name}` })),
+    ...assets.map((a: any) => ({ value: `asset:${a.id}`, label: `Asset: ${a.name}` })),
+    ...entities.map((e: any) => ({ value: `entity:${e.id}`, label: `Entity: ${e.name}` })),
+  ];
+
+  function handleContextChange(val: string) {
+    setAllTasks([]);
+    setCursor(null);
+    if (val === "all") {
+      setContextFilter({ type: "all" });
+    } else if (val === "none") {
+      setContextFilter({ type: "none" });
+    } else {
+      const [type, id] = val.split(":");
+      const name = contextOptions.find((o) => o.value === val)?.label;
+      setContextFilter({ type: type as "deal" | "asset" | "entity", id, name });
+    }
+  }
+
+  const contextFilterValue =
+    contextFilter.type === "all" ? "all"
+    : contextFilter.type === "none" ? "none"
+    : `${contextFilter.type}:${contextFilter.id}`;
 
   return (
     <div className="space-y-4">
@@ -218,92 +289,86 @@ export default function TasksPage() {
         }
       />
 
-      <div className="flex gap-1 border-b border-gray-200 pb-0">
-        {viewTabs.map((vt) => (
-          <button
-            key={vt.key}
-            onClick={() => setViewTab(vt.key as "my" | "all" | "overdue")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${
-              viewTab === vt.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
-            }`}
+      {/* Tabs row + view toggle + context filter */}
+      <div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-0">
+        <div className="flex gap-1">
+          {viewTabs.map((vt) => (
+            <button
+              key={vt.key}
+              onClick={() => setViewTab(vt.key as "my" | "all" | "overdue")}
+              className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${
+                viewTab === vt.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
+              }`}
+            >
+              {vt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 pb-1">
+          {/* Context filter dropdown */}
+          <select
+            value={contextFilterValue}
+            onChange={(e) => handleContextChange(e.target.value)}
+            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            {vt.label}
-          </button>
-        ))}
+            {contextOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+
+          {/* List/Kanban view toggle */}
+          <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              title="List view"
+              className={cn(
+                "px-2 py-1 rounded-md flex items-center gap-1 text-xs transition-colors",
+                viewMode === "list"
+                  ? "bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              title="Board view"
+              className={cn(
+                "px-2 py-1 rounded-md flex items-center gap-1 text-xs transition-colors",
+                viewMode === "kanban"
+                  ? "bg-white dark:bg-gray-700 shadow text-gray-900 dark:text-white"
+                  : "text-gray-500 hover:text-gray-700"
+              )}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Board
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-left">
-              <th className="px-4 py-2.5 font-medium">Title</th>
-              <th className="px-4 py-2.5 font-medium">Status</th>
-              <th className="px-4 py-2.5 font-medium">Priority</th>
-              <th className="px-4 py-2.5 font-medium">Context</th>
-              <th className="px-4 py-2.5 font-medium">Assignee</th>
-              <th className="px-4 py-2.5 font-medium">Due Date</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {isLoading && allTasks.length === 0 ? (
-              <TableSkeleton columns={6} />
-            ) : filtered.length === 0 ? (
-              <tr><td colSpan={6}>
-                <EmptyState
-                  icon={<CheckSquare className="h-10 w-10" />}
-                  title={hasFilters ? "No results match your filters" : viewTab === "my" ? "No tasks assigned to you" : viewTab === "overdue" ? "No overdue tasks" : "No tasks yet"}
-                  description={!hasFilters && viewTab === "all" ? "Create a task to start tracking your to-dos" : undefined}
-                  action={!hasFilters && viewTab === "all" ? { label: "+ New Task", onClick: () => setShowCreate(true) } : undefined}
-                  filtered={hasFilters}
-                  onClearFilters={hasFilters ? handleClearFilters : undefined}
-                />
-              </td></tr>
-            ) : (
-              filtered.map((task: any) => (
-                <tr key={task.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2.5">
-                    <div className="font-medium text-gray-900">{task.title}</div>
-                    {task.description && (
-                      <div className="text-gray-400 mt-0.5 truncate max-w-[300px]">{task.description}</div>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <button onClick={() => toggleStatus(task)} title="Click to cycle status">
-                      <Badge color={STATUS_COLORS[task.status] || "gray"}>{STATUS_LABELS[task.status] || task.status}</Badge>
-                    </button>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <Badge color={PRIORITY_COLORS[task.priority] || "gray"}>{task.priority || "MEDIUM"}</Badge>
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-500">
-                    {task.deal ? (
-                      <Link href={`/deals/${task.deal.id}`} className="text-indigo-600 hover:underline">{task.deal.name}</Link>
-                    ) : task.entity ? (
-                      <Link href={`/entities/${task.entity.id}`} className="text-indigo-600 hover:underline">{task.entity.name}</Link>
-                    ) : task.contextType ? (
-                      <span>{task.contextType}</span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-600">
-                    {task.assignee?.name || task.assigneeName || <span className="text-gray-300">—</span>}
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-500">
-                    {task.dueDate ? (
-                      <span className={new Date(task.dueDate) < now && task.status !== "DONE" ? "text-red-600 font-medium" : ""}>
-                        {formatDate(task.dueDate)}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Main view */}
+      {viewMode === "list" ? (
+        <TasksListView
+          tasks={filtered}
+          isLoading={isLoading && allTasks.length === 0}
+          hasFilters={hasFilters}
+          viewTab={viewTab}
+          onReorder={handleReorder}
+          onStatusChange={handleStatusChange}
+          onStatusToggle={toggleStatus}
+          onClearFilters={handleClearFilters}
+          onNewTask={() => setShowCreate(true)}
+        />
+      ) : (
+        <TasksKanbanView
+          tasks={filtered}
+          isLoading={isLoading && allTasks.length === 0}
+          onStatusChange={handleStatusChange}
+        />
+      )}
 
       <LoadMoreButton hasMore={!!cursor} loading={loadingMore} onLoadMore={handleLoadMore} />
 

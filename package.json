@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "stage-files": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['src/lib/computations/performance-attribution.ts','src/app/api/assets/[id]/attribution/route.ts','src/app/api/entities/[id]/attribution/route.ts','src/components/features/assets/asset-performance-tab.tsx','src/app/(gp)/assets/[id]/page.tsx','src/app/api/assets/[id]/route.ts'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\""
+    "stage-14-05": "node -e \"const {execSync}=require('child_process');const cwd=process.cwd();const files=['package-lock.json','src/app/api/tasks/route.ts','src/app/(gp)/tasks/page.tsx','src/components/features/tasks/tasks-list-view.tsx','src/components/features/tasks/tasks-kanban-view.tsx','.planning/phases/14-asset-management-task-management/14-05-SUMMARY.md','.planning/STATE.md','.planning/ROADMAP.md'];files.forEach(f=>{try{execSync('git add '+JSON.stringify(f),{stdio:'inherit',cwd});console.log('OK',f)}catch(e){console.error('ERR',f)}})\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
