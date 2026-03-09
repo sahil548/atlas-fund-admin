@@ -52,6 +52,7 @@ interface Props {
     gpName?: string;
     source?: string;
     counterparty?: string;
+    sourcedByContactId?: string;
     description?: string;
     thesisNotes?: string;
     investmentRationale?: string;
@@ -68,6 +69,8 @@ export function EditDealForm({ open, onClose, deal }: Props) {
   });
   const { data: users } = useSWR(`/api/users?firmId=${firmId}`, fetcherFn);
   const { data: companies } = useSWR(`/api/companies?firmId=${firmId}`, fetcherFn);
+  const { data: contactsData } = useSWR(`/api/contacts?firmId=${firmId}&limit=100`, fetcherFn);
+  const contacts = contactsData?.contacts || contactsData || [];
   const [form, setForm] = useState({
     name: "",
     sector: "",
@@ -81,6 +84,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
     gpName: "",
     source: "",
     counterparty: "",
+    sourcedByContactId: "",
     description: "",
     thesisNotes: "",
     investmentRationale: "",
@@ -103,6 +107,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
         gpName: deal.gpName || "",
         source: deal.source || "",
         counterparty: deal.counterparty || "",
+        sourcedByContactId: deal.sourcedByContactId || "",
         description: deal.description || "",
         thesisNotes: deal.thesisNotes || "",
         investmentRationale: deal.investmentRationale || "",
@@ -260,6 +265,22 @@ export function EditDealForm({ open, onClose, deal }: Props) {
                   { value: "GP direct outreach", label: "GP direct outreach" },
                 ]}
               />
+            </FormField>
+            <FormField label="Source Contact" >
+              <Select
+                value={form.sourcedByContactId}
+                onChange={(e) => set("sourcedByContactId", e.target.value)}
+                options={[
+                  { value: "", label: "— None —" },
+                  ...(contacts || []).map((c: any) => ({
+                    value: c.id,
+                    label: `${c.firstName} ${c.lastName}${c.email ? ` (${c.email})` : ""}`,
+                  })),
+                ]}
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                Link to the contact who sourced this deal
+              </p>
             </FormField>
             <FormField label="Counterparty">
               <Select

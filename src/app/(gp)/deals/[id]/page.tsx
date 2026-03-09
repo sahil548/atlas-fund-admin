@@ -21,6 +21,7 @@ import { DealDDTab } from "@/components/features/deals/deal-dd-tab";
 import { DealActivityTab } from "@/components/features/deals/deal-activity-tab";
 import { DealICReviewTab } from "@/components/features/deals/deal-ic-review-tab";
 import { DealClosingTab } from "@/components/features/deals/deal-closing-tab";
+import { DealCoInvestorsSection } from "@/components/features/deals/deal-co-investors-section";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -64,13 +65,14 @@ const NAME_TO_TYPE: Record<string, string> = {
 
 /* ── Stage-dependent tab visibility ──────────────── */
 const stageTabs: Record<string, string[]> = {
-  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity"],
+  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity", "Co-Investors"],
   DUE_DILIGENCE: [
     "Overview",
     "Due Diligence",
     "Documents",
     "Notes",
     "Activity",
+    "Co-Investors",
   ],
   IC_REVIEW: [
     "Overview",
@@ -79,6 +81,7 @@ const stageTabs: Record<string, string[]> = {
     "Notes",
     "Activity",
     "IC Review",
+    "Co-Investors",
   ],
   CLOSING: [
     "Overview",
@@ -88,6 +91,7 @@ const stageTabs: Record<string, string[]> = {
     "Activity",
     "IC Review",
     "Closing",
+    "Co-Investors",
   ],
   CLOSED: [
     "Overview",
@@ -97,6 +101,7 @@ const stageTabs: Record<string, string[]> = {
     "Activity",
     "IC Review",
     "Closing",
+    "Co-Investors",
   ],
 };
 
@@ -105,6 +110,7 @@ function getDeadTabs(deal: any): string[] {
   if (deal.icProcess) {
     tabs.push("IC Review");
   }
+  tabs.push("Co-Investors");
   return tabs;
 }
 
@@ -514,6 +520,8 @@ export default function DealDetailPage({
         return <DealICReviewTab deal={deal} />;
       case "Closing":
         return <DealClosingTab deal={deal} onCloseDeal={() => setShowCloseDeal(true)} />;
+      case "Co-Investors":
+        return <DealCoInvestorsSection dealId={deal.id} />;
       default:
         return null;
     }
@@ -551,6 +559,17 @@ export default function DealDetailPage({
             {deal.sector} · Target: {deal.targetSize} · Lead:{" "}
             {deal.dealLead?.name || "Unassigned"}
             {deal.counterparty && ` · Counterparty: ${deal.counterparty}`}
+            {deal.sourcedByContact && (
+              <span>
+                {" "}· Sourced by:{" "}
+                <Link
+                  href={`/contacts/${deal.sourcedByContact.id}`}
+                  className="text-indigo-600 hover:underline"
+                >
+                  {deal.sourcedByContact.firstName} {deal.sourcedByContact.lastName}
+                </Link>
+              </span>
+            )}
           </div>
         </div>
         <div className="flex gap-2">
@@ -779,6 +798,7 @@ export default function DealDetailPage({
           gpName: deal.gpName,
           source: deal.source,
           counterparty: deal.counterparty,
+          sourcedByContactId: deal.sourcedByContactId,
           description: deal.description,
           thesisNotes: deal.thesisNotes,
           investmentRationale: deal.investmentRationale,

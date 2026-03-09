@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { ASSET_CLASS_LABELS, ASSET_CLASS_COLORS } from "@/lib/constants";
+import { fmt } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -34,20 +35,138 @@ const ASSET_STATUS_COLORS: Record<string, string> = {
   WRITTEN_OFF: "red",
 };
 
+const CO_INVESTOR_STATUS_COLORS: Record<string, string> = {
+  Interested: "gray",
+  Committed: "blue",
+  Funded: "green",
+  Passed: "red",
+};
+
+const CO_INVESTOR_ROLE_COLORS: Record<string, string> = {
+  Lead: "indigo",
+  Participant: "purple",
+  "Syndicate Member": "orange",
+};
+
+function parseTargetSize(s: string | null | undefined): number {
+  if (!s) return 0;
+  const cleaned = s.replace(/[^0-9.BMKbmk]/g, "");
+  const num = parseFloat(cleaned);
+  if (isNaN(num)) return 0;
+  if (/[Bb]/.test(s)) return num * 1_000_000_000;
+  if (/[Mm]/.test(s)) return num * 1_000_000;
+  if (/[Kk]/.test(s)) return num * 1_000;
+  return num;
+}
+
 export function ContactDealsTab({ contact }: ContactDealsTabProps) {
   const linkedDeals: any[] = contact.linkedDeals || [];
   const linkedAssets: any[] = contact.linkedAssets || [];
+  const sourcedDeals: any[] = contact.sourcedDeals || [];
+  const coinvestments: any[] = contact.coinvestments || [];
 
   return (
     <div className="space-y-6">
-      {/* Sourced Deals section */}
+      {/* Deals Sourced section */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Deals Sourced</h3>
-        <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            No sourced deals yet. Deal sourcing attribution will be available in a future update.
-          </p>
-        </div>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          Deals Sourced
+          <span className="ml-2 text-[11px] font-normal text-gray-400">({sourcedDeals.length})</span>
+        </h3>
+        {sourcedDeals.length === 0 ? (
+          <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              This contact has not sourced any deals.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  {["Deal", "Stage", "Target Size", "Date"].map((h) => (
+                    <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sourcedDeals.map((deal: any) => (
+                  <tr key={deal.id} className="border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/deals/${deal.id}`} className="text-indigo-700 dark:text-indigo-400 hover:underline">
+                        {deal.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge color={STAGE_COLORS[deal.stage] || "gray"}>
+                        {STAGE_LABELS[deal.stage] || deal.stage}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      {deal.targetSize
+                        ? parseTargetSize(deal.targetSize) > 0
+                          ? fmt(parseTargetSize(deal.targetSize))
+                          : deal.targetSize
+                        : "\u2014"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      {deal.createdAt
+                        ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(deal.createdAt))
+                        : "\u2014"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Co-Investments section */}
+      <div>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+          Co-Investments
+          <span className="ml-2 text-[11px] font-normal text-gray-400">({coinvestments.length})</span>
+        </h3>
+        {coinvestments.length === 0 ? (
+          <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              This contact has not co-invested in any deals.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  {["Deal", "Role", "Allocation", "Status"].map((h) => (
+                    <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {coinvestments.map((ci: any) => (
+                  <tr key={ci.id} className="border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/60">
+                    <td className="px-4 py-3 font-medium">
+                      <Link href={`/deals/${ci.deal?.id}`} className="text-indigo-700 dark:text-indigo-400 hover:underline">
+                        {ci.deal?.name || "\u2014"}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge color={CO_INVESTOR_ROLE_COLORS[ci.role] || "gray"}>{ci.role}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                      {ci.allocation != null ? fmt(ci.allocation) : "\u2014"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge color={CO_INVESTOR_STATUS_COLORS[ci.status] || "gray"}>{ci.status}</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Linked Deals section */}
