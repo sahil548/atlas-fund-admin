@@ -20,9 +20,9 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Deal Desk — Pipeline Completeness
 
-- [ ] **DEAL-11**: Kanban cards show days-in-stage metric
-- [ ] **DEAL-12**: Kanban columns show stage totals (deal count + aggregate deal value)
-- [ ] **DEAL-13**: Closed deal page shows "View Asset" navigation link to the created asset
+- [x] **DEAL-11**: Kanban cards show days-in-stage metric
+- [x] **DEAL-12**: Kanban columns show stage totals (deal count + aggregate deal value)
+- [x] **DEAL-13**: Closed deal page shows "View Asset" navigation link to the created asset
 - [ ] **DEAL-14**: IC memo can be exported as PDF
 - [ ] **DEAL-15**: Dead deal reasons surfaced in pipeline analytics
 - [ ] **DEAL-16**: GP can perform bulk deal status actions (e.g., kill multiple deals)
@@ -189,9 +189,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-01 | Phase 12 | Complete |
 | DOC-02 | Phase 12 | Complete |
 | DOC-03 | Phase 12 | Complete |
-| DEAL-11 | Phase 13 | Pending |
-| DEAL-12 | Phase 13 | Pending |
-| DEAL-13 | Phase 13 | Pending |
+| DEAL-11 | Phase 13 | Complete |
+| DEAL-12 | Phase 13 | Complete |
+| DEAL-13 | Phase 13 | Complete |
 | DEAL-14 | Phase 13 | Pending |
 | DEAL-15 | Phase 13 | Pending |
 | DEAL-16 | Phase 13 | Pending |

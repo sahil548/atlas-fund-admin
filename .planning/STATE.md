@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 12-05-PLAN.md
-last_updated: "2026-03-09T10:25:00.000Z"
-last_activity: "2026-03-09 — Phase 12 complete (end-to-end verification: all 8 requirements AICONF-01 through DOC-03 approved via browser testing)"
+stopped_at: Completed 13-01-PLAN.md
+last_updated: "2026-03-09T20:15:24.967Z"
+last_activity: "2026-03-09 — Phase 12 Plan 05 complete (end-to-end verification: all 8 requirements confirmed working via browser testing + code inspection)"
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 30
-  completed_plans: 10
+  completed_plans: 11
   percent: 69
 ---
 
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 12 COMPLETE, Phase 13 (Deal Desk & CRM) is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 13 (Deal Desk & CRM) Plan 1 COMPLETE, Plan 2 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 12 of 19 — AI Configuration + Document Intake (COMPLETE)
-- **Plan:** 5 of 5 complete
+- **Phase:** 13 of 19 — Deal Desk & CRM (In Progress)
+- **Plan:** 1 of 5 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 12 Plan 05 complete (end-to-end verification: all 8 requirements confirmed working via browser testing + code inspection)
+- **Last activity:** 2026-03-09 — Phase 13 Plan 01 complete (pipeline intelligence: daysInStage badges on kanban cards, column value headers, View Asset link on closed deals)
 
-Progress: [███████░░░] 69% (46/66 plans)
+Progress: [███████░░░] 71% (47/66 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -43,6 +43,7 @@ Progress: [███████░░░] 69% (46/66 plans)
 | Phase 12 P03 | 7 | 2 tasks | 4 files |
 | Phase 12-ai-configuration-document-intake P04 | 18 | 3 tasks | 6 files |
 | Phase 12-ai-configuration-document-intake P05 | 5 | 2 tasks | 0 files |
+| Phase 13-deal-desk-crm P01 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,13 @@ Progress: [███████░░░] 69% (46/66 plans)
 - **Fields without parent columns:** Go to Deal.dealMetadata or Asset.projectedMetrics JSON — no schema changes needed
 - **ConfirmDialog variant:** Use "primary" (not "default") — actual interface is "primary" | "danger"
 - **Phase 12 verification:** All 8 requirements (AICONF-01 through DOC-03) passed human browser testing — phase declared complete 2026-03-09
+
+### Phase 13 Deal Desk & CRM Decisions (In Progress)
+- **daysInStage computation:** Use DealActivity STAGE events to find when deal entered current stage; fallback to deal.createdAt if no matching activity
+- **Compute-and-strip pattern:** Include activities for computation then strip before returning: `const { activities, ...rest } = deal; return { ...rest, daysInStage }`
+- **Days-in-stage color thresholds:** gray <14d, amber 14-30d, red >30d — matches intuitive SLA for deal velocity monitoring
+- **Column header value:** Pulled from existing pipelineAnalytics.valueByStage already in SWR response — zero additional DB queries
+- **View Asset link:** Guarded by sourceAssets?.length > 0 — safe for legacy closed deals that predate the sourceAssets relation
 
 ### Phase 11 Foundation Decisions
 - **Date formatting:** Native Intl.DateTimeFormat (not date-fns) -- zero bundle cost for identical output
@@ -97,6 +105,6 @@ Progress: [███████░░░] 69% (46/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T10:25:00.000Z
-- **Stopped at:** Completed 12-05-PLAN.md
-- **Resume file:** .planning/phases/12-ai-configuration-document-intake/12-05-SUMMARY.md
+- **Last session:** 2026-03-09T20:15:24.965Z
+- **Stopped at:** Completed 13-01-PLAN.md
+- **Resume file:** None
