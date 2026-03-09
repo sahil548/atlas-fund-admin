@@ -38,10 +38,10 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Entity Management — Structure & Navigation
 
-- [ ] **ENTITY-01**: Entity list shows parent-child hierarchy (fund → SPV → sidecar relationships)
+- [x] **ENTITY-01**: Entity list shows parent-child hierarchy (fund → SPV → sidecar relationships)
 - [ ] **ENTITY-02**: Formation workflow provides "what's next" guidance after completion
-- [ ] **ENTITY-03**: Regulatory filings tab has structured add/edit form (not empty shell)
-- [ ] **ENTITY-04**: GP can transition entity status (ACTIVE → WINDING_DOWN → DISSOLVED)
+- [x] **ENTITY-03**: Regulatory filings tab has structured add/edit form (not empty shell)
+- [x] **ENTITY-04**: GP can transition entity status (ACTIVE → WINDING_DOWN → DISSOLVED)
 - [ ] **ENTITY-05**: Side letter management wiring verified end-to-end
 
 ### Capital Activity — Workflow Completion
@@ -113,11 +113,11 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Meeting Intelligence
 
-- [ ] **MTG-01**: Fireflies integration via per-user OAuth — each GP team member connects their own Fireflies account
+- [x] **MTG-01**: Fireflies integration via per-user OAuth — each GP team member connects their own Fireflies account
 - [ ] **MTG-02**: Meeting summaries auto-generated from transcripts via AI
-- [ ] **MTG-03**: Action items auto-extracted from meetings and created as linked tasks
+- [x] **MTG-03**: Action items auto-extracted from meetings and created as linked tasks
 - [ ] **MTG-04**: Meetings linked to deal/entity context and surfaced in activity feeds
-- [ ] **MTG-05**: Aggregated meeting view across all connected team members' Fireflies accounts
+- [x] **MTG-05**: Aggregated meeting view across all connected team members' Fireflies accounts
 
 ### Supporting Modules — Reports, Accounting, Settings
 
@@ -212,16 +212,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TASK-03 | Phase 14 | Pending |
 | TASK-04 | Phase 14 | Pending |
 | TASK-05 | Phase 14 | Pending |
-| ENTITY-01 | Phase 15 | Pending |
+| ENTITY-01 | Phase 15 | Complete |
 | ENTITY-02 | Phase 15 | Pending |
-| ENTITY-03 | Phase 15 | Pending |
-| ENTITY-04 | Phase 15 | Pending |
+| ENTITY-03 | Phase 15 | Complete |
+| ENTITY-04 | Phase 15 | Complete |
 | ENTITY-05 | Phase 15 | Pending |
-| MTG-01 | Phase 15 | Pending |
+| MTG-01 | Phase 15 | Complete |
 | MTG-02 | Phase 15 | Pending |
-| MTG-03 | Phase 15 | Pending |
+| MTG-03 | Phase 15 | Complete |
 | MTG-04 | Phase 15 | Pending |
-| MTG-05 | Phase 15 | Pending |
+| MTG-05 | Phase 15 | Complete |
 | CAP-01 | Phase 16 | Pending |
 | CAP-02 | Phase 16 | Pending |
 | CAP-03 | Phase 16 | Pending |
