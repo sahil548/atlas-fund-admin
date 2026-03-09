@@ -38,20 +38,18 @@ created: 2026-03-09
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 13-01-01 | 01 | 1 | DEAL-11 | manual-only (visual) | `npm run build` | N/A | ⬜ pending |
-| 13-01-02 | 01 | 1 | DEAL-12 | manual-only (visual) | `npm run build` | N/A | ⬜ pending |
-| 13-01-03 | 01 | 1 | DEAL-13 | manual-only (click test) | `npm run build` | N/A | ⬜ pending |
-| 13-02-01 | 02 | 1 | DEAL-14 | manual-only (download) | `npm run build` | N/A | ⬜ pending |
-| 13-03-01 | 03 | 1 | DEAL-15 | manual-only (visual) | `npm run build` | N/A | ⬜ pending |
-| 13-04-01 | 04 | 1 | DEAL-16 | manual-only (workflow) | `npm run build` | N/A | ⬜ pending |
-| 13-05-01 | 05 | 2 | CRM-01 | manual-only (visual) | `npm run build` | N/A | ⬜ pending |
-| 13-05-02 | 05 | 2 | CRM-02 | manual-only (form workflow) | `npm run build` | N/A | ⬜ pending |
-| 13-05-03 | 05 | 2 | CRM-03 | manual-only (badge UI) | `npm run build` | N/A | ⬜ pending |
-| 13-05-04 | 05 | 2 | CRM-04 | manual-only (data display) | `npm run build` | N/A | ⬜ pending |
-| 13-06-01 | 06 | 2 | CRM-05 | manual-only (deal creation) | `npm run build` | N/A | ⬜ pending |
-| 13-06-02 | 06 | 2 | CRM-06 | manual-only (data entry) | `npm run build` | N/A | ⬜ pending |
+| 13-01-01 | 01 | 1 | DEAL-11, DEAL-12 | manual-only (visual) | `npm run build` | N/A | pending |
+| 13-01-02 | 01 | 1 | DEAL-13 | manual-only (click test) | `npm run build` | N/A | pending |
+| 13-02-01 | 02 | 1 | DEAL-14 | manual-only (download) | `npm run build` | N/A | pending |
+| 13-02-02 | 02 | 1 | DEAL-15 | manual-only (visual) | `npm run build` | N/A | pending |
+| 13-03-01 | 03 | 1 | DEAL-16 | manual-only (workflow) | `npm run build` | N/A | pending |
+| 13-03-02 | 03 | 1 | DEAL-16 | manual-only (workflow) | `npm run build` | N/A | pending |
+| 13-04-01 | 04 | 2 | CRM-01, CRM-02, CRM-03, CRM-04 | manual-only (form + data) | `npm run build` | N/A | pending |
+| 13-04-02 | 04 | 2 | CRM-01, CRM-02, CRM-03, CRM-04 | manual-only (visual + interaction) | `npm run build` | N/A | pending |
+| 13-05-01 | 05 | 3 | CRM-05, CRM-06 | manual-only (deal creation) | `npm run build` | N/A | pending |
+| 13-05-02 | 05 | 3 | CRM-05, CRM-06 | manual-only (data entry + display) | `npm run build` | N/A | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
@@ -74,7 +72,7 @@ created: 2026-03-09
 | Contact activity timeline | CRM-01 | Visual + interaction | Open /contacts/[id], verify timeline shows activities in chronological order with filters |
 | Interaction CRUD | CRM-02 | Form workflow test | Log a call/email/meeting/note on contact page, edit it, delete it |
 | Relationship tags | CRM-03 | Badge UI interaction | Add/remove core and custom tags on contact header |
-| Linked deals/entities/assets | CRM-04 | Data display verification | Open contact with linked deals, verify all sections populate correctly |
+| Linked deals/entities/assets | CRM-04 | Data display verification | Open contact with linked deals, verify all sections populate correctly including linked assets |
 | Deal sourcing attribution | CRM-05 | Deal creation flow | Create a deal with source contact, verify it shows on deal page and contact's "Deals Sourced" section |
 | Co-investor tracking | CRM-06 | Data entry + display | Add co-investors to a deal, verify they appear on deal page and contact's "Co-Investments" section |
 
