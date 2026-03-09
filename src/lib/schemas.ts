@@ -753,6 +753,16 @@ export const GenerateReportSchema = z.object({
   investorId: z.string().optional(), // for investor-specific capital account statement
 });
 
+// ── Bulk Deal Actions ────────────────────────────────
+
+export const BulkDealActionSchema = z.object({
+  dealIds: z.array(z.string()).min(1, "Select at least one deal"),
+  action: z.enum(["kill", "assign", "advance"]),
+  killReason: z.string().optional(),
+  assignLeadId: z.string().optional(),
+  firmId: z.string(),
+});
+
 // ── Audit Log ────────────────────────────────────────
 
 export const AuditLogQuerySchema = z.object({
