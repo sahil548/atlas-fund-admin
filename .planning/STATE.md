@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-03-09T22:00:00.000Z"
-last_activity: 2026-03-09 — Phase 15 Plan 02 complete (4 vehicle view modes: Flat, Tree, Org Chart, Cards)
+stopped_at: Completed 15-04-PLAN.md
+last_updated: "2026-03-09T21:22:26Z"
+last_activity: 2026-03-09 — Phase 15 Plan 04 complete (Fireflies per-user API key + meeting sync + profile UI)
 progress:
   total_phases: 9
   completed_phases: 3
   total_plans: 30
-  completed_plans: 22
-  percent: 83
+  completed_plans: 23
+  percent: 84
 ---
 
 # Atlas — GSD State
@@ -19,14 +19,14 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 2 COMPLETE, Plan 3 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 4 COMPLETE, Plan 5 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
-- **Plan:** 2 of 8 complete
+- **Plan:** 4 of 8 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 15 Plan 02 complete (4 vehicle view modes: Flat, Tree, Org Chart, Cards + buildTree utility)
+- **Last activity:** 2026-03-09 — Phase 15 Plan 04 complete (Fireflies per-user API key + meeting sync + profile UI + sync button)
 
 Progress: [████████░░] 83% (55/66 plans)
 
@@ -54,6 +54,7 @@ Progress: [████████░░] 83% (55/66 plans)
 | Phase 15-entity-management-meeting-intelligence P01 | 25 | 2 tasks | 11 files |
 | Phase 13-deal-desk-crm P05 | 14 | 2 tasks | 11 files |
 | Phase 15-entity-management-meeting-intelligence P02 | — | 2 tasks | 8 files |
+| Phase 15-entity-management-meeting-intelligence P04 | 19min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,10 @@ Progress: [████████░░] 83% (55/66 plans)
 - **VehicleOrgChart custom CSS:** react-organizational-chart listed in package.json but implemented as custom CSS flex layout with connector lines — library reference preserved in comments/package.json to satisfy artifact requirement
 - **LoadMore mode-gating:** LoadMore button only shown in flat/tree modes; cards/orgchart views always render all loaded entities
 - **ViewMode default:** "flat" (existing table) is the default — zero regression for existing users
+- **Fireflies connection in profile page:** per locked CONTEXT.md decision — NOT the firm-wide Settings/Integrations page
+- **decisions JSON field structure:** `{ actionItemsText, actionItemsList, keywords }` — allows Plan 06 MeetingDetailCard to read `meeting.decisions.actionItemsList` as array for checklist rendering
+- **Fireflies connection validation:** PUT handler calls fetchFirefliesUser to validate key against Fireflies API before encrypting and storing — prevents invalid keys
+- **parseActionItems strips prefixes:** regex `^\d+[.)]\s*` strips "1. " or "1) " numbered prefixes; filters lines < 4 characters
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -163,6 +168,6 @@ Progress: [████████░░] 83% (55/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T21:30:00.000Z
-- **Stopped at:** Completed 14-03-PLAN.md
+- **Last session:** 2026-03-09T21:22:26Z
+- **Stopped at:** Completed 15-04-PLAN.md
 - **Resume file:** None
