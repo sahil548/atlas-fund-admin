@@ -119,8 +119,6 @@ Requirements: ASSET-04, ASSET-05, ASSET-06, ASSET-07, ASSET-08, ASSET-09, TASK-0
 
 ### Task Notifications
 - Email notification when a task is assigned to someone
-- Due date reminder email the day before task is due
-- Overdue notification when task passes due date and is still not done
 - Uses existing Resend email infrastructure
 
 ### Claude's Discretion
@@ -194,6 +192,8 @@ Requirements: ASSET-04, ASSET-05, ASSET-06, ASSET-07, ASSET-08, ASSET-09, TASK-0
 - **Portfolio company operating metrics** — Revenue, burn rate, runway, headcount for equity/venture. Detailed data entry, future phase.
 - **Configurable task templates per stage transition** — GP-defined templates in settings. Maximum flexibility but too much setup for now.
 - **Covenant test history tracking** — Logging each test date, actual value, pass/fail. Building compliance history over time. Future enhancement.
+- **Due date reminder emails** — Email the day before task is due. Requires background job infrastructure (cron/scheduled tasks). Future phase.
+- **Overdue task notification trigger** — Auto-send email when task passes due date. Same background job dependency. Future phase.
 
 </deferred>
 
