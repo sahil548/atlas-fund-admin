@@ -577,6 +577,18 @@ model Asset {
   projectedMultiple Float?   // Target MOIC/multiple
   projectedMetrics  Json?    // Asset-class-specific: { capRate, cashOnCash, yieldToMaturity, ... }
 
+  // Phase 14: Exit workflow fields
+  exitDate         DateTime?
+  exitProceeds     Float?
+  exitNotes        String?
+
+  // Phase 14: Ownership tracking
+  ownershipPercent Float?    // % of underlying asset owned (e.g., 12%)
+  shareCount       Float?    // Shares/units held (e.g., 500000 shares)
+
+  // Phase 14: Review schedule
+  reviewFrequency  String?   // "quarterly" | "semi_annual" | "annual"
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1495,15 +1507,28 @@ model Task {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  assignee User?   @relation(fields: [assigneeId], references: [id])
-  asset    Asset?  @relation(fields: [assetId], references: [id])
-  deal     Deal?   @relation(fields: [dealId], references: [id])
-  entity   Entity? @relation(fields: [entityId], references: [id])
+  assignee       User?                @relation(fields: [assigneeId], references: [id])
+  asset          Asset?               @relation(fields: [assetId], references: [id])
+  deal           Deal?                @relation(fields: [dealId], references: [id])
+  entity         Entity?              @relation(fields: [entityId], references: [id])
+  checklistItems TaskChecklistItem[]
 
   @@index([contextType, contextId])
   @@index([dealId])
   @@index([entityId])
   @@index([assigneeId])
+}
+
+model TaskChecklistItem {
+  id         String   @id @default(cuid())
+  taskId     String
+  title      String
+  isChecked  Boolean  @default(false)
+  position   Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
 model Meeting {
