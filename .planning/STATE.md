@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 15-04-PLAN.md
-last_updated: "2026-03-09T21:22:26Z"
-last_activity: 2026-03-09 — Phase 15 Plan 04 complete (Fireflies per-user API key + meeting sync + profile UI)
+stopped_at: Completed 14-04-PLAN.md
+last_updated: "2026-03-09T22:05:00Z"
+last_activity: 2026-03-09 — Phase 14 Plan 04 complete (Holding-type management panels + Mark Reviewed + review suggestions)
 progress:
   total_phases: 9
   completed_phases: 3
@@ -26,7 +26,7 @@ progress:
 - **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
 - **Plan:** 4 of 8 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 15 Plan 04 complete (Fireflies per-user API key + meeting sync + profile UI + sync button)
+- **Last activity:** 2026-03-09 — Phase 14 Plan 04 complete (Holding-type management panels: RE/FundLP/Credit/Equity + Mark Reviewed + type-aware suggestions)
 
 Progress: [████████░░] 83% (55/66 plans)
 
@@ -55,6 +55,7 @@ Progress: [████████░░] 83% (55/66 plans)
 | Phase 13-deal-desk-crm P05 | 14 | 2 tasks | 11 files |
 | Phase 15-entity-management-meeting-intelligence P02 | — | 2 tasks | 8 files |
 | Phase 15-entity-management-meeting-intelligence P04 | 19min | 2 tasks | 7 files |
+| Phase 14-asset-management-task-management P04 | 35min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -135,6 +136,12 @@ Progress: [████████░░] 83% (55/66 plans)
 - **Contracts tab adaptive rendering:** Single component handles REAL_ESTATE (lease cards), CREDIT (agreement cards), EQUITY (position card), FUND_LP (commitment card) based on assetClass
 - **ValuationHistoryChart null guard:** Returns null for < 2 valuations — prevents meaningless single-point chart
 - **Recharts Tooltip formatter typed as any:** Avoids complex Formatter generic constraints — follows analytics page pattern
+- **Management panel schema fields:** Plan interface specs show simplified schema; actual fields differ (baseRentMonthly not monthlyRent, borrowerName not agreementName, etc.) — always verify in schema.prisma
+- **AssetFundLPDetails/RealEstateDetails string fields:** These models store numeric values as strings — parseNum() helper required before arithmetic or fmt() usage
+- **rentEscalation Json field:** Stores escalation data as nested object — getEscalationRate()/getEscalationType() helpers handle varying Json structures
+- **Mark Reviewed pattern:** No reviewedAt column in Asset — sends only nextReview ISO string; PUT handler coerces to Date; SWR revalidated after success
+- **LP_POSITION panel routing:** FundLPPanel uses participationStructure === "LP_POSITION" check (not assetClass) — fund LP positions can be any class
+- **EQUITY/VENTURE panel guard:** Skip FundLPPanel for LP positions; skip EquityManagementPanel for LP_POSITION to prevent double-rendering
 
 ### Phase 15 Entity Management & Meeting Intelligence Decisions (In Progress)
 - **Vehicles rename:** Only user-facing string literals changed — Prisma model names, API routes (/api/entities), TypeScript types all left as Entity
@@ -168,6 +175,6 @@ Progress: [████████░░] 83% (55/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-09T21:22:26Z
-- **Stopped at:** Completed 15-04-PLAN.md
+- **Last session:** 2026-03-09T22:05:00Z
+- **Stopped at:** Completed 14-04-PLAN.md
 - **Resume file:** None
