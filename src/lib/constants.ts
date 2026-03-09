@@ -1,3 +1,31 @@
+// ── CRM: Relationship Tags & Interaction Types ─────────────
+
+export const RELATIONSHIP_TAGS = [
+  "Broker",
+  "Co-Investor",
+  "LP (current)",
+  "LP Prospect",
+  "Advisor",
+  "Board Member",
+  "Service Provider",
+] as const;
+
+export const INTERACTION_TYPES = ["CALL", "EMAIL", "MEETING", "NOTE"] as const;
+
+export const INTERACTION_TYPE_LABELS: Record<string, string> = {
+  CALL: "Call",
+  EMAIL: "Email",
+  MEETING: "Meeting",
+  NOTE: "Note",
+};
+
+export const INTERACTION_TYPE_COLORS: Record<string, string> = {
+  CALL: "amber",
+  EMAIL: "blue",
+  MEETING: "green",
+  NOTE: "gray",
+};
+
 // ── Shared Taxonomy Labels & Colors ────────────────────────
 
 export const ASSET_CLASS_LABELS: Record<string, string> = {

@@ -342,6 +342,8 @@ model Firm {
   decisionStructures DecisionStructure[]
   auditLogs  AuditLog[]
   integrationConnections IntegrationConnection[]
+  contactInteractions ContactInteraction[] @relation("FirmContactInteractions")
+  contactTags         ContactTag[]         @relation("FirmContactTags")
 }
 
 model AIConfiguration {
@@ -444,6 +446,7 @@ model Entity {
 
   // Phase 3: NAV proxy configuration
   navProxyConfig       Json?              // { cashPercent, otherAssetsPercent, liabilitiesPercent }
+  contactInteractions  ContactInteraction[] @relation("EntityContactInteractions")
 }
 
 model AccountingConnection {
@@ -544,6 +547,7 @@ model User {
   taskComments        DDTaskComment[]       @relation("TaskCommentAuthor")
   decisionMemberships DecisionMember[]
   auditLogs           AuditLog[]
+  contactInteractions ContactInteraction[] @relation("UserContactInteractions")
 }
 
 // ============================================================
@@ -1153,6 +1157,7 @@ model Deal {
   tasks              Task[]
   dealEntities       DealEntity[]
   sourceAssets       Asset[]        @relation("AssetSourceDeal")
+  contactInteractions ContactInteraction[] @relation("DealContactInteractions")
 
   @@index([stage])
   @@index([firmId])
@@ -1739,8 +1744,48 @@ model Contact {
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
+  interactions    ContactInteraction[]
+  tags            ContactTag[]
+
   @@index([firmId])
   @@index([companyId])
+}
+
+model ContactInteraction {
+  id        String   @id @default(cuid())
+  firmId    String
+  contactId String
+  authorId  String
+  type      String   // CALL, EMAIL, MEETING, NOTE
+  notes     String
+  date      DateTime @default(now())
+  dealId    String?
+  entityId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  firm      Firm     @relation("FirmContactInteractions", fields: [firmId], references: [id])
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  author    User     @relation("UserContactInteractions", fields: [authorId], references: [id])
+  deal      Deal?    @relation("DealContactInteractions", fields: [dealId], references: [id])
+  entity    Entity?  @relation("EntityContactInteractions", fields: [entityId], references: [id])
+
+  @@index([contactId])
+  @@index([firmId])
+  @@index([authorId])
+}
+
+model ContactTag {
+  id        String  @id @default(cuid())
+  firmId    String
+  contactId String
+  tag       String
+
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  firm      Firm    @relation("FirmContactTags", fields: [firmId], references: [id])
+
+  @@unique([contactId, tag])
+  @@index([firmId])
 }
 
 // ============================================================

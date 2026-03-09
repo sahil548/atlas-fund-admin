@@ -17,6 +17,8 @@ async function main() {
   await prisma.investorUserAccess.deleteMany();
   await prisma.aIPromptTemplate.deleteMany();
   await prisma.aIConfiguration.deleteMany();
+  await prisma.contactInteraction.deleteMany();
+  await prisma.contactTag.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
   await prisma.activityEvent.deleteMany();
@@ -2526,6 +2528,56 @@ End with credit risk rating, key covenant concerns, and recommended structural p
     ],
   });
   console.log("✓ Transactions seeded");
+
+  // ============================================================
+  // CONTACT INTERACTIONS (CRM seed data)
+  // ============================================================
+  console.log("Creating contact interactions...");
+
+  await prisma.contactInteraction.createMany({
+    data: [
+      // Robert Chen (contact-1, CEO of Apex Industries)
+      { id: "ci-1", firmId: "firm-1", contactId: "contact-1", authorId: "user-jk", type: "CALL", notes: "Introductory call with Robert — discussed Q4 performance and upcoming Board. Strong relationship with fund I leadership.", date: new Date("2026-03-01") },
+      { id: "ci-2", firmId: "firm-1", contactId: "contact-1", authorId: "user-al", type: "MEETING", notes: "Site visit at Apex HQ. Reviewed operations and capex plan. Management team looks strong.", date: new Date("2026-02-15") },
+      { id: "ci-3", firmId: "firm-1", contactId: "contact-1", authorId: "user-sm", type: "EMAIL", notes: "Sent Q4 reporting package. Robert responded promptly with questions on EBITDA adjustments.", date: new Date("2026-01-20") },
+      // Lisa Park (contact-2, CFO of Beacon Health)
+      { id: "ci-4", firmId: "firm-1", contactId: "contact-2", authorId: "user-jk", type: "MEETING", notes: "Quarterly business review with Lisa. Discussed regulatory pipeline and reimbursement dynamics. Very engaged.", date: new Date("2026-02-28") },
+      { id: "ci-5", firmId: "firm-1", contactId: "contact-2", authorId: "user-sm", type: "NOTE", notes: "Lisa mentioned they are exploring a strategic acquisition in the midwest. Worth monitoring as a co-invest opportunity.", date: new Date("2026-02-10") },
+      // David Morse (contact-3, Managing Partner at Ridgeline Capital)
+      { id: "ci-6", firmId: "firm-1", contactId: "contact-3", authorId: "user-al", type: "CALL", notes: "Discussed co-invest opportunity on Nordic Wind deal. David is interested at $5M ticket. Following up with term sheet.", date: new Date("2026-03-05") },
+      { id: "ci-7", firmId: "firm-1", contactId: "contact-3", authorId: "user-jk", type: "EMAIL", notes: "Sent NDA and co-invest summary deck. Awaiting signature.", date: new Date("2026-02-20") },
+      // Erik Johansson (contact-4, Partner at Nordic Wind Energy)
+      { id: "ci-8", firmId: "firm-1", contactId: "contact-4", authorId: "user-jk", type: "MEETING", notes: "Kick-off meeting with Erik on the Nordic Wind deal. Excellent alignment on structure. Moving to DD phase.", date: new Date("2026-01-15") },
+      // Maria Santos (contact-5, CEO of UrbanEst)
+      { id: "ci-9", firmId: "firm-1", contactId: "contact-5", authorId: "user-al", type: "NOTE", notes: "Maria reached out re: follow-on capital. Series B timeline pushed to Q3. Monitoring.", date: new Date("2026-02-08") },
+    ],
+  });
+  console.log("✓ Contact interactions seeded");
+
+  // ============================================================
+  // CONTACT TAGS (CRM relationship tags)
+  // ============================================================
+  console.log("Creating contact tags...");
+
+  await prisma.contactTag.createMany({
+    data: [
+      // Robert Chen — Broker + Co-Investor
+      { id: "ct-1", firmId: "firm-1", contactId: "contact-1", tag: "Co-Investor" },
+      { id: "ct-2", firmId: "firm-1", contactId: "contact-1", tag: "Board Member" },
+      // Lisa Park — LP Prospect
+      { id: "ct-3", firmId: "firm-1", contactId: "contact-2", tag: "LP Prospect" },
+      // David Morse — Co-Investor + Broker
+      { id: "ct-4", firmId: "firm-1", contactId: "contact-3", tag: "Co-Investor" },
+      { id: "ct-5", firmId: "firm-1", contactId: "contact-3", tag: "Broker" },
+      // Erik Johansson — Advisor
+      { id: "ct-6", firmId: "firm-1", contactId: "contact-4", tag: "Advisor" },
+      // Maria Santos — LP Prospect + Advisor
+      { id: "ct-7", firmId: "firm-1", contactId: "contact-5", tag: "LP Prospect" },
+      // Tom Bradley (legal counsel) — Service Provider
+      { id: "ct-8", firmId: "firm-1", contactId: "contact-6", tag: "Service Provider" },
+    ],
+  });
+  console.log("✓ Contact tags seeded");
 
   console.log("Seeding complete!");
 }

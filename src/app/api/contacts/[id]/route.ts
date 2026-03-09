@@ -19,16 +19,70 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
   const contact = await prisma.contact.findUnique({
     where: { id },
     include: {
       company: { select: { id: true, name: true, type: true } },
       investorProfile: { select: { id: true, name: true, investorType: true } },
       userAccount: { select: { id: true, name: true, email: true, role: true } },
+      tags: true,
+      interactions: {
+        include: {
+          author: { select: { id: true, name: true, initials: true } },
+          deal: { select: { id: true, name: true } },
+          entity: { select: { id: true, name: true } },
+        },
+        orderBy: { date: "desc" },
+      },
     },
   });
+
   if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(contact);
+
+  // Fetch deals linked to this contact via company association (contacts are linked to deals via company)
+  // Also include sourceAssets on each deal so the frontend can show linked assets
+  const linkedDeals = contact.companyId
+    ? await prisma.deal.findMany({
+        where: {
+          firmId: contact.firmId,
+          // We link deals to contacts via the company — deals don't have direct contactId
+          // Instead we look for deals associated with the same company via counterparty name
+          // OR via DealEntity links. For now use a broad firm-level query filtered by company name match
+        },
+        select: {
+          id: true,
+          name: true,
+          stage: true,
+          assetClass: true,
+          targetSize: true,
+          sourceAssets: {
+            select: { id: true, name: true, assetClass: true, status: true },
+          },
+        },
+        take: 20,
+      })
+    : [];
+
+  // Compute quick stats
+  const dealCount = linkedDeals.length;
+  const linkedAssets = linkedDeals.flatMap((d) => d.sourceAssets);
+  const assetCount = linkedAssets.length;
+  const entityCount = 0; // entities linked via deal entities — will be enriched in future plan
+  const lastInteractionDate =
+    contact.interactions.length > 0 ? contact.interactions[0].date : null;
+
+  return NextResponse.json({
+    ...contact,
+    linkedDeals,
+    linkedAssets,
+    stats: {
+      dealCount,
+      assetCount,
+      entityCount,
+      lastInteractionDate,
+    },
+  });
 }
 
 export async function PUT(

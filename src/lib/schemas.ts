@@ -358,6 +358,28 @@ export const CreateCompanySchema = z.object({
   notes: z.string().optional(),
 });
 
+// ── Contact CRM ────────────────────────────────────────
+
+export const CreateInteractionSchema = z.object({
+  type: z.enum(["CALL", "EMAIL", "MEETING", "NOTE"]),
+  notes: z.string().min(1, "Notes required"),
+  date: z.string().optional(),
+  dealId: z.string().optional(),
+  entityId: z.string().optional(),
+});
+
+export const UpdateInteractionSchema = z.object({
+  type: z.enum(["CALL", "EMAIL", "MEETING", "NOTE"]).optional(),
+  notes: z.string().min(1).optional(),
+  date: z.string().optional(),
+  dealId: z.string().nullable().optional(),
+  entityId: z.string().nullable().optional(),
+});
+
+export const ContactTagSchema = z.object({
+  tag: z.string().min(1),
+});
+
 // ── Contacts ──────────────────────────────────────────
 
 export const CreateContactSchema = z.object({
