@@ -28,7 +28,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 12: AI Configuration & Document Intake** - Infrastructure for all AI features: key management, access control, document processing engine
 - [x] **Phase 13: Deal Desk & CRM** - Pipeline completeness and contact/relationship intelligence (completed 2026-03-09)
 - [ ] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
-- [ ] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration
+- [x] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration (completed 2026-03-10)
 - [ ] **Phase 16: Capital Activity** - Status advancement workflows and waterfall scenario analysis
 - [ ] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements
 - [ ] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring
@@ -122,7 +122,7 @@ Plans:
   3. Regulatory filings can be added and edited through a structured form (not an empty shell tab) and entity status can be transitioned (ACTIVE → WINDING_DOWN → DISSOLVED) via UI controls
   4. Each GP team member can connect their own Fireflies account via OAuth — meetings from all connected accounts appear in an aggregated meeting view in Atlas
   5. AI-generated meeting summaries and auto-extracted action items appear on each meeting record, action items are linked as tasks to the relevant deal or entity, and meetings surface in the activity feed for their linked context
-**Plans:** 5/8 plans executed
+**Plans:** 8/8 plans complete
 Plans:
 - [x] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
 - [x] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
@@ -195,7 +195,7 @@ Plans:
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
-| 15. Entity Management & Meeting Intelligence | 6/8 | In Progress|  | - |
+| 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
 | 17. LP Portal | v2.0 | 0/TBD | Not started | - |
 | 18. AI Features | v2.0 | 0/TBD | Not started | - |
