@@ -12,6 +12,7 @@ import { CreateDistributionForm } from "@/components/features/capital/create-dis
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
+import { WaterfallPreviewPanel } from "@/components/features/waterfall/waterfall-preview-panel";
 import { fmt, pct, formatDate, cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
@@ -87,6 +88,7 @@ export default function TransactionsPage() {
   const [calcForm, setCalcForm] = useState({ entityId: "", distributableAmount: "" });
   const [calcResults, setCalcResults] = useState<Record<string, any>>({}); // templateId -> results
   const [calcLoading, setCalcLoading] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null); // for scenario preview panel
 
   async function handleCalculateWaterfall(templateId: string) {
     if (!calcForm.entityId || !calcForm.distributableAmount) return;
@@ -98,6 +100,7 @@ export default function TransactionsPage() {
         body: JSON.stringify({
           entityId: calcForm.entityId,
           distributableAmount: Number(calcForm.distributableAmount),
+          saveResults: true, // explicit save
         }),
       });
       if (!res.ok) throw new Error("Calculation failed");
@@ -458,14 +461,35 @@ export default function TransactionsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          setPreviewTemplateId(previewTemplateId === t.id ? null : t.id);
+                        }}
+                        className="px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg text-xs font-medium hover:bg-emerald-50 transition-colors"
+                      >
+                        {previewTemplateId === t.id ? "Hide Scenarios" : "Run Scenario"}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setShowCalcModal(t.id);
                           setCalcForm({ entityId: "", distributableAmount: "" });
                         }}
                         className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors"
                       >
-                        Calculate Waterfall
+                        Calculate &amp; Save
                       </button>
                     </div>
+
+                    {/* Waterfall Scenario Preview Panel */}
+                    {previewTemplateId === t.id && (
+                      <div className="border-t border-gray-100 pt-4">
+                        <WaterfallPreviewPanel
+                          templateId={t.id}
+                          templateName={t.name}
+                          entities={entities}
+                          mode="standalone"
+                        />
+                      </div>
+                    )}
 
                     {/* Calculation Results */}
                     {calcResults[t.id] && (

@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
 import { fmt } from "@/lib/utils";
+import { WaterfallPreviewPanel } from "@/components/features/waterfall/waterfall-preview-panel";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -58,6 +59,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   const [showPerInvestor, setShowPerInvestor] = useState(false);
   const [waterfallRan, setWaterfallRan] = useState(false);
   const [hasUnfundedWarning, setHasUnfundedWarning] = useState(false);
+  const [showWaterfallPreview, setShowWaterfallPreview] = useState(false);
+  const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -133,6 +136,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       setPerInvestorAllocations(breakdown);
       setShowPerInvestor(breakdown.length > 0);
       setWaterfallRan(true);
+      setPreviewTemplateId(template.id);
+      setShowWaterfallPreview(true);
       toast.success?.("Waterfall calculated — review decomposition below");
     } catch {
       toast.error("Waterfall calculation failed");
@@ -178,6 +183,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       setPerInvestorAllocations([]);
       setShowPerInvestor(false);
       setWaterfallRan(false);
+      setShowWaterfallPreview(false);
+      setPreviewTemplateId(null);
       onClose();
     } catch {
       toast.error("Failed to create distribution");
@@ -307,6 +314,29 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Waterfall Tier-by-Tier Preview */}
+        {showWaterfallPreview && previewTemplateId && (
+          <div className="border-t border-gray-100 pt-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-medium text-gray-700">Waterfall Preview</div>
+              <button
+                onClick={() => setShowWaterfallPreview(false)}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Hide
+              </button>
+            </div>
+            <WaterfallPreviewPanel
+              templateId={previewTemplateId}
+              templateName=""
+              entities={entities.map((e) => ({ id: e.id, name: e.name }))}
+              mode="inline"
+              initialEntityId={form.entityId}
+              initialAmount={Number(form.grossAmount)}
+            />
           </div>
         )}
       </div>
