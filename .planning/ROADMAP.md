@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 GP Production Ready** — Phases 1-10 (shipped 2026-03-08) — [archive](milestones/v1.0-ROADMAP.md)
-- 🚧 **v2.0 Intelligence Platform** — Phases 11-19 (in progress)
+- 🚧 **v2.0 Intelligence Platform** — Phases 11-20 (in progress)
 
 ---
 
@@ -33,6 +33,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements (completed 2026-03-10)
 - [ ] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring
 - [ ] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup
+- [ ] **Phase 20: Schema Cleanup & UI Polish** - Full reconciliation of Phases 11-19, exhaustive schema audit, and UI overhaul — zero accumulated debt, airtight database, $50K SaaS-grade interface
 
 ---
 
@@ -181,7 +182,7 @@ Plans:
   3. AI can extract deal terms from an uploaded CIM and pre-fill deal fields, generate a DD summary from workstream data, and draft an IC memo from deal data and DD findings
   4. AI monitors the portfolio for covenant breaches and generates alerts when a breach is detected — the GP does not need to check manually
   5. AI can draft LP update communications from fund performance data, and AI suggests next tasks based on deal stage and asset type context
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 Plans:
 - [ ] 18-01-PLAN.md — NL intent classification, command bar provider expansion (page context, side panel state, alert freshness), AI service page context injection
 - [ ] 18-02-PLAN.md — Command bar NL query routing, AI response rendering, side panel pop-out, proactive alert mentions
@@ -207,11 +208,21 @@ Plans:
 - [ ] 19-05-PLAN.md -- Dashboard final assembly (chart redesign, activity feed wiring) + human verification checkpoint
 
 
+### Phase 20: Schema Cleanup & UI Polish
+
+**Goal:** Exhaustive three-track hardening pass that earns the v2.0 moniker. Track 1 (Integration Audit): Reconcile all changes from Phases 11-19 — find and fix conflicts, regressions, dead code, inconsistencies, and broken cross-module interactions that accumulated across 9 phases of rapid feature development. Track 2 (Schema): Audit every Prisma model, relation, and JSON field — fix broken nested lists, ensure all dynamic content is properly wired, verify relational integrity across the full data model, and eliminate any orphaned or mistyped fields. Track 3 (UI): Systematically review every page and component against best-in-class references (21st.dev, shadcn/ui, Radix primitives, premium dashboard templates) — replace or upgrade components with more professional, cleaner, and visually stronger alternatives. The end state is a codebase with zero accumulated tech debt from v2.0 development, an airtight database, and a UI that looks like a $50K SaaS product.
+**Requirements**: INTEG-* (cross-phase integration audit & fixes), SCHEMA-* (schema audit & fixes), UIPOL-* (UI component upgrades) — to be defined during planning
+**Depends on:** Phase 19
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 20 to break down)
+
 ---
 
 ## Progress
 
-**Execution Order:** 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19
+**Execution Order:** 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -223,5 +234,5 @@ Plans:
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
 | 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
-| 18. AI Features | v2.0 | 0/4 | Not started | - |
+| 18. AI Features | 1/4 | In Progress|  | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |

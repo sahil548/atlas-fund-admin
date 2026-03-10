@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: planning
-stopped_at: Completed 17-03-PLAN.md
-last_updated: "2026-03-10T08:29:40.625Z"
-last_activity: 2026-03-10 — Phase 17 Plan 03 complete (K-1 batch acknowledgment LP-08, GP K-1 tracking with Send Reminder, LP profile page with masked tax ID LP-09)
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-10T08:38:07.590Z"
+last_activity: 2026-03-10 — Phase 18 Plan 01 complete (NL intent classification module AI-01, CommandBarProvider expansion with page context + conversation + alert freshness, page-context-aware searchAndAnalyze)
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 7
   total_plans: 48
-  completed_plans: 39
+  completed_plans: 40
   percent: 89
 ---
 
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 17 (LP Portal) IN PROGRESS
+- **Current focus:** v2.0 Intelligence Platform — Phase 18 (AI Features) IN PROGRESS
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 17 of 19 — LP Portal (In Progress)
-- **Plan:** 3 of 3 complete (Phase 17 COMPLETE)
-- **Status:** Ready to plan
-- **Last activity:** 2026-03-10 — Phase 17 Plan 03 complete (K-1 batch acknowledgment LP-08, GP K-1 tracking with Send Reminder, LP profile page with masked tax ID LP-09)
+- **Phase:** 18 of 19 — AI Features (In Progress)
+- **Plan:** 1 of 4 complete
+- **Status:** In progress
+- **Last activity:** 2026-03-10 — Phase 18 Plan 01 complete (NL intent classification, CommandBarProvider expansion, page-context-aware ai-service)
 
-Progress: [█████████░] 89% (75/84 plans)
+Progress: [█████████░] 90% (76/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -66,6 +66,7 @@ Progress: [█████████░] 89% (75/84 plans)
 | Phase 17-lp-portal P01 | 8 | 2 tasks | 3 files |
 | Phase 17-lp-portal P02 | 9 | 3 tasks | 7 files |
 | Phase 17-lp-portal P03 | 18 | 3 tasks | 11 files |
+| Phase 18-ai-features P01 | 4 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -213,6 +214,13 @@ Progress: [█████████░] 89% (75/84 plans)
 - **Remind endpoint stub:** POST /api/reports/k1-status/remind logs audit only; email delivery deferred to Phase 18
 - **Contact model firstName/lastName:** Contact model uses firstName/lastName (not name) — profile route selects both; buildProfileResponse falls back to contact.email/phone
 
+### Phase 18 AI Features Decisions (In Progress)
+- **classifyIntent uses heuristics (no LLM):** ACTION_VERBS prefix match for nl_action, QUERY_PHRASES prefix match for nl_query, <=2 words without query phrase → fuzzy_search; deterministic and zero latency
+- **Alert freshness via localStorage:** `atlas_last_alert_seen` key — no schema changes, per-browser session, matches "no cron/background job" CONTEXT.md constraint
+- **Conversation state in CommandBarProvider:** Moved from command-bar.tsx component-local to provider level — required for dropdown + side panel to share same conversation thread
+- **pageContext parameter optional on searchAndAnalyze:** Backward-compatible extension — all existing callers unchanged; page context section omitted from prompt when pageType="other" or no entity info
+- **CommandBarProvider exports PageContext type:** Allows page components to call setPageContext() with correct type without importing from command-bar-types directly
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -226,8 +234,11 @@ Progress: [█████████░] 89% (75/84 plans)
 - Financial calculation correctness (IRR, waterfall) not formally verified — spot-check in Phase 16
 - Schema changes carry production risk — verify DATABASE_URL points to dev before any prisma push
 
+### Roadmap Evolution
+- Phase 20 added: Schema Cleanup & UI Polish
+
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T08:23:06.612Z
-- **Stopped at:** Completed 17-03-PLAN.md
+- **Last session:** 2026-03-10T08:38:07.587Z
+- **Stopped at:** Completed 18-01-PLAN.md
 - **Resume file:** None
