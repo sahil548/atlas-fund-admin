@@ -53,6 +53,111 @@ function reportTypeLabel(type: string): string {
   return found?.label ?? type;
 }
 
+// ── K-1 Acknowledgment Tracking ─────────────────────────────
+
+interface K1StatusRow {
+  investorId: string;
+  investorName: string;
+  total: number;
+  acknowledged: number;
+  pending: number;
+  lastAcknowledgedAt: string | null;
+}
+
+function K1TrackingSection({ firmId }: { firmId: string }) {
+  const toast = useToast();
+  const { data: k1Status, isLoading } = useSWR<K1StatusRow[]>(
+    firmId ? `/api/reports/k1-status` : null,
+    fetcher
+  );
+
+  const rows: K1StatusRow[] = Array.isArray(k1Status) ? k1Status : [];
+
+  async function handleSendReminder(investorId: string, investorName: string) {
+    const res = await fetch("/api/reports/k1-status/remind", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ investorId }),
+    });
+    if (!res.ok) {
+      toast.error("Failed to send reminder");
+      return;
+    }
+    toast.success(`Reminder sent to ${investorName}`);
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">K-1 Acknowledgment Tracking</h3>
+        <p className="text-xs text-gray-500 mt-0.5">
+          Per-investor K-1 acknowledgment status. Send reminders to investors with pending documents.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="text-sm text-gray-400">Loading K-1 status...</div>
+      ) : rows.length === 0 ? (
+        <div className="py-8 text-center border border-dashed border-gray-200 rounded-lg">
+          <div className="text-sm text-gray-500 font-medium">No K-1 documents distributed yet</div>
+          <div className="text-xs text-gray-400 mt-1">
+            Upload K-1 PDFs in the K-1 Distribution section below to track acknowledgments.
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Investor</th>
+                <th className="text-right py-2 px-3 font-medium text-gray-500">Total K-1s</th>
+                <th className="text-right py-2 px-3 font-medium text-gray-500">Acknowledged</th>
+                <th className="text-right py-2 px-3 font-medium text-gray-500">Pending</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Last Acknowledged</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Status</th>
+                <th className="text-right py-2 px-3 font-medium text-gray-500">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map((row) => {
+                const isComplete = row.pending === 0;
+                return (
+                  <tr key={row.investorId} className="hover:bg-gray-50">
+                    <td className="py-2.5 px-3 font-medium text-gray-900">{row.investorName}</td>
+                    <td className="py-2.5 px-3 text-right text-gray-700">{row.total}</td>
+                    <td className="py-2.5 px-3 text-right text-green-700">{row.acknowledged}</td>
+                    <td className="py-2.5 px-3 text-right text-amber-700">{row.pending}</td>
+                    <td className="py-2.5 px-3 text-gray-500">
+                      {row.lastAcknowledgedAt
+                        ? formatDate(row.lastAcknowledgedAt)
+                        : <span className="text-gray-400">—</span>}
+                    </td>
+                    <td className="py-2.5 px-3">
+                      <Badge color={isComplete ? "green" : "yellow"}>
+                        {isComplete ? "Complete" : "Pending"}
+                      </Badge>
+                    </td>
+                    <td className="py-2.5 px-3 text-right">
+                      {!isComplete && (
+                        <button
+                          onClick={() => handleSendReminder(row.investorId, row.investorName)}
+                          className="px-2.5 py-1 text-[10px] font-medium text-indigo-700 border border-indigo-200 rounded-md hover:bg-indigo-50 transition-colors"
+                        >
+                          Send Reminder
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ReportsPage() {
   const { firmId } = useFirm();
   const toast = useToast();
@@ -428,6 +533,9 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
+
+      {/* K-1 Acknowledgment Tracking Section */}
+      <K1TrackingSection firmId={firmId} />
 
       {/* K-1 Distribution Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">

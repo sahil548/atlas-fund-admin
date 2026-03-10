@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { useInvestor } from "@/components/providers/investor-provider";
+import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
 import { cn } from "@/lib/utils";
 
@@ -54,19 +55,21 @@ interface DocItem {
   fileSize: number | null;
   fileUrl: string;
   acknowledgedAt: string | null;
+  acknowledgedByInvestorId: string | null;
   entity: { name: string } | null;
 }
 
 export default function LPDocumentsPage() {
   const { investorId } = useInvestor();
-  const { data, isLoading } = useSWR(
-    investorId ? `/api/lp/${investorId}/documents` : null,
-    fetcher
-  );
+  const toast = useToast();
+  const docsUrl = investorId ? `/api/lp/${investorId}/documents` : null;
+  const { data, isLoading } = useSWR(docsUrl, fetcher);
 
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [k1Entity, setK1Entity] = useState<string>("all");
   const [k1Year, setK1Year] = useState<string>("all");
+  const [selectedK1s, setSelectedK1s] = useState<Set<string>>(new Set());
+  const [acknowledging, setAcknowledging] = useState(false);
 
   if (!investorId || isLoading || !data)
     return <div className="text-sm text-gray-400">Loading...</div>;
@@ -114,6 +117,65 @@ export default function LPDocumentsPage() {
     new Set(k1Docs.map((d) => new Date(d.uploadDate).getFullYear().toString()))
   ).sort((a, b) => parseInt(b) - parseInt(a)); // newest first
 
+  // Unacknowledged K-1s in current filter
+  const unackedK1s = filteredDocs.filter(
+    (d) => activeTab === "k1" && !d.acknowledgedAt
+  );
+
+  // Toggle a single K-1 selection
+  function toggleK1(id: string) {
+    setSelectedK1s((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  // Select / deselect all unacknowledged K-1s
+  function toggleSelectAll() {
+    if (selectedK1s.size === unackedK1s.length && unackedK1s.length > 0) {
+      setSelectedK1s(new Set());
+    } else {
+      setSelectedK1s(new Set(unackedK1s.map((d) => d.id)));
+    }
+  }
+
+  // Submit batch acknowledgment
+  async function handleAcknowledge() {
+    if (selectedK1s.size === 0) return;
+    setAcknowledging(true);
+    try {
+      const res = await fetch("/api/k1/acknowledge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentIds: [...selectedK1s],
+          investorId,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg =
+          typeof body.error === "string" ? body.error : "Failed to acknowledge K-1s";
+        toast.error(msg);
+        return;
+      }
+
+      toast.success(`${selectedK1s.size} K-1(s) acknowledged`);
+      setSelectedK1s(new Set());
+      mutate(docsUrl);
+    } catch {
+      toast.error("Failed to acknowledge K-1s");
+    } finally {
+      setAcknowledging(false);
+    }
+  }
+
+  const allUnackedSelected =
+    unackedK1s.length > 0 && selectedK1s.size === unackedK1s.length;
+
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       {/* Header row */}
@@ -149,6 +211,7 @@ export default function LPDocumentsPage() {
                 setActiveTab(key);
                 setK1Entity("all");
                 setK1Year("all");
+                setSelectedK1s(new Set());
               }}
               className={cn(
                 "px-3 py-1.5 text-xs font-medium rounded-full transition-colors",
@@ -213,6 +276,65 @@ export default function LPDocumentsPage() {
         </div>
       )}
 
+      {/* Batch acknowledge section — only when K-1s tab is active and unacknowledged K-1s exist */}
+      {activeTab === "k1" && unackedK1s.length > 0 && (
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+          {/* Header row with select-all and count */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="select-all-k1s"
+                checked={allUnackedSelected}
+                onChange={toggleSelectAll}
+                className="rounded border-gray-300 accent-indigo-600"
+              />
+              <label
+                htmlFor="select-all-k1s"
+                className="text-xs font-semibold text-amber-800 dark:text-amber-200 cursor-pointer"
+              >
+                {unackedK1s.length} K-1{unackedK1s.length !== 1 ? "s" : ""} awaiting acknowledgment
+              </label>
+            </div>
+            <button
+              onClick={handleAcknowledge}
+              disabled={selectedK1s.size === 0 || acknowledging}
+              className="px-3 py-1.5 text-xs font-medium bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {acknowledging
+                ? "Acknowledging..."
+                : `Acknowledge Selected (${selectedK1s.size})`}
+            </button>
+          </div>
+
+          {/* List of unacknowledged K-1s with checkboxes */}
+          <div className="space-y-2">
+            {unackedK1s.map((doc) => (
+              <label
+                key={doc.id}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedK1s.has(doc.id)}
+                  onChange={() => toggleK1(doc.id)}
+                  className="rounded border-gray-300 accent-indigo-600 flex-shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate group-hover:text-indigo-700 dark:group-hover:text-indigo-400">
+                    {doc.name}
+                  </div>
+                  <div className="text-[10px] text-gray-500 dark:text-gray-400">
+                    {doc.entity?.name ?? "General"} &middot;{" "}
+                    {new Date(doc.uploadDate).toLocaleDateString()}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Empty state */}
       {filteredDocs.length === 0 && (
         <div className="text-xs text-gray-400 dark:text-gray-500 py-4 text-center">
@@ -247,7 +369,7 @@ export default function LPDocumentsPage() {
               <Badge color={categoryColor[doc.category] || "gray"}>
                 {doc.category?.toLowerCase() || "other"}
               </Badge>
-              {/* Acknowledged badge — prepares for Plan 03 K-1 acknowledgment flow */}
+              {/* Acknowledged badge */}
               {doc.acknowledgedAt && (
                 <Badge color="green">
                   Acknowledged {new Date(doc.acknowledgedAt).toLocaleDateString()}

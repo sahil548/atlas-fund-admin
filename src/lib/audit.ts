@@ -25,7 +25,9 @@ export type AuditAction =
   | "UPDATE_ENTITY_ACCESS"
   | "CREATE_DOCUMENT"
   | "DELETE_DOCUMENT"
-  | "STATUS_TRANSITION";
+  | "STATUS_TRANSITION"
+  | "K1_ACKNOWLEDGE"
+  | "K1_REMINDER_SENT";
 
 /**
  * Log an auditable action.
