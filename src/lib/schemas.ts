@@ -508,7 +508,7 @@ export const CreateDistributionSchema = z.object({
   shortTermGain: z.number().default(0),
   carriedInterest: z.number().default(0),
   netToLPs: z.number().default(0),
-  status: z.enum(["DRAFT", "APPROVED", "PAID"]).default("APPROVED"),
+  status: z.enum(["DRAFT", "APPROVED", "PAID"]).default("DRAFT"),
   distributionType: z.string().optional(),
   memo: z.string().optional(),
   autoGenerateLineItems: z.boolean().default(true),

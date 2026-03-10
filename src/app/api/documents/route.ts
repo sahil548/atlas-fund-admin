@@ -84,6 +84,8 @@ export async function POST(req: Request) {
     const assetId = (formData.get("assetId") as string) || undefined;
     const entityId = (formData.get("entityId") as string) || undefined;
     const dealId = (formData.get("dealId") as string) || undefined;
+    const capitalCallId = (formData.get("capitalCallId") as string) || undefined;
+    const distributionEventId = (formData.get("distributionEventId") as string) || undefined;
 
     let fileUrl: string | null = null;
     let fileSize: number | null = null;
@@ -133,6 +135,8 @@ export async function POST(req: Request) {
         assetId,
         entityId,
         dealId,
+        capitalCallId,
+        distributionEventId,
         fileUrl,
         fileSize,
         mimeType,
@@ -157,5 +161,33 @@ export async function POST(req: Request) {
     const message = err instanceof Error ? err.message : "Upload failed";
     console.error("[documents POST] Error:", message);
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const authUser = await getAuthUser();
+    if (!authUser) return unauthorized();
+
+    const body = await req.json();
+    const { documentId, capitalCallId, distributionEventId } = body;
+
+    if (!documentId) {
+      return NextResponse.json({ error: "documentId is required" }, { status: 400 });
+    }
+
+    const updated = await prisma.document.update({
+      where: { id: documentId },
+      data: {
+        ...(capitalCallId !== undefined && { capitalCallId }),
+        ...(distributionEventId !== undefined && { distributionEventId }),
+      },
+    });
+
+    return NextResponse.json(updated);
+  } catch (err: any) {
+    if (err.code === "P2025") return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    console.error("[documents] PATCH error:", err);
+    return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
   }
 }

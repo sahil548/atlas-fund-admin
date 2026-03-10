@@ -919,6 +919,7 @@ model CapitalCall {
 
   entity    Entity              @relation(fields: [entityId], references: [id])
   lineItems CapitalCallLineItem[]
+  documents Document[]
 }
 
 model CapitalCallLineItem {
@@ -946,7 +947,7 @@ model DistributionEvent {
   shortTermGain     Float              @default(0)
   carriedInterest   Float              @default(0)
   netToLPs          Float              @default(0)
-  status            DistributionStatus @default(APPROVED)
+  status            DistributionStatus @default(DRAFT)
 
   // Phase 3: Distribution type and memo
   distributionType          String?  // "INCOME" | "RETURN_OF_CAPITAL" | "CAPITAL_GAIN" | "FINAL_LIQUIDATION"
@@ -958,6 +959,7 @@ model DistributionEvent {
 
   entity    Entity                 @relation(fields: [entityId], references: [id])
   lineItems DistributionLineItem[]
+  documents Document[]
 }
 
 model DistributionLineItem {
@@ -1581,18 +1583,22 @@ model Document {
   extractedFields  Json?    // Raw AI output: { fieldKey: { aiValue, label } }[]
   appliedFields    Json?    // Audit record: { fieldKey: { aiValue, appliedValue, appliedAt } }[]
   extractionError  String?  // Error message if FAILED
-  assetId       String?
-  entityId    String?
-  dealId      String?
-  investorId  String?
+  assetId             String?
+  entityId            String?
+  dealId              String?
+  investorId          String?
+  capitalCallId       String?
+  distributionEventId String?
   uploadDate  DateTime         @default(now())
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  asset    Asset?    @relation(fields: [assetId], references: [id])
-  entity   Entity?   @relation(fields: [entityId], references: [id])
-  deal     Deal?     @relation(fields: [dealId], references: [id])
-  investor Investor? @relation(fields: [investorId], references: [id])
+  asset             Asset?             @relation(fields: [assetId], references: [id])
+  entity            Entity?            @relation(fields: [entityId], references: [id])
+  deal              Deal?              @relation(fields: [dealId], references: [id])
+  investor          Investor?          @relation(fields: [investorId], references: [id])
+  capitalCall       CapitalCall?       @relation(fields: [capitalCallId], references: [id])
+  distributionEvent DistributionEvent? @relation(fields: [distributionEventId], references: [id])
 }
 
 model Notification {
