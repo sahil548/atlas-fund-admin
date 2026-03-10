@@ -156,7 +156,11 @@ Plans:
   3. LP portal IRR, TVPI, DPI, and RVPI metrics are confirmed to be computed from real capital call and distribution data — not seeded placeholder values
   4. LPs can view per-entity performance (fund-by-fund IRR and TVPI) so they understand their returns from each fund separately
   5. LPs can acknowledge receipt of their K-1 through the portal, and LPs can view and verify their own contact information
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 17-01-PLAN.md — Schema migration (Document + Investor fields), LP-06 metrics verification tests, document center tab filtering (LP-05)
+- [ ] 17-02-PLAN.md — Capital account date range picker with metric recalculation (LP-04), per-entity performance metrics on dashboard + portfolio (LP-07)
+- [ ] 17-03-PLAN.md — K-1 acknowledgment workflow with GP tracking (LP-08), LP profile page with contact info management (LP-09)
 
 ### Phase 18: AI Features
 **Goal**: The command bar understands natural language queries and can execute actions, AI assists with deal analysis and document extraction across the deal lifecycle, and the portfolio is monitored for covenant breaches automatically
@@ -197,6 +201,6 @@ Plans:
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
-| 17. LP Portal | v2.0 | 0/TBD | Not started | - |
+| 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/TBD | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/TBD | Not started | - |
