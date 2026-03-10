@@ -726,6 +726,21 @@ export const AISearchSchema = z.object({
     .optional(),
 });
 
+export const AIExecuteSchema = z.object({
+  action: z.string().min(1, "Action is required"),
+  firmId: z.string().min(1, "Firm ID is required"),
+  pageContext: z
+    .object({
+      pageType: z.string(),
+      entityId: z.string().optional(),
+      entityName: z.string().optional(),
+    })
+    .optional(),
+  confirmed: z.boolean().optional().default(false),
+  confirmedPayload: z.record(z.string(), z.unknown()).optional(),
+  actionType: z.string().optional(), // only when confirmed=true
+});
+
 export const AgentQuerySchema = z.object({
   action: z.literal("query"),
   query: z.string().min(1, "Query is required"),

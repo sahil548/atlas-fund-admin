@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { createAIClient, getModelForFirm } from "@/lib/ai-config";
+import { createAIClient, createUserAIClient, getModelForFirm } from "@/lib/ai-config";
 import { generateAIRouteList } from "@/lib/routes";
 import { fmt } from "@/lib/utils";
-import type { AIResponse, DatabaseContext, SearchResult } from "./command-bar-types";
+import { jsonrepair } from "jsonrepair";
+import type { AIResponse, ActionPlan, DatabaseContext, SearchResult } from "./command-bar-types";
 
 /**
  * Gather portfolio context from the database for AI prompt enrichment.
@@ -250,5 +251,122 @@ export async function searchAndAnalyze(
         "View the dashboard",
       ],
     };
+  }
+}
+
+/**
+ * Parse a natural language action into a structured ActionPlan.
+ * Uses the user's AI key (with tenant fallback) per Phase 12 pattern.
+ * Returns an ActionPlan for the confirmation UI; does NOT execute anything.
+ *
+ * @param action      The user's natural language action string
+ * @param firmId      Tenant firm ID
+ * @param userId      User ID for API key resolution
+ * @param pageContext Optional current page context for "this deal" resolution
+ */
+export async function planAction(
+  action: string,
+  firmId: string,
+  userId: string,
+  pageContext?: { pageType: string; entityId?: string; entityName?: string },
+): Promise<ActionPlan> {
+  const errorPlan = (description: string): ActionPlan => ({
+    actionType: "ERROR",
+    description,
+    payload: {},
+    requiresConfirmation: false,
+  });
+
+  const aiResult = await createUserAIClient(userId, firmId);
+  if (!aiResult) {
+    return errorPlan(
+      "No API key configured. Add one in Settings → AI Configuration to use AI actions.",
+    );
+  }
+  const { client, model } = aiResult;
+
+  // Gather lightweight name-resolution context (IDs + names only — not full records)
+  const [deals, entities, users] = await Promise.all([
+    prisma.deal.findMany({
+      where: { firmId },
+      select: { id: true, name: true },
+      take: 20,
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.entity.findMany({
+      where: { firmId },
+      select: { id: true, name: true },
+      take: 20,
+    }),
+    prisma.user.findMany({
+      where: { firmId },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  const dealList = deals.map((d) => `${d.name} (id: ${d.id})`).join(", ") || "none";
+  const entityList = entities.map((e) => `${e.name} (id: ${e.id})`).join(", ") || "none";
+  const userList = users.map((u) => `${u.name} (id: ${u.id})`).join(", ") || "none";
+
+  const pageContextSection =
+    pageContext &&
+    pageContext.pageType !== "other" &&
+    (pageContext.entityName || pageContext.entityId)
+      ? `\nCurrent page: ${pageContext.pageType} "${pageContext.entityName || pageContext.entityId}" (id: ${pageContext.entityId || "unknown"}). When the user says "this deal/asset/entity", they mean this item.`
+      : "";
+
+  const systemPrompt = `You are Atlas AI executing an action for a fund administration platform. Parse the user's request and return a JSON action plan.
+
+Available action types:
+- CREATE_TASK: Create a new task (fields: title, priority [HIGH/MEDIUM/LOW], contextType [DEAL/ASSET/ENTITY/MEETING], contextId, assigneeId)
+- CREATE_DEAL: Create a new deal (fields: name, assetClass [REAL_ESTATE/OPERATING_BUSINESS/etc], description)
+- UPDATE_DEAL: Update an existing deal (fields: dealId, and any of: name, sector, targetSize, targetReturn, description, gpName, counterparty)
+- LOG_NOTE: Log a note/activity on a deal (fields: dealId, note)
+- ASSIGN_TASK: Assign a task to a user (fields: taskId, assigneeId)
+- TRIGGER_DD_ANALYSIS: Trigger due diligence analysis (fields: dealId, type [DD_FINANCIAL/DD_LEGAL/DD_OPERATIONAL/DD_MARKET])
+- TRIGGER_IC_MEMO: Trigger IC memo generation (fields: dealId)
+- EXTRACT_CIM_TERMS: Extract terms from a CIM document and pre-fill deal fields (fields: dealId — uses existing extracted document fields)
+- AMBIGUOUS: When the request is ambiguous or you cannot determine the exact action with confidence
+
+Available deals: ${dealList}
+Available entities: ${entityList}
+Available team members: ${userList}${pageContextSection}
+
+For each action return ONLY valid JSON (no markdown, no explanation):
+{
+  "actionType": "...",
+  "description": "Human-readable description of what will happen",
+  "payload": { /* relevant fields with resolved IDs */ }
+}
+
+If ambiguous (e.g., multiple people named Sarah, unclear which deal), return:
+{ "actionType": "AMBIGUOUS", "description": "Please clarify: [specific question]", "payload": {} }`;
+
+  try {
+    const response = await client.chat.completions.create({
+      model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: action },
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 800,
+      temperature: 0.3,
+    });
+
+    const raw = response.choices[0]?.message?.content || "{}";
+    const parsed = JSON.parse(jsonrepair(raw));
+
+    return {
+      actionType: parsed.actionType || "AMBIGUOUS",
+      description: parsed.description || "Could not parse action.",
+      payload: parsed.payload || {},
+      requiresConfirmation: parsed.actionType !== "AMBIGUOUS" && parsed.actionType !== "ERROR",
+    };
+  } catch (error) {
+    console.error("[planAction] Error:", error);
+    return errorPlan(
+      "I encountered an error parsing your action. Please try again or rephrase your request.",
+    );
   }
 }
