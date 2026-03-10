@@ -78,3 +78,24 @@ export interface DatabaseContext {
   tasksByStatus: Record<string, number>;
   recentActivity: { description: string; createdAt: string }[];
 }
+
+/**
+ * Represents the GP's current page context so the AI knows which deal/asset/entity
+ * they are viewing. Injected into the system prompt for context-aware answers.
+ */
+export interface PageContext {
+  pageType: "deal" | "asset" | "entity" | "contact" | "dashboard" | "other";
+  entityId?: string;
+  entityName?: string;
+}
+
+/**
+ * A structured mutation plan returned by /api/ai/execute (pre-confirmation).
+ * Shown to the GP for review and optional editing before execution.
+ */
+export interface ActionPlan {
+  actionType: string;
+  description: string;
+  payload: Record<string, unknown>;
+  requiresConfirmation: boolean;
+}
