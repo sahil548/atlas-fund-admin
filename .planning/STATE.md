@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 18-02-PLAN.md
-last_updated: "2026-03-10T08:47:45.377Z"
-last_activity: 2026-03-10 — Phase 18 Plan 02 complete (NL intent routing in command bar, side panel, alert badge)
+stopped_at: Completed 18-03-PLAN.md
+last_updated: "2026-03-10T09:46:00.000Z"
+last_activity: 2026-03-10 — Phase 18 Plan 03 complete (AI action execution pipeline, ActionConfirmation, EXTRACT_CIM_TERMS fill-deal flow)
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 48
-  completed_plans: 41
-  percent: 90
+  completed_plans: 42
+  percent: 92
 ---
 
 # Atlas — GSD State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 18 of 19 — AI Features (In Progress)
-- **Plan:** 2 of 4 complete
+- **Plan:** 3 of 4 complete
 - **Status:** In progress
-- **Last activity:** 2026-03-10 — Phase 18 Plan 02 complete (NL intent routing in command bar, side panel, alert badge)
+- **Last activity:** 2026-03-10 — Phase 18 Plan 03 complete (AI action execution pipeline, ActionConfirmation, EXTRACT_CIM_TERMS fill-deal flow)
 
-Progress: [█████████░] 92% (77/84 plans)
+Progress: [█████████░] 92% (78/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -68,6 +68,7 @@ Progress: [█████████░] 92% (77/84 plans)
 | Phase 17-lp-portal P03 | 18 | 3 tasks | 11 files |
 | Phase 18-ai-features P01 | 4 | 3 tasks | 7 files |
 | Phase 18-ai-features P02 | 6 | 2 tasks | 5 files |
+| Phase 18-ai-features P03 | 25 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,10 @@ Progress: [█████████░] 92% (77/84 plans)
 - **Alert banner links to /assets (not /monitoring):** /monitoring has no Next.js page route — monitoring panel lives on the assets page; /assets is the valid nearest route
 - **DB debounce in command bar only fires for fuzzy_search intent:** NL queries skip DB debounce to avoid unnecessary calls when user is typing a natural language question
 - **Side panel z-40 (below z-50 modals/toasts):** Confirmation dialogs remain visible over side panel; side panel does not interfere with critical UI flows
+- **EXTRACT_CIM_TERMS planning skips LLM:** Directly reads Document.extractedFields from DB and maps via CIM_FIELD_MAP — faster, no token cost, and more reliable than LLM re-interpretation
+- **Fire-and-forget DD/IC memo triggers:** fetch().catch() pattern returns "started" immediately; 60-second timeout handled by dd-analyze endpoint
+- **actionPlan state is component-local (not in CommandBarProvider):** Confirmation is transient UI state; doesn't need to persist across dropdown/side panel switch
+- **ExtractionStatus enum is COMPLETE (not COMPLETED):** Discovered via TypeScript build error in Plan 03 — actual Prisma enum value is COMPLETE
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -243,6 +248,6 @@ Progress: [█████████░] 92% (77/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T08:47:45.374Z
-- **Stopped at:** Completed 18-02-PLAN.md
+- **Last session:** 2026-03-10T09:46:00.000Z
+- **Stopped at:** Completed 18-03-PLAN.md
 - **Resume file:** None

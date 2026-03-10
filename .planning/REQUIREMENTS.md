@@ -72,10 +72,10 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 ### AI & Command Bar
 
 - [x] **AI-01**: Command bar supports natural language queries ("show me all deals over $10M", "what's our total NAV")
-- [ ] **AI-02**: Command bar supports action execution (create deal, log note, assign task, trigger report) without navigation
-- [ ] **AI-03**: AI can auto-extract deal terms from uploaded CIMs/documents
-- [ ] **AI-04**: AI can generate DD summary reports from workstream data
-- [ ] **AI-05**: AI can draft IC memos from deal data and DD findings
+- [x] **AI-02**: Command bar supports action execution (create deal, log note, assign task, trigger report) without navigation
+- [x] **AI-03**: AI can auto-extract deal terms from uploaded CIMs/documents
+- [x] **AI-04**: AI can generate DD summary reports from workstream data
+- [x] **AI-05**: AI can draft IC memos from deal data and DD findings
 - [x] **AI-06**: AI monitors portfolio for covenant breaches and generates alerts
 - [ ] **AI-07**: AI drafts LP update communications from fund performance data
 - [ ] **AI-08**: AI suggests next tasks based on deal stage and asset type context
@@ -235,10 +235,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LP-08 | Phase 17 | Complete |
 | LP-09 | Phase 17 | Complete |
 | AI-01 | Phase 18 | Complete |
-| AI-02 | Phase 18 | Pending |
-| AI-03 | Phase 18 | Pending |
-| AI-04 | Phase 18 | Pending |
-| AI-05 | Phase 18 | Pending |
+| AI-02 | Phase 18 | Complete |
+| AI-03 | Phase 18 | Complete |
+| AI-04 | Phase 18 | Complete |
+| AI-05 | Phase 18 | Complete |
 | AI-06 | Phase 18 | Complete |
 | AI-07 | Phase 18 | Pending |
 | AI-08 | Phase 18 | Pending |

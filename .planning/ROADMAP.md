@@ -182,11 +182,11 @@ Plans:
   3. AI can extract deal terms from an uploaded CIM and pre-fill deal fields, generate a DD summary from workstream data, and draft an IC memo from deal data and DD findings
   4. AI monitors the portfolio for covenant breaches and generates alerts when a breach is detected — the GP does not need to check manually
   5. AI can draft LP update communications from fund performance data, and AI suggests next tasks based on deal stage and asset type context
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 Plans:
-- [ ] 18-01-PLAN.md — NL intent classification, command bar provider expansion (page context, side panel state, alert freshness), AI service page context injection
-- [ ] 18-02-PLAN.md — Command bar NL query routing, AI response rendering, side panel pop-out, proactive alert mentions
-- [ ] 18-03-PLAN.md — AI action execution endpoint, confirmation UX, deal lifecycle AI wiring (DD summary, IC memo, CIM extraction)
+- [x] 18-01-PLAN.md — NL intent classification, command bar provider expansion (page context, side panel state, alert freshness), AI service page context injection
+- [x] 18-02-PLAN.md — Command bar NL query routing, AI response rendering, side panel pop-out, proactive alert mentions
+- [x] 18-03-PLAN.md — AI action execution endpoint, confirmation UX, deal lifecycle AI wiring (DD summary, IC memo, CIM extraction)
 - [ ] 18-04-PLAN.md — Task suggestions with one-click creation, LP update drafting, end-to-end verification checkpoint
 
 ### Phase 19: Dashboard & Supporting Modules
