@@ -8,11 +8,14 @@ import { getPageTitle } from "@/lib/routes";
 import { useUser } from "@/components/providers/user-provider";
 import { OnboardingModal } from "@/components/features/onboarding/onboarding-modal";
 import { PageErrorBoundary } from "@/components/ui/error-boundary";
+import { useCommandBar } from "@/components/features/command-bar/command-bar-provider";
+import { CommandBarSidePanel } from "@/components/features/command-bar/command-bar-side-panel";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useUser();
+  const { isSidePanelOpen } = useCommandBar();
 
   const isAuthRoute = pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
   const isLpRoute = pathname.startsWith("/lp-");
@@ -68,6 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <PageErrorBoundary>{children}</PageErrorBoundary>
         </div>
       </div>
+      {isSidePanelOpen && <CommandBarSidePanel />}
       <OnboardingModal />
     </div>
   );
