@@ -39,6 +39,17 @@ export async function GET(
           },
           orderBy: { createdAt: "asc" },
         },
+        documents: {
+          select: {
+            id: true,
+            name: true,
+            fileUrl: true,
+            fileSize: true,
+            mimeType: true,
+            uploadDate: true,
+            category: true,
+          },
+        },
       },
     });
 
