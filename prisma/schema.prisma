@@ -818,6 +818,10 @@ model Investor {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  mailingAddress  String?
+  taxId           String?
+  phone           String?
+
   contact                Contact?                    @relation(fields: [contactId], references: [id])
   company                Company?                    @relation(fields: [companyId], references: [id])
   userAccess             InvestorUserAccess[]
@@ -1608,6 +1612,9 @@ model Document {
   uploadDate  DateTime         @default(now())
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
+
+  acknowledgedAt          DateTime?
+  acknowledgedByInvestorId String?
 
   asset             Asset?             @relation(fields: [assetId], references: [id])
   entity            Entity?            @relation(fields: [entityId], references: [id])
