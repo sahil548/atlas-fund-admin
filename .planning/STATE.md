@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: executing
-stopped_at: Completed 18-04-PLAN.md (Phase 18 COMPLETE)
-last_updated: "2026-03-10T17:17:00.000Z"
+status: completed
+stopped_at: Completed 19-01-PLAN.md
+last_updated: "2026-03-10T17:30:32.358Z"
 last_activity: 2026-03-10 — Phase 18 complete. All 8 AI requirements (AI-01 through AI-08) verified end-to-end. Task suggestions (AI-08) and LP update drafting (AI-07) wired into command bar and side panel.
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 48
-  completed_plans: 43
+  completed_plans: 44
   percent: 94
 ---
 
@@ -23,12 +23,12 @@ progress:
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 18 of 19 — AI Features (COMPLETE)
-- **Plan:** 4 of 4 complete
-- **Status:** Phase 18 complete — next up: Phase 19 (Dashboard & Supporting Modules)
-- **Last activity:** 2026-03-10 — Phase 18 complete. All 8 AI requirements (AI-01 through AI-08) verified end-to-end. Task suggestions (AI-08) and LP update drafting (AI-07) wired into command bar and side panel.
+- **Phase:** 19 of 19 — Dashboard & Supporting Modules (IN PROGRESS)
+- **Plan:** 1 of 5 complete
+- **Status:** Phase 19 in progress — pipeline summary and alerts APIs complete; dashboard UI next
+- **Last activity:** 2026-03-10 — Phase 19 Plan 01 complete. Pipeline summary and alerts APIs built with 13 unit tests. DASH-01 and DASH-02 requirements verified.
 
-Progress: [█████████░] 94% (79/84 plans)
+Progress: [██████████] 95% (80/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -70,6 +70,7 @@ Progress: [█████████░] 94% (79/84 plans)
 | Phase 18-ai-features P02 | 6 | 2 tasks | 5 files |
 | Phase 18-ai-features P03 | 25 | 2 tasks | 6 files |
 | Phase 18-ai-features P04 | ~30min | 3 tasks | 5 files |
+| Phase 19-dashboard-supporting-modules P01 | 7 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -236,6 +237,12 @@ Progress: [█████████░] 94% (79/84 plans)
 - **suggest-tasks data cap:** Max 10 assets by fairValue, max 5 capital calls, max 5 distributions sent to LLM — prevents token limit issues per RESEARCH.md Pitfall 5
 - **Phase 18 verification complete 2026-03-10:** All 8 requirements (AI-01 through AI-08) confirmed passing in browser by GP
 
+### Phase 19 Dashboard & Supporting Modules Decisions (IN PROGRESS)
+- **Deal model has no numeric dealValue field:** `targetSize` is a String — pipeline summary groupBy uses `_count` only; `totalValue` is always 0 until a numeric value field is added to Deal model; dashboard UI should display count-based funnel
+- **Covenant relation name is `agreement`:** Prisma schema uses `agreement CreditAgreement @relation(...)` on Covenant model (not `creditAgreement`) — always use `agreement` in Prisma queries and includes
+- **Alert severity scheme:** OVERDUE_CAPITAL_CALL=high, COVENANT_BREACH=high, LEASE_EXPIRY=medium — matching urgency levels for morning briefing
+- **90-day lease expiry window:** Expiring leases query uses `leaseEndDate: { gte: today, lte: ninetyDaysFromNow }` — 90 days is the alerting horizon
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -254,6 +261,6 @@ Progress: [█████████░] 94% (79/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T17:17:00.000Z
-- **Stopped at:** Completed 18-04-PLAN.md (Phase 18 COMPLETE — all 8 AI requirements verified)
+- **Last session:** 2026-03-10T17:30:32.355Z
+- **Stopped at:** Completed 19-01-PLAN.md
 - **Resume file:** None
