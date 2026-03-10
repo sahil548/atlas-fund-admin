@@ -14,6 +14,10 @@ async function main() {
   // ============================================================
   console.log("Clearing existing data...");
 
+  await prisma.metricSnapshot.deleteMany();
+  await prisma.plaidAccount.deleteMany();
+  await prisma.integrationConnection.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.investorUserAccess.deleteMany();
   await prisma.aIPromptTemplate.deleteMany();
   await prisma.aIConfiguration.deleteMany();
@@ -24,12 +28,21 @@ async function main() {
   await prisma.company.deleteMany();
   await prisma.activityEvent.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.eSignaturePackage.deleteMany();
+  await prisma.docuSignConnection.deleteMany();
   await prisma.document.deleteMany();
   await prisma.meeting.deleteMany();
+  await prisma.taskChecklistItem.deleteMany();
   await prisma.task.deleteMany();
+  await prisma.fundraisingProspect.deleteMany();
+  await prisma.fundraisingRound.deleteMany();
   await prisma.dealActivity.deleteMany();
   await prisma.note.deleteMany();
+  await prisma.dDTaskComment.deleteMany();
+  await prisma.dDTaskAttachment.deleteMany();
   await prisma.dDTask.deleteMany();
+  await prisma.dDWorkstreamComment.deleteMany();
+  await prisma.dDWorkstreamAttachment.deleteMany();
   await prisma.dDWorkstream.deleteMany();
   await prisma.closingChecklist.deleteMany();
   await prisma.aIScreeningResult.deleteMany();
@@ -37,6 +50,9 @@ async function main() {
   await prisma.iCQuestion.deleteMany();
   await prisma.iCVoteRecord.deleteMany();
   await prisma.iCProcess.deleteMany();
+  await prisma.decisionMember.deleteMany();
+  await prisma.decisionStructure.deleteMany();
+  await prisma.dealEntity.deleteMany();
   await prisma.deal.deleteMany();
   await prisma.dDCategoryTemplate.deleteMany();
   await prisma.capitalAccount.deleteMany();
@@ -64,10 +80,12 @@ async function main() {
   await prisma.assetEquityDetails.deleteMany();
   await prisma.assetEntityAllocation.deleteMany();
   await prisma.asset.deleteMany();
+  await prisma.sideLetterRule.deleteMany();
   await prisma.sideLetter.deleteMany();
   await prisma.commitment.deleteMany();
   await prisma.investorNotificationPreference.deleteMany();
   await prisma.investor.deleteMany();
+  await prisma.trialBalanceSnapshot.deleteMany();
   await prisma.accountMapping.deleteMany();
   await prisma.accountingConnection.deleteMany();
   await prisma.entity.deleteMany();
@@ -2512,16 +2530,16 @@ End with credit risk rating, key covenant concerns, and recommended structural p
 
   // ── Companies (counterparties, GPs, service providers) ──
   const companies = [
-    { id: "company-1", firmId: "firm-1", name: "Apex Industries Inc.", type: "COUNTERPARTY" as const, industry: "Industrials", website: "https://apexindustries.com" },
-    { id: "company-2", firmId: "firm-1", name: "Beacon Healthcare Group", type: "COUNTERPARTY" as const, industry: "Healthcare", website: "https://beaconhealth.com" },
-    { id: "company-3", firmId: "firm-1", name: "Ridgeline Properties LLC", type: "COUNTERPARTY" as const, industry: "Real Estate" },
-    { id: "company-4", firmId: "firm-1", name: "Nordic Wind Capital", type: "GP" as const, industry: "Infrastructure" },
-    { id: "company-5", firmId: "firm-1", name: "UrbanNest Inc.", type: "COUNTERPARTY" as const, industry: "Real Estate / PropTech" },
-    { id: "company-6", firmId: "firm-1", name: "Blackstone", type: "GP" as const, industry: "Financial Services", website: "https://blackstone.com" },
-    { id: "company-7", firmId: "firm-1", name: "Acme Capital", type: "GP" as const, industry: "Financial Services" },
-    { id: "company-8", firmId: "firm-1", name: "KKR Credit", type: "GP" as const, industry: "Financial Services", website: "https://kkr.com" },
-    { id: "company-9", firmId: "firm-1", name: "Goldman Sachs Asset Management", type: "SERVICE_PROVIDER" as const, industry: "Financial Services" },
-    { id: "company-10", firmId: "firm-1", name: "Latham & Watkins LLP", type: "SERVICE_PROVIDER" as const, industry: "Legal" },
+    { id: "company-1", firmId: firm.id, name: "Apex Industries Inc.", type: "COUNTERPARTY" as const, industry: "Industrials", website: "https://apexindustries.com" },
+    { id: "company-2", firmId: firm.id, name: "Beacon Healthcare Group", type: "COUNTERPARTY" as const, industry: "Healthcare", website: "https://beaconhealth.com" },
+    { id: "company-3", firmId: firm.id, name: "Ridgeline Properties LLC", type: "COUNTERPARTY" as const, industry: "Real Estate" },
+    { id: "company-4", firmId: firm.id, name: "Nordic Wind Capital", type: "GP" as const, industry: "Infrastructure" },
+    { id: "company-5", firmId: firm.id, name: "UrbanNest Inc.", type: "COUNTERPARTY" as const, industry: "Real Estate / PropTech" },
+    { id: "company-6", firmId: firm.id, name: "Blackstone", type: "GP" as const, industry: "Financial Services", website: "https://blackstone.com" },
+    { id: "company-7", firmId: firm.id, name: "Acme Capital", type: "GP" as const, industry: "Financial Services" },
+    { id: "company-8", firmId: firm.id, name: "KKR Credit", type: "GP" as const, industry: "Financial Services", website: "https://kkr.com" },
+    { id: "company-9", firmId: firm.id, name: "Goldman Sachs Asset Management", type: "SERVICE_PROVIDER" as const, industry: "Financial Services" },
+    { id: "company-10", firmId: firm.id, name: "Latham & Watkins LLP", type: "SERVICE_PROVIDER" as const, industry: "Legal" },
   ];
 
   for (const c of companies) {
@@ -2534,12 +2552,12 @@ End with credit risk rating, key covenant concerns, and recommended structural p
 
   // ── LP Investor Companies ──────────────────────────────
   const lpCompanies = [
-    { id: "company-calpers", firmId: "firm-1", name: "California Public Employees' Retirement System", type: "LP" as const, industry: "Public Pension" },
-    { id: "company-harvard", firmId: "firm-1", name: "Harvard Management Company", type: "LP" as const, industry: "Endowment" },
-    { id: "company-wellington", firmId: "firm-1", name: "Wellington Family Office", type: "LP" as const, industry: "Family Office" },
-    { id: "company-meridian", firmId: "firm-1", name: "Meridian Partners", type: "LP" as const, industry: "Fund of Funds" },
-    { id: "company-pacificrim", firmId: "firm-1", name: "Pacific Rim Sovereign Wealth Fund", type: "LP" as const, industry: "Sovereign Wealth" },
-    { id: "company-greenfield", firmId: "firm-1", name: "Greenfield Insurance Group", type: "LP" as const, industry: "Insurance" },
+    { id: "company-calpers", firmId: firm.id, name: "California Public Employees' Retirement System", type: "LP" as const, industry: "Public Pension" },
+    { id: "company-harvard", firmId: firm.id, name: "Harvard Management Company", type: "LP" as const, industry: "Endowment" },
+    { id: "company-wellington", firmId: firm.id, name: "Wellington Family Office", type: "LP" as const, industry: "Family Office" },
+    { id: "company-meridian", firmId: firm.id, name: "Meridian Partners", type: "LP" as const, industry: "Fund of Funds" },
+    { id: "company-pacificrim", firmId: firm.id, name: "Pacific Rim Sovereign Wealth Fund", type: "LP" as const, industry: "Sovereign Wealth" },
+    { id: "company-greenfield", firmId: firm.id, name: "Greenfield Insurance Group", type: "LP" as const, industry: "Insurance" },
   ];
 
   for (const c of lpCompanies) {
@@ -2558,12 +2576,12 @@ End with credit risk rating, key covenant concerns, and recommended structural p
 
   // ── Contacts (counterparty + service provider contacts) ──
   const contacts = [
-    { id: "contact-1", firmId: "firm-1", firstName: "Robert", lastName: "Chen", email: "rchen@apexindustries.com", title: "CEO", type: "EXTERNAL" as const, companyId: "company-1" },
-    { id: "contact-2", firmId: "firm-1", firstName: "Lisa", lastName: "Park", email: "lpark@beaconhealth.com", title: "CFO", type: "EXTERNAL" as const, companyId: "company-2" },
-    { id: "contact-3", firmId: "firm-1", firstName: "David", lastName: "Morse", email: "dmorse@ridgeline.com", title: "Managing Partner", type: "EXTERNAL" as const, companyId: "company-3" },
-    { id: "contact-4", firmId: "firm-1", firstName: "Erik", lastName: "Johansson", email: "erik@nordicwind.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-4" },
-    { id: "contact-5", firmId: "firm-1", firstName: "Maria", lastName: "Santos", email: "msantos@urbanest.com", title: "Founder & CEO", type: "EXTERNAL" as const, companyId: "company-5" },
-    { id: "contact-6", firmId: "firm-1", firstName: "Tom", lastName: "Bradley", email: "tbradley@latham.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-10" },
+    { id: "contact-1", firmId: firm.id, firstName: "Robert", lastName: "Chen", email: "rchen@apexindustries.com", title: "CEO", type: "EXTERNAL" as const, companyId: "company-1" },
+    { id: "contact-2", firmId: firm.id, firstName: "Lisa", lastName: "Park", email: "lpark@beaconhealth.com", title: "CFO", type: "EXTERNAL" as const, companyId: "company-2" },
+    { id: "contact-3", firmId: firm.id, firstName: "David", lastName: "Morse", email: "dmorse@ridgeline.com", title: "Managing Partner", type: "EXTERNAL" as const, companyId: "company-3" },
+    { id: "contact-4", firmId: firm.id, firstName: "Erik", lastName: "Johansson", email: "erik@nordicwind.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-4" },
+    { id: "contact-5", firmId: firm.id, firstName: "Maria", lastName: "Santos", email: "msantos@urbanest.com", title: "Founder & CEO", type: "EXTERNAL" as const, companyId: "company-5" },
+    { id: "contact-6", firmId: firm.id, firstName: "Tom", lastName: "Bradley", email: "tbradley@latham.com", title: "Partner", type: "EXTERNAL" as const, companyId: "company-10" },
   ];
 
   for (const c of contacts) {
@@ -2572,13 +2590,13 @@ End with credit risk rating, key covenant concerns, and recommended structural p
 
   // ── LP Investor Contacts ──────────────────────────────
   const lpContacts = [
-    { id: "contact-calpers-mc", firmId: "firm-1", firstName: "Michael", lastName: "Chen", email: "michael.chen@calpers.ca.gov", title: "Director of Private Equity", type: "EXTERNAL" as const, companyId: "company-calpers" },
-    { id: "contact-calpers-sw", firmId: "firm-1", firstName: "Sarah", lastName: "Wang", email: "sarah.wang@calpers.ca.gov", title: "Investment Analyst", type: "EXTERNAL" as const, companyId: "company-calpers" },
-    { id: "contact-harvard-dm", firmId: "firm-1", firstName: "David", lastName: "Morrison", email: "d.morrison@hmc.harvard.edu", title: "Portfolio Manager", type: "EXTERNAL" as const, companyId: "company-harvard" },
-    { id: "contact-wellington-tw", firmId: "firm-1", firstName: "Tom", lastName: "Wellington", email: "tom@wellingtonfamily.com", title: "Principal", type: "EXTERNAL" as const, companyId: "company-wellington" },
-    { id: "contact-meridian-ra", firmId: "firm-1", firstName: "Rachel", lastName: "Adams", email: "rachel@meridianpartners.com", title: "Managing Director", type: "EXTERNAL" as const, companyId: "company-meridian" },
-    { id: "contact-pacificrim-yk", firmId: "firm-1", firstName: "Yuki", lastName: "Tanaka", email: "y.tanaka@pacificrimsov.gov", title: "Head of Alternatives", type: "EXTERNAL" as const, companyId: "company-pacificrim" },
-    { id: "contact-greenfield-jb", firmId: "firm-1", firstName: "John", lastName: "Barrett", email: "jbarrett@greenfieldins.com", title: "Chief Investment Officer", type: "EXTERNAL" as const, companyId: "company-greenfield" },
+    { id: "contact-calpers-mc", firmId: firm.id, firstName: "Michael", lastName: "Chen", email: "michael.chen@calpers.ca.gov", title: "Director of Private Equity", type: "EXTERNAL" as const, companyId: "company-calpers" },
+    { id: "contact-calpers-sw", firmId: firm.id, firstName: "Sarah", lastName: "Wang", email: "sarah.wang@calpers.ca.gov", title: "Investment Analyst", type: "EXTERNAL" as const, companyId: "company-calpers" },
+    { id: "contact-harvard-dm", firmId: firm.id, firstName: "David", lastName: "Morrison", email: "d.morrison@hmc.harvard.edu", title: "Portfolio Manager", type: "EXTERNAL" as const, companyId: "company-harvard" },
+    { id: "contact-wellington-tw", firmId: firm.id, firstName: "Tom", lastName: "Wellington", email: "tom@wellingtonfamily.com", title: "Principal", type: "EXTERNAL" as const, companyId: "company-wellington" },
+    { id: "contact-meridian-ra", firmId: firm.id, firstName: "Rachel", lastName: "Adams", email: "rachel@meridianpartners.com", title: "Managing Director", type: "EXTERNAL" as const, companyId: "company-meridian" },
+    { id: "contact-pacificrim-yk", firmId: firm.id, firstName: "Yuki", lastName: "Tanaka", email: "y.tanaka@pacificrimsov.gov", title: "Head of Alternatives", type: "EXTERNAL" as const, companyId: "company-pacificrim" },
+    { id: "contact-greenfield-jb", firmId: firm.id, firstName: "John", lastName: "Barrett", email: "jbarrett@greenfieldins.com", title: "Chief Investment Officer", type: "EXTERNAL" as const, companyId: "company-greenfield" },
   ];
 
   for (const c of lpContacts) {
@@ -2714,19 +2732,19 @@ End with credit risk rating, key covenant concerns, and recommended structural p
   await prisma.contactInteraction.createMany({
     data: [
       // Robert Chen (contact-1, CEO of Apex Industries)
-      { id: "ci-1", firmId: "firm-1", contactId: "contact-1", authorId: "user-jk", type: "CALL", notes: "Introductory call with Robert — discussed Q4 performance and upcoming Board. Strong relationship with fund I leadership.", date: new Date("2026-03-01") },
-      { id: "ci-2", firmId: "firm-1", contactId: "contact-1", authorId: "user-al", type: "MEETING", notes: "Site visit at Apex HQ. Reviewed operations and capex plan. Management team looks strong.", date: new Date("2026-02-15") },
-      { id: "ci-3", firmId: "firm-1", contactId: "contact-1", authorId: "user-sm", type: "EMAIL", notes: "Sent Q4 reporting package. Robert responded promptly with questions on EBITDA adjustments.", date: new Date("2026-01-20") },
+      { id: "ci-1", firmId: firm.id, contactId: "contact-1", authorId: "user-jk", type: "CALL", notes: "Introductory call with Robert — discussed Q4 performance and upcoming Board. Strong relationship with fund I leadership.", date: new Date("2026-03-01") },
+      { id: "ci-2", firmId: firm.id, contactId: "contact-1", authorId: "user-al", type: "MEETING", notes: "Site visit at Apex HQ. Reviewed operations and capex plan. Management team looks strong.", date: new Date("2026-02-15") },
+      { id: "ci-3", firmId: firm.id, contactId: "contact-1", authorId: "user-sm", type: "EMAIL", notes: "Sent Q4 reporting package. Robert responded promptly with questions on EBITDA adjustments.", date: new Date("2026-01-20") },
       // Lisa Park (contact-2, CFO of Beacon Health)
-      { id: "ci-4", firmId: "firm-1", contactId: "contact-2", authorId: "user-jk", type: "MEETING", notes: "Quarterly business review with Lisa. Discussed regulatory pipeline and reimbursement dynamics. Very engaged.", date: new Date("2026-02-28") },
-      { id: "ci-5", firmId: "firm-1", contactId: "contact-2", authorId: "user-sm", type: "NOTE", notes: "Lisa mentioned they are exploring a strategic acquisition in the midwest. Worth monitoring as a co-invest opportunity.", date: new Date("2026-02-10") },
+      { id: "ci-4", firmId: firm.id, contactId: "contact-2", authorId: "user-jk", type: "MEETING", notes: "Quarterly business review with Lisa. Discussed regulatory pipeline and reimbursement dynamics. Very engaged.", date: new Date("2026-02-28") },
+      { id: "ci-5", firmId: firm.id, contactId: "contact-2", authorId: "user-sm", type: "NOTE", notes: "Lisa mentioned they are exploring a strategic acquisition in the midwest. Worth monitoring as a co-invest opportunity.", date: new Date("2026-02-10") },
       // David Morse (contact-3, Managing Partner at Ridgeline Capital)
-      { id: "ci-6", firmId: "firm-1", contactId: "contact-3", authorId: "user-al", type: "CALL", notes: "Discussed co-invest opportunity on Nordic Wind deal. David is interested at $5M ticket. Following up with term sheet.", date: new Date("2026-03-05") },
-      { id: "ci-7", firmId: "firm-1", contactId: "contact-3", authorId: "user-jk", type: "EMAIL", notes: "Sent NDA and co-invest summary deck. Awaiting signature.", date: new Date("2026-02-20") },
+      { id: "ci-6", firmId: firm.id, contactId: "contact-3", authorId: "user-al", type: "CALL", notes: "Discussed co-invest opportunity on Nordic Wind deal. David is interested at $5M ticket. Following up with term sheet.", date: new Date("2026-03-05") },
+      { id: "ci-7", firmId: firm.id, contactId: "contact-3", authorId: "user-jk", type: "EMAIL", notes: "Sent NDA and co-invest summary deck. Awaiting signature.", date: new Date("2026-02-20") },
       // Erik Johansson (contact-4, Partner at Nordic Wind Energy)
-      { id: "ci-8", firmId: "firm-1", contactId: "contact-4", authorId: "user-jk", type: "MEETING", notes: "Kick-off meeting with Erik on the Nordic Wind deal. Excellent alignment on structure. Moving to DD phase.", date: new Date("2026-01-15") },
+      { id: "ci-8", firmId: firm.id, contactId: "contact-4", authorId: "user-jk", type: "MEETING", notes: "Kick-off meeting with Erik on the Nordic Wind deal. Excellent alignment on structure. Moving to DD phase.", date: new Date("2026-01-15") },
       // Maria Santos (contact-5, CEO of UrbanEst)
-      { id: "ci-9", firmId: "firm-1", contactId: "contact-5", authorId: "user-al", type: "NOTE", notes: "Maria reached out re: follow-on capital. Series B timeline pushed to Q3. Monitoring.", date: new Date("2026-02-08") },
+      { id: "ci-9", firmId: firm.id, contactId: "contact-5", authorId: "user-al", type: "NOTE", notes: "Maria reached out re: follow-on capital. Series B timeline pushed to Q3. Monitoring.", date: new Date("2026-02-08") },
     ],
   });
   console.log("✓ Contact interactions seeded");
@@ -2739,19 +2757,19 @@ End with credit risk rating, key covenant concerns, and recommended structural p
   await prisma.contactTag.createMany({
     data: [
       // Robert Chen — Broker + Co-Investor
-      { id: "ct-1", firmId: "firm-1", contactId: "contact-1", tag: "Co-Investor" },
-      { id: "ct-2", firmId: "firm-1", contactId: "contact-1", tag: "Board Member" },
+      { id: "ct-1", firmId: firm.id, contactId: "contact-1", tag: "Co-Investor" },
+      { id: "ct-2", firmId: firm.id, contactId: "contact-1", tag: "Board Member" },
       // Lisa Park — LP Prospect
-      { id: "ct-3", firmId: "firm-1", contactId: "contact-2", tag: "LP Prospect" },
+      { id: "ct-3", firmId: firm.id, contactId: "contact-2", tag: "LP Prospect" },
       // David Morse — Co-Investor + Broker
-      { id: "ct-4", firmId: "firm-1", contactId: "contact-3", tag: "Co-Investor" },
-      { id: "ct-5", firmId: "firm-1", contactId: "contact-3", tag: "Broker" },
+      { id: "ct-4", firmId: firm.id, contactId: "contact-3", tag: "Co-Investor" },
+      { id: "ct-5", firmId: firm.id, contactId: "contact-3", tag: "Broker" },
       // Erik Johansson — Advisor
-      { id: "ct-6", firmId: "firm-1", contactId: "contact-4", tag: "Advisor" },
+      { id: "ct-6", firmId: firm.id, contactId: "contact-4", tag: "Advisor" },
       // Maria Santos — LP Prospect + Advisor
-      { id: "ct-7", firmId: "firm-1", contactId: "contact-5", tag: "LP Prospect" },
+      { id: "ct-7", firmId: firm.id, contactId: "contact-5", tag: "LP Prospect" },
       // Tom Bradley (legal counsel) — Service Provider
-      { id: "ct-8", firmId: "firm-1", contactId: "contact-6", tag: "Service Provider" },
+      { id: "ct-8", firmId: firm.id, contactId: "contact-6", tag: "Service Provider" },
     ],
   });
   console.log("✓ Contact tags seeded");
