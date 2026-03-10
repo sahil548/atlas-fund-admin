@@ -5,7 +5,6 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { AssetAllocationChart } from "./asset-allocation-chart";
 import { TopBottomPerformers } from "./top-bottom-performers";
 import { CapitalDeploymentTracker } from "./capital-deployment-tracker";
-import { RecentActivityFeed } from "./recent-activity-feed";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -25,8 +24,8 @@ export function PortfolioAggregates() {
 
   if (isLoading || !data) {
     return (
-      <div className="grid grid-cols-2 gap-4">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 h-48 animate-pulse" />
         ))}
       </div>
@@ -34,7 +33,7 @@ export function PortfolioAggregates() {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <SectionErrorBoundary>
         <AssetAllocationChart />
       </SectionErrorBoundary>
@@ -56,10 +55,6 @@ export function PortfolioAggregates() {
             totalDryPowder: 0,
           }}
         />
-      </SectionErrorBoundary>
-
-      <SectionErrorBoundary>
-        <RecentActivityFeed activities={data.recentActivity ?? []} />
       </SectionErrorBoundary>
     </div>
   );

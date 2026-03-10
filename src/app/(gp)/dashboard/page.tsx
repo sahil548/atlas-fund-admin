@@ -10,6 +10,7 @@ import { NeedsAttentionPanel } from "@/components/features/dashboard/needs-atten
 import { DealPipelineFunnel } from "@/components/features/dashboard/deal-pipeline-funnel";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { PageHeader } from "@/components/ui/page-header";
+import { ActivityFeedSection } from "@/components/features/dashboard/activity-feed-section";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -143,7 +144,7 @@ export default function DashboardPage() {
             Portfolio Overview
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            Asset allocation, performance, capital deployment, and activity across all entities
+            Asset allocation, performance, and capital deployment across all entities
           </p>
         </div>
 
@@ -152,7 +153,12 @@ export default function DashboardPage() {
         </SectionErrorBoundary>
       </section>
 
-      {/* Activity feed will be added in Plan 05 */}
+      {/* ── Activity Feed — full-width at bottom ──────────────── */}
+      <section>
+        <SectionErrorBoundary>
+          <ActivityFeedSection />
+        </SectionErrorBoundary>
+      </section>
     </div>
   );
 }
