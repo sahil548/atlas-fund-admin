@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 19-03-PLAN.md (DASH-01, DASH-02, DASH-04 verified)
-last_updated: "2026-03-10T17:48:51.426Z"
-last_activity: 2026-03-10 — Phase 19 Plan 03 complete. SummaryBar, NeedsAttentionPanel, DealPipelineFunnel, compact EntityCard, dashboard restructured, LP Comparison removed. DASH-01, DASH-02, DASH-04 verified.
+stopped_at: "Paused at checkpoint: 19-05 Task 2 human-verify"
+last_updated: "2026-03-10T17:55:54.262Z"
+last_activity: 2026-03-10 — Phase 19 Plan 03 complete. SummaryBar (5 metrics), NeedsAttentionPanel (alerts grouped by severity), DealPipelineFunnel (4-stage funnel), compact EntityCard (2-row with quick actions), dashboard page restructured, LP Comparison removed.
 progress:
   total_phases: 10
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 48
-  completed_plans: 47
+  completed_plans: 48
   percent: 96
 ---
 
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 19 of 19 — Dashboard & Supporting Modules (IN PROGRESS)
-- **Plan:** Plans 01, 02, 03, 04 complete (4/5); Plan 05 remaining
-- **Status:** Phase 19 in progress — Plan 03 complete: SummaryBar, NeedsAttentionPanel, DealPipelineFunnel, compact EntityCard, dashboard restructured, LP Comparison removed (DASH-01, DASH-02, DASH-04 done)
-- **Last activity:** 2026-03-10 — Phase 19 Plan 03 complete. SummaryBar (5 metrics), NeedsAttentionPanel (alerts grouped by severity), DealPipelineFunnel (4-stage funnel), compact EntityCard (2-row with quick actions), dashboard page restructured, LP Comparison removed.
+- **Plan:** Plans 01-05 in progress (Task 1 complete; Task 2 awaiting human verification)
+- **Status:** Phase 19 almost complete — Plan 05 Task 1 done: single-ring donut chart, ActivityFeedSection wired at bottom, assembly tests (19/19 pass), build passes. Paused at human-verify checkpoint.
+- **Last activity:** 2026-03-10 — Phase 19 Plan 05 Task 1 complete. ActivityFeedSection wired, asset allocation chart redesigned (single-ring donut), PortfolioAggregates updated (3-col grid, RecentActivityFeed removed), assembly tests created and passing.
 
 Progress: [██████████] 96% (81/84 plans)
 
@@ -260,6 +260,10 @@ Progress: [██████████] 96% (81/84 plans)
 - **DealPipelineFunnel proportional widths with 20% minimum:** prevents zero-count stages from collapsing while still conveying relative deal distribution
 - **NeedsAttentionPanel high-before-medium sort:** high severity alerts always appear first in the morning briefing view
 - **Dashboard self-fetching panel pattern:** SummaryBar, NeedsAttentionPanel, DealPipelineFunnel each own their own SWR fetch — no prop drilling from parent page
+- **Asset allocation single-ring donut:** Only outerRing data used (asset class by fair value); inner ring and opacity-based debt/equity shading removed entirely — chart is cleaner and no longer broken
+- **PortfolioAggregates 3-column layout:** RecentActivityFeed removed; grid changed to grid-cols-1 lg:grid-cols-3 for 3 items (AssetAllocationChart, TopBottomPerformers, CapitalDeploymentTracker)
+- **ActivityFeedSection full-width at bottom:** Wired as 7th section of dashboard page, completing the GP morning briefing layout
+- **Donut center label via overlay div:** Absolute positioned div with pointer-events-none over ResponsiveContainer; simpler than Recharts label prop
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -279,6 +283,6 @@ Progress: [██████████] 96% (81/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T17:48:51.423Z
-- **Stopped at:** Completed 19-03-PLAN.md (DASH-01, DASH-02, DASH-04 verified)
+- **Last session:** 2026-03-10T17:55:54.259Z
+- **Stopped at:** Paused at checkpoint: 19-05 Task 2 human-verify
 - **Resume file:** None

@@ -32,7 +32,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics (completed 2026-03-10)
 - [x] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements (completed 2026-03-10)
 - [x] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring (completed 2026-03-10)
-- [ ] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup
+- [x] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup (completed 2026-03-10)
 - [ ] **Phase 20: Schema Cleanup & UI Polish** - Full reconciliation of Phases 11-19, exhaustive schema audit, and UI overhaul — zero accumulated debt, airtight database, $50K SaaS-grade interface
 
 ---
@@ -199,7 +199,7 @@ Plans:
   3. Entity cards have quick-action buttons (view entity, create capital call, view report) so common actions take one click from the dashboard
   4. Reports can be previewed before downloading, report history is tracked per entity per period, and GP notification preferences are configurable
   5. A unified integrations status page shows all integrations with their connection status (green/red), and the AI config page has a test connection button that validates the API key works
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 Plans:
 - [ ] 19-01-PLAN.md -- Dashboard API endpoints (pipeline-summary + alerts) with Wave 0 tests
 - [ ] 19-02-PLAN.md -- Supporting modules polish (report preview/history, integrations status, notifications, SUPP-05/06 verification)
@@ -235,4 +235,4 @@ Plans:
 | 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
 | 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
 | 18. AI Features | v2.0 | 4/4 | Complete | 2026-03-10 |
-| 19. Dashboard & Supporting Modules | 4/5 | In Progress|  | - |
+| 19. Dashboard & Supporting Modules | 5/5 | Complete   | 2026-03-10 | - |
