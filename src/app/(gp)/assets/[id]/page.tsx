@@ -17,6 +17,8 @@ import { ExitAssetModal } from "@/components/features/assets/exit-asset-modal";
 import { AssetOverviewTab } from "@/components/features/assets/asset-overview-tab";
 import { AssetContractsTab } from "@/components/features/assets/asset-contracts-tab";
 import { ValuationHistoryChart } from "@/components/features/assets/valuation-history-chart";
+import { AssetIncomeTab } from "@/components/features/assets/asset-income-tab";
+import { AssetExpensesTab } from "@/components/features/assets/asset-expenses-tab";
 import { fmt, pct, cn, formatDate } from "@/lib/utils";
 import Link from "next/link";
 
@@ -36,7 +38,7 @@ import {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const TABS = ["overview", "contracts", "performance", "documents", "tasks", "activity"] as const;
+const TABS = ["overview", "contracts", "performance", "income", "expenses", "documents", "tasks", "activity"] as const;
 type Tab = (typeof TABS)[number];
 
 function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: string }) {
@@ -243,6 +245,22 @@ export default function AssetDetailPage({
           {/* Attribution comparison */}
           <AssetPerformanceTab assetId={a.id} />
         </div>
+      )}
+
+      {/* ── Income Tab ───────────────────────────────────── */}
+      {tab === "income" && (
+        <AssetIncomeTab
+          assetId={id}
+          entityId={a.entityAllocations?.[0]?.entityId || ""}
+        />
+      )}
+
+      {/* ── Expenses Tab ─────────────────────────────────── */}
+      {tab === "expenses" && (
+        <AssetExpensesTab
+          assetId={id}
+          entityId={a.entityAllocations?.[0]?.entityId || ""}
+        />
       )}
 
       {/* ── Documents Tab ────────────────────────────────── */}
