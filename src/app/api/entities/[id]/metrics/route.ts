@@ -34,6 +34,7 @@ export async function GET(
             asset: {
               include: {
                 valuations: { orderBy: { valuationDate: "desc" }, take: 1 },
+                incomeEvents: true, // NEW: needed for gross IRR
               },
             },
           },
@@ -139,7 +140,7 @@ export async function GET(
     const entityMOIC =
       totalCostBasis > 0 ? totalFairValue / totalCostBasis : null;
 
-    // --- Compute IRR using xirr ---
+    // --- Compute IRR using xirr (net IRR from fund-level cash flows) ---
     const cashFlows = [
       ...capitalCallCashFlows,
       ...distributionCashFlows,
@@ -149,8 +150,72 @@ export async function GET(
     }
     const irr = xirr(cashFlows);
 
+    // --- Compute Gross IRR from asset-level cash flows ---
+    const assetCashFlows: { date: Date; amount: number }[] = [];
+
+    for (const alloc of entity.assetAllocations) {
+      const asset = alloc.asset as any;
+      const allocPct = alloc.allocationPercent / 100;
+
+      // Outflow: cost basis at entry
+      if (asset.entryDate) {
+        assetCashFlows.push({
+          date: new Date(asset.entryDate),
+          amount: -(asset.costBasis * allocPct),
+        });
+      }
+
+      // Inflows: income events allocated to this entity
+      for (const inc of asset.incomeEvents || []) {
+        assetCashFlows.push({
+          date: new Date(inc.date),
+          amount: inc.amount * allocPct,
+        });
+      }
+
+      // Terminal value: current fair value
+      assetCashFlows.push({
+        date: new Date(),
+        amount: asset.fairValue * allocPct,
+      });
+    }
+
+    const grossIrr = xirr(assetCashFlows);
+
+    // --- Period-based income breakdown ---
+    const incomeEvents = await prisma.incomeEvent.findMany({
+      where: { entityId: id },
+      include: { asset: { select: { id: true, name: true } } },
+      orderBy: { date: "desc" },
+    });
+
+    const periodBreakdownMap: Record<string, {
+      period: string;
+      total: number;
+      byAsset: Record<string, { assetName: string; amount: number }>;
+    }> = {};
+
+    for (const event of incomeEvents) {
+      const period = event.date.toISOString().slice(0, 7); // "2026-03"
+      if (!periodBreakdownMap[period]) {
+        periodBreakdownMap[period] = { period, total: 0, byAsset: {} };
+      }
+      periodBreakdownMap[period].total += event.amount;
+      const assetKey = event.assetId || "unallocated";
+      const assetName = (event as any).asset?.name || "Unallocated";
+      if (!periodBreakdownMap[period].byAsset[assetKey]) {
+        periodBreakdownMap[period].byAsset[assetKey] = { assetName, amount: 0 };
+      }
+      periodBreakdownMap[period].byAsset[assetKey].amount += event.amount;
+    }
+
+    const periodBreakdown = Object.values(periodBreakdownMap).sort(
+      (a, b) => b.period.localeCompare(a.period)
+    );
+
     return NextResponse.json({
       entityId: entity.id,
+      // Backward-compatible fields
       metrics: {
         tvpi: metrics.tvpi,
         dpi: metrics.dpi,
@@ -165,6 +230,30 @@ export async function GET(
         costBasis: totalCostBasis,
         fairValue: totalFairValue,
       },
+      // NEW: Dual metric view
+      realized: {
+        tvpi: metrics.tvpi,
+        dpi: metrics.dpi,
+        rvpi: metrics.rvpi,
+        netIrr: irr,
+      },
+      unrealized: {
+        grossIrr,
+        portfolioMoic: entityMOIC,
+      },
+      // NEW: Financial summary card data (9 key metrics)
+      summary: {
+        totalCalled,
+        totalDistributed,
+        unrealizedValue: economicNAV,
+        grossIrr,
+        netIrr: irr,
+        tvpi: metrics.tvpi,
+        dpi: metrics.dpi,
+        rvpi: metrics.rvpi,
+      },
+      // NEW: Period-based income breakdown
+      periodBreakdown,
     });
   } catch (err) {
     console.error("[entities/metrics]", err);
