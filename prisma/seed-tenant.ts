@@ -48,6 +48,83 @@ async function main() {
   console.log(`Using GP_TEAM 2: ${userAL.name} (${userAL.id})`);
 
   // ============================================================
+  // CLEANUP PREVIOUS SEED DATA (idempotent re-run)
+  // ============================================================
+  console.log("Cleaning up previous seed data (cac-* records)...");
+
+  const cac = { startsWith: "cac-" };
+
+  // Follow exact dependency order from seed.ts, scoped to cac- records
+  // Tables with auto-generated IDs use parent relationship filters
+  await prisma.metricSnapshot.deleteMany({ where: { investor: { id: cac } } });
+  await prisma.investorUserAccess.deleteMany({ where: { investor: { id: cac } } });
+  await prisma.aIPromptTemplate.deleteMany({ where: { firmId: firm.id } });
+  await prisma.aIConfiguration.deleteMany({ where: { firmId: firm.id } });
+  await prisma.dealCoInvestor.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.contactInteraction.deleteMany({ where: { contact: { id: cac } } });
+  await prisma.contactTag.deleteMany({ where: { contact: { id: cac } } });
+  await prisma.contact.deleteMany({ where: { id: cac } });
+  await prisma.company.deleteMany({ where: { id: cac } });
+  await prisma.activityEvent.deleteMany({ where: { id: cac } });
+  await prisma.notification.deleteMany({ where: { id: cac } });
+  await prisma.document.deleteMany({ where: { id: cac } });
+  await prisma.meeting.deleteMany({ where: { id: cac } });
+  await prisma.taskChecklistItem.deleteMany({ where: { task: { id: cac } } });
+  await prisma.task.deleteMany({ where: { id: cac } });
+  await prisma.dealActivity.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.note.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.dDTaskComment.deleteMany({ where: { task: { workstream: { id: cac } } } });
+  await prisma.dDTaskAttachment.deleteMany({ where: { task: { workstream: { id: cac } } } });
+  await prisma.dDTask.deleteMany({ where: { workstream: { id: cac } } });
+  await prisma.dDWorkstreamComment.deleteMany({ where: { workstream: { id: cac } } });
+  await prisma.dDWorkstreamAttachment.deleteMany({ where: { workstream: { id: cac } } });
+  await prisma.dDWorkstream.deleteMany({ where: { id: cac } });
+  await prisma.closingChecklist.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.aIScreeningResult.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.iCQuestionReply.deleteMany({ where: { question: { id: cac } } });
+  await prisma.iCQuestion.deleteMany({ where: { id: cac } });
+  await prisma.iCVoteRecord.deleteMany({ where: { icProcess: { id: cac } } });
+  await prisma.iCProcess.deleteMany({ where: { id: cac } });
+  await prisma.dealEntity.deleteMany({ where: { deal: { id: cac } } });
+  await prisma.deal.deleteMany({ where: { id: cac } });
+  await prisma.dDCategoryTemplate.deleteMany({ where: { id: cac } });
+  await prisma.capitalAccount.deleteMany({ where: { investor: { id: cac } } });
+  await prisma.waterfallCalculation.deleteMany({ where: { template: { id: cac } } });
+  await prisma.waterfallTier.deleteMany({ where: { id: cac } });
+  await prisma.entity.updateMany({ where: { id: cac }, data: { waterfallTemplateId: null } });
+  await prisma.waterfallTemplate.deleteMany({ where: { id: cac } });
+  await prisma.feeCalculation.deleteMany({ where: { entity: { id: cac } } });
+  await prisma.nAVComputation.deleteMany({ where: { entity: { id: cac } } });
+  await prisma.valuation.deleteMany({ where: { id: cac } });
+  await prisma.distributionLineItem.deleteMany({ where: { id: cac } });
+  await prisma.distributionEvent.deleteMany({ where: { id: cac } });
+  await prisma.capitalCallLineItem.deleteMany({ where: { id: cac } });
+  await prisma.capitalCall.deleteMany({ where: { id: cac } });
+  await prisma.incomeEvent.deleteMany({ where: { asset: { id: cac } } });
+  await prisma.transaction.deleteMany({ where: { id: cac } });
+  await prisma.creditPayment.deleteMany({ where: { id: cac } });
+  await prisma.covenant.deleteMany({ where: { id: cac } });
+  await prisma.creditAgreement.deleteMany({ where: { id: cac } });
+  await prisma.lease.deleteMany({ where: { id: cac } });
+  await prisma.assetFundLPDetails.deleteMany({ where: { id: cac } });
+  await prisma.assetRealEstateDetails.deleteMany({ where: { id: cac } });
+  await prisma.assetCreditDetails.deleteMany({ where: { id: cac } });
+  await prisma.assetEquityDetails.deleteMany({ where: { id: cac } });
+  await prisma.assetEntityAllocation.deleteMany({ where: { id: cac } });
+  await prisma.asset.deleteMany({ where: { id: cac } });
+  await prisma.sideLetterRule.deleteMany({ where: { sideLetter: { id: cac } } });
+  await prisma.sideLetter.deleteMany({ where: { id: cac } });
+  await prisma.commitment.deleteMany({ where: { id: cac } });
+  await prisma.investorNotificationPreference.deleteMany({ where: { investor: { id: cac } } });
+  await prisma.investor.deleteMany({ where: { id: cac } });
+  await prisma.trialBalanceSnapshot.deleteMany({ where: { connection: { id: cac } } });
+  await prisma.accountMapping.deleteMany({ where: { connection: { id: cac } } });
+  await prisma.accountingConnection.deleteMany({ where: { id: cac } });
+  await prisma.entity.deleteMany({ where: { id: cac } });
+
+  console.log("Previous seed data cleaned up.");
+
+  // ============================================================
   // GP COMPANY + INTERNAL CONTACTS
   // ============================================================
   console.log("Creating GP company and internal contacts...");
