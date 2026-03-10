@@ -106,7 +106,7 @@ describe("buildAlerts", () => {
   const baseCovenant = {
     id: "cov-1",
     name: "Debt Service Coverage Ratio",
-    creditAgreement: {
+    agreement: {
       id: "ca-1",
       asset: { id: "asset-1", name: "Office Tower" },
     },
@@ -190,7 +190,7 @@ describe("buildAlerts", () => {
     const cov2 = {
       ...baseCovenant,
       id: "cov-2",
-      creditAgreement: { id: "ca-2", asset: { id: "asset-3", name: "Warehouse" } },
+      agreement: { id: "ca-2", asset: { id: "asset-3", name: "Warehouse" } },
     };
 
     const result = buildAlerts([baseCapitalCall, cc2], [baseCovenant, cov2], [baseLease]);

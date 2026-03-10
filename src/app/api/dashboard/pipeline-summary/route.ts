@@ -20,7 +20,9 @@ export async function GET(req: Request) {
 
     const directFilter = firmId ? { firmId } : {};
 
-    // Exclude CLOSED and DEAD deals from the pipeline funnel
+    // Exclude CLOSED and DEAD deals from the pipeline funnel.
+    // Note: Deal model has no numeric dealValue column (targetSize is stored as String).
+    // We return count per stage; totalValue will be 0 until a numeric value field is added.
     const raw = await prisma.deal.groupBy({
       by: ["stage"],
       where: {
@@ -28,10 +30,15 @@ export async function GET(req: Request) {
         stage: { notIn: ["CLOSED", "DEAD"] },
       },
       _count: { stage: true },
-      _sum: { dealValue: true },
     });
 
-    const stages = groupPipelineStages(raw);
+    // Normalize to the shape groupPipelineStages expects (no _sum available)
+    const rawWithSum = raw.map((r) => ({
+      ...r,
+      _sum: { dealValue: null as number | null },
+    }));
+
+    const stages = groupPipelineStages(rawWithSum);
 
     return NextResponse.json({ stages });
   } catch (err) {
