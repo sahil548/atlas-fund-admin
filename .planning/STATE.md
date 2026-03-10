@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: planning
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-10T08:00:08.189Z"
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-03-10T08:01:23.156Z"
 last_activity: 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
 progress:
   total_phases: 9
   completed_phases: 6
   total_plans: 48
-  completed_plans: 37
+  completed_plans: 38
   percent: 86
 ---
 
@@ -19,14 +19,14 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) ALL 6 PLANS COMPLETE, Phase 17 (LP Portal) is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 17 (LP Portal) IN PROGRESS
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 16 of 19 — Capital Activity (COMPLETE)
-- **Plan:** 6 of 6 complete
-- **Status:** Ready to plan
-- **Last activity:** 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
+- **Phase:** 17 of 19 — LP Portal (In Progress)
+- **Plan:** 2 of 3 complete
+- **Status:** In Progress
+- **Last activity:** 2026-03-10 — Phase 17 Plan 02 complete (capital account date filtering with metric recalculation LP-04, per-entity metrics LP-07 on dashboard + portfolio with sparklines)
 
 Progress: [█████████░] 86% (72/84 plans)
 
@@ -64,6 +64,7 @@ Progress: [█████████░] 86% (72/84 plans)
 | Phase 16-capital-activity P05 | 4 | 2 tasks | 7 files |
 | Phase 16-capital-activity P06 | 5 | 2 tasks | 4 files |
 | Phase 17-lp-portal P01 | 8 | 2 tasks | 3 files |
+| Phase 17-lp-portal P02 | 9 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -198,6 +199,15 @@ Progress: [█████████░] 86% (72/84 plans)
 - **Dual-view entity financial card:** Realized panel (gray-50) shows Net IRR/TVPI/DPI/RVPI from capital flows; unrealized panel (indigo-50) shows Gross IRR/Portfolio MOIC from valuations
 - **Period breakdown monthly/quarterly toggle:** API returns monthly (YYYY-MM), client-side component aggregates to quarters via Math.ceil(month/3) — no extra API calls
 
+### Phase 17 LP Portal Decisions (In Progress)
+- **Date filtering applies to all three Prisma queries independently:** capitalCallLineItems (paidDate), distributionLineItems (distributionDate), feeCalculations (periodDate) — each query gets its own date filter condition
+- **periodMetrics backward compatible:** Only added to capital account response when startDate + endDate params present — existing callers see identical response
+- **Period IRR terminal value:** Ending balance at endDate used as terminal cash flow for XIRR; contributions = negative outflows, distributions = positive inflows
+- **Entity NAV from latestByEntity map:** Per-entity metrics use the same CapitalAccount.endingBalance map built for aggregate NAV — consistent calculation
+- **Portfolio page no new API:** Portfolio page fetches dashboard API directly for entityMetrics + entitySnapshotHistory — avoids new endpoint
+- **Sparkline shows TVPI trend:** entitySnapshotHistory uses TVPI as the sparkline value; renders null for < 2 data points (no chart for new funds)
+- **entitySnapshotHistory empty array not absent:** When no per-entity snapshots exist, response includes `entitySnapshotHistory: []` — frontend can safely check `.length`
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -213,6 +223,6 @@ Progress: [█████████░] 86% (72/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T08:00:08.183Z
-- **Stopped at:** Completed 17-01-PLAN.md
+- **Last session:** 2026-03-10T08:01:23.150Z
+- **Stopped at:** Completed 17-02-PLAN.md
 - **Resume file:** None

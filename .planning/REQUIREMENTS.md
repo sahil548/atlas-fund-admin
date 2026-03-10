@@ -55,10 +55,10 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### LP Portal — Accuracy & Access
 
-- [ ] **LP-04**: Capital account statement has period/date range picker
+- [x] **LP-04**: Capital account statement has period/date range picker
 - [x] **LP-05**: Document center has category filter (K-1s, financial statements, notices)
 - [x] **LP-06**: LP portal metrics verified as computed from real data (not seeded values)
-- [ ] **LP-07**: LP can view per-entity performance breakdown (fund-by-fund IRR/TVPI)
+- [x] **LP-07**: LP can view per-entity performance breakdown (fund-by-fund IRR/TVPI)
 - [ ] **LP-08**: K-1 acknowledgment receipt workflow
 - [ ] **LP-09**: LP can view and verify their contact information
 
@@ -228,10 +228,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAP-04 | Phase 16 | Complete |
 | CAP-05 | Phase 16 | Complete |
 | CAP-06 | Phase 16 | Complete |
-| LP-04 | Phase 17 | Pending |
+| LP-04 | Phase 17 | Complete |
 | LP-05 | Phase 17 | Complete |
 | LP-06 | Phase 17 | Complete |
-| LP-07 | Phase 17 | Pending |
+| LP-07 | Phase 17 | Complete |
 | LP-08 | Phase 17 | Pending |
 | LP-09 | Phase 17 | Pending |
 | AI-01 | Phase 18 | Pending |
