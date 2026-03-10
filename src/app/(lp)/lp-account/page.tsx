@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { useInvestor } from "@/components/providers/investor-provider";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
+import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -45,6 +46,7 @@ interface CapitalAccountData {
   investorName: string;
   ledger: LedgerEntry[];
   entities: EntitySummary[];
+  periodMetrics?: { irr: number | null; tvpi: number | null; dpi: number | null; rvpi: number | null };
 }
 
 interface PeriodSummary {
@@ -104,19 +106,62 @@ function computePeriodSummaries(ledger: LedgerEntry[]): PeriodSummary[] {
   return sortedKeys.map((k) => quarterMap.get(k)!);
 }
 
+// Compute preset date ranges
+function getPresetRanges() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const todayStr = now.toISOString().split("T")[0];
+
+  return {
+    Q1: { start: `${year}-01-01`, end: `${year}-03-31` },
+    Q2: { start: `${year}-04-01`, end: `${year}-06-30` },
+    Q3: { start: `${year}-07-01`, end: `${year}-09-30` },
+    Q4: { start: `${year}-10-01`, end: `${year}-12-31` },
+    FY: { start: `${year}-01-01`, end: `${year}-12-31` },
+    YTD: { start: `${year}-01-01`, end: todayStr },
+  };
+}
+
 export default function LPAccountPage() {
   const { investorId } = useInvestor();
   const toast = useToast();
   const [recomputing, setRecomputing] = useState(false);
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+
+  const dateParams = startDate && endDate ? `?startDate=${startDate}&endDate=${endDate}` : "";
 
   const { data, isLoading } = useSWR<CapitalAccountData>(
-    investorId ? `/api/investors/${investorId}/capital-account` : null,
+    investorId ? `/api/investors/${investorId}/capital-account${dateParams}` : null,
     fetcher
   );
   const { data: dashboard } = useSWR(
     investorId ? `/api/lp/${investorId}/dashboard` : null,
     fetcher
   );
+
+  // Detect active preset
+  const presets = useMemo(() => getPresetRanges(), []);
+  const activePreset = useMemo(() => {
+    if (!startDate || !endDate) return "All Time";
+    for (const [name, range] of Object.entries(presets)) {
+      if (range.start === startDate && range.end === endDate) return name;
+    }
+    return null;
+  }, [startDate, endDate, presets]);
+
+  function applyPreset(name: string) {
+    if (name === "All Time") {
+      setStartDate("");
+      setEndDate("");
+      return;
+    }
+    const range = presets[name as keyof typeof presets];
+    if (range) {
+      setStartDate(range.start);
+      setEndDate(range.end);
+    }
+  }
 
   async function handleRecompute() {
     if (!investorId || !data || data.entities.length === 0) return;
@@ -134,7 +179,7 @@ export default function LPAccountPage() {
       });
       if (!res.ok) throw new Error("Computation failed");
       toast.success("Capital account recomputed");
-      mutate(`/api/investors/${investorId}/capital-account`);
+      mutate(`/api/investors/${investorId}/capital-account${dateParams}`);
       mutate(`/api/lp/${investorId}/dashboard`);
     } catch {
       toast.error("Failed to recompute capital account");
@@ -152,11 +197,15 @@ export default function LPAccountPage() {
   const currentBalance = data.entities.reduce((s, e) => s + e.currentBalance, 0);
   const totalCommitment = data.entities.reduce((s, e) => s + e.commitment, 0);
 
-  // Pull metrics from dashboard API (computed from real data)
-  const netIrr = dashboard?.irr != null ? `${(dashboard.irr * 100).toFixed(1)}%` : "—";
-  const tvpi = dashboard?.tvpi != null ? `${dashboard.tvpi.toFixed(2)}x` : "—";
-  const dpi = dashboard?.dpi != null ? `${dashboard.dpi.toFixed(2)}x` : "—";
-  const rvpi = dashboard?.rvpi != null ? `${dashboard.rvpi.toFixed(2)}x` : "—";
+  // Use period metrics when date range is active, otherwise fall back to dashboard aggregate metrics
+  const isDateFiltered = !!(startDate && endDate);
+  const metricsSource = isDateFiltered && data.periodMetrics ? data.periodMetrics : dashboard;
+  const metricsLabel = isDateFiltered && data.periodMetrics ? "Period" : "All Time";
+
+  const netIrr = metricsSource?.irr != null ? `${(metricsSource.irr * 100).toFixed(1)}%` : "—";
+  const tvpi = metricsSource?.tvpi != null ? `${metricsSource.tvpi.toFixed(2)}x` : "—";
+  const dpi = metricsSource?.dpi != null ? `${metricsSource.dpi.toFixed(2)}x` : "—";
+  const rvpi = metricsSource?.rvpi != null ? `${metricsSource.rvpi.toFixed(2)}x` : "—";
 
   // Compute period summaries from ledger
   const periodSummaries = computePeriodSummaries(data.ledger);
@@ -171,8 +220,59 @@ export default function LPAccountPage() {
     { l: "Current Balance", v: fmtSigned(currentBalance), s: true, hl: true },
   ];
 
+  const presetNames = ["Q1", "Q2", "Q3", "Q4", "FY", "YTD", "All Time"];
+
   return (
     <div className="space-y-5">
+      {/* Date Range Picker */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">Date Range:</span>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="text-xs border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <span className="text-xs text-gray-400">to</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="text-xs border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          />
+          <div className="flex items-center gap-1 ml-2">
+            {presetNames.map((preset) => (
+              <button
+                key={preset}
+                onClick={() => applyPreset(preset)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-xs font-medium transition-colors",
+                  activePreset === preset
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                )}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
+        {isDateFiltered && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+              Showing: {startDate} to {endDate}
+            </span>
+            <button
+              onClick={() => { setStartDate(""); setEndDate(""); }}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-medium"
+            >
+              Clear ×
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Period Summary Section */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h3 className="text-sm font-semibold mb-3">Period Summary</h3>
@@ -280,13 +380,18 @@ export default function LPAccountPage() {
 
         <div className="mt-4 grid grid-cols-4 gap-3">
           {[
-            { l: "Net IRR", v: netIrr },
+            { l: `Net IRR`, v: netIrr },
             { l: "TVPI", v: tvpi },
             { l: "DPI", v: dpi },
             { l: "RVPI", v: rvpi },
           ].map((m, i) => (
             <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-xs text-gray-500">{m.l}</div>
+              <div className="text-xs text-gray-500">
+                {m.l}
+                {isDateFiltered && data.periodMetrics && (
+                  <span className="ml-1 text-indigo-500 font-medium">({metricsLabel})</span>
+                )}
+              </div>
               <div className="text-lg font-semibold">{m.v}</div>
             </div>
           ))}

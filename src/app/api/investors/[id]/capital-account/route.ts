@@ -1,15 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { xirr } from "@/lib/computations/irr";
+import { computeMetrics } from "@/lib/computations/metrics";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
+
+    // Parse optional date range query params
+    const { searchParams } = new URL(req.url);
+    const startDate = searchParams.get("startDate") ?? undefined;
+    const endDate = searchParams.get("endDate") ?? undefined;
 
     // Verify investor exists (and optionally belongs to the firm via their commitments)
     const investor = await prisma.investor.findUnique({
@@ -48,12 +55,18 @@ export async function GET(
       });
     }
 
-    // Fetch capital call line items (funded ones)
+    // Build date filter objects
+    const hasDateRange = !!(startDate && endDate);
+    const callDateFilter = hasDateRange
+      ? { paidDate: { gte: new Date(startDate!), lte: new Date(endDate!) } }
+      : { paidDate: { not: null } };
+
+    // Fetch capital call line items (funded ones with optional date filter)
     const capitalCallLineItems = await prisma.capitalCallLineItem.findMany({
       where: {
         investorId: id,
         status: "Funded",
-        paidDate: { not: null },
+        ...callDateFilter,
         capitalCall: { entityId: { in: validEntityIds } },
       },
       include: {
@@ -68,14 +81,23 @@ export async function GET(
       orderBy: { paidDate: "asc" },
     });
 
+    // Build distribution date filter
+    const distWhereBase: Record<string, unknown> = {
+      entityId: { in: validEntityIds },
+      status: "PAID",
+    };
+    if (hasDateRange) {
+      distWhereBase.distributionDate = {
+        gte: new Date(startDate!),
+        lte: new Date(endDate!),
+      };
+    }
+
     // Fetch distribution line items for PAID distributions
     const distributionLineItems = await prisma.distributionLineItem.findMany({
       where: {
         investorId: id,
-        distribution: {
-          entityId: { in: validEntityIds },
-          status: "PAID",
-        },
+        distribution: distWhereBase,
       },
       include: {
         distribution: {
@@ -90,9 +112,20 @@ export async function GET(
       orderBy: { createdAt: "asc" },
     });
 
+    // Build fee date filter
+    const feeWhereBase: Record<string, unknown> = {
+      entityId: { in: validEntityIds },
+    };
+    if (hasDateRange) {
+      feeWhereBase.periodDate = {
+        gte: new Date(startDate!),
+        lte: new Date(endDate!),
+      };
+    }
+
     // Fetch fee calculations for entities this investor is committed to
     const feeCalculations = await prisma.feeCalculation.findMany({
-      where: { entityId: { in: validEntityIds } },
+      where: feeWhereBase,
       orderBy: { periodDate: "asc" },
     });
 
@@ -216,12 +249,65 @@ export async function GET(
       };
     });
 
-    return NextResponse.json({
+    // Compute period-scoped metrics when date range is active
+    let periodMetrics: {
+      irr: number | null;
+      tvpi: number | null;
+      dpi: number | null;
+      rvpi: number | null;
+    } | undefined;
+
+    if (hasDateRange) {
+      const periodTotalContributed = rawEntries
+        .filter((e) => e.type === "CONTRIBUTION")
+        .reduce((sum, e) => sum + Math.abs(e.amount), 0);
+      const periodTotalDistributed = rawEntries
+        .filter((e) => e.type === "DISTRIBUTION")
+        .reduce((sum, e) => sum + e.amount, 0);
+      const periodBalance = rawEntries.reduce((sum, e) => sum + e.amount, 0);
+
+      const periodMetricsCalc = computeMetrics(
+        periodTotalContributed,
+        periodTotalDistributed,
+        Math.max(0, periodBalance)
+      );
+
+      // Compute period IRR from scoped cash flows
+      const periodCashFlows: { date: Date; amount: number }[] = [];
+      for (const entry of rawEntries) {
+        if (entry.type === "CONTRIBUTION") {
+          periodCashFlows.push({ date: entry.date, amount: entry.amount }); // already negative
+        } else if (entry.type === "DISTRIBUTION") {
+          periodCashFlows.push({ date: entry.date, amount: entry.amount }); // positive
+        }
+      }
+      // Terminal value: ending balance at endDate
+      if (periodBalance > 0) {
+        periodCashFlows.push({ date: new Date(endDate!), amount: periodBalance });
+      }
+
+      const periodIrr = periodCashFlows.length >= 2 ? xirr(periodCashFlows) : null;
+
+      periodMetrics = {
+        irr: periodIrr,
+        tvpi: periodMetricsCalc.tvpi,
+        dpi: periodMetricsCalc.dpi,
+        rvpi: periodMetricsCalc.rvpi,
+      };
+    }
+
+    const response: Record<string, unknown> = {
       investorId: investor.id,
       investorName: investor.name,
       ledger,
       entities: entitySummaries,
-    });
+    };
+
+    if (periodMetrics !== undefined) {
+      response.periodMetrics = periodMetrics;
+    }
+
+    return NextResponse.json(response);
   } catch (err) {
     console.error("[investors/capital-account]", err);
     return NextResponse.json(
