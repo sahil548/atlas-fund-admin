@@ -1040,8 +1040,8 @@ export default function EntityDetailPage() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <Link href={`/investors/${sl.investor.id}`} className="text-xs font-medium text-indigo-700 hover:underline">{sl.investor.name}</Link>
-                          {sl.rules.filter((r) => r.isActive).length > 0 && (
-                            <Badge color="blue">{sl.rules.filter((r) => r.isActive).length} rule{sl.rules.filter((r) => r.isActive).length !== 1 ? "s" : ""}</Badge>
+                          {(sl.rules || []).filter((r) => r.isActive).length > 0 && (
+                            <Badge color="blue">{(sl.rules || []).filter((r) => r.isActive).length} rule{(sl.rules || []).filter((r) => r.isActive).length !== 1 ? "s" : ""}</Badge>
                           )}
                         </div>
                         {sl.terms && <p className="text-xs text-gray-500 line-clamp-2">{sl.terms}</p>}
