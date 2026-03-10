@@ -211,12 +211,21 @@ Plans:
 ### Phase 20: Schema Cleanup & UI Polish
 
 **Goal:** Exhaustive three-track hardening pass that earns the v2.0 moniker. Track 1 (Integration Audit): Reconcile all changes from Phases 11-19 — find and fix conflicts, regressions, dead code, inconsistencies, and broken cross-module interactions that accumulated across 9 phases of rapid feature development. Track 2 (Schema): Audit every Prisma model, relation, and JSON field — fix broken nested lists, ensure all dynamic content is properly wired, verify relational integrity across the full data model, and eliminate any orphaned or mistyped fields. Track 3 (UI): Systematically review every page and component against best-in-class references (21st.dev, shadcn/ui, Radix primitives, premium dashboard templates) — replace or upgrade components with more professional, cleaner, and visually stronger alternatives. The end state is a codebase with zero accumulated tech debt from v2.0 development, an airtight database, and a UI that looks like a $50K SaaS product.
-**Requirements**: INTEG-* (cross-phase integration audit & fixes), SCHEMA-* (schema audit & fixes), UIPOL-* (UI component upgrades) — to be defined during planning
+**Requirements**: INTEG-01, INTEG-02, INTEG-03, INTEG-04, INTEG-05, INTEG-06, INTEG-07, INTEG-08, INTEG-09, SCHEMA-01, SCHEMA-02, SCHEMA-03, SCHEMA-04, UIPOL-01, UIPOL-02, UIPOL-03, UIPOL-04, UIPOL-05, UIPOL-06
 **Depends on:** Phase 19
-**Plans:** 0 plans
+**Plans:** 10 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 20 to break down)
+- [ ] 20-01-PLAN.md — Wave 0 foundation: logger utility, JSON blob Zod schemas, LP dashboard test fix, bug-03 timeout test
+- [ ] 20-02-PLAN.md — Fix all 3 known bugs (BUG-01 DD progress, BUG-02 conversion rate, BUG-03 IC memo timeout)
+- [ ] 20-03-PLAN.md — Structured logging migration (src/lib/ + API routes): replace console.* with logger.*
+- [ ] 20-04-PLAN.md — Database indexes on high-query columns + orphaned field audit + schema migration
+- [ ] 20-05-PLAN.md — Zod validation on all API routes (raw req.json() -> parseBody) + JSON blob read validation
+- [ ] 20-06-PLAN.md — Console migration (pages/components) + dead code cleanup (unused imports, commented-out code)
+- [ ] 20-07-PLAN.md — End-to-end workflow verification (4 workflows) + pdf-parse typing + as any reduction
+- [ ] 20-08-PLAN.md — UI component upgrades: modal animation, custom select dropdown, tabs dark mode, button ghost
+- [ ] 20-09-PLAN.md — Full dark mode audit (LP + GP pages) + SectionErrorBoundary wiring
+- [ ] 20-10-PLAN.md — Final human verification checkpoint (all 3 tracks)
 
 ---
 
@@ -236,3 +245,4 @@ Plans:
 | 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
 | 18. AI Features | v2.0 | 4/4 | Complete | 2026-03-10 |
 | 19. Dashboard & Supporting Modules | 5/5 | Complete    | 2026-03-10 | - |
+| 20. Schema Cleanup & UI Polish | v2.0 | 0/10 | Planning | - |
