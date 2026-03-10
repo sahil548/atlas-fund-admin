@@ -144,7 +144,12 @@ Plans:
   4. The GP can attach supporting documents directly to a capital call (e.g., the call notice PDF)
   5. The waterfall can be previewed — showing the full distribution breakdown per investor — without saving the result, enabling scenario analysis before committing
   6. Per-investor capital call status (funded / outstanding / overdue) is visible at a glance within the capital call detail, not hidden behind navigation
-**Plans**: TBD
+**Plans:** 4 plans
+Plans:
+- [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card, per-investor badge, clickable rows
+- [ ] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
+- [ ] 16-03-PLAN.md — Distribution detail page with status buttons (Approve, Mark as Paid), line items breakdown, document attachment panel
+- [ ] 16-04-PLAN.md — Waterfall preview with scenario comparison (up to 3 side-by-side), LP/GP split Recharts chart, no-save preview mode
 
 ### Phase 17: LP Portal
 **Goal**: LP portal metrics are verified to come from real computed data, LPs have full self-service access to their statements and documents, and the K-1 acknowledgment workflow is complete
@@ -184,12 +189,19 @@ Plans:
 **Depends on**: Phases 13-18 (aggregates data from all modules)
 **Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, SUPP-01, SUPP-02, SUPP-03, SUPP-04, SUPP-05, SUPP-06
 **Success Criteria** (what must be TRUE):
-  1. The dashboard shows a deal pipeline summary (deals by stage with aggregate value) and a "needs attention" section (overdue capital calls, covenant breaches, lease expirations within 90 days) — the GP gets their full situational awareness from the first screen
-  2. The activity feed can be filtered by entity and type — the GP can see all activity for a specific fund without noise from others
+  1. The dashboard shows a deal pipeline summary (deals by stage with aggregate value) and a "needs attention" section (overdue capital calls, covenant breaches, lease expirations within 90 days) -- the GP gets their full situational awareness from the first screen
+  2. The activity feed can be filtered by entity and type -- the GP can see all activity for a specific fund without noise from others
   3. Entity cards have quick-action buttons (view entity, create capital call, view report) so common actions take one click from the dashboard
   4. Reports can be previewed before downloading, report history is tracked per entity per period, and GP notification preferences are configurable
   5. A unified integrations status page shows all integrations with their connection status (green/red), and the AI config page has a test connection button that validates the API key works
-**Plans**: TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 19-01-PLAN.md -- Dashboard API endpoints (pipeline-summary + alerts) with Wave 0 tests
+- [ ] 19-02-PLAN.md -- Supporting modules polish (report preview/history, integrations status, notifications, SUPP-05/06 verification)
+- [ ] 19-03-PLAN.md -- Dashboard restructure top half (summary bar, alerts panel, pipeline funnel, compact entity cards)
+- [ ] 19-04-PLAN.md -- Activity feed API + full-width filterable activity feed component
+- [ ] 19-05-PLAN.md -- Dashboard final assembly (chart redesign, activity feed wiring) + human verification checkpoint
+
 
 ---
 
@@ -205,7 +217,7 @@ Plans:
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | v2.0 | 0/TBD | Not started | - |
+| 16. Capital Activity | v2.0 | 0/4 | Not started | - |
 | 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
-| 19. Dashboard & Supporting Modules | v2.0 | 0/TBD | Not started | - |
+| 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |
