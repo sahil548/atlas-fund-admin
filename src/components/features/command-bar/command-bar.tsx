@@ -29,11 +29,14 @@ import {
   ArrowRight,
   Bot,
   Bell,
+  PanelRight,
+  AlertTriangle,
 } from "lucide-react";
 import { useFirm } from "@/components/providers/firm-provider";
 import { useCommandBar } from "./command-bar-provider";
 import { discoverCommands } from "@/lib/command-discovery";
 import { isValidAppRoute } from "@/lib/routes";
+import { classifyIntent, getUnseenAlertCount } from "@/lib/ai-nl-intent";
 import type {
   CommandAction,
   CommandBarMessage,
@@ -68,20 +71,44 @@ const TYPE_COLORS: Record<string, string> = {
   page: "bg-slate-100 text-slate-700",
 };
 
+// ── Alert data type ─────────────────────────────────────
+
+interface MonitoringAlert {
+  id: string;
+  createdAt: string;
+}
+
 // ── Main Component (inline dropdown, not modal) ────────
 
 export function CommandBar() {
   const router = useRouter();
   const { firmId } = useFirm();
-  const { isOpen, open, close, inputRef } = useCommandBar();
+  const {
+    isOpen,
+    open,
+    close,
+    inputRef,
+    // Provider-level conversation state (shared with side panel)
+    conversation,
+    addMessage,
+    isSearching,
+    setIsSearching,
+    pageContext,
+    openSidePanel,
+    lastAlertSeenAt,
+    updateLastAlertSeen,
+  } = useCommandBar();
 
-  // State
+  // Local UI state (not shared — only needed in dropdown)
   const [query, setQuery] = useState("");
-  const [conversation, setConversation] = useState<CommandBarMessage[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [dynamicActions, setDynamicActions] = useState<CommandAction[]>([]);
   const [dbResults, setDbResults] = useState<SearchResult[]>([]);
+
+  // Alert state — fetch once per open, cache in ref to avoid re-fetching
+  const [unseenAlertCount, setUnseenAlertCount] = useState(0);
+  const alertFetchedRef = useRef(false);
+  const alertDataRef = useRef<MonitoringAlert[]>([]);
 
   // Refs
   const containerRef = useRef<HTMLDivElement>(null);
@@ -89,7 +116,7 @@ export function CommandBar() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const dbSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Reset state when closed
+  // Reset local UI state when closed (NOT conversation — that's in provider)
   useEffect(() => {
     if (!isOpen) {
       setQuery("");
@@ -97,6 +124,30 @@ export function CommandBar() {
       setDbResults([]);
     }
   }, [isOpen]);
+
+  // Fetch alerts once when command bar first opens
+  useEffect(() => {
+    if (!isOpen || alertFetchedRef.current || !firmId) return;
+
+    alertFetchedRef.current = true;
+    fetch(`/api/assets/monitoring?firmId=${firmId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        // Collect all alert items — each has a createdAt
+        const allAlerts: MonitoringAlert[] = [
+          ...(data.covenantBreaches || []),
+          ...(data.leaseExpirations || []),
+          ...(data.loanMaturities || []),
+          ...(data.overdueReviews || []),
+        ];
+        alertDataRef.current = allAlerts;
+        const count = getUnseenAlertCount(allAlerts, lastAlertSeenAt);
+        setUnseenAlertCount(count);
+      })
+      .catch(() => {
+        // Non-critical — silently ignore monitoring fetch errors
+      });
+  }, [isOpen, firmId, lastAlertSeenAt]);
 
   // Auto-scroll conversation
   useEffect(() => {
@@ -126,20 +177,23 @@ export function CommandBar() {
       setDbResults([]);
     }
 
-    // Debounced DB search
+    // Debounced DB search (only for fuzzy_search intent or short queries)
     if (dbSearchTimer.current) clearTimeout(dbSearchTimer.current);
     if (query.trim().length >= 2) {
-      dbSearchTimer.current = setTimeout(async () => {
-        try {
-          const res = await fetch(
-            `/api/commands/search?q=${encodeURIComponent(query)}&firmId=${firmId}`,
-          );
-          const data = await res.json();
-          setDbResults(data.results || []);
-        } catch {
-          setDbResults([]);
-        }
-      }, 300);
+      const intent = classifyIntent(query);
+      if (intent === "fuzzy_search") {
+        dbSearchTimer.current = setTimeout(async () => {
+          try {
+            const res = await fetch(
+              `/api/commands/search?q=${encodeURIComponent(query)}&firmId=${firmId}`,
+            );
+            const data = await res.json();
+            setDbResults(data.results || []);
+          } catch {
+            setDbResults([]);
+          }
+        }, 300);
+      }
     }
   }, [query, firmId]);
 
@@ -149,13 +203,60 @@ export function CommandBar() {
     async (text: string) => {
       if (!text.trim() || isSearching) return;
 
+      const intent = classifyIntent(text);
+
+      // Short/fuzzy queries: use existing fuzzy search + DB search, no AI call
+      if (intent === "fuzzy_search") {
+        const userMessage: CommandBarMessage = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: text,
+          timestamp: new Date(),
+        };
+        addMessage(userMessage);
+        setQuery("");
+        setDynamicActions([]);
+        setIsSearching(true);
+
+        try {
+          const dbRes = await fetch(
+            `/api/commands/search?q=${encodeURIComponent(text)}&firmId=${firmId}`,
+          ).then((r) => r.json());
+
+          const dbSearchResults: SearchResult[] = dbRes.results || [];
+
+          const assistantMessage: CommandBarMessage = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: dbSearchResults.length > 0
+              ? `Found ${dbSearchResults.length} result${dbSearchResults.length === 1 ? "" : "s"} for "${text}".`
+              : `No records found for "${text}". Try a more specific search or ask a question.`,
+            timestamp: new Date(),
+            searchResults: dbSearchResults,
+          };
+          addMessage(assistantMessage);
+        } catch {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Sorry, I encountered an error. Please try again.",
+            timestamp: new Date(),
+          });
+        } finally {
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      // NL query or NL action: route to AI
+      // (nl_action is future — for now treated same as nl_query; Plan 03 adds action execution)
       const userMessage: CommandBarMessage = {
         id: crypto.randomUUID(),
         role: "user",
         content: text,
         timestamp: new Date(),
       };
-      setConversation((prev) => [...prev, userMessage]);
+      addMessage(userMessage);
       setQuery("");
       setDynamicActions([]);
       setIsSearching(true);
@@ -165,7 +266,7 @@ export function CommandBar() {
           fetch("/api/ai/search", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: text, firmId }),
+            body: JSON.stringify({ query: text, firmId, pageContext }),
           }).then((r) => r.json()),
 
           fetch(
@@ -189,23 +290,34 @@ export function CommandBar() {
           searchResults: mergedResults,
           suggestions: aiRes.suggestions || [],
         };
-        setConversation((prev) => [...prev, assistantMessage]);
+        addMessage(assistantMessage);
       } catch {
-        setConversation((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: "Sorry, I encountered an error. Please try again.",
-            timestamp: new Date(),
-          },
-        ]);
+        addMessage({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
+        });
       } finally {
         setIsSearching(false);
       }
     },
-    [firmId, isSearching],
+    [firmId, isSearching, addMessage, setIsSearching, pageContext],
   );
+
+  // ── Pop-out to side panel ────────────────────────────
+
+  const handlePopOut = useCallback(() => {
+    openSidePanel();
+    close();
+  }, [openSidePanel, close]);
+
+  // ── Dismiss proactive alert banner ──────────────────
+
+  const dismissAlertBanner = useCallback(() => {
+    updateLastAlertSeen();
+    setUnseenAlertCount(0);
+  }, [updateLastAlertSeen]);
 
   // ── Voice Input ──────────────────────────────────────
 
@@ -355,7 +467,7 @@ export function CommandBar() {
             </div>
           )}
 
-          {/* DB search results (while typing, before submit) */}
+          {/* DB search results (while typing, before submit — fuzzy_search intent) */}
           {dbResults.length > 0 && conversation.length === 0 && (
             <div className="border-b border-gray-100 max-h-48 overflow-y-auto">
               <div className="px-3 py-1.5">
@@ -415,6 +527,18 @@ export function CommandBar() {
               </div>
             ) : (
               <div className="px-3 py-2.5 space-y-2.5">
+                {/* Pop-out button — visible when conversation is active */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={handlePopOut}
+                    className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-indigo-600 transition-colors px-2 py-0.5 rounded-full hover:bg-indigo-50"
+                    title="Open in side panel"
+                  >
+                    <PanelRight className="w-3 h-3" />
+                    Pop out
+                  </button>
+                </div>
+
                 {conversation.map((msg) => (
                   <div key={msg.id}>
                     {msg.role === "user" ? (
@@ -494,6 +618,28 @@ export function CommandBar() {
               </div>
             )}
           </div>
+
+          {/* Proactive alert banner — shown when unseen alerts exist */}
+          {unseenAlertCount > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-t border-amber-100">
+              <AlertTriangle className="w-3 h-3 text-amber-500 shrink-0" />
+              <span className="text-[11px] text-amber-700 flex-1">
+                Heads up: {unseenAlertCount} new alert{unseenAlertCount === 1 ? "" : "s"} since your last visit
+              </span>
+              <button
+                onClick={() => { close(); router.push("/assets"); }}
+                className="text-[10px] font-medium text-amber-600 hover:text-amber-800 hover:underline shrink-0"
+              >
+                View
+              </button>
+              <button
+                onClick={dismissAlertBanner}
+                className="text-[10px] text-amber-400 hover:text-amber-600 shrink-0"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex items-center gap-1.5 px-3 py-2 border-t border-gray-100 bg-gray-50/50">

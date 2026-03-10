@@ -9,6 +9,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 import type { CommandBarMessage, PageContext } from "@/lib/command-bar-types";
 
 // Re-export PageContext so consumers can import it from this file directly.
@@ -124,6 +125,26 @@ export function CommandBarProvider({ children }: { children: ReactNode }) {
   const setPageContext = useCallback((ctx: PageContext | null) => {
     setPageContextState(ctx);
   }, []);
+
+  // Auto-detect page context from URL pattern so the AI knows what "this deal" means.
+  // Detail page components can call setPageContext({ ..., entityName }) after data loads
+  // to enrich the context with the entity name.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (pathname.match(/^\/deals\/[^/]+$/)) {
+      setPageContextState({ pageType: "deal", entityId: pathname.split("/")[2] });
+    } else if (pathname.match(/^\/assets\/[^/]+$/)) {
+      setPageContextState({ pageType: "asset", entityId: pathname.split("/")[2] });
+    } else if (pathname.match(/^\/entities\/[^/]+$/)) {
+      setPageContextState({ pageType: "entity", entityId: pathname.split("/")[2] });
+    } else if (pathname.match(/^\/contacts\/[^/]+$/)) {
+      setPageContextState({ pageType: "contact", entityId: pathname.split("/")[2] });
+    } else if (pathname === "/dashboard") {
+      setPageContextState({ pageType: "dashboard" });
+    } else {
+      setPageContextState({ pageType: "other" });
+    }
+  }, [pathname]);
 
   // ── Side panel ────────────────────────────────────────
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(false);
