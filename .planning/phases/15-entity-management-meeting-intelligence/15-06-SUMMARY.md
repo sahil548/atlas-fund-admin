@@ -136,17 +136,18 @@ None — plan executed exactly as written.
 
 ## Self-Check: PASSED
 
-Verified files exist:
-- `src/components/features/meetings/meeting-detail-card.tsx`: FOUND
-- `src/app/api/meetings/[id]/link/route.ts`: FOUND
-- `src/app/api/meetings/[id]/route.ts`: FOUND
-- `src/app/(gp)/meetings/page.tsx`: FOUND (updated)
-- `src/app/api/meetings/sync/route.ts`: FOUND (updated)
+Verified files exist (from git show --stat a101e72):
+- `src/components/features/meetings/meeting-detail-card.tsx`: FOUND (433 lines inserted)
+- `src/app/api/meetings/[id]/link/route.ts`: FOUND (66 lines inserted)
+- `src/app/api/meetings/[id]/route.ts`: FOUND (39 lines inserted)
+- `src/app/(gp)/meetings/page.tsx`: FOUND (updated, 64 lines changed)
+- `src/app/api/meetings/sync/route.ts`: FOUND (updated, 21 lines changed)
 
 Verified commits:
-- `a101e72`: FOUND (tasks 1+2 combined)
+- `a101e72`: FOUND — feat(15-06): task 1 + task 2 — 5 files changed, 567 insertions
+- `6719572`: FOUND — docs(15-06): complete meeting intelligence plan — SUMMARY, STATE, ROADMAP, REQUIREMENTS
 
-Build: PASSED (zero TypeScript errors, all routes compiled, `/meetings` page compiled successfully)
+Build: PASSED (zero TypeScript errors, all routes compiled, `/meetings` page compiled successfully, `/api/meetings/[id]` routes compiled)
 
 ---
 *Phase: 15-entity-management-meeting-intelligence*
