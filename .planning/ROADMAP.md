@@ -29,7 +29,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 13: Deal Desk & CRM** - Pipeline completeness and contact/relationship intelligence (completed 2026-03-09)
 - [ ] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
 - [x] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration (completed 2026-03-10)
-- [ ] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics
+- [x] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics (completed 2026-03-10)
 - [ ] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements
 - [ ] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring
 - [ ] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup
@@ -146,7 +146,7 @@ Plans:
   6. Per-investor capital call status (funded / outstanding / overdue) is visible at a glance within the capital call detail, not hidden behind navigation
   7. Each asset has Income and Expenses tabs with entry forms, running totals, and auto-recalculated IRR/MOIC on every save
   8. Entity detail page shows a financial summary card with dual metric view (realized vs unrealized) computed from real transaction data
-**Plans:** 4/6 plans executed
+**Plans:** 6/6 plans complete
 Plans:
 - [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card + unit tests, per-investor badge, clickable rows
 - [ ] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
@@ -221,7 +221,7 @@ Plans:
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | 4/6 | In Progress|  | - |
+| 16. Capital Activity | 6/6 | Complete   | 2026-03-10 | - |
 | 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |

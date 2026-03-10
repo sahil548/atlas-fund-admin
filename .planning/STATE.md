@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 16-04-PLAN.md
-last_updated: "2026-03-10T06:49:19.708Z"
-last_activity: 2026-03-09 — Phase 16 Plan 04 complete (waterfall scenario preview panel, Run Scenario button, Recharts LP/GP chart, distribution creation waterfall preview step)
+stopped_at: Completed 16-06-PLAN.md
+last_updated: "2026-03-10T06:57:51.823Z"
+last_activity: 2026-03-09 — Phase 16 Plan 05 complete (AssetExpense model, income/expenses transaction API with IRR/MOIC auto-recalculation, Income and Expenses tabs on asset detail page)
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 48
-  completed_plans: 34
-  percent: 81
+  completed_plans: 36
+  percent: 85
 ---
 
 # Atlas — GSD State
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plans 01+02+03+04 COMPLETE, Plan 05 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plans 01+02+03+04+05 COMPLETE, Plan 06 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 16 of 19 — Capital Activity (In Progress)
-- **Plan:** 4 of 6 complete
+- **Plan:** 5 of 6 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 16 Plan 04 complete (waterfall scenario preview panel, Run Scenario button, Recharts LP/GP chart, distribution creation waterfall preview step)
+- **Last activity:** 2026-03-09 — Phase 16 Plan 05 complete (AssetExpense model, income/expenses transaction API with IRR/MOIC auto-recalculation, Income and Expenses tabs on asset detail page)
 
-Progress: [████████░░] 83% (70/84 plans)
+Progress: [█████████░] 85% (71/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -61,6 +61,8 @@ Progress: [████████░░] 83% (70/84 plans)
 | Phase 16 P03 | 5 | 2 tasks | 4 files |
 | Phase 16-capital-activity P02 | 18 | 2 tasks | 6 files |
 | Phase 16-capital-activity P04 | 4 | 2 tasks | 4 files |
+| Phase 16-capital-activity P05 | 4 | 2 tasks | 7 files |
+| Phase 16-capital-activity P06 | 5 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -187,6 +189,10 @@ Progress: [████████░░] 83% (70/84 plans)
 - **WaterfallPreviewPanel mode prop:** standalone (full entity/amount inputs, 1-3 scenarios, add/remove controls) vs inline (auto-runs on mount with initialAmount + initialEntityId, compact for modal embedding)
 - **Scenario chart threshold:** WaterfallScenarioChart rendered only for 2+ completed scenarios — single scenario has no comparison value
 - **Preview panel placement:** Standalone panel renders below tier list in waterfall tab (inline collapsible); inline panel renders after Run Waterfall in distribution creation form with Hide button
+- **AssetExpense separate model:** AssetExpense is its own Prisma model (not negative-amount IncomeEvent) — cleaner schema, separate category taxonomies (management_fee/legal/maintenance vs INTEREST/DIVIDEND/RENTAL)
+- **MOIC formula with income/expenses:** (fairValue + totalIncome - totalExpenses) / costBasis — makes transaction ledgers actually affect the metric, income increases return, expenses reduce it
+- **Transactions API single endpoint:** POST /api/assets/[id]/transactions dispatches to IncomeEvent or AssetExpense by type field, auto-recalculates IRR/MOIC inline after every save
+- **SWR double-mutate pattern for transactions:** After income/expense POST, mutate both /transactions key AND /assets/[id] key — refreshes transaction list AND asset header metrics simultaneously
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -203,6 +209,6 @@ Progress: [████████░░] 83% (70/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T06:49:19.705Z
-- **Stopped at:** Completed 16-04-PLAN.md
+- **Last session:** 2026-03-10T06:57:51.821Z
+- **Stopped at:** Completed 16-06-PLAN.md
 - **Resume file:** None
