@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 16-02-PLAN.md
-last_updated: "2026-03-10T06:41:13.559Z"
-last_activity: 2026-03-10 — Phase 16 Plan 01 complete (schema FKs, isOverdue() + tests, Capital Activity page rename + overdue indicators + clickable rows, Documents API PATCH)
+stopped_at: Completed 16-03-PLAN.md
+last_updated: "2026-03-10T06:42:00.000Z"
+last_activity: 2026-03-10 — Phase 16 Plan 03 complete (distribution detail page, DRAFT→APPROVED→PAID lifecycle buttons, per-investor allocations table, document upload+link panel)
 progress:
   total_phases: 9
   completed_phases: 5
@@ -178,6 +178,10 @@ Progress: [████████░░] 81% (68/84 plans)
 - **Capital Activity route label:** /transactions path kept; only label changed from "Transactions" to "Capital Activity" — no URL or redirect changes needed
 - **SWR mutate parent call key:** After marking any line item Funded, mutate `/api/capital-calls/${callId}` (not line item key) — engine auto-advances parent call status to FUNDED when last investor funded
 - **entityId filter on GET /api/documents:** Added `entityId` query param filter — returns only documents where `entityId` matches; short-circuits firmId OR filter when set
+- **DistributionStatusButtons lifecycle pattern:** Renders Approve (DRAFT), Mark as Paid (APPROVED), paid badge (PAID) — no skip allowed server-side via ALLOWED_TRANSITIONS
+- **Distribution detail documents include:** GET /api/distributions/[id] now includes documents[] via Prisma include clause added in Plan 03
+- **DistributionDocumentPanel unlink via null:** PATCH /api/documents with distributionEventId: null unlinks document — no new endpoint needed
+- **Document panel self-fetch pattern:** DistributionDocumentPanel fetches entity docs internally via SWR; mutates parent distribution SWR key on success
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
