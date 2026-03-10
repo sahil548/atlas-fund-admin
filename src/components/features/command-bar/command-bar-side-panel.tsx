@@ -16,7 +16,142 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { classifyIntent } from "@/lib/ai-nl-intent";
 import { isValidAppRoute } from "@/lib/routes";
 import { ActionConfirmation } from "./action-confirmation";
-import type { ActionPlan, CommandBarMessage, SearchResult } from "@/lib/command-bar-types";
+import { useToast } from "@/components/ui/toast";
+import type { ActionPlan, CommandBarMessage, SearchResult, TaskSuggestion } from "@/lib/command-bar-types";
+
+// ── Priority badge colors ─────────────────────────────────
+
+const PRIORITY_COLORS: Record<string, string> = {
+  HIGH: "bg-red-100 text-red-700",
+  MEDIUM: "bg-amber-100 text-amber-700",
+  LOW: "bg-gray-100 text-gray-600",
+};
+
+// ── TaskSuggestionCard (side panel version) ────────────────
+
+function TaskSuggestionCard({
+  suggestion,
+  firmId,
+  pageContext,
+  contextType,
+}: {
+  suggestion: TaskSuggestion;
+  firmId: string;
+  pageContext: { pageType: string; entityId?: string; entityName?: string } | null;
+  contextType: string | null;
+}) {
+  const toast = useToast();
+  const [added, setAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+
+  const handleAdd = async () => {
+    if (added || adding || !pageContext?.entityId) return;
+    setAdding(true);
+
+    const body: Record<string, unknown> = {
+      title: suggestion.title,
+      priority: suggestion.priority,
+      firmId,
+      contextType: contextType,
+      contextId: pageContext.entityId,
+    };
+
+    if (pageContext.pageType === "deal") body.dealId = pageContext.entityId;
+    else if (pageContext.pageType === "asset") body.assetId = pageContext.entityId;
+    else if (pageContext.pageType === "entity") body.entityId = pageContext.entityId;
+
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        setAdded(true);
+        toast.success("Task created");
+      } else {
+        const data = await res.json();
+        const msg = typeof data.error === "string" ? data.error : "Failed to create task";
+        toast.error(msg);
+      }
+    } catch {
+      toast.error("Failed to create task");
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  return (
+    <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-white border border-gray-200 hover:border-indigo-300 transition-colors shadow-sm">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-medium text-gray-800">{suggestion.title}</span>
+          <span
+            className={`text-[9px] font-semibold px-1.5 py-0.5 rounded uppercase shrink-0 ${
+              PRIORITY_COLORS[suggestion.priority] || "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {suggestion.priority}
+          </span>
+        </div>
+        {suggestion.rationale && (
+          <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">{suggestion.rationale}</p>
+        )}
+      </div>
+      <button
+        onClick={handleAdd}
+        disabled={added || adding || !pageContext?.entityId}
+        className={`shrink-0 flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded transition-colors ${
+          added
+            ? "bg-green-50 text-green-600 border border-green-200"
+            : "bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed"
+        }`}
+      >
+        {added ? "✓ Added" : adding ? "Adding…" : "+ Add"}
+      </button>
+    </div>
+  );
+}
+
+// ── LPUpdateDraft (side panel version) ──────────────────────
+
+function LPUpdateDraft({ draft }: { draft: string }) {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(draft);
+      setCopied(true);
+      toast.success("Copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 overflow-hidden mt-2">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-white">
+        <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wider">
+          LP Update Draft
+        </span>
+        <button
+          onClick={handleCopy}
+          className="text-[11px] font-medium text-indigo-600 hover:text-indigo-800 transition-colors"
+        >
+          {copied ? "✓ Copied" : "Copy to Clipboard"}
+        </button>
+      </div>
+      <div className="px-3 py-3 overflow-y-auto" style={{ maxHeight: "none" }}>
+        <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+          {draft}
+        </pre>
+      </div>
+    </div>
+  );
+}
 
 // ── Type badge colors (matches command-bar.tsx) ─────────
 
@@ -121,6 +256,71 @@ export function CommandBarSidePanel() {
           setIsSearching(false);
           return;
         } else {
+          // Check for task suggestion query pattern (on-demand only)
+          const isSuggestQuery = /what should (i|we) do|next (steps?|tasks?|actions?)|suggest.*tasks?/i.test(text);
+          if (isSuggestQuery && pageContext?.entityId) {
+            const contextTypeMap: Record<string, string> = { deal: "DEAL", asset: "ASSET", entity: "ENTITY" };
+            const contextType = contextTypeMap[pageContext.pageType];
+            if (contextType) {
+              const res = await fetch("/api/ai/suggest-tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ firmId, contextType, contextId: pageContext.entityId }),
+              }).then((r) => r.json());
+
+              const tasks = res.tasks || [];
+              addMessage({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: tasks.length > 0
+                  ? `Here are ${tasks.length} suggested next tasks for this ${pageContext.pageType}:`
+                  : "I couldn't generate task suggestions right now. Please try again.",
+                timestamp: new Date(),
+                taskSuggestions: tasks.length > 0 ? tasks : undefined,
+              });
+              return;
+            }
+          }
+
+          // Check for LP update query pattern
+          const isLPUpdate = /draft.*lp.*update|lp.*quarterly|investor.*update|lp.*report/i.test(text);
+          if (isLPUpdate) {
+            if (!pageContext?.entityId || pageContext.pageType !== "entity") {
+              addMessage({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content:
+                  "Which fund would you like to draft an LP update for? Navigate to a fund/entity page or specify the fund name.",
+                timestamp: new Date(),
+              });
+              return;
+            }
+
+            const res = await fetch("/api/ai/draft-lp-update", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ firmId, entityId: pageContext.entityId }),
+            }).then((r) => r.json());
+
+            if (res.error) {
+              addMessage({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: typeof res.error === "string" ? res.error : "Failed to draft LP update. Please try again.",
+                timestamp: new Date(),
+              });
+            } else {
+              addMessage({
+                id: crypto.randomUUID(),
+                role: "assistant",
+                content: `Here is a draft LP quarterly update for ${res.entityName || "this fund"}:`,
+                timestamp: new Date(),
+                lpUpdateDraft: res.draft,
+              });
+            }
+            return;
+          }
+
           // NL query: route to AI
           const [aiRes, dbRes] = await Promise.all([
             fetch("/api/ai/search", {
@@ -397,6 +597,38 @@ export function CommandBarSidePanel() {
                               {s}
                             </button>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Task suggestion cards */}
+                      {msg.taskSuggestions && msg.taskSuggestions.length > 0 && (
+                        <div className="mt-2 ml-8 space-y-2">
+                          {msg.taskSuggestions.map((task, i) => {
+                            const contextTypeMap: Record<string, string> = {
+                              deal: "DEAL",
+                              asset: "ASSET",
+                              entity: "ENTITY",
+                            };
+                            const ct = pageContext
+                              ? contextTypeMap[pageContext.pageType] || null
+                              : null;
+                            return (
+                              <TaskSuggestionCard
+                                key={i}
+                                suggestion={task}
+                                firmId={firmId}
+                                pageContext={pageContext}
+                                contextType={ct}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* LP update draft */}
+                      {msg.lpUpdateDraft && (
+                        <div className="mt-2 ml-8">
+                          <LPUpdateDraft draft={msg.lpUpdateDraft} />
                         </div>
                       )}
                     </div>

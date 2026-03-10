@@ -1,5 +1,11 @@
 // Command Bar type definitions — shared between frontend and backend
 
+export interface TaskSuggestion {
+  title: string;
+  priority: string;
+  rationale: string;
+}
+
 export interface CommandBarMessage {
   id: string;
   role: "user" | "assistant";
@@ -7,6 +13,10 @@ export interface CommandBarMessage {
   timestamp: Date;
   searchResults?: SearchResult[];
   suggestions?: string[];
+  /** Task suggestions returned from /api/ai/suggest-tasks */
+  taskSuggestions?: TaskSuggestion[];
+  /** LP update draft returned from /api/ai/draft-lp-update */
+  lpUpdateDraft?: string;
 }
 
 export interface SearchResult {
