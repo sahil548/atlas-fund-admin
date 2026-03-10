@@ -104,6 +104,14 @@ None - no external service configuration required.
 - Phase 17 (LP Portal) can now consume enhanced entity metrics endpoint with backward-compatible response
 - Blocker: LP portal metrics accuracy unverified (seeded vs computed) — still needs spot-check in Phase 17
 
+## Self-Check: PASSED
+
+- FOUND: `src/app/api/entities/[id]/metrics/route.ts`
+- FOUND: `src/components/features/entities/entity-financial-summary-card.tsx`
+- FOUND: `src/components/features/entities/entity-period-breakdown.tsx`
+- FOUND: `.planning/phases/16-capital-activity/16-06-SUMMARY.md`
+- Commits `e5787e9` and `4bc2b6b` verified in git log
+
 ---
 *Phase: 16-capital-activity*
 *Completed: 2026-03-10*

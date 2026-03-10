@@ -81,7 +81,7 @@ Each task was committed atomically:
 1. **Task 1: Wave 0 tests + pipeline summary API** - `8edc00f` (feat)
 2. **Task 2: Alerts API endpoint** - `6b906db` (feat)
 
-**Plan metadata:** (docs commit — next)
+**Plan metadata:** `2d965eb` (docs: complete plan)
 
 _Note: TDD tasks — tests written first (RED), then implementation (GREEN), both committed in task commit_
 

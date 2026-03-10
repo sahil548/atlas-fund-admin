@@ -80,7 +80,7 @@ completed: 2026-03-09
 1. **Task 1: Schema + API for asset transactions with auto-recalculation** - `aec95b8` (feat)
 2. **Task 2: Income and Expenses tabs on asset detail page** - `8253028` (feat)
 
-**Plan metadata:** (pending)
+**Plan metadata:** `1cbdf5e` (docs: complete plan)
 
 ## Files Created/Modified
 - `prisma/schema.prisma` - Added AssetExpense model and reverse relations on Asset and Entity
@@ -112,6 +112,18 @@ None - no external service configuration required.
 - Asset-level transaction ledgers are live — IRR and MOIC now reflect real income and expense data
 - Income data flows from assets through the entity model (entityId FK) — ready for entity-level aggregation in Phase 17 LP Portal
 - Both tabs show empty states with clear CTAs when no data exists
+
+## Self-Check: PASSED
+
+- FOUND: prisma/schema.prisma (AssetExpense model added)
+- FOUND: src/app/api/assets/[id]/transactions/route.ts
+- FOUND: src/components/features/assets/asset-income-tab.tsx
+- FOUND: src/components/features/assets/asset-expenses-tab.tsx
+- FOUND: .planning/phases/16-capital-activity/16-05-SUMMARY.md
+- FOUND: aec95b8 (Task 1 commit)
+- FOUND: 8253028 (Task 2 commit)
+- FOUND: 1cbdf5e (Plan metadata commit)
+- Build: PASSED (npm run build — zero TypeScript errors)
 
 ---
 *Phase: 16-capital-activity*
