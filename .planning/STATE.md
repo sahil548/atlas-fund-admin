@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: planning
-stopped_at: Completed 17-02-PLAN.md
-last_updated: "2026-03-10T08:01:23.156Z"
-last_activity: 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
+status: executing
+stopped_at: Completed 17-03-PLAN.md
+last_updated: "2026-03-10T08:23:06.614Z"
+last_activity: 2026-03-10 — Phase 17 Plan 03 complete (K-1 batch acknowledgment LP-08, GP K-1 tracking with Send Reminder, LP profile page with masked tax ID LP-09)
 progress:
   total_phases: 9
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 48
-  completed_plans: 38
-  percent: 86
+  completed_plans: 41
+  percent: 89
 ---
 
 # Atlas — GSD State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 17 of 19 — LP Portal (In Progress)
-- **Plan:** 2 of 3 complete
-- **Status:** In Progress
-- **Last activity:** 2026-03-10 — Phase 17 Plan 02 complete (capital account date filtering with metric recalculation LP-04, per-entity metrics LP-07 on dashboard + portfolio with sparklines)
+- **Plan:** 3 of 3 complete (Phase 17 COMPLETE)
+- **Status:** In Progress (Phase 18 next)
+- **Last activity:** 2026-03-10 — Phase 17 Plan 03 complete (K-1 batch acknowledgment LP-08, GP K-1 tracking with Send Reminder, LP profile page with masked tax ID LP-09)
 
-Progress: [█████████░] 86% (72/84 plans)
+Progress: [█████████░] 89% (75/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -65,6 +65,7 @@ Progress: [█████████░] 86% (72/84 plans)
 | Phase 16-capital-activity P06 | 5 | 2 tasks | 4 files |
 | Phase 17-lp-portal P01 | 8 | 2 tasks | 3 files |
 | Phase 17-lp-portal P02 | 9 | 3 tasks | 7 files |
+| Phase 17-lp-portal P03 | 18 | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -199,7 +200,7 @@ Progress: [█████████░] 86% (72/84 plans)
 - **Dual-view entity financial card:** Realized panel (gray-50) shows Net IRR/TVPI/DPI/RVPI from capital flows; unrealized panel (indigo-50) shows Gross IRR/Portfolio MOIC from valuations
 - **Period breakdown monthly/quarterly toggle:** API returns monthly (YYYY-MM), client-side component aggregates to quarters via Math.ceil(month/3) — no extra API calls
 
-### Phase 17 LP Portal Decisions (In Progress)
+### Phase 17 LP Portal Decisions (COMPLETE)
 - **Date filtering applies to all three Prisma queries independently:** capitalCallLineItems (paidDate), distributionLineItems (distributionDate), feeCalculations (periodDate) — each query gets its own date filter condition
 - **periodMetrics backward compatible:** Only added to capital account response when startDate + endDate params present — existing callers see identical response
 - **Period IRR terminal value:** Ending balance at endDate used as terminal cash flow for XIRR; contributions = negative outflows, distributions = positive inflows
@@ -207,6 +208,10 @@ Progress: [█████████░] 86% (72/84 plans)
 - **Portfolio page no new API:** Portfolio page fetches dashboard API directly for entityMetrics + entitySnapshotHistory — avoids new endpoint
 - **Sparkline shows TVPI trend:** entitySnapshotHistory uses TVPI as the sparkline value; renders null for < 2 data points (no chart for new funds)
 - **entitySnapshotHistory empty array not absent:** When no per-entity snapshots exist, response includes `entitySnapshotHistory: []` — frontend can safely check `.length`
+- **K1_ACKNOWLEDGE + K1_REMINDER_SENT in AuditAction:** Extended AuditAction union for type-safe audit logging in K-1 workflow endpoints
+- **Tax ID edit separate toggle:** Tax ID section uses separate editingTaxId state from contact info editing — isolates sensitive field mutations
+- **Remind endpoint stub:** POST /api/reports/k1-status/remind logs audit only; email delivery deferred to Phase 18
+- **Contact model firstName/lastName:** Contact model uses firstName/lastName (not name) — profile route selects both; buildProfileResponse falls back to contact.email/phone
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -223,6 +228,6 @@ Progress: [█████████░] 86% (72/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T08:01:23.150Z
-- **Stopped at:** Completed 17-02-PLAN.md
+- **Last session:** 2026-03-10T08:23:06.612Z
+- **Stopped at:** Completed 17-03-PLAN.md
 - **Resume file:** None
