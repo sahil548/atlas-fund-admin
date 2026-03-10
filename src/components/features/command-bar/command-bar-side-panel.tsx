@@ -239,24 +239,7 @@ export function CommandBarSidePanel() {
             searchResults: dbSearchResults,
           });
         } else if (intent === "nl_action") {
-          // NL action: route to /api/ai/execute for planning
-          setPendingAction(text);
-          const res = await fetch("/api/ai/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: text,
-              firmId,
-              pageContext,
-              confirmed: false,
-            }),
-          });
-          const plan: ActionPlan = await res.json();
-          setActionPlan(plan);
-          setIsSearching(false);
-          return;
-        } else {
-          // Check for task suggestion query pattern (on-demand only)
+          // Check for task suggestion query pattern BEFORE generic action
           const isSuggestQuery = /what should (i|we) do|next (steps?|tasks?|actions?)|suggest.*tasks?/i.test(text);
           if (isSuggestQuery && pageContext?.entityId) {
             const contextTypeMap: Record<string, string> = { deal: "DEAL", asset: "ASSET", entity: "ENTITY" };
@@ -282,7 +265,7 @@ export function CommandBarSidePanel() {
             }
           }
 
-          // Check for LP update query pattern
+          // Check for LP update query pattern BEFORE generic action
           const isLPUpdate = /draft.*lp.*update|lp.*quarterly|investor.*update|lp.*report/i.test(text);
           if (isLPUpdate) {
             if (!pageContext?.entityId || pageContext.pageType !== "entity") {
@@ -321,6 +304,23 @@ export function CommandBarSidePanel() {
             return;
           }
 
+          // Generic NL action: route to /api/ai/execute for planning
+          setPendingAction(text);
+          const res = await fetch("/api/ai/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: text,
+              firmId,
+              pageContext,
+              confirmed: false,
+            }),
+          });
+          const plan: ActionPlan = await res.json();
+          setActionPlan(plan);
+          setIsSearching(false);
+          return;
+        } else {
           // NL query: route to AI
           const [aiRes, dbRes] = await Promise.all([
             fetch("/api/ai/search", {

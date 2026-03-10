@@ -399,47 +399,7 @@ export function CommandBar() {
         return;
       }
 
-      // NL action: route to /api/ai/execute for planning (shows confirmation UI)
-      if (intent === "nl_action") {
-        const userMessage: CommandBarMessage = {
-          id: crypto.randomUUID(),
-          role: "user",
-          content: text,
-          timestamp: new Date(),
-        };
-        addMessage(userMessage);
-        setQuery("");
-        setDynamicActions([]);
-        setIsSearching(true);
-        setPendingAction(text);
-
-        try {
-          const res = await fetch("/api/ai/execute", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              action: text,
-              firmId,
-              pageContext,
-              confirmed: false,
-            }),
-          });
-          const plan: ActionPlan = await res.json();
-          setActionPlan(plan);
-        } catch {
-          addMessage({
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: "Sorry, I encountered an error processing your action. Please try again.",
-            timestamp: new Date(),
-          });
-        } finally {
-          setIsSearching(false);
-        }
-        return;
-      }
-
-      // Check for task suggestion query pattern (on-demand only, per CONTEXT.md)
+      // Check for task suggestion query pattern BEFORE generic action (on-demand only, per CONTEXT.md)
       const isSuggestQuery = /what should (i|we) do|next (steps?|tasks?|actions?)|suggest.*tasks?/i.test(text);
       if (isSuggestQuery && pageContext?.entityId) {
         const contextTypeMap: Record<string, string> = { deal: "DEAL", asset: "ASSET", entity: "ENTITY" };
@@ -487,7 +447,7 @@ export function CommandBar() {
         }
       }
 
-      // Check for LP update query pattern
+      // Check for LP update query pattern BEFORE generic action
       const isLPUpdate = /draft.*lp.*update|lp.*quarterly|investor.*update|lp.*report/i.test(text);
       if (isLPUpdate) {
         const userMessage: CommandBarMessage = {
@@ -542,6 +502,46 @@ export function CommandBar() {
             id: crypto.randomUUID(),
             role: "assistant",
             content: "Sorry, I encountered an error drafting the LP update. Please try again.",
+            timestamp: new Date(),
+          });
+        } finally {
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      // NL action: route to /api/ai/execute for planning (shows confirmation UI)
+      if (intent === "nl_action") {
+        const userMessage: CommandBarMessage = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: text,
+          timestamp: new Date(),
+        };
+        addMessage(userMessage);
+        setQuery("");
+        setDynamicActions([]);
+        setIsSearching(true);
+        setPendingAction(text);
+
+        try {
+          const res = await fetch("/api/ai/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: text,
+              firmId,
+              pageContext,
+              confirmed: false,
+            }),
+          });
+          const plan: ActionPlan = await res.json();
+          setActionPlan(plan);
+        } catch {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Sorry, I encountered an error processing your action. Please try again.",
             timestamp: new Date(),
           });
         } finally {
