@@ -15,7 +15,8 @@ import { useCommandBar } from "./command-bar-provider";
 import { useFirm } from "@/components/providers/firm-provider";
 import { classifyIntent } from "@/lib/ai-nl-intent";
 import { isValidAppRoute } from "@/lib/routes";
-import type { CommandBarMessage, SearchResult } from "@/lib/command-bar-types";
+import { ActionConfirmation } from "./action-confirmation";
+import type { ActionPlan, CommandBarMessage, SearchResult } from "@/lib/command-bar-types";
 
 // ── Type badge colors (matches command-bar.tsx) ─────────
 
@@ -48,6 +49,9 @@ export function CommandBarSidePanel() {
   } = useCommandBar();
 
   const [input, setInput] = useState("");
+  const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
+  const [pendingAction, setPendingAction] = useState<string>("");
+  const [isExecuting, setIsExecuting] = useState(false);
   const conversationRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -99,8 +103,25 @@ export function CommandBarSidePanel() {
             timestamp: new Date(),
             searchResults: dbSearchResults,
           });
+        } else if (intent === "nl_action") {
+          // NL action: route to /api/ai/execute for planning
+          setPendingAction(text);
+          const res = await fetch("/api/ai/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: text,
+              firmId,
+              pageContext,
+              confirmed: false,
+            }),
+          });
+          const plan: ActionPlan = await res.json();
+          setActionPlan(plan);
+          setIsSearching(false);
+          return;
         } else {
-          // NL query or NL action: route to AI
+          // NL query: route to AI
           const [aiRes, dbRes] = await Promise.all([
             fetch("/api/ai/search", {
               method: "POST",
@@ -143,6 +164,76 @@ export function CommandBarSidePanel() {
     },
     [firmId, isSearching, addMessage, setIsSearching, pageContext],
   );
+
+  // ── Action confirmation handlers ──────────────────────
+
+  const handleActionConfirm = useCallback(
+    async (editedPayload: Record<string, unknown>) => {
+      if (!actionPlan) return;
+      setIsExecuting(true);
+
+      try {
+        const res = await fetch("/api/ai/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: pendingAction,
+            firmId,
+            pageContext,
+            confirmed: true,
+            actionType: actionPlan.actionType,
+            confirmedPayload: editedPayload,
+          }),
+        });
+        const result = await res.json();
+
+        setActionPlan(null);
+        setPendingAction("");
+
+        if (result.success) {
+          const msg = result.result?.url
+            ? `${result.message} [View record](${result.result.url})`
+            : result.message;
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: msg,
+            timestamp: new Date(),
+          });
+        } else {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: result.clarification || result.message || "Action failed. Please try again.",
+            timestamp: new Date(),
+          });
+        }
+      } catch {
+        addMessage({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I encountered an error executing the action. Please try again.",
+          timestamp: new Date(),
+        });
+        setActionPlan(null);
+        setPendingAction("");
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [actionPlan, pendingAction, firmId, pageContext, addMessage],
+  );
+
+  const handleActionCancel = useCallback(() => {
+    setActionPlan(null);
+    setPendingAction("");
+    addMessage({
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: "Action cancelled.",
+      timestamp: new Date(),
+    });
+  }, [addMessage]);
 
   // ── Navigation ──────────────────────────────────────
 
@@ -327,6 +418,18 @@ export function CommandBarSidePanel() {
           </>
         )}
       </div>
+
+      {/* Action confirmation — shown when AI returns an action plan */}
+      {actionPlan && (
+        <div className="shrink-0">
+          <ActionConfirmation
+            plan={actionPlan}
+            onConfirm={handleActionConfirm}
+            onCancel={handleActionCancel}
+            isExecuting={isExecuting}
+          />
+        </div>
+      )}
 
       {/* Footer input */}
       <div className="shrink-0 px-4 py-3 border-t border-gray-200 dark:border-gray-700">

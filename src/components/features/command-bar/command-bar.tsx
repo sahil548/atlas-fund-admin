@@ -37,7 +37,9 @@ import { useCommandBar } from "./command-bar-provider";
 import { discoverCommands } from "@/lib/command-discovery";
 import { isValidAppRoute } from "@/lib/routes";
 import { classifyIntent, getUnseenAlertCount } from "@/lib/ai-nl-intent";
+import { ActionConfirmation } from "./action-confirmation";
 import type {
+  ActionPlan,
   CommandAction,
   CommandBarMessage,
   SearchResult,
@@ -104,6 +106,10 @@ export function CommandBar() {
   const [isListening, setIsListening] = useState(false);
   const [dynamicActions, setDynamicActions] = useState<CommandAction[]>([]);
   const [dbResults, setDbResults] = useState<SearchResult[]>([]);
+  // Action confirmation state (nl_action flow)
+  const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
+  const [pendingAction, setPendingAction] = useState<string>("");
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // Alert state — fetch once per open, cache in ref to avoid re-fetching
   const [unseenAlertCount, setUnseenAlertCount] = useState(0);
@@ -122,6 +128,8 @@ export function CommandBar() {
       setQuery("");
       setDynamicActions([]);
       setDbResults([]);
+      setActionPlan(null);
+      setPendingAction("");
     }
   }, [isOpen]);
 
@@ -248,8 +256,47 @@ export function CommandBar() {
         return;
       }
 
-      // NL query or NL action: route to AI
-      // (nl_action is future — for now treated same as nl_query; Plan 03 adds action execution)
+      // NL action: route to /api/ai/execute for planning (shows confirmation UI)
+      if (intent === "nl_action") {
+        const userMessage: CommandBarMessage = {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: text,
+          timestamp: new Date(),
+        };
+        addMessage(userMessage);
+        setQuery("");
+        setDynamicActions([]);
+        setIsSearching(true);
+        setPendingAction(text);
+
+        try {
+          const res = await fetch("/api/ai/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              action: text,
+              firmId,
+              pageContext,
+              confirmed: false,
+            }),
+          });
+          const plan: ActionPlan = await res.json();
+          setActionPlan(plan);
+        } catch {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: "Sorry, I encountered an error processing your action. Please try again.",
+            timestamp: new Date(),
+          });
+        } finally {
+          setIsSearching(false);
+        }
+        return;
+      }
+
+      // NL query: route to AI
       const userMessage: CommandBarMessage = {
         id: crypto.randomUUID(),
         role: "user",
@@ -311,6 +358,79 @@ export function CommandBar() {
     openSidePanel();
     close();
   }, [openSidePanel, close]);
+
+  // ── Action confirmation handlers ─────────────────────
+
+  const handleActionConfirm = useCallback(
+    async (editedPayload: Record<string, unknown>) => {
+      if (!actionPlan) return;
+      setIsExecuting(true);
+
+      try {
+        const res = await fetch("/api/ai/execute", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: pendingAction,
+            firmId,
+            pageContext,
+            confirmed: true,
+            actionType: actionPlan.actionType,
+            confirmedPayload: editedPayload,
+          }),
+        });
+        const result = await res.json();
+
+        setActionPlan(null);
+        setPendingAction("");
+
+        // Add success/error message to conversation
+        if (result.success) {
+          const msg = result.result?.url
+            ? `${result.message} [View record](${result.result.url})`
+            : result.message;
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: msg,
+            timestamp: new Date(),
+          });
+        } else {
+          addMessage({
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: result.clarification
+              ? result.clarification
+              : result.message || "Action failed. Please try again.",
+            timestamp: new Date(),
+          });
+        }
+      } catch {
+        addMessage({
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: "Sorry, I encountered an error executing the action. Please try again.",
+          timestamp: new Date(),
+        });
+        setActionPlan(null);
+        setPendingAction("");
+      } finally {
+        setIsExecuting(false);
+      }
+    },
+    [actionPlan, pendingAction, firmId, pageContext, addMessage],
+  );
+
+  const handleActionCancel = useCallback(() => {
+    setActionPlan(null);
+    setPendingAction("");
+    addMessage({
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: "Action cancelled.",
+      timestamp: new Date(),
+    });
+  }, [addMessage]);
 
   // ── Dismiss proactive alert banner ──────────────────
 
@@ -407,6 +527,7 @@ export function CommandBar() {
     dynamicActions.length > 0 ||
     dbResults.length > 0 ||
     conversation.length > 0 ||
+    actionPlan !== null ||
     (isOpen && !query.trim());
 
   const showDropdown = isOpen && hasContent;
@@ -618,6 +739,16 @@ export function CommandBar() {
               </div>
             )}
           </div>
+
+          {/* Action confirmation UI — shown when AI returns an action plan */}
+          {actionPlan && (
+            <ActionConfirmation
+              plan={actionPlan}
+              onConfirm={handleActionConfirm}
+              onCancel={handleActionCancel}
+              isExecuting={isExecuting}
+            />
+          )}
 
           {/* Proactive alert banner — shown when unseen alerts exist */}
           {unseenAlertCount > 0 && (
