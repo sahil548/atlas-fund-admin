@@ -182,7 +182,7 @@ Plans:
   3. AI can extract deal terms from an uploaded CIM and pre-fill deal fields, generate a DD summary from workstream data, and draft an IC memo from deal data and DD findings
   4. AI monitors the portfolio for covenant breaches and generates alerts when a breach is detected — the GP does not need to check manually
   5. AI can draft LP update communications from fund performance data, and AI suggests next tasks based on deal stage and asset type context
-**Plans:** 1/4 plans executed
+**Plans:** 2/4 plans executed
 Plans:
 - [ ] 18-01-PLAN.md — NL intent classification, command bar provider expansion (page context, side panel state, alert freshness), AI service page context injection
 - [ ] 18-02-PLAN.md — Command bar NL query routing, AI response rendering, side panel pop-out, proactive alert mentions
@@ -234,5 +234,5 @@ Plans:
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
 | 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
-| 18. AI Features | 1/4 | In Progress|  | - |
+| 18. AI Features | 2/4 | In Progress|  | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |

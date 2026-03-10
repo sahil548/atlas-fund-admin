@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: planning
-stopped_at: Completed 18-01-PLAN.md
-last_updated: "2026-03-10T08:38:07.590Z"
-last_activity: 2026-03-10 — Phase 18 Plan 01 complete (NL intent classification module AI-01, CommandBarProvider expansion with page context + conversation + alert freshness, page-context-aware searchAndAnalyze)
+status: executing
+stopped_at: Completed 18-02-PLAN.md
+last_updated: "2026-03-10T08:47:45.377Z"
+last_activity: 2026-03-10 — Phase 18 Plan 02 complete (NL intent routing in command bar, side panel, alert badge)
 progress:
   total_phases: 10
   completed_phases: 7
   total_plans: 48
-  completed_plans: 40
-  percent: 89
+  completed_plans: 41
+  percent: 90
 ---
 
 # Atlas — GSD State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 18 of 19 — AI Features (In Progress)
-- **Plan:** 1 of 4 complete
+- **Plan:** 2 of 4 complete
 - **Status:** In progress
-- **Last activity:** 2026-03-10 — Phase 18 Plan 01 complete (NL intent classification, CommandBarProvider expansion, page-context-aware ai-service)
+- **Last activity:** 2026-03-10 — Phase 18 Plan 02 complete (NL intent routing in command bar, side panel, alert badge)
 
-Progress: [█████████░] 90% (76/84 plans)
+Progress: [█████████░] 92% (77/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -67,6 +67,7 @@ Progress: [█████████░] 90% (76/84 plans)
 | Phase 17-lp-portal P02 | 9 | 3 tasks | 7 files |
 | Phase 17-lp-portal P03 | 18 | 3 tasks | 11 files |
 | Phase 18-ai-features P01 | 4 | 3 tasks | 7 files |
+| Phase 18-ai-features P02 | 6 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -220,6 +221,9 @@ Progress: [█████████░] 90% (76/84 plans)
 - **Conversation state in CommandBarProvider:** Moved from command-bar.tsx component-local to provider level — required for dropdown + side panel to share same conversation thread
 - **pageContext parameter optional on searchAndAnalyze:** Backward-compatible extension — all existing callers unchanged; page context section omitted from prompt when pageType="other" or no entity info
 - **CommandBarProvider exports PageContext type:** Allows page components to call setPageContext() with correct type without importing from command-bar-types directly
+- **Alert banner links to /assets (not /monitoring):** /monitoring has no Next.js page route — monitoring panel lives on the assets page; /assets is the valid nearest route
+- **DB debounce in command bar only fires for fuzzy_search intent:** NL queries skip DB debounce to avoid unnecessary calls when user is typing a natural language question
+- **Side panel z-40 (below z-50 modals/toasts):** Confirmation dialogs remain visible over side panel; side panel does not interfere with critical UI flows
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -239,6 +243,6 @@ Progress: [█████████░] 90% (76/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T08:38:07.587Z
-- **Stopped at:** Completed 18-01-PLAN.md
+- **Last session:** 2026-03-10T08:47:45.374Z
+- **Stopped at:** Completed 18-02-PLAN.md
 - **Resume file:** None
