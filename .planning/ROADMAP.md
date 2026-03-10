@@ -222,6 +222,6 @@ Plans:
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
-| 17. LP Portal | 3/3 | Complete   | 2026-03-10 | - |
+| 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |
