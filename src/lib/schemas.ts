@@ -357,6 +357,18 @@ export const CreateIncomeEventSchema = z.object({
   isPrincipal: z.boolean().default(false),
 });
 
+export const CreateAssetTransactionSchema = z.object({
+  type: z.enum(["income", "expense"]),
+  assetId: z.string().min(1),
+  entityId: z.string().min(1),
+  category: z.string().min(1),
+  amount: z.number().positive("Amount must be positive"),
+  date: z.string().min(1, "Date is required"),
+  description: z.string().optional(),
+  // For income: map category to IncomeType enum
+  incomeType: z.enum(["INTEREST", "DIVIDEND", "RENTAL", "ROYALTY", "FEE", "OTHER"]).optional(),
+});
+
 // ── Companies ─────────────────────────────────────────
 
 export const CreateCompanySchema = z.object({

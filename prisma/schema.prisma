@@ -431,6 +431,7 @@ model Entity {
   feeCalculations      FeeCalculation[]
   capitalAccounts      CapitalAccount[]
   incomeEvents         IncomeEvent[]
+  assetExpenses        AssetExpense[]
   transactions         Transaction[]
   documents            Document[]
   meetings             Meeting[]
@@ -612,6 +613,7 @@ model Asset {
   documents          Document[]
   meetings           Meeting[]
   incomeEvents       IncomeEvent[]
+  expenses           AssetExpense[]
   activityEvents     ActivityEvent[]
   notes              Note[]
 
@@ -995,6 +997,20 @@ model IncomeEvent {
 
   asset  Asset?  @relation(fields: [assetId], references: [id])
   entity Entity  @relation(fields: [entityId], references: [id])
+}
+
+model AssetExpense {
+  id          String   @id @default(cuid())
+  assetId     String
+  entityId    String
+  category    String   // "management_fee", "legal", "maintenance", "insurance", "taxes", "other"
+  amount      Float
+  date        DateTime
+  description String?
+  createdAt   DateTime @default(now())
+
+  asset  Asset  @relation(fields: [assetId], references: [id])
+  entity Entity @relation(fields: [entityId], references: [id])
 }
 
 // ============================================================

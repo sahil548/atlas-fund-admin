@@ -56,6 +56,7 @@ export async function GET(
       documents: { orderBy: { uploadDate: "desc" } },
       meetings: { orderBy: { meetingDate: "desc" } },
       incomeEvents: { orderBy: { date: "desc" } },
+      expenses: { orderBy: { date: "desc" } },
       activityEvents: { orderBy: { eventDate: "desc" } },
     },
   });
