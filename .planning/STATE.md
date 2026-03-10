@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plans 01+02+03+04+05 COMPLETE, Plan 06 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) ALL 6 PLANS COMPLETE, Phase 17 (LP Portal) is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 16 of 19 — Capital Activity (In Progress)
-- **Plan:** 5 of 6 complete
+- **Phase:** 16 of 19 — Capital Activity (COMPLETE)
+- **Plan:** 6 of 6 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 16 Plan 05 complete (AssetExpense model, income/expenses transaction API with IRR/MOIC auto-recalculation, Income and Expenses tabs on asset detail page)
+- **Last activity:** 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
 
-Progress: [█████████░] 85% (71/84 plans)
+Progress: [█████████░] 86% (72/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -172,7 +172,7 @@ Progress: [█████████░] 85% (71/84 plans)
 - **MTG-04 via existing infrastructure:** entity/deal APIs already include meetings; entity Meetings tab surfaces linked meetings; no new activity feed infrastructure needed
 - **Sync auto-task contextType:** tasks created from Fireflies sync have contextType=MEETING to identify their origin; entityId/dealId null at sync time
 
-### Phase 16 Capital Activity Decisions (In Progress)
+### Phase 16 Capital Activity Decisions (COMPLETE)
 - **isOverdue() pure function:** Exported from `src/lib/computations/overdue-detection.ts` — no React/Prisma deps, testable in vitest node env
 - **Distribution DRAFT default:** DistributionEvent status default changed from APPROVED to DRAFT in both Prisma schema and CreateDistributionSchema (Zod) — new distributions start as drafts for review
 - **Documents PATCH pattern:** `{documentId, capitalCallId?, distributionEventId?}` body — Plans 02/03 use this to link documents from detail pages to capital calls/distributions
@@ -193,6 +193,9 @@ Progress: [█████████░] 85% (71/84 plans)
 - **MOIC formula with income/expenses:** (fairValue + totalIncome - totalExpenses) / costBasis — makes transaction ledgers actually affect the metric, income increases return, expenses reduce it
 - **Transactions API single endpoint:** POST /api/assets/[id]/transactions dispatches to IncomeEvent or AssetExpense by type field, auto-recalculates IRR/MOIC inline after every save
 - **SWR double-mutate pattern for transactions:** After income/expense POST, mutate both /transactions key AND /assets/[id] key — refreshes transaction list AND asset header metrics simultaneously
+- **Gross IRR from asset cash flows:** Entry cost as outflow at entryDate, income events as inflows, current fair value as terminal — asset-level return rate separate from fund-level net IRR
+- **Dual-view entity financial card:** Realized panel (gray-50) shows Net IRR/TVPI/DPI/RVPI from capital flows; unrealized panel (indigo-50) shows Gross IRR/Portfolio MOIC from valuations
+- **Period breakdown monthly/quarterly toggle:** API returns monthly (YYYY-MM), client-side component aggregates to quarters via Math.ceil(month/3) — no extra API calls
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
