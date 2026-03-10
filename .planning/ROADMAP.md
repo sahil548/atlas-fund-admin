@@ -29,7 +29,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 13: Deal Desk & CRM** - Pipeline completeness and contact/relationship intelligence (completed 2026-03-09)
 - [ ] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
 - [x] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration (completed 2026-03-10)
-- [ ] **Phase 16: Capital Activity** - Status advancement workflows and waterfall scenario analysis
+- [ ] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics
 - [ ] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements
 - [ ] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring
 - [ ] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup
@@ -134,7 +134,7 @@ Plans:
 - [ ] 15-07-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 16: Capital Activity
-**Goal**: GPs can advance capital calls and distributions through their full status lifecycle via UI buttons, see which investors have paid, attach documents, and run waterfall scenarios without committing them
+**Goal**: GPs can advance capital calls and distributions through their full status lifecycle via UI buttons, see which investors have paid, attach documents, run waterfall scenarios without committing them, record asset-level income/expenses that feed real IRR/MOIC metrics, and view entity-level financial performance from real transaction data
 **Depends on**: Phase 15
 **Requirements**: CAP-01, CAP-02, CAP-03, CAP-04, CAP-05, CAP-06
 **Success Criteria** (what must be TRUE):
@@ -142,14 +142,18 @@ Plans:
   2. A distribution detail page has explicit "Approve" and "Mark as Paid" buttons that advance through DRAFT → APPROVED → PAID
   3. Overdue capital calls (past due date, still not FUNDED) show a visual indicator (red badge or warning) in all capital activity views so the GP can identify them at a glance
   4. The GP can attach supporting documents directly to a capital call (e.g., the call notice PDF)
-  5. The waterfall can be previewed — showing the full distribution breakdown per investor — without saving the result, enabling scenario analysis before committing
+  5. The waterfall can be previewed — showing the full distribution breakdown per investor — without saving the result, enabling scenario analysis before committing (available on waterfall template page AND during distribution creation)
   6. Per-investor capital call status (funded / outstanding / overdue) is visible at a glance within the capital call detail, not hidden behind navigation
-**Plans:** 4 plans
+  7. Each asset has Income and Expenses tabs with entry forms, running totals, and auto-recalculated IRR/MOIC on every save
+  8. Entity detail page shows a financial summary card with dual metric view (realized vs unrealized) computed from real transaction data
+**Plans:** 6 plans
 Plans:
-- [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card, per-investor badge, clickable rows
+- [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card + unit tests, per-investor badge, clickable rows
 - [ ] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
 - [ ] 16-03-PLAN.md — Distribution detail page with status buttons (Approve, Mark as Paid), line items breakdown, document attachment panel
-- [ ] 16-04-PLAN.md — Waterfall preview with scenario comparison (up to 3 side-by-side), LP/GP split Recharts chart, no-save preview mode
+- [ ] 16-04-PLAN.md — Waterfall preview with scenario comparison (up to 3 side-by-side), LP/GP split Recharts chart, no-save preview mode, distribution creation preview step
+- [ ] 16-05-PLAN.md — Asset-level transaction ledgers (Income/Expenses tabs on asset detail, transaction API, auto-recalculate IRR/MOIC)
+- [ ] 16-06-PLAN.md — Entity financial summary card with dual metric view (realized vs unrealized), period-based income breakdown by asset
 
 ### Phase 17: LP Portal
 **Goal**: LP portal metrics are verified to come from real computed data, LPs have full self-service access to their statements and documents, and the K-1 acknowledgment workflow is complete
@@ -217,7 +221,7 @@ Plans:
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | v2.0 | 0/4 | Not started | - |
+| 16. Capital Activity | v2.0 | 0/6 | Not started | - |
 | 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |
