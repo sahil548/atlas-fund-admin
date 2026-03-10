@@ -46,10 +46,10 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Capital Activity — Workflow Completion
 
-- [ ] **CAP-01**: GP can advance capital call status via UI buttons (DRAFT → ISSUED → FUNDED)
-- [ ] **CAP-02**: GP can advance distribution status via UI buttons (DRAFT → APPROVED → PAID)
+- [x] **CAP-01**: GP can advance capital call status via UI buttons (DRAFT → ISSUED → FUNDED)
+- [x] **CAP-02**: GP can advance distribution status via UI buttons (DRAFT → APPROVED → PAID)
 - [x] **CAP-03**: Overdue capital calls show visual indicator in capital activity views
-- [ ] **CAP-04**: GP can attach documents to capital calls
+- [x] **CAP-04**: GP can attach documents to capital calls
 - [ ] **CAP-05**: Waterfall can be previewed (calculate without saving) for scenario analysis
 - [x] **CAP-06**: Per-investor capital call status visible at a glance
 
@@ -222,10 +222,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MTG-03 | Phase 15 | Complete |
 | MTG-04 | Phase 15 | Complete |
 | MTG-05 | Phase 15 | Complete |
-| CAP-01 | Phase 16 | Pending |
-| CAP-02 | Phase 16 | Pending |
+| CAP-01 | Phase 16 | Complete |
+| CAP-02 | Phase 16 | Complete |
 | CAP-03 | Phase 16 | Complete |
-| CAP-04 | Phase 16 | Pending |
+| CAP-04 | Phase 16 | Complete |
 | CAP-05 | Phase 16 | Pending |
 | CAP-06 | Phase 16 | Complete |
 | LP-04 | Phase 17 | Pending |
