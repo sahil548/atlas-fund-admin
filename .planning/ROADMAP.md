@@ -221,7 +221,7 @@ Plans:
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | 6/6 | Complete   | 2026-03-10 | - |
+| 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
 | 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |

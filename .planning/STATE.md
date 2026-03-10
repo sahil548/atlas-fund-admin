@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: executing
+status: planning
 stopped_at: Completed 16-06-PLAN.md
-last_updated: "2026-03-10T06:57:51.823Z"
-last_activity: 2026-03-09 — Phase 16 Plan 05 complete (AssetExpense model, income/expenses transaction API with IRR/MOIC auto-recalculation, Income and Expenses tabs on asset detail page)
+last_updated: "2026-03-10T07:04:24.868Z"
+last_activity: 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
 progress:
   total_phases: 9
   completed_phases: 6
   total_plans: 48
   completed_plans: 36
-  percent: 85
+  percent: 86
 ---
 
 # Atlas — GSD State
@@ -25,7 +25,7 @@ progress:
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 16 of 19 — Capital Activity (COMPLETE)
 - **Plan:** 6 of 6 complete
-- **Status:** Executing
+- **Status:** Ready to plan
 - **Last activity:** 2026-03-10 — Phase 16 Plan 06 complete (EntityFinancialSummaryCard with dual metric view, EntityPeriodBreakdown with monthly/quarterly toggle, enhanced metrics API with gross IRR and period breakdown)
 
 Progress: [█████████░] 86% (72/84 plans)
