@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
@@ -11,21 +12,23 @@ import { CreateDistributionForm } from "@/components/features/capital/create-dis
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
-import { fmt, pct, formatDate } from "@/lib/utils";
+import { fmt, pct, formatDate, cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { ArrowLeftRight } from "lucide-react";
+import { isOverdue } from "@/lib/computations/overdue-detection";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 interface Entity { id: string; name: string }
+interface CapitalCallLineItemSummary { status: string; }
 interface CapitalCall {
   id: string; entityId: string; entity: Entity; callNumber: string;
   callDate: string; dueDate: string; amount: number; purpose: string | null;
-  status: string; fundedPercent: number; lineItems: unknown[];
+  status: string; fundedPercent: number; lineItems: CapitalCallLineItemSummary[];
 }
 interface Distribution {
   id: string; entityId: string; entity: Entity; distributionDate: string;
@@ -59,6 +62,7 @@ type Tab = "calls" | "distributions" | "waterfall";
 
 export default function TransactionsPage() {
   const { firmId } = useFirm();
+  const router = useRouter();
   const toast = useToast();
   const { data: capitalCalls = [], isLoading: callsLoading } = useSWR<CapitalCall[]>("/api/capital-calls", fetcher);
   const { data: distributions = [], isLoading: distsLoading } = useSWR<Distribution[]>("/api/distributions", fetcher);
@@ -115,6 +119,7 @@ export default function TransactionsPage() {
   const totalDistributed = distributions.reduce((s, d) => s + d.grossAmount, 0);
   const netInvested = totalCalled - totalDistributed;
   const pendingCalls = capitalCalls.filter((c) => c.status === "DRAFT" || c.status === "ISSUED").length;
+  const overdueCount = capitalCalls.filter(isOverdue).length;
 
   // Filtered data
   const filteredCalls = capitalCalls.filter((c) => {
@@ -138,7 +143,7 @@ export default function TransactionsPage() {
     <div className="space-y-4">
       {/* Header */}
       <PageHeader
-        title="Transactions"
+        title="Capital Activity"
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowCreateCC(true)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700">+ Capital Call</button>
@@ -148,11 +153,17 @@ export default function TransactionsPage() {
       />
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-5 gap-3">
         <StatCard label="Total Called" value={fmt(totalCalled)} small />
         <StatCard label="Total Distributed" value={fmt(totalDistributed)} small />
         <StatCard label="Net Invested" value={fmt(netInvested)} small />
         <StatCard label="Pending Calls" value={String(pendingCalls)} sub={pendingCalls > 0 ? "DRAFT + ISSUED" : "All funded"} small />
+        <StatCard
+          label="Overdue"
+          value={String(overdueCount)}
+          sub={overdueCount > 0 ? "Past due date" : "None"}
+          small
+        />
       </div>
 
       {/* Tabs */}
@@ -224,24 +235,44 @@ export default function TransactionsPage() {
                   />
                 </td></tr>
               ) : (
-                filteredCalls.map((c) => (
-                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
-                    <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
-                    <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
-                    <td className="px-3 py-2 text-gray-500">{formatDate(c.callDate)}</td>
-                    <td className="px-3 py-2 text-gray-500">{formatDate(c.dueDate)}</td>
-                    <td className="px-3 py-2"><Badge color={CC_STATUS_COLORS[c.status] || "gray"}>{c.status.replace(/_/g, " ")}</Badge></td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-1.5 max-w-[80px]">
-                          <div className="h-1.5 rounded-full bg-indigo-500" style={{ width: `${c.fundedPercent}%` }} />
+                filteredCalls.map((c) => {
+                  const overdue = isOverdue(c);
+                  const funded = c.lineItems.filter((li) => li.status === "Funded").length;
+                  const total = c.lineItems.length;
+                  return (
+                    <tr
+                      key={c.id}
+                      className={cn(
+                        "border-t border-gray-50 hover:bg-gray-50 cursor-pointer",
+                        overdue && "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30"
+                      )}
+                      onClick={() => router.push(`/transactions/capital-calls/${c.id}`)}
+                    >
+                      <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
+                      <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
+                      <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(c.callDate)}</td>
+                      <td className="px-3 py-2 text-gray-500">{formatDate(c.dueDate)}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <Badge color={CC_STATUS_COLORS[c.status] || "gray"}>{c.status.replace(/_/g, " ")}</Badge>
+                          {overdue && c.status !== "OVERDUE" && (
+                            <Badge color="red">OVERDUE</Badge>
+                          )}
                         </div>
-                        <span className="text-gray-500">{c.fundedPercent}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-3 py-2">
+                        {total > 0 ? (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700">
+                            {funded}/{total} funded
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -311,7 +342,11 @@ export default function TransactionsPage() {
                   </td></tr>
                 ) : (
                   filteredDists.map((d) => (
-                    <tr key={d.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr
+                      key={d.id}
+                      className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => router.push(`/transactions/distributions/${d.id}`)}
+                    >
                       <td className="px-3 py-2 font-medium text-gray-900">{d.entity?.name}</td>
                       <td className="px-3 py-2 text-gray-500">{formatDate(d.distributionDate)}</td>
                       <td className="px-3 py-2 text-right font-medium">{fmt(d.grossAmount)}</td>
