@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/toast";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
+import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -51,6 +52,37 @@ function formatBytes(bytes: number | null | undefined): string {
 function reportTypeLabel(type: string): string {
   const found = REPORT_TYPES.find((rt) => rt.value === type);
   return found?.label ?? type;
+}
+
+// ── Report grouping helper ───────────────────────────────────
+
+interface ReportGroup {
+  entityName: string;
+  periods: Map<string, any[]>;
+}
+
+export function groupReportsByEntityThenPeriod(
+  reports: any[]
+): Map<string, ReportGroup> {
+  const result = new Map<string, ReportGroup>();
+
+  for (const report of reports) {
+    const entityKey = report.entity?.id ?? report.entityId ?? "unknown";
+    const entityName = report.entity?.name ?? "Unknown Entity";
+    const period = report.period ?? "No Period";
+
+    if (!result.has(entityKey)) {
+      result.set(entityKey, { entityName, periods: new Map() });
+    }
+
+    const entityGroup = result.get(entityKey)!;
+    if (!entityGroup.periods.has(period)) {
+      entityGroup.periods.set(period, []);
+    }
+    entityGroup.periods.get(period)!.push(report);
+  }
+
+  return result;
 }
 
 // ── K-1 Acknowledgment Tracking ─────────────────────────────
@@ -162,6 +194,13 @@ export default function ReportsPage() {
   const { firmId } = useFirm();
   const toast = useToast();
   const searchParams = useSearchParams();
+
+  // ── Preview modal state ──────────────────────────────────
+  const [previewDoc, setPreviewDoc] = useState<{
+    name: string;
+    fileUrl: string;
+    mimeType?: string;
+  } | null>(null);
 
   // ── Report generation state ──────────────────────────────
   const [selectedEntityId, setSelectedEntityId] = useState("");
@@ -479,49 +518,115 @@ export default function ReportsPage() {
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
-                {reports.map((doc: any) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between py-3 gap-4"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-500 font-medium flex-shrink-0">
-                        PDF
+              <div className="space-y-5">
+                {Array.from(groupReportsByEntityThenPeriod(reports)).map(
+                  ([entityKey, { entityName, periods }]) => (
+                    <div key={entityKey}>
+                      {/* Entity section header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          {entityName}
+                        </span>
+                        <span className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {doc.name}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {doc.entity?.name || "Unknown entity"}
-                          {" · "}
-                          {formatDate(doc.createdAt)}
-                          {doc.fileSize ? ` · ${formatBytes(doc.fileSize)}` : ""}
-                        </div>
+
+                      {/* Period groups within this entity */}
+                      <div className="space-y-3">
+                        {Array.from(periods).map(([period, periodReports]) => (
+                          <div key={period}>
+                            {/* Period sub-header */}
+                            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-1.5 px-1">
+                              {period}
+                              {periodReports.length > 1 && (
+                                <span className="ml-1 text-indigo-400">
+                                  ({periodReports.length} versions)
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="divide-y divide-gray-50 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-lg overflow-hidden">
+                              {periodReports.map(
+                                (doc: any, versionIndex: number) => (
+                                  <div
+                                    key={doc.id}
+                                    className="flex items-center justify-between px-3 py-2.5 gap-4 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-[10px] text-gray-500 dark:text-gray-400 font-medium flex-shrink-0">
+                                        PDF
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex items-center gap-1.5">
+                                          {doc.name}
+                                          {periodReports.length > 1 && (
+                                            <span className="text-[10px] text-gray-400 font-normal">
+                                              v{versionIndex + 1}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                          {formatDate(doc.createdAt)}
+                                          {doc.fileSize
+                                            ? ` · ${formatBytes(doc.fileSize)}`
+                                            : ""}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 flex-shrink-0">
+                                      <Badge
+                                        color={
+                                          CATEGORY_COLOR[doc.category] || "gray"
+                                        }
+                                      >
+                                        {doc.category?.toLowerCase() || "report"}
+                                      </Badge>
+
+                                      {doc.fileUrl && (
+                                        <button
+                                          onClick={() =>
+                                            setPreviewDoc({
+                                              name: doc.name,
+                                              fileUrl: doc.fileUrl,
+                                              mimeType: "application/pdf",
+                                            })
+                                          }
+                                          className="text-xs text-indigo-500 hover:text-indigo-700 font-medium hover:underline"
+                                        >
+                                          Preview
+                                        </button>
+                                      )}
+
+                                      {doc.fileUrl && (
+                                        <a
+                                          href={doc.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
+                                        >
+                                          Download
+                                        </a>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <Badge color={CATEGORY_COLOR[doc.category] || "gray"}>
-                        {doc.category?.toLowerCase() || "report"}
-                      </Badge>
-
-                      {doc.fileUrl && (
-                        <a
-                          href={doc.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium hover:underline"
-                        >
-                          Download
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             )}
+
+            {/* Document Preview Modal */}
+            <DocumentPreviewModal
+              open={!!previewDoc}
+              onClose={() => setPreviewDoc(null)}
+              document={previewDoc}
+            />
           </div>
 
           {/* LP visibility note */}
