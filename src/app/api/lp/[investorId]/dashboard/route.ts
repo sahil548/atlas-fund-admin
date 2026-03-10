@@ -129,6 +129,138 @@ export async function GET(
     },
   }).catch((err: unknown) => console.error("[metric-snapshot] save failed:", err));
 
+  // ── Per-Entity Metrics for LP-07 ──
+  const entityMetrics: {
+    entityId: string;
+    entityName: string;
+    commitment: number;
+    calledAmount: number;
+    irr: number | null;
+    tvpi: number | null;
+    dpi: number | null;
+    rvpi: number | null;
+    nav: number;
+    totalCalled: number;
+    totalDistributed: number;
+  }[] = [];
+
+  for (const commitment of investor.commitments) {
+    const entityId = commitment.entityId;
+
+    // Entity-scoped capital call line items
+    const entityCallItems = await prisma.capitalCallLineItem.findMany({
+      where: {
+        investorId,
+        capitalCall: { entityId },
+      },
+      include: {
+        capitalCall: { select: { callDate: true } },
+      },
+    });
+
+    // Entity-scoped distribution line items
+    const entityDistItems = await prisma.distributionLineItem.findMany({
+      where: {
+        investorId,
+        distribution: { entityId },
+      },
+      include: {
+        distribution: { select: { distributionDate: true } },
+      },
+    });
+
+    const entityCalled = entityCallItems.reduce((s, cli) => s + cli.amount, 0);
+    const entityDistributed = entityDistItems.reduce((s, dli) => s + dli.netAmount, 0);
+
+    // Entity NAV from latest capital account
+    const entityNAV = latestByEntity.get(entityId) ?? 0;
+
+    const entityMetricsCalc = computeMetrics(entityCalled, entityDistributed, entityNAV);
+
+    // Entity IRR from entity-scoped cash flows
+    const entityCashFlows: { date: Date; amount: number }[] = [];
+    for (const cli of entityCallItems) {
+      if (cli.capitalCall.callDate && cli.amount > 0) {
+        entityCashFlows.push({ date: cli.capitalCall.callDate, amount: -cli.amount });
+      }
+    }
+    for (const dli of entityDistItems) {
+      if (dli.distribution.distributionDate && dli.netAmount > 0) {
+        entityCashFlows.push({ date: dli.distribution.distributionDate, amount: dli.netAmount });
+      }
+    }
+    if (entityNAV > 0) {
+      entityCashFlows.push({ date: new Date(), amount: entityNAV });
+    }
+    const entityIRR = entityCashFlows.length >= 2 ? xirr(entityCashFlows) : null;
+
+    entityMetrics.push({
+      entityId,
+      entityName: commitment.entity.name,
+      commitment: commitment.amount,
+      calledAmount: commitment.calledAmount,
+      irr: entityIRR,
+      tvpi: entityMetricsCalc.tvpi,
+      dpi: entityMetricsCalc.dpi,
+      rvpi: entityMetricsCalc.rvpi,
+      nav: entityNAV,
+      totalCalled: entityCalled,
+      totalDistributed: entityDistributed,
+    });
+
+    // Fire-and-forget: per-entity metric snapshot
+    prisma.metricSnapshot.upsert({
+      where: {
+        investorId_entityId_periodDate: { investorId, entityId, periodDate: today },
+      },
+      create: {
+        investorId,
+        entityId,
+        periodDate: today,
+        irr: entityIRR,
+        tvpi: entityMetricsCalc.tvpi,
+        dpi: entityMetricsCalc.dpi,
+        rvpi: entityMetricsCalc.rvpi,
+        nav: entityNAV,
+        totalCalled: entityCalled,
+        totalDistributed: entityDistributed,
+      },
+      update: {
+        irr: entityIRR,
+        tvpi: entityMetricsCalc.tvpi,
+        dpi: entityMetricsCalc.dpi,
+        rvpi: entityMetricsCalc.rvpi,
+        nav: entityNAV,
+        totalCalled: entityCalled,
+        totalDistributed: entityDistributed,
+      },
+    }).catch((err: unknown) => console.error("[metric-snapshot-entity] save failed:", err));
+  }
+
+  // Fetch recent MetricSnapshot history for sparklines (per-entity, excludes aggregate)
+  const snapshotHistoryRaw = await prisma.metricSnapshot.findMany({
+    where: { investorId, entityId: { not: "__AGGREGATE__" } },
+    orderBy: { periodDate: "asc" },
+    take: 100,
+  });
+
+  // Group by entityId
+  const snapshotMap = new Map<string, { periodDate: string; irr: number | null; tvpi: number | null }[]>();
+  for (const snap of snapshotHistoryRaw) {
+    const existing = snapshotMap.get(snap.entityId) ?? [];
+    existing.push({
+      periodDate: snap.periodDate.toISOString(),
+      irr: snap.irr ?? null,
+      tvpi: snap.tvpi ?? null,
+    });
+    snapshotMap.set(snap.entityId, existing);
+  }
+
+  const entitySnapshotHistory = Array.from(snapshotMap.entries()).map(([entityId, snapshots]) => ({
+    entityId,
+    snapshots,
+  }));
+
   return NextResponse.json({
     investor,
     totalCommitted,
@@ -142,5 +274,7 @@ export async function GET(
     rvpi: metrics.rvpi,
     irr,
     commitments: investor.commitments,
+    entityMetrics,
+    entitySnapshotHistory,
   });
 }
