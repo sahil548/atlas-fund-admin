@@ -5,7 +5,9 @@ import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { EntityCard } from "@/components/features/dashboard/entity-card";
 import { PortfolioAggregates } from "@/components/features/dashboard/portfolio-aggregates";
-import { LPComparisonView } from "@/components/features/dashboard/lp-comparison-view";
+import { SummaryBar } from "@/components/features/dashboard/summary-bar";
+import { NeedsAttentionPanel } from "@/components/features/dashboard/needs-attention-panel";
+import { DealPipelineFunnel } from "@/components/features/dashboard/deal-pipeline-funnel";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { PageHeader } from "@/components/ui/page-header";
 
@@ -17,7 +19,7 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
-const ENTITY_CARDS_INITIAL = 6;
+const ENTITY_CARDS_INITIAL = 12;
 
 export default function DashboardPage() {
   const { firmId } = useFirm();
@@ -28,7 +30,7 @@ export default function DashboardPage() {
 
   const [showAllEntities, setShowAllEntities] = useState(false);
 
-  // Show first 6 entities by default; "show all" toggle for more
+  // Show first 12 entities by default (compact cards fit more on screen)
   const entities: any[] = entityCards ?? [];
   const visibleEntities = showAllEntities
     ? entities
@@ -39,12 +41,29 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <PageHeader title="Dashboard" />
 
+      {/* ── Summary Bar ────────────────────────────────────────── */}
+      <SectionErrorBoundary>
+        <SummaryBar />
+      </SectionErrorBoundary>
+
+      {/* ── Needs Attention ────────────────────────────────────── */}
+      <SectionErrorBoundary>
+        <NeedsAttentionPanel />
+      </SectionErrorBoundary>
+
+      {/* ── Deal Pipeline Funnel ───────────────────────────────── */}
+      <SectionErrorBoundary>
+        <DealPipelineFunnel />
+      </SectionErrorBoundary>
+
       {/* ── Your Entities section ─────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Your Entities</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+              Your Entities
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
               {entityLoading
                 ? "Loading..."
                 : `${entities.length} active fund${entities.length !== 1 ? "s" : ""} and SPV${entities.length !== 1 ? "s" : ""}`}
@@ -53,7 +72,7 @@ export default function DashboardPage() {
           {hasMore && (
             <button
               onClick={() => setShowAllEntities(!showAllEntities)}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
             >
               {showAllEntities
                 ? "Show fewer"
@@ -64,24 +83,26 @@ export default function DashboardPage() {
 
         <SectionErrorBoundary>
           {entityLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {[...Array(3)].map((_, i) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
+              {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-xl border border-gray-200 p-4 h-48 animate-pulse"
+                  className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-3 h-20 animate-pulse"
                 />
               ))}
             </div>
           ) : entities.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <p className="text-sm text-gray-500">No active entities found.</p>
-              <p className="text-xs text-gray-400 mt-1">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No active entities found.
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 Create entities and allocate assets to see them here.
               </p>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3">
                 {visibleEntities.map((entity: any) => (
                   <EntityCard
                     key={entity.entityId}
@@ -92,14 +113,7 @@ export default function DashboardPage() {
                     irr={entity.irr}
                     tvpi={entity.tvpi}
                     dpi={entity.dpi}
-                    rvpi={entity.rvpi}
-                    capitalDeployed={entity.capitalDeployed}
-                    totalCommitted={entity.totalCommitted}
-                    deploymentPct={entity.deploymentPct}
-                    dryPowder={entity.dryPowder}
                     assetCount={entity.assetCount}
-                    topAssets={entity.topAssets ?? []}
-                    perAssetBreakdown={entity.perAssetBreakdown ?? []}
                   />
                 ))}
               </div>
@@ -109,7 +123,7 @@ export default function DashboardPage() {
                 <div className="mt-3 text-center">
                   <button
                     onClick={() => setShowAllEntities(!showAllEntities)}
-                    className="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline"
+                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 underline"
                   >
                     {showAllEntities
                       ? "Show fewer"
@@ -125,8 +139,10 @@ export default function DashboardPage() {
       {/* ── Portfolio Overview section ─────────────────────────── */}
       <section>
         <div className="mb-3">
-          <h2 className="text-base font-semibold text-gray-900">Portfolio Overview</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            Portfolio Overview
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Asset allocation, performance, capital deployment, and activity across all entities
           </p>
         </div>
@@ -136,12 +152,7 @@ export default function DashboardPage() {
         </SectionErrorBoundary>
       </section>
 
-      {/* ── LP Comparison section ──────────────────────────────── */}
-      <section>
-        <SectionErrorBoundary>
-          <LPComparisonView />
-        </SectionErrorBoundary>
-      </section>
+      {/* Activity feed will be added in Plan 05 */}
     </div>
   );
 }
