@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: completed
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-03-10T17:30:32.358Z"
-last_activity: 2026-03-10 — Phase 18 complete. All 8 AI requirements (AI-01 through AI-08) verified end-to-end. Task suggestions (AI-08) and LP update drafting (AI-07) wired into command bar and side panel.
+status: executing
+stopped_at: Completed 19-04-PLAN.md
+last_updated: "2026-03-10T17:32:42.303Z"
+last_activity: 2026-03-10 — Phase 19 Plan 01 complete. Pipeline summary and alerts APIs built with 13 unit tests. DASH-01 and DASH-02 requirements verified.
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 48
-  completed_plans: 44
-  percent: 94
+  completed_plans: 45
+  percent: 95
 ---
 
 # Atlas — GSD State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 19 of 19 — Dashboard & Supporting Modules (IN PROGRESS)
-- **Plan:** 1 of 5 complete
-- **Status:** Phase 19 in progress — pipeline summary and alerts APIs complete; dashboard UI next
-- **Last activity:** 2026-03-10 — Phase 19 Plan 01 complete. Pipeline summary and alerts APIs built with 13 unit tests. DASH-01 and DASH-02 requirements verified.
+- **Plan:** 4 of 5 complete
+- **Status:** Phase 19 in progress — Plans 01-04 complete; Plan 05 (dashboard page integration) is the final plan
+- **Last activity:** 2026-03-10 — Phase 19 Plan 04 complete. Unified /api/activity endpoint (7 sources) + ActivityFeedSection component with chip toggles and load-more. DASH-03 verified.
 
-Progress: [██████████] 95% (80/84 plans)
+Progress: [██████████] 96% (81/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -71,6 +71,7 @@ Progress: [██████████] 95% (80/84 plans)
 | Phase 18-ai-features P03 | 25 | 2 tasks | 6 files |
 | Phase 18-ai-features P04 | ~30min | 3 tasks | 5 files |
 | Phase 19-dashboard-supporting-modules P01 | 7 | 2 tasks | 5 files |
+| Phase 19 P04 | 8 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -242,6 +243,11 @@ Progress: [██████████] 95% (80/84 plans)
 - **Covenant relation name is `agreement`:** Prisma schema uses `agreement CreditAgreement @relation(...)` on Covenant model (not `creditAgreement`) — always use `agreement` in Prisma queries and includes
 - **Alert severity scheme:** OVERDUE_CAPITAL_CALL=high, COVENANT_BREACH=high, LEASE_EXPIRY=medium — matching urgency levels for morning briefing
 - **90-day lease expiry window:** Expiring leases query uses `leaseEndDate: { gte: today, lte: ninetyDaysFromNow }` — 90 days is the alerting horizon
+- **Activity feed helpers in lib/:** `activity-feed-helpers.ts` is side-effect free so vitest node env can test without mocking Next.js or Prisma
+- **filterByTypes empty set = show all:** Consistent with "All" chip UX — empty Set means no type filter applied
+- **Dual-level entity filtering:** DB-level `entityId` filter applied where possible; app-level `filterByEntity` handles DealActivity (join via deal.entities relation, not direct entityId)
+- **AuditLog STATUS_TRANSITION only:** Restricts to status change events only — avoids noise from routine create/update audit entries
+- **SWR accumulator pattern:** `allItems` state resets on offset=0 (filter change), appends on offset>0 (load-more) — prevents duplicate items on pagination
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -261,6 +267,6 @@ Progress: [██████████] 95% (80/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T17:30:32.355Z
-- **Stopped at:** Completed 19-01-PLAN.md
+- **Last session:** 2026-03-10T17:32:42.300Z
+- **Stopped at:** Completed 19-04-PLAN.md
 - **Resume file:** None
