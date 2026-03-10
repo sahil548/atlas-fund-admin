@@ -7,8 +7,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { DistributionStatusButtons } from "@/components/features/capital/distribution-status-buttons";
+import { DistributionDocumentPanel } from "@/components/features/capital/distribution-document-panel";
 import { fmt, formatDate } from "@/lib/utils";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -64,13 +65,6 @@ interface Distribution {
   lineItems: LineItem[];
   documents?: Document[];
   _summary: { totalLineItems: number; totalGross: number; totalNet: number };
-}
-
-function formatFileSize(bytes: number | null): string {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export default function DistributionDetailPage() {
@@ -247,7 +241,7 @@ export default function DistributionDetailPage() {
         )}
       </SectionPanel>
 
-      {/* Documents placeholder — will be replaced by Task 2 */}
+      {/* Documents */}
       <SectionPanel
         title="Documents"
         headerRight={
@@ -256,37 +250,11 @@ export default function DistributionDetailPage() {
           </span>
         }
       >
-        {(data.documents || []).length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
-            <FileText className="h-8 w-8 text-gray-300 dark:text-gray-600" />
-            <p className="text-sm text-gray-500 dark:text-gray-400">No documents attached</p>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Document attachment coming soon</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {(data.documents || []).map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{doc.name}</div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500">{formatFileSize(doc.fileSize)} &middot; {formatDate(doc.uploadDate)}</div>
-                  </div>
-                </div>
-                {doc.fileUrl && (
-                  <a
-                    href={doc.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex-shrink-0 ml-2"
-                  >
-                    Download
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+        <DistributionDocumentPanel
+          distributionId={data.id}
+          entityId={data.entityId}
+          documents={data.documents || []}
+        />
       </SectionPanel>
     </div>
   );
