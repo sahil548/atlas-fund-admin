@@ -104,7 +104,10 @@ async function gatherContext(firmId: string): Promise<DatabaseContext> {
   };
 }
 
-function buildSystemPrompt(ctx: DatabaseContext): string {
+function buildSystemPrompt(
+  ctx: DatabaseContext,
+  pageContext?: { pageType: string; entityId?: string; entityName?: string },
+): string {
   const stageBreakdown = Object.entries(ctx.dealsByStage)
     .map(([stage, count]) => `${stage}: ${count}`)
     .join(", ");
@@ -125,6 +128,18 @@ function buildSystemPrompt(ctx: DatabaseContext): string {
     ? ctx.recentActivity.map((a) => `- ${a.description}`).join("\n")
     : "No recent activity";
 
+  // Build optional page context section (omit when pageType is "other" or absent)
+  const pageContextSection =
+    pageContext &&
+    pageContext.pageType !== "other" &&
+    (pageContext.entityName || pageContext.entityId)
+      ? `
+CURRENT PAGE CONTEXT:
+The GP is currently viewing ${pageContext.pageType}: "${pageContext.entityName || pageContext.entityId}" (id: ${pageContext.entityId || "unknown"}).
+When the user says "this deal", "this asset", or "this entity", they mean this specific item.
+`
+      : "";
+
   return `You are Atlas AI, the intelligent assistant for Atlas — a fund administration platform managing fund entities, LP relationships, deal pipeline, and portfolio assets.
 
 CURRENT PORTFOLIO STATE:
@@ -142,7 +157,7 @@ RECENT ACTIVITY:
 ${activitySummary}
 
 AVAILABLE MODULES (use ONLY these exact URL paths in searchResults):
-${generateAIRouteList()}
+${generateAIRouteList()}${pageContextSection}
 
 INSTRUCTIONS:
 - Be concise and helpful. Reference real data from the portfolio state above.
@@ -171,10 +186,16 @@ You MUST respond in valid JSON with exactly this shape:
 
 /**
  * Main AI search function — gathers context, calls LLM, returns structured response.
+ *
+ * @param query       The user's natural language query
+ * @param firmId      Tenant firm ID for portfolio context
+ * @param pageContext Optional: current page the GP is viewing. When provided,
+ *                    injected into the system prompt so "this deal" resolves correctly.
  */
 export async function searchAndAnalyze(
   query: string,
   firmId: string,
+  pageContext?: { pageType: string; entityId?: string; entityName?: string },
 ): Promise<AIResponse> {
   const client = await createAIClient(firmId);
 
@@ -193,7 +214,7 @@ export async function searchAndAnalyze(
 
   try {
     const ctx = await gatherContext(firmId);
-    const systemPrompt = buildSystemPrompt(ctx);
+    const systemPrompt = buildSystemPrompt(ctx, pageContext);
     const model = await getModelForFirm(firmId);
 
     const response = await client.chat.completions.create({

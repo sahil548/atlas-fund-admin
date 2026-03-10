@@ -716,6 +716,14 @@ export const UpdateFirmSchema = z.object({
 export const AISearchSchema = z.object({
   query: z.string().min(1, "Query is required"),
   firmId: z.string().min(1, "Firm ID is required"),
+  /** Optional page context from the command bar provider — enables "this deal" resolution. */
+  pageContext: z
+    .object({
+      pageType: z.enum(["deal", "asset", "entity", "contact", "dashboard", "other"]),
+      entityId: z.string().optional(),
+      entityName: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const AgentQuerySchema = z.object({

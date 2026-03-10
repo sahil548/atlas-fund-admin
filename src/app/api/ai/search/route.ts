@@ -27,6 +27,6 @@ export async function POST(req: Request) {
   const { data, error } = await parseBody(req, AISearchSchema);
   if (error) return error;
 
-  const result = await searchAndAnalyze(data!.query, data!.firmId);
+  const result = await searchAndAnalyze(data!.query, data!.firmId, data!.pageContext);
   return NextResponse.json(result);
 }
