@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 19-04-PLAN.md
-last_updated: "2026-03-10T17:32:42.303Z"
-last_activity: 2026-03-10 — Phase 19 Plan 01 complete. Pipeline summary and alerts APIs built with 13 unit tests. DASH-01 and DASH-02 requirements verified.
+stopped_at: Completed 19-02-PLAN.md (SUPP-01 through SUPP-06 all verified)
+last_updated: "2026-03-10T17:38:41.141Z"
+last_activity: 2026-03-10 — Phase 19 Plan 04 complete. Unified /api/activity endpoint (7 sources) + ActivityFeedSection component with chip toggles and load-more. DASH-03 verified.
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 48
-  completed_plans: 45
-  percent: 95
+  completed_plans: 46
+  percent: 96
 ---
 
 # Atlas — GSD State
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 19 of 19 — Dashboard & Supporting Modules (IN PROGRESS)
-- **Plan:** 4 of 5 complete
-- **Status:** Phase 19 in progress — Plans 01-04 complete; Plan 05 (dashboard page integration) is the final plan
-- **Last activity:** 2026-03-10 — Phase 19 Plan 04 complete. Unified /api/activity endpoint (7 sources) + ActivityFeedSection component with chip toggles and load-more. DASH-03 verified.
+- **Plan:** Plans 01, 02, 04 complete (3/5); Plans 03, 05 remaining
+- **Status:** Phase 19 in progress — Plan 02 complete: report preview modal, entity Reports tab, integrations status dots, notification preferences form (all 6 SUPP requirements done)
+- **Last activity:** 2026-03-10 — Phase 19 Plan 02 complete. Report preview modal + grouped history, entity detail Reports tab (SUPP-04), integrations status dots (SUPP-02), notification preferences form (SUPP-03). SUPP-01 through SUPP-06 all verified.
 
 Progress: [██████████] 96% (81/84 plans)
 
@@ -72,6 +72,7 @@ Progress: [██████████] 96% (81/84 plans)
 | Phase 18-ai-features P04 | ~30min | 3 tasks | 5 files |
 | Phase 19-dashboard-supporting-modules P01 | 7 | 2 tasks | 5 files |
 | Phase 19 P04 | 8 | 2 tasks | 4 files |
+| Phase 19 P02 | 40 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -248,6 +249,11 @@ Progress: [██████████] 96% (81/84 plans)
 - **Dual-level entity filtering:** DB-level `entityId` filter applied where possible; app-level `filterByEntity` handles DealActivity (join via deal.entities relation, not direct entityId)
 - **AuditLog STATUS_TRANSITION only:** Restricts to status change events only — avoids noise from routine create/update audit entries
 - **SWR accumulator pattern:** `allItems` state resets on offset=0 (filter change), appends on offset>0 (load-more) — prevents duplicate items on pagination
+- **groupReportsByEntityThenPeriod:** pure function returning `Map<entityKey, {entityName, periods: Map<period, Report[]>}>` — inline in reports/page.tsx, not extracted to util
+- **User PUT permissions self-update:** non-admins can PUT their own `permissions` JSON field only (notification prefs); GP_ADMIN required for all other fields; prevents privilege escalation
+- **Notification prefs in User.permissions JSON:** `notifEmail`, `notifSms`, `digestFrequency` stored in existing User.permissions Json? field — no schema changes
+- **z.record(z.string(), z.unknown()) in Zod 4:** Zod 4 requires explicit key+value types in z.record(); z.record(z.unknown()) alone causes TypeScript error
+- **useEffect + notifPrefsLoaded flag:** one-time sync from SWR data to local form state — prevents overwriting user edits on re-render
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -267,6 +273,6 @@ Progress: [██████████] 96% (81/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T17:32:42.300Z
-- **Stopped at:** Completed 19-04-PLAN.md
+- **Last session:** 2026-03-10T17:38:41.137Z
+- **Stopped at:** Completed 19-02-PLAN.md (SUPP-01 through SUPP-06 all verified)
 - **Resume file:** None

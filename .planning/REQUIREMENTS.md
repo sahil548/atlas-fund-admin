@@ -121,12 +121,12 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Supporting Modules — Reports, Accounting, Settings
 
-- [ ] **SUPP-01**: Report preview available before download
-- [ ] **SUPP-02**: Unified integrations status page shows all integrations with connection status
-- [ ] **SUPP-03**: GP notification preferences configurable
-- [ ] **SUPP-04**: Report history tracked per entity per period
-- [ ] **SUPP-05**: AI config has test connection button
-- [ ] **SUPP-06**: Settings confirm dialogs migrated from browser confirm() to ConfirmDialog
+- [x] **SUPP-01**: Report preview available before download
+- [x] **SUPP-02**: Unified integrations status page shows all integrations with connection status
+- [x] **SUPP-03**: GP notification preferences configurable
+- [x] **SUPP-04**: Report history tracked per entity per period
+- [x] **SUPP-05**: AI config has test connection button
+- [x] **SUPP-06**: Settings confirm dialogs migrated from browser confirm() to ConfirmDialog
 
 ## v2 Requirements
 
@@ -246,12 +246,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-02 | Phase 19 | Complete |
 | DASH-03 | Phase 19 | Complete |
 | DASH-04 | Phase 19 | Pending |
-| SUPP-01 | Phase 19 | Pending |
-| SUPP-02 | Phase 19 | Pending |
-| SUPP-03 | Phase 19 | Pending |
-| SUPP-04 | Phase 19 | Pending |
-| SUPP-05 | Phase 19 | Pending |
-| SUPP-06 | Phase 19 | Pending |
+| SUPP-01 | Phase 19 | Complete |
+| SUPP-02 | Phase 19 | Complete |
+| SUPP-03 | Phase 19 | Complete |
+| SUPP-04 | Phase 19 | Complete |
+| SUPP-05 | Phase 19 | Complete |
+| SUPP-06 | Phase 19 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 79 total (8 FOUND + 6 DEAL + 6 ASSET + 5 ENTITY + 6 CAP + 6 LP + 4 DASH + 8 AI + 3 DOC + 5 AICONF + 6 CRM + 5 TASK + 5 MTG + 6 SUPP)
