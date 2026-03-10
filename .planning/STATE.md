@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 19-02-PLAN.md (SUPP-01 through SUPP-06 all verified)
-last_updated: "2026-03-10T17:38:41.141Z"
-last_activity: 2026-03-10 — Phase 19 Plan 04 complete. Unified /api/activity endpoint (7 sources) + ActivityFeedSection component with chip toggles and load-more. DASH-03 verified.
+stopped_at: Completed 19-03-PLAN.md (DASH-01, DASH-02, DASH-04 verified)
+last_updated: "2026-03-10T17:48:51.426Z"
+last_activity: 2026-03-10 — Phase 19 Plan 03 complete. SummaryBar, NeedsAttentionPanel, DealPipelineFunnel, compact EntityCard, dashboard restructured, LP Comparison removed. DASH-01, DASH-02, DASH-04 verified.
 progress:
   total_phases: 10
   completed_phases: 8
   total_plans: 48
-  completed_plans: 46
+  completed_plans: 47
   percent: 96
 ---
 
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 19 of 19 — Dashboard & Supporting Modules (IN PROGRESS)
-- **Plan:** Plans 01, 02, 04 complete (3/5); Plans 03, 05 remaining
-- **Status:** Phase 19 in progress — Plan 02 complete: report preview modal, entity Reports tab, integrations status dots, notification preferences form (all 6 SUPP requirements done)
-- **Last activity:** 2026-03-10 — Phase 19 Plan 02 complete. Report preview modal + grouped history, entity detail Reports tab (SUPP-04), integrations status dots (SUPP-02), notification preferences form (SUPP-03). SUPP-01 through SUPP-06 all verified.
+- **Plan:** Plans 01, 02, 03, 04 complete (4/5); Plan 05 remaining
+- **Status:** Phase 19 in progress — Plan 03 complete: SummaryBar, NeedsAttentionPanel, DealPipelineFunnel, compact EntityCard, dashboard restructured, LP Comparison removed (DASH-01, DASH-02, DASH-04 done)
+- **Last activity:** 2026-03-10 — Phase 19 Plan 03 complete. SummaryBar (5 metrics), NeedsAttentionPanel (alerts grouped by severity), DealPipelineFunnel (4-stage funnel), compact EntityCard (2-row with quick actions), dashboard page restructured, LP Comparison removed.
 
 Progress: [██████████] 96% (81/84 plans)
 
@@ -73,6 +73,7 @@ Progress: [██████████] 96% (81/84 plans)
 | Phase 19-dashboard-supporting-modules P01 | 7 | 2 tasks | 5 files |
 | Phase 19 P04 | 8 | 2 tasks | 4 files |
 | Phase 19 P02 | 40 | 3 tasks | 6 files |
+| Phase 19-dashboard-supporting-modules P03 | 5 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -254,6 +255,11 @@ Progress: [██████████] 96% (81/84 plans)
 - **Notification prefs in User.permissions JSON:** `notifEmail`, `notifSms`, `digestFrequency` stored in existing User.permissions Json? field — no schema changes
 - **z.record(z.string(), z.unknown()) in Zod 4:** Zod 4 requires explicit key+value types in z.record(); z.record(z.unknown()) alone causes TypeScript error
 - **useEffect + notifPrefsLoaded flag:** one-time sync from SWR data to local form state — prevents overwriting user edits on re-render
+- **EntityCard expand/collapse removed:** compact 2-row card is the new dashboard standard — full detail available via Eye icon link to entity detail page
+- **LP Comparison section removed from dashboard:** per locked CONTEXT.md decision; the section is no longer rendered or imported
+- **DealPipelineFunnel proportional widths with 20% minimum:** prevents zero-count stages from collapsing while still conveying relative deal distribution
+- **NeedsAttentionPanel high-before-medium sort:** high severity alerts always appear first in the morning briefing view
+- **Dashboard self-fetching panel pattern:** SummaryBar, NeedsAttentionPanel, DealPipelineFunnel each own their own SWR fetch — no prop drilling from parent page
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -273,6 +279,6 @@ Progress: [██████████] 96% (81/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T17:38:41.137Z
-- **Stopped at:** Completed 19-02-PLAN.md (SUPP-01 through SUPP-06 all verified)
+- **Last session:** 2026-03-10T17:48:51.423Z
+- **Stopped at:** Completed 19-03-PLAN.md (DASH-01, DASH-02, DASH-04 verified)
 - **Resume file:** None

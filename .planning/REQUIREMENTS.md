@@ -67,7 +67,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [x] **DASH-01**: Dashboard shows deal pipeline summary (deals by stage, aggregate value)
 - [x] **DASH-02**: Dashboard shows "needs attention" alerts (overdue calls, covenant breaches, lease expirations)
 - [x] **DASH-03**: Activity feed can be filtered by entity and type
-- [ ] **DASH-04**: Entity cards have quick-action buttons (view entity, create capital call, etc.)
+- [x] **DASH-04**: Entity cards have quick-action buttons (view entity, create capital call, etc.)
 
 ### AI & Command Bar
 
@@ -245,7 +245,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DASH-01 | Phase 19 | Complete |
 | DASH-02 | Phase 19 | Complete |
 | DASH-03 | Phase 19 | Complete |
-| DASH-04 | Phase 19 | Pending |
+| DASH-04 | Phase 19 | Complete |
 | SUPP-01 | Phase 19 | Complete |
 | SUPP-02 | Phase 19 | Complete |
 | SUPP-03 | Phase 19 | Complete |
