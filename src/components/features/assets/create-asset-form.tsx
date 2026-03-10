@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -157,10 +158,10 @@ export function CreateAssetForm({ open, onClose }: Props) {
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Cost Basis ($)" error={errors.costBasis} required>
-            <Input type="number" value={form.costBasis} onChange={(e) => set("costBasis", e.target.value)} placeholder="0" />
+            <CurrencyInput value={form.costBasis} onChange={(v) => set("costBasis", v)} error={!!errors.costBasis} placeholder="0" />
           </FormField>
           <FormField label="Fair Value ($)" error={errors.fairValue} required>
-            <Input type="number" value={form.fairValue} onChange={(e) => set("fairValue", e.target.value)} placeholder="0" />
+            <CurrencyInput value={form.fairValue} onChange={(v) => set("fairValue", v)} error={!!errors.fairValue} placeholder="0" />
           </FormField>
         </div>
 

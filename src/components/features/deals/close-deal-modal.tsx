@@ -5,6 +5,7 @@ import useSWR, { mutate as globalMutate } from "swr";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { useToast } from "@/components/ui/toast";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -30,13 +31,6 @@ const vehicleStructureLabels: Record<string, string> = {
 interface AllocationRow {
   entityId: string;
   allocationPercent: number;
-}
-
-function formatCurrencyInput(value: string): string {
-  const digits = value.replace(/[^0-9.]/g, "");
-  const parts = digits.split(".");
-  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return parts.length > 1 ? parts[0] + "." + parts[1] : parts[0];
 }
 
 interface CloseDealModalProps {
@@ -165,7 +159,7 @@ export function CloseDealModal({
   }, [open, initialEntityId, entities, dealEntities, allocations.length, prePopulated]);
 
   // Parsed cost basis for calculations
-  const parsedCostBasis = parseFloat(costBasis.replace(/[^0-9.]/g, "")) || 0;
+  const parsedCostBasis = parseFloat(costBasis) || 0;
 
   // Allocation management
   function addEntity(entityId: string) {
@@ -257,7 +251,7 @@ export function CloseDealModal({
   function handleSubmit() {
     const cb = parsedCostBasis;
     if (cb <= 0) return;
-    const fv = fairValue ? parseFloat(fairValue.replace(/[^0-9.]/g, "")) : cb;
+    const fv = fairValue ? parseFloat(fairValue) : cb;
     onConfirm({
       costBasis: cb,
       fairValue: isNaN(fv) ? cb : fv,
@@ -353,16 +347,11 @@ export function CloseDealModal({
           <label className="text-xs font-medium text-gray-700 block mb-1">
             Cost Basis <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-            <input
-              type="text"
-              value={costBasis}
-              onChange={(e) => setCostBasis(formatCurrencyInput(e.target.value))}
-              placeholder="e.g. 10,000,000"
-              className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
+          <CurrencyInput
+            value={costBasis}
+            onChange={(v) => setCostBasis(v)}
+            placeholder="e.g. 10,000,000"
+          />
           <p className="text-[10px] text-gray-400 mt-1">Total investment amount for this asset</p>
         </div>
 
@@ -371,16 +360,11 @@ export function CloseDealModal({
           <label className="text-xs font-medium text-gray-700 block mb-1">
             Fair Value
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-            <input
-              type="text"
-              value={fairValue}
-              onChange={(e) => setFairValue(formatCurrencyInput(e.target.value))}
-              placeholder="Defaults to cost basis"
-              className="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
-          </div>
+          <CurrencyInput
+            value={fairValue}
+            onChange={(v) => setFairValue(v)}
+            placeholder="Defaults to cost basis"
+          />
           <p className="text-[10px] text-gray-400 mt-1">Current fair market value — leave blank to use cost basis</p>
         </div>
 

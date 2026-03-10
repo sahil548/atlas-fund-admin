@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -55,7 +56,7 @@ export function LogValuationForm({ open, onClose, assetId }: Props) {
           <FormField label="Method" required><Select value={form.method} onChange={(e) => set("method", e.target.value)} options={METHODS} /></FormField>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Fair Value ($)" required error={errors.fairValue}><Input type="number" value={form.fairValue} onChange={(e) => set("fairValue", e.target.value)} error={!!errors.fairValue} placeholder="e.g. 50000000" /></FormField>
+          <FormField label="Fair Value ($)" required error={errors.fairValue}><CurrencyInput value={form.fairValue} onChange={(v) => set("fairValue", v)} error={!!errors.fairValue} placeholder="e.g. 50,000,000" /></FormField>
           <FormField label="MOIC"><Input type="number" step="0.01" value={form.moic} onChange={(e) => set("moic", e.target.value)} placeholder="e.g. 2.5" /></FormField>
         </div>
         <FormField label="Notes"><Textarea value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Valuation notes..." /></FormField>

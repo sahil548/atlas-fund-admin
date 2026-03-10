@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -45,7 +46,7 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Edit Asset" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={isLoading} onClick={handleSubmit}>Save Changes</Button></>}>
       <div className="space-y-3">
-        <FormField label="Fair Value" error={errors.fairValue}><Input type="number" value={form.fairValue} onChange={(e) => set("fairValue", e.target.value)} /></FormField>
+        <FormField label="Fair Value" error={errors.fairValue}><CurrencyInput value={form.fairValue} onChange={(v) => set("fairValue", v)} /></FormField>
         <FormField label="Status"><Select value={form.status} onChange={(e) => set("status", e.target.value)} options={STATUSES} /></FormField>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Sector"><Input value={form.sector} onChange={(e) => set("sector", e.target.value)} /></FormField>

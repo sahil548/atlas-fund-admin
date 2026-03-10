@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -44,7 +45,7 @@ export function LogIncomeForm({ open, onClose, assetId, entityId }: Props) {
       <div className="space-y-3">
         <FormField label="Income Type"><Select value={form.incomeType} onChange={(e) => set("incomeType", e.target.value)} options={INCOME_TYPES} /></FormField>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Amount ($)" required error={errors.amount}><Input type="number" value={form.amount} onChange={(e) => set("amount", e.target.value)} error={!!errors.amount} placeholder="e.g. 500000" /></FormField>
+          <FormField label="Amount ($)" required error={errors.amount}><CurrencyInput value={form.amount} onChange={(v) => set("amount", v)} error={!!errors.amount} placeholder="e.g. 500,000" /></FormField>
           <FormField label="Date" required error={errors.date}><Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} error={!!errors.date} /></FormField>
         </div>
         <FormField label="Description"><Input value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Q4 dividend payment" /></FormField>

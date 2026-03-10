@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -143,7 +144,7 @@ export function CreateInvestorForm({ open, onClose }: Props) {
             <Select value={form.investorType} onChange={(e) => set("investorType", e.target.value)} options={TYPES} />
           </FormField>
           <FormField label="Total Committed ($)">
-            <Input type="number" value={form.totalCommitted} onChange={(e) => set("totalCommitted", e.target.value)} placeholder="e.g. 50000000" />
+            <CurrencyInput value={form.totalCommitted} onChange={(v) => set("totalCommitted", v)} placeholder="e.g. 50,000,000" />
           </FormField>
         </div>
         <div className="grid grid-cols-2 gap-3">

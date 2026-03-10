@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormField } from "@/components/ui/form-field";
@@ -445,11 +446,10 @@ export function DealCoInvestorsSection({ dealId }: Props) {
           </div>
 
           <FormField label="Allocation ($)" >
-            <Input
-              type="number"
+            <CurrencyInput
               value={addForm.allocation}
-              onChange={(e) => setAddForm((p) => ({ ...p, allocation: e.target.value }))}
-              placeholder="e.g. 5000000"
+              onChange={(v) => setAddForm((p) => ({ ...p, allocation: v }))}
+              placeholder="e.g. 5,000,000"
             />
           </FormField>
 
@@ -499,11 +499,10 @@ export function DealCoInvestorsSection({ dealId }: Props) {
             </FormField>
           </div>
           <FormField label="Allocation ($)">
-            <Input
-              type="number"
+            <CurrencyInput
               value={editForm.allocation}
-              onChange={(e) => setEditForm((p) => ({ ...p, allocation: e.target.value }))}
-              placeholder="e.g. 5000000"
+              onChange={(v) => setEditForm((p) => ({ ...p, allocation: v }))}
+              placeholder="e.g. 5,000,000"
             />
           </FormField>
           <FormField label="Notes">

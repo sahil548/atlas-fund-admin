@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fmt } from "@/lib/utils";
@@ -131,16 +132,11 @@ export function ExitAssetModal({ asset, isOpen, onClose, onSuccess }: Props) {
             />
           </FormField>
           <FormField label="Exit Proceeds" required>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <Input
-                type="number"
-                value={exitProceeds}
-                onChange={(e) => setExitProceeds(e.target.value)}
-                placeholder="e.g. 15000000"
-                className="pl-6"
-              />
-            </div>
+            <CurrencyInput
+              value={exitProceeds}
+              onChange={(v) => setExitProceeds(v)}
+              placeholder="e.g. 15,000,000"
+            />
           </FormField>
         </div>
 

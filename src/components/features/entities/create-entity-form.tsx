@@ -5,6 +5,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -99,7 +100,7 @@ export function CreateEntityForm({ open, onClose }: Props) {
         </div>
         <div className="grid grid-cols-3 gap-3">
           <FormField label="Vintage Year"><Input type="number" value={form.vintageYear} onChange={set("vintageYear")} placeholder="e.g. 2024" /></FormField>
-          <FormField label="Target Size ($)"><Input type="number" value={form.targetSize} onChange={set("targetSize")} placeholder="e.g. 50000000" /></FormField>
+          <FormField label="Target Size ($)"><CurrencyInput value={form.targetSize} onChange={(v) => setForm((p) => ({ ...p, targetSize: v }))} placeholder="e.g. 50,000,000" /></FormField>
           <FormField label="Fund Term (years)"><Input type="number" value={form.fundTermYears} onChange={set("fundTermYears")} placeholder="e.g. 10" /></FormField>
         </div>
         <div className="grid grid-cols-3 gap-3">

@@ -6,6 +6,7 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
@@ -215,7 +216,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
             <Select value={form.entityId} onChange={(e) => set("entityId", e.target.value)} options={entities.map(e => ({ value: e.id, label: e.name }))} placeholder="Select entity..." />
           </FormField>
           <FormField label="Gross Amount ($)" required error={errors.grossAmount}>
-            <Input type="number" value={form.grossAmount} onChange={(e) => set("grossAmount", e.target.value)} error={!!errors.grossAmount} />
+            <CurrencyInput value={form.grossAmount} onChange={(v) => set("grossAmount", v)} error={!!errors.grossAmount} />
           </FormField>
         </div>
 
@@ -264,14 +265,14 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         )}
 
         <div className="grid grid-cols-3 gap-3">
-          <FormField label="Return of Capital"><Input type="number" value={form.returnOfCapital} onChange={(e) => set("returnOfCapital", e.target.value)} /></FormField>
-          <FormField label="Income"><Input type="number" value={form.income} onChange={(e) => set("income", e.target.value)} /></FormField>
-          <FormField label="LT Gains"><Input type="number" value={form.longTermGain} onChange={(e) => set("longTermGain", e.target.value)} /></FormField>
+          <FormField label="Return of Capital"><CurrencyInput value={form.returnOfCapital} onChange={(v) => set("returnOfCapital", v)} /></FormField>
+          <FormField label="Income"><CurrencyInput value={form.income} onChange={(v) => set("income", v)} /></FormField>
+          <FormField label="LT Gains"><CurrencyInput value={form.longTermGain} onChange={(v) => set("longTermGain", v)} /></FormField>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <FormField label="ST Gains"><Input type="number" value={form.shortTermGain} onChange={(e) => set("shortTermGain", e.target.value)} /></FormField>
-          <FormField label="Carry"><Input type="number" value={form.carriedInterest} onChange={(e) => set("carriedInterest", e.target.value)} /></FormField>
-          <FormField label="Net to LPs"><Input type="number" value={form.netToLPs} onChange={(e) => set("netToLPs", e.target.value)} /></FormField>
+          <FormField label="ST Gains"><CurrencyInput value={form.shortTermGain} onChange={(v) => set("shortTermGain", v)} /></FormField>
+          <FormField label="Carry"><CurrencyInput value={form.carriedInterest} onChange={(v) => set("carriedInterest", v)} /></FormField>
+          <FormField label="Net to LPs"><CurrencyInput value={form.netToLPs} onChange={(v) => set("netToLPs", v)} /></FormField>
         </div>
 
         {/* Per-Investor Allocation Preview (editable) */}
