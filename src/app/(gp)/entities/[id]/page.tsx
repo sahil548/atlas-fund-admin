@@ -22,6 +22,8 @@ import { EntityAccountingTab } from "@/components/features/accounting/entity-acc
 import { StatusTransitionDialog } from "@/components/features/entities/status-transition-dialog";
 import { PostFormationChecklist } from "@/components/features/entities/post-formation-checklist";
 import { RegulatoryFilingsTab } from "@/components/features/entities/regulatory-filings-tab";
+import { EntityFinancialSummaryCard } from "@/components/features/entities/entity-financial-summary-card";
+import { EntityPeriodBreakdown } from "@/components/features/entities/entity-period-breakdown";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -551,6 +553,16 @@ export default function EntityDetailPage() {
 
           {!metricsData && (
             <div className="text-xs text-gray-400">Computing metrics...</div>
+          )}
+
+          {/* Financial Summary Card — dual metric view + all 9 key metrics */}
+          {metricsData && (
+            <>
+              <EntityFinancialSummaryCard metricsData={metricsData} />
+              {metricsData.periodBreakdown?.length > 0 && (
+                <EntityPeriodBreakdown periodBreakdown={metricsData.periodBreakdown} />
+              )}
+            </>
           )}
 
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
