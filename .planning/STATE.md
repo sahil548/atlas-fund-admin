@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 18-03-PLAN.md
-last_updated: "2026-03-10T09:46:00.000Z"
-last_activity: 2026-03-10 — Phase 18 Plan 03 complete (AI action execution pipeline, ActionConfirmation, EXTRACT_CIM_TERMS fill-deal flow)
+stopped_at: Completed 18-04-PLAN.md (Phase 18 COMPLETE)
+last_updated: "2026-03-10T17:17:00.000Z"
+last_activity: 2026-03-10 — Phase 18 complete. All 8 AI requirements (AI-01 through AI-08) verified end-to-end. Task suggestions (AI-08) and LP update drafting (AI-07) wired into command bar and side panel.
 progress:
   total_phases: 10
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 48
-  completed_plans: 42
-  percent: 92
+  completed_plans: 43
+  percent: 94
 ---
 
 # Atlas — GSD State
@@ -23,12 +23,12 @@ progress:
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 18 of 19 — AI Features (In Progress)
-- **Plan:** 3 of 4 complete
-- **Status:** In progress
-- **Last activity:** 2026-03-10 — Phase 18 Plan 03 complete (AI action execution pipeline, ActionConfirmation, EXTRACT_CIM_TERMS fill-deal flow)
+- **Phase:** 18 of 19 — AI Features (COMPLETE)
+- **Plan:** 4 of 4 complete
+- **Status:** Phase 18 complete — next up: Phase 19 (Dashboard & Supporting Modules)
+- **Last activity:** 2026-03-10 — Phase 18 complete. All 8 AI requirements (AI-01 through AI-08) verified end-to-end. Task suggestions (AI-08) and LP update drafting (AI-07) wired into command bar and side panel.
 
-Progress: [█████████░] 92% (78/84 plans)
+Progress: [█████████░] 94% (79/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -69,6 +69,7 @@ Progress: [█████████░] 92% (78/84 plans)
 | Phase 18-ai-features P01 | 4 | 3 tasks | 7 files |
 | Phase 18-ai-features P02 | 6 | 2 tasks | 5 files |
 | Phase 18-ai-features P03 | 25 | 2 tasks | 6 files |
+| Phase 18-ai-features P04 | ~30min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -216,7 +217,7 @@ Progress: [█████████░] 92% (78/84 plans)
 - **Remind endpoint stub:** POST /api/reports/k1-status/remind logs audit only; email delivery deferred to Phase 18
 - **Contact model firstName/lastName:** Contact model uses firstName/lastName (not name) — profile route selects both; buildProfileResponse falls back to contact.email/phone
 
-### Phase 18 AI Features Decisions (In Progress)
+### Phase 18 AI Features Decisions (COMPLETE — 2026-03-10)
 - **classifyIntent uses heuristics (no LLM):** ACTION_VERBS prefix match for nl_action, QUERY_PHRASES prefix match for nl_query, <=2 words without query phrase → fuzzy_search; deterministic and zero latency
 - **Alert freshness via localStorage:** `atlas_last_alert_seen` key — no schema changes, per-browser session, matches "no cron/background job" CONTEXT.md constraint
 - **Conversation state in CommandBarProvider:** Moved from command-bar.tsx component-local to provider level — required for dropdown + side panel to share same conversation thread
@@ -229,6 +230,11 @@ Progress: [█████████░] 92% (78/84 plans)
 - **Fire-and-forget DD/IC memo triggers:** fetch().catch() pattern returns "started" immediately; 60-second timeout handled by dd-analyze endpoint
 - **actionPlan state is component-local (not in CommandBarProvider):** Confirmation is transient UI state; doesn't need to persist across dropdown/side panel switch
 - **ExtractionStatus enum is COMPLETE (not COMPLETED):** Discovered via TypeScript build error in Plan 03 — actual Prisma enum value is COMPLETE
+- **Pattern detection ordered before generic routing:** isSuggestQuery and isLPUpdate must be checked before classifyIntent nl_action/nl_query dispatch — verified during Plan 04 human testing
+- **CapitalCall uses .amount not .totalAmount:** Plan 04 spec referenced totalAmount; actual Prisma schema field is amount — always verify against schema.prisma
+- **LP update guidance when not on entity page:** Returns helpful message rather than failing silently — "Which fund would you like to draft an LP update for? Navigate to a fund/entity page..."
+- **suggest-tasks data cap:** Max 10 assets by fairValue, max 5 capital calls, max 5 distributions sent to LLM — prevents token limit issues per RESEARCH.md Pitfall 5
+- **Phase 18 verification complete 2026-03-10:** All 8 requirements (AI-01 through AI-08) confirmed passing in browser by GP
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -248,6 +254,6 @@ Progress: [█████████░] 92% (78/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T09:46:00.000Z
-- **Stopped at:** Completed 18-03-PLAN.md
+- **Last session:** 2026-03-10T17:17:00.000Z
+- **Stopped at:** Completed 18-04-PLAN.md (Phase 18 COMPLETE — all 8 AI requirements verified)
 - **Resume file:** None

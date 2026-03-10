@@ -77,8 +77,8 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [x] **AI-04**: AI can generate DD summary reports from workstream data
 - [x] **AI-05**: AI can draft IC memos from deal data and DD findings
 - [x] **AI-06**: AI monitors portfolio for covenant breaches and generates alerts
-- [ ] **AI-07**: AI drafts LP update communications from fund performance data
-- [ ] **AI-08**: AI suggests next tasks based on deal stage and asset type context
+- [x] **AI-07**: AI drafts LP update communications from fund performance data
+- [x] **AI-08**: AI suggests next tasks based on deal stage and asset type context
 
 ### Document Intake Engine
 
@@ -240,8 +240,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AI-04 | Phase 18 | Complete |
 | AI-05 | Phase 18 | Complete |
 | AI-06 | Phase 18 | Complete |
-| AI-07 | Phase 18 | Pending |
-| AI-08 | Phase 18 | Pending |
+| AI-07 | Phase 18 | Complete |
+| AI-08 | Phase 18 | Complete |
 | DASH-01 | Phase 19 | Pending |
 | DASH-02 | Phase 19 | Pending |
 | DASH-03 | Phase 19 | Pending |

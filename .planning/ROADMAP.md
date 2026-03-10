@@ -31,7 +31,7 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration (completed 2026-03-10)
 - [x] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics (completed 2026-03-10)
 - [x] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements (completed 2026-03-10)
-- [ ] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring
+- [x] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring (completed 2026-03-10)
 - [ ] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup
 - [ ] **Phase 20: Schema Cleanup & UI Polish** - Full reconciliation of Phases 11-19, exhaustive schema audit, and UI overhaul — zero accumulated debt, airtight database, $50K SaaS-grade interface
 
@@ -182,12 +182,12 @@ Plans:
   3. AI can extract deal terms from an uploaded CIM and pre-fill deal fields, generate a DD summary from workstream data, and draft an IC memo from deal data and DD findings
   4. AI monitors the portfolio for covenant breaches and generates alerts when a breach is detected — the GP does not need to check manually
   5. AI can draft LP update communications from fund performance data, and AI suggests next tasks based on deal stage and asset type context
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 Plans:
 - [x] 18-01-PLAN.md — NL intent classification, command bar provider expansion (page context, side panel state, alert freshness), AI service page context injection
 - [x] 18-02-PLAN.md — Command bar NL query routing, AI response rendering, side panel pop-out, proactive alert mentions
 - [x] 18-03-PLAN.md — AI action execution endpoint, confirmation UX, deal lifecycle AI wiring (DD summary, IC memo, CIM extraction)
-- [ ] 18-04-PLAN.md — Task suggestions with one-click creation, LP update drafting, end-to-end verification checkpoint
+- [x] 18-04-PLAN.md — Task suggestions with one-click creation, LP update drafting, end-to-end verification checkpoint
 
 ### Phase 19: Dashboard & Supporting Modules
 **Goal**: The dashboard is the definitive morning briefing — surfacing pipeline status, alerts, and quick actions from all modules — and supporting modules (reports, settings, integrations) are polished and complete
@@ -234,5 +234,5 @@ Plans:
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
 | 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
 | 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
-| 18. AI Features | 2/4 | In Progress|  | - |
+| 18. AI Features | v2.0 | 4/4 | Complete | 2026-03-10 |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |
