@@ -12,6 +12,8 @@ const UpdateUserSchema = z.object({
   isActive: z.boolean().optional(),
   contactId: z.string().nullable().optional(),
   aiEnabled: z.boolean().optional(),
+  // User-updatable notification preferences stored in the permissions JSON field
+  permissions: z.record(z.string(), z.unknown()).optional(),
 });
 
 export async function GET(
@@ -40,18 +42,35 @@ export async function PUT(
 ) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
-  if (authUser.role !== "GP_ADMIN") return forbidden();
 
   const { id } = await params;
 
-  // Prevent admins from changing their own role or deactivating themselves
-  if (id === authUser.id) {
-    const peek = await req.clone().json().catch(() => ({}));
-    if (peek.role && peek.role !== authUser.role) {
-      return NextResponse.json({ error: "You cannot change your own role" }, { status: 400 });
+  // Users can update their own record (permissions/prefs only); GP_ADMIN can update anyone
+  const isSelf = id === authUser.id;
+  if (!isSelf && authUser.role !== "GP_ADMIN") return forbidden();
+
+  if (authUser.role === "GP_ADMIN") {
+    // Prevent admins from changing their own role or deactivating themselves
+    if (isSelf) {
+      const peek = await req.clone().json().catch(() => ({}));
+      if (peek.role && peek.role !== authUser.role) {
+        return NextResponse.json({ error: "You cannot change your own role" }, { status: 400 });
+      }
+      if (peek.isActive === false) {
+        return NextResponse.json({ error: "You cannot deactivate yourself" }, { status: 400 });
+      }
     }
-    if (peek.isActive === false) {
-      return NextResponse.json({ error: "You cannot deactivate yourself" }, { status: 400 });
+  } else {
+    // Non-admin users can only update their own permissions field (notification prefs)
+    const peek = await req.clone().json().catch(() => ({}));
+    const allowedSelfFields = ["permissions"];
+    const requestedFields = Object.keys(peek);
+    const disallowed = requestedFields.filter((f) => !allowedSelfFields.includes(f));
+    if (disallowed.length > 0) {
+      return NextResponse.json(
+        { error: `Not authorized to update fields: ${disallowed.join(", ")}` },
+        { status: 403 }
+      );
     }
   }
 

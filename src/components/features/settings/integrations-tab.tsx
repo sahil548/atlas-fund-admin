@@ -59,16 +59,23 @@ function IntegrationCard({
 }: IntegrationCardProps) {
   const isConnected = !!connection;
   const metadata = connection?.metadata ?? {};
-  const lastSynced = metadata.lastSynced
-    ? new Date(metadata.lastSynced).toLocaleString()
+  const lastSyncedRaw = metadata.lastSynced ?? null;
+  const lastSyncedFormatted = lastSyncedRaw
+    ? new Date(lastSyncedRaw).toLocaleString()
     : null;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-4">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="text-sm font-semibold">{name}</h4>
+            {/* Status dot: green = connected, red = disconnected */}
+            {isConnected ? (
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block flex-shrink-0" title="Connected" />
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-red-400 inline-block flex-shrink-0" title="Not connected" />
+            )}
+            <h4 className="text-sm font-semibold dark:text-gray-100">{name}</h4>
             {isConnected ? (
               <Badge color="green">Connected</Badge>
             ) : isConfigured ? (
@@ -77,9 +84,13 @@ function IntegrationCard({
               <Badge color="yellow">Configuration required</Badge>
             )}
           </div>
-          <p className="text-xs text-gray-500">{description}</p>
-          {isConnected && lastSynced && (
-            <p className="text-xs text-gray-400 mt-1">Last synced: {lastSynced}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{description}</p>
+          {isConnected && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {lastSyncedFormatted
+                ? `Last sync: ${lastSyncedFormatted}`
+                : "Connected — never synced"}
+            </p>
           )}
           {!isConfigured && (
             <p className="text-xs text-amber-600 mt-1">

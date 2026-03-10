@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { useUser } from "@/components/providers/user-provider";
 import { AIGlobalConfig } from "@/components/features/settings/ai-global-config";
 import { DealPipelineEditor } from "@/components/features/settings/deal-pipeline-editor";
 import { PermissionsTab } from "@/components/features/settings/permissions-tab";
@@ -43,6 +44,7 @@ const roleColors: Record<string, string> = {
 
 export default function SettingsPage() {
   const { firmId } = useFirm();
+  const { userId } = useUser();
   const { data: firm } = useSWR<Firm & { createdAt: string }>(firmId ? `/api/firms/${firmId}` : null, fetcher);
   const { data: firms } = useSWR<Firm[]>("/api/firms", fetcher);
   const { data: accountingEntities } = useSWR<AccountingEntity[]>("/api/accounting/connections", fetcher);
@@ -51,6 +53,9 @@ export default function SettingsPage() {
     firmId ? `/api/decision-structures?firmId=${firmId}` : null,
     fetcher,
   );
+  // Fetch current user data to load existing notification prefs
+  const currentUserKey = userId ? `/api/users/${userId}` : null;
+  const { data: currentUserData } = useSWR<{ permissions?: Record<string, unknown> | null }>(currentUserKey, fetcher);
   const toast = useToast();
 
   const [tab, setTab] = useState<"firm" | "users" | "integrations" | "gp" | "ai" | "dealdesk" | "decisions" | "notifications" | "permissions" | "service-providers">("firm");
@@ -86,6 +91,25 @@ export default function SettingsPage() {
   const [pendingAction, setPendingAction] = useState<ConfirmAction>(null);
   const [confirming, setConfirming] = useState(false);
 
+  // Notification preferences state (synced from loaded user data)
+  const existingPerms = (currentUserData?.permissions ?? {}) as Record<string, unknown>;
+  const [notifEmail, setNotifEmail] = useState<boolean>(true);
+  const [notifSms, setNotifSms] = useState<boolean>(false);
+  const [digestFrequency, setDigestFrequency] = useState<string>("real-time");
+  const [savingNotifPrefs, setSavingNotifPrefs] = useState(false);
+  const [notifPrefsLoaded, setNotifPrefsLoaded] = useState(false);
+
+  // Sync notification prefs from user data when loaded
+  useEffect(() => {
+    if (currentUserData && !notifPrefsLoaded) {
+      const perms = (currentUserData.permissions ?? {}) as Record<string, unknown>;
+      if (perms.notifEmail !== undefined) setNotifEmail(Boolean(perms.notifEmail));
+      if (perms.notifSms !== undefined) setNotifSms(Boolean(perms.notifSms));
+      if (typeof perms.digestFrequency === "string") setDigestFrequency(perms.digestFrequency);
+      setNotifPrefsLoaded(true);
+    }
+  }, [currentUserData, notifPrefsLoaded]);
+
   const tabs = [
     { key: "firm" as const, label: "Firm Profile" },
     { key: "users" as const, label: "Users & Access" },
@@ -103,6 +127,37 @@ export default function SettingsPage() {
     if (firm) {
       setEditForm({ name: firm.name, legalName: firm.legalName || "" });
       setEditing(true);
+    }
+  }
+
+  async function handleSaveNotifPrefs() {
+    if (!userId) return;
+    setSavingNotifPrefs(true);
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          permissions: {
+            ...existingPerms,
+            notifEmail,
+            notifSms,
+            digestFrequency,
+          },
+        }),
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        const msg = typeof body.error === "string" ? body.error : "Failed to save preferences";
+        toast.error(msg);
+        return;
+      }
+      mutate(currentUserKey);
+      toast.success("Notification preferences saved");
+    } catch {
+      toast.error("Failed to save notification preferences");
+    } finally {
+      setSavingNotifPrefs(false);
     }
   }
 
@@ -802,11 +857,86 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Tab 8: Notifications (stub) */}
+      {/* Tab 8: Notifications */}
       {tab === "notifications" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold mb-4">Notifications</h3>
-          <div className="text-sm text-gray-400">Notification preferences coming soon.</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5 max-w-lg">
+          <div className="mb-5">
+            <h3 className="text-sm font-semibold text-gray-900">Notification Preferences</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Configure how and when you receive notifications from Atlas.
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            {/* Email notifications toggle */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-900" htmlFor="notif-email">
+                  Email notifications
+                </label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Receive email alerts for capital calls, distributions, and task assignments.
+                </p>
+              </div>
+              <input
+                id="notif-email"
+                type="checkbox"
+                checked={notifEmail}
+                onChange={(e) => setNotifEmail(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+            </div>
+
+            {/* SMS notifications toggle */}
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-900" htmlFor="notif-sms">
+                  SMS notifications
+                </label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Receive text message alerts for high-priority events.
+                </p>
+              </div>
+              <input
+                id="notif-sms"
+                type="checkbox"
+                checked={notifSms}
+                onChange={(e) => setNotifSms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 flex-shrink-0"
+              />
+            </div>
+
+            {/* Digest frequency selector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1.5" htmlFor="digest-frequency">
+                Digest frequency
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                How often to receive a summary of recent activity.
+              </p>
+              <select
+                id="digest-frequency"
+                value={digestFrequency}
+                onChange={(e) => setDigestFrequency(e.target.value)}
+                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="real-time">Real-time</option>
+                <option value="daily">Daily digest</option>
+                <option value="weekly">Weekly digest</option>
+              </select>
+            </div>
+
+            {/* Save button */}
+            <div className="pt-2">
+              <button
+                onClick={handleSaveNotifPrefs}
+                disabled={savingNotifPrefs}
+                className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingNotifPrefs ? "Saving..." : "Save Preferences"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
