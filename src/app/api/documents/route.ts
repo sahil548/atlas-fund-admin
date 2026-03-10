@@ -20,12 +20,17 @@ export async function GET(req: NextRequest) {
 
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
 
+  const entityId = req.nextUrl.searchParams.get("entityId") || undefined;
+
   const params = parsePaginationParams(req.nextUrl.searchParams, [
     "firmId", "cursor", "limit", "search", "category",
   ]);
 
   const baseWhere: Record<string, unknown> = {};
-  if (firmId) {
+  if (entityId) {
+    // Filter documents belonging to the specified entity
+    baseWhere.entityId = entityId;
+  } else if (firmId) {
     baseWhere.OR = [
       { entity: { firmId } },
       { deal: { firmId } },

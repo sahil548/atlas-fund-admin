@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { CapitalCallStatusButtons } from "@/components/features/capital/capital-call-status-buttons";
 import { CapitalCallLineItemsTable } from "@/components/features/capital/capital-call-line-items-table";
+import { CapitalCallDocumentPanel } from "@/components/features/capital/capital-call-document-panel";
 import { fmt, formatDate, pct } from "@/lib/utils";
 import { isOverdue } from "@/lib/computations/overdue-detection";
 
@@ -216,11 +217,14 @@ export default function CapitalCallDetailPage() {
         />
       </SectionPanel>
 
-      {/* Documents — wired in Task 2 */}
+      {/* Documents */}
       <SectionPanel title="Documents">
-        <div className="text-sm text-gray-400 dark:text-gray-500 py-2">
-          Document management coming soon...
-        </div>
+        <CapitalCallDocumentPanel
+          capitalCallId={data.id}
+          entityId={data.entityId}
+          documents={data.documents || []}
+          onUploadComplete={() => mutate()}
+        />
       </SectionPanel>
     </div>
   );
