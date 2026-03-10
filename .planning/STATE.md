@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Phase 16 context gathered
-last_updated: "2026-03-10T04:57:07.395Z"
+stopped_at: Completed 16-01-PLAN.md
+last_updated: "2026-03-10T06:31:24.806Z"
 last_activity: 2026-03-09 — Phase 15 Plan 06 complete (MeetingDetailCard rich cards + context linking API + action item task creation + sync auto-tasks)
 progress:
   total_phases: 9
   completed_phases: 5
-  total_plans: 30
-  completed_plans: 30
+  total_plans: 48
+  completed_plans: 31
   percent: 85
 ---
 
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 15 (Entity Management & Meeting Intelligence) Plan 06 COMPLETE, Plan 07 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plan 01 COMPLETE, Plan 02 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** 15 of 19 — Entity Management & Meeting Intelligence (In Progress)
-- **Plan:** 6 of 8 complete
+- **Phase:** 16 of 19 — Capital Activity (In Progress)
+- **Plan:** 1 of 6 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-09 — Phase 15 Plan 06 complete (MeetingDetailCard rich cards + context linking API + action item task creation + sync auto-tasks)
+- **Last activity:** 2026-03-10 — Phase 16 Plan 01 complete (schema FKs, isOverdue() + tests, Capital Activity page rename + overdue indicators + clickable rows, Documents API PATCH)
 
-Progress: [████████░░] 85% (56/66 plans)
+Progress: [████████░░] 80% (67/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -57,6 +57,7 @@ Progress: [████████░░] 85% (56/66 plans)
 | Phase 15-entity-management-meeting-intelligence P04 | 19min | 2 tasks | 7 files |
 | Phase 14-asset-management-task-management P04 | 35min | 2 tasks | 7 files |
 | Phase 15-entity-management-meeting-intelligence P06 | 30min | 2 tasks | 5 files |
+| Phase 16-capital-activity P01 | 6 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,14 @@ Progress: [████████░░] 85% (56/66 plans)
 - **MTG-04 via existing infrastructure:** entity/deal APIs already include meetings; entity Meetings tab surfaces linked meetings; no new activity feed infrastructure needed
 - **Sync auto-task contextType:** tasks created from Fireflies sync have contextType=MEETING to identify their origin; entityId/dealId null at sync time
 
+### Phase 16 Capital Activity Decisions (In Progress)
+- **isOverdue() pure function:** Exported from `src/lib/computations/overdue-detection.ts` — no React/Prisma deps, testable in vitest node env
+- **Distribution DRAFT default:** DistributionEvent status default changed from APPROVED to DRAFT in both Prisma schema and CreateDistributionSchema (Zod) — new distributions start as drafts for review
+- **Documents PATCH pattern:** `{documentId, capitalCallId?, distributionEventId?}` body — Plans 02/03 use this to link documents from detail pages to capital calls/distributions
+- **Per-investor funded badge:** Reads `lineItems[].status === "Funded"` (capital-case, matching seed data from CapitalCallLineItem default "Pending")
+- **Force-reset clears AiConfig:** Schema FK additions required force-reset — tenant AI key must be re-entered in Settings after migration
+- **Capital Activity route label:** /transactions path kept; only label changed from "Transactions" to "Capital Activity" — no URL or redirect changes needed
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -181,6 +190,6 @@ Progress: [████████░░] 85% (56/66 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T04:57:07.391Z
-- **Stopped at:** Phase 16 context gathered
-- **Resume file:** .planning/phases/16-capital-activity/16-CONTEXT.md
+- **Last session:** 2026-03-10T06:31:24.803Z
+- **Stopped at:** Completed 16-01-PLAN.md
+- **Resume file:** None

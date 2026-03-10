@@ -146,7 +146,7 @@ Plans:
   6. Per-investor capital call status (funded / outstanding / overdue) is visible at a glance within the capital call detail, not hidden behind navigation
   7. Each asset has Income and Expenses tabs with entry forms, running totals, and auto-recalculated IRR/MOIC on every save
   8. Entity detail page shows a financial summary card with dual metric view (realized vs unrealized) computed from real transaction data
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 Plans:
 - [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card + unit tests, per-investor badge, clickable rows
 - [ ] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
@@ -221,7 +221,7 @@ Plans:
 | 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
 | 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
 | 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | v2.0 | 0/6 | Not started | - |
+| 16. Capital Activity | 1/6 | In Progress|  | - |
 | 17. LP Portal | v2.0 | 0/3 | Not started | - |
 | 18. AI Features | v2.0 | 0/4 | Not started | - |
 | 19. Dashboard & Supporting Modules | v2.0 | 0/5 | Not started | - |
