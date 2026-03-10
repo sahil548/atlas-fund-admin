@@ -50,7 +50,7 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 - [x] **CAP-02**: GP can advance distribution status via UI buttons (DRAFT → APPROVED → PAID)
 - [x] **CAP-03**: Overdue capital calls show visual indicator in capital activity views
 - [x] **CAP-04**: GP can attach documents to capital calls
-- [ ] **CAP-05**: Waterfall can be previewed (calculate without saving) for scenario analysis
+- [x] **CAP-05**: Waterfall can be previewed (calculate without saving) for scenario analysis
 - [x] **CAP-06**: Per-investor capital call status visible at a glance
 
 ### LP Portal — Accuracy & Access
@@ -226,7 +226,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAP-02 | Phase 16 | Complete |
 | CAP-03 | Phase 16 | Complete |
 | CAP-04 | Phase 16 | Complete |
-| CAP-05 | Phase 16 | Pending |
+| CAP-05 | Phase 16 | Complete |
 | CAP-06 | Phase 16 | Complete |
 | LP-04 | Phase 17 | Pending |
 | LP-05 | Phase 17 | Pending |

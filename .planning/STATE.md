@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 16-03-PLAN.md
-last_updated: "2026-03-10T06:42:00.000Z"
-last_activity: 2026-03-10 — Phase 16 Plan 03 complete (distribution detail page, DRAFT→APPROVED→PAID lifecycle buttons, per-investor allocations table, document upload+link panel)
+stopped_at: Completed 16-04-PLAN.md
+last_updated: "2026-03-10T06:49:19.708Z"
+last_activity: 2026-03-09 — Phase 16 Plan 04 complete (waterfall scenario preview panel, Run Scenario button, Recharts LP/GP chart, distribution creation waterfall preview step)
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 48
-  completed_plans: 33
-  percent: 80
+  completed_plans: 34
+  percent: 81
 ---
 
 # Atlas — GSD State
@@ -19,16 +19,16 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-08)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plans 01+02+03 COMPLETE, Plan 04 is next
+- **Current focus:** v2.0 Intelligence Platform — Phase 16 (Capital Activity) Plans 01+02+03+04 COMPLETE, Plan 05 is next
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** 16 of 19 — Capital Activity (In Progress)
-- **Plan:** 3 of 6 complete
+- **Plan:** 4 of 6 complete
 - **Status:** Executing
-- **Last activity:** 2026-03-10 — Phase 16 Plan 03 complete (distribution detail page, DRAFT→APPROVED→PAID lifecycle buttons, per-investor allocations table, document upload+link panel)
+- **Last activity:** 2026-03-09 — Phase 16 Plan 04 complete (waterfall scenario preview panel, Run Scenario button, Recharts LP/GP chart, distribution creation waterfall preview step)
 
-Progress: [████████░░] 81% (68/84 plans)
+Progress: [████████░░] 83% (70/84 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -60,6 +60,7 @@ Progress: [████████░░] 81% (68/84 plans)
 | Phase 16-capital-activity P01 | 6 | 3 tasks | 7 files |
 | Phase 16 P03 | 5 | 2 tasks | 4 files |
 | Phase 16-capital-activity P02 | 18 | 2 tasks | 6 files |
+| Phase 16-capital-activity P04 | 4 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -182,6 +183,10 @@ Progress: [████████░░] 81% (68/84 plans)
 - **Distribution detail documents include:** GET /api/distributions/[id] now includes documents[] via Prisma include clause added in Plan 03
 - **DistributionDocumentPanel unlink via null:** PATCH /api/documents with distributionEventId: null unlinks document — no new endpoint needed
 - **Document panel self-fetch pattern:** DistributionDocumentPanel fetches entity docs internally via SWR; mutates parent distribution SWR key on success
+- **Waterfall preview saveResults: false:** All scenario analysis calls use saveResults: false — WaterfallCalculation records never persisted for transient preview
+- **WaterfallPreviewPanel mode prop:** standalone (full entity/amount inputs, 1-3 scenarios, add/remove controls) vs inline (auto-runs on mount with initialAmount + initialEntityId, compact for modal embedding)
+- **Scenario chart threshold:** WaterfallScenarioChart rendered only for 2+ completed scenarios — single scenario has no comparison value
+- **Preview panel placement:** Standalone panel renders below tier list in waterfall tab (inline collapsible); inline panel renders after Run Waterfall in distribution creation form with Hide button
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -198,6 +203,6 @@ Progress: [████████░░] 81% (68/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T06:41:13.556Z
-- **Stopped at:** Completed 16-02-PLAN.md
+- **Last session:** 2026-03-10T06:49:19.705Z
+- **Stopped at:** Completed 16-04-PLAN.md
 - **Resume file:** None
