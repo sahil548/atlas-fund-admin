@@ -6,6 +6,7 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 export type AuditAction =
   | "CREATE_DEAL"
@@ -60,6 +61,6 @@ export async function logAudit(
     });
   } catch (err) {
     // Audit log failure should never block the primary operation
-    console.error("[audit] Failed to write audit log:", err);
+    logger.error("[audit] Failed to write audit log", { error: err instanceof Error ? err.message : String(err) });
   }
 }

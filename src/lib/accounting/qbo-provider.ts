@@ -12,6 +12,8 @@ import type {
   TrialBalanceResult,
 } from "./provider-types";
 
+import { logger } from "@/lib/logger";
+
 const QBO_AUTH_URL = "https://appcenter.intuit.com/connect/oauth2";
 const QBO_TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 const QBO_REVOKE_URL = "https://developer.api.intuit.com/v2/oauth2/tokens/revoke";
@@ -253,7 +255,7 @@ export class QBOProvider implements AccountingProviderInterface {
         body: body.toString(),
       });
     } catch (err) {
-      console.error("[qbo-provider] Token revocation failed (non-fatal):", err);
+      logger.error("[qbo-provider] Token revocation failed (non-fatal)", { error: err instanceof Error ? err.message : String(err) });
     }
   }
 }

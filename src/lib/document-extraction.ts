@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createUserAIClient, createAIClient, getModelForFirm } from "@/lib/ai-config";
+import { logger } from "@/lib/logger";
 
 const MAX_EXTRACTED_CHARS = 50_000;
 
@@ -61,7 +62,7 @@ export async function extractTextFromBuffer(
       return buffer.toString("utf-8").slice(0, MAX_EXTRACTED_CHARS);
     }
   } catch (err) {
-    console.error(`[document-extraction] Failed to extract ${fileName}:`, err);
+    logger.error(`[document-extraction] Failed to extract ${fileName}`, { error: err instanceof Error ? err.message : String(err) });
   }
 
   return "";
@@ -215,16 +216,18 @@ export async function extractDocumentFields(
       },
     });
 
-    console.log(`[doc-extraction] Summarization complete for document ${documentId} (${category})`);
+    logger.info(`[doc-extraction] Summarization complete for document ${documentId} (${category})`);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    console.error(`[doc-extraction] Summarization failed for document ${documentId}:`, err);
+    logger.error(`[doc-extraction] Summarization failed for document ${documentId}`, { error: message });
     await prisma.document.update({
       where: { id: documentId },
       data: {
         extractionStatus: "FAILED",
         extractionError: message,
       },
-    }).catch(console.error);
+    }).catch((updateErr) => {
+      logger.error("[doc-extraction] Failed to update document extraction status", { error: updateErr instanceof Error ? updateErr.message : String(updateErr) });
+    });
   }
 }

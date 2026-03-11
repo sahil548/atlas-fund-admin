@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createAIClient, getModelForFirm } from "@/lib/ai-config";
 import type { AgentCapability, AgentResponse } from "./command-bar-types";
+import { logger } from "@/lib/logger";
 
 // ── Agent capability definitions ────────────────────────────────
 
@@ -122,7 +123,7 @@ export async function routeToAgent(
       searchResults: parsed.searchResults || [],
     };
   } catch (error) {
-    console.error("[Agent Registry] Routing error:", error);
+    logger.error("[Agent Registry] Routing error", { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }

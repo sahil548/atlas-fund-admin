@@ -1,4 +1,5 @@
 import { createAIClient, getAIConfig, getModelForFirm, getPromptTemplate } from "@/lib/ai-config";
+import { logger } from "@/lib/logger";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -231,7 +232,7 @@ export async function intakeDealWithAI(
         : [],
     };
   } catch (error) {
-    console.error("[Intake Service] LLM call failed:", error);
+    logger.error("[Intake Service] LLM call failed", { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }

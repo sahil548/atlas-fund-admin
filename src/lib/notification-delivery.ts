@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { createNotification, notifyGPTeam } from "@/lib/notifications";
 import { sendEmail } from "@/lib/email";
 import { sendSMS } from "@/lib/sms";
+import { logger } from "@/lib/logger";
 import {
   capitalCallEmailHtml,
   distributionPaidEmailHtml,
@@ -92,7 +93,7 @@ export async function deliverNotification({
   // 6. Check digest preference — DAILY_DIGEST/WEEKLY_DIGEST investors skip immediate external dispatch
   const digestPreference = pref?.digestPreference ?? "IMMEDIATE";
   if (digestPreference === "DAILY_DIGEST" || digestPreference === "WEEKLY_DIGEST") {
-    console.log(
+    logger.debug(
       `[notification-delivery] Queued for ${digestPreference} -- skipping immediate external delivery for investor: ${investorId}`,
     );
     return;
@@ -112,10 +113,7 @@ export async function deliverNotification({
           html: emailHtml,
         });
       } else {
-        console.warn(
-          "[notification-delivery] No emailAddress for investor:",
-          investorId,
-        );
+        logger.warn("[notification-delivery] No emailAddress for investor", { investorId });
       }
     }
   } else if (channel === "SMS") {
@@ -123,10 +121,7 @@ export async function deliverNotification({
     if (phoneNumber && smsBody) {
       await sendSMS({ to: phoneNumber, body: smsBody });
     } else {
-      console.warn(
-        "[notification-delivery] SMS channel but missing phone/body for investor:",
-        investorId,
-      );
+      logger.warn("[notification-delivery] SMS channel but missing phone/body for investor", { investorId });
     }
   }
 }
@@ -154,10 +149,7 @@ export async function notifyInvestorsOnCapitalCall(
   });
 
   if (!call) {
-    console.error(
-      "[notification-delivery] Capital call not found:",
-      capitalCallId,
-    );
+    logger.error("[notification-delivery] Capital call not found", { capitalCallId });
     return;
   }
 
@@ -173,7 +165,9 @@ export async function notifyInvestorsOnCapitalCall(
     type: "CAPITAL_CALL",
     subject: `Capital Call ${call.callNumber} issued for ${entityName}`,
     body: `Capital call for ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(call.amount)} due ${dueDate}`,
-  }).catch(console.error);
+  }).catch((err) => {
+    logger.error("[notification-delivery] Failed to notify GP team on capital call", { error: err instanceof Error ? err.message : String(err) });
+  });
 
   // Notify each investor
   for (const lineItem of call.lineItems) {
@@ -197,11 +191,7 @@ export async function notifyInvestorsOnCapitalCall(
       emailHtml,
       smsBody,
     }).catch((err) => {
-      console.error(
-        "[notification-delivery] Failed to notify investor:",
-        investor.id,
-        err,
-      );
+      logger.error("[notification-delivery] Failed to notify investor", { investorId: investor.id, error: err instanceof Error ? err.message : String(err) });
     });
   }
 }
@@ -229,10 +219,7 @@ export async function notifyInvestorsOnDistribution(
   });
 
   if (!distribution) {
-    console.error(
-      "[notification-delivery] Distribution not found:",
-      distributionId,
-    );
+    logger.error("[notification-delivery] Distribution not found", { distributionId });
     return;
   }
 
@@ -247,7 +234,9 @@ export async function notifyInvestorsOnDistribution(
     type: "GENERAL",
     subject: `Distribution marked PAID for ${entityName}`,
     body: `Gross: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(distribution.grossAmount)} | Net to LPs: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(distribution.netToLPs)}`,
-  }).catch(console.error);
+  }).catch((err) => {
+    logger.error("[notification-delivery] Failed to notify GP team on distribution", { error: err instanceof Error ? err.message : String(err) });
+  });
 
   // Notify each investor
   for (const lineItem of distribution.lineItems) {
@@ -270,11 +259,7 @@ export async function notifyInvestorsOnDistribution(
       emailHtml,
       smsBody,
     }).catch((err) => {
-      console.error(
-        "[notification-delivery] Failed to notify investor:",
-        investor.id,
-        err,
-      );
+      logger.error("[notification-delivery] Failed to notify investor", { investorId: investor.id, error: err instanceof Error ? err.message : String(err) });
     });
   }
 }
@@ -314,11 +299,7 @@ export async function notifyInvestorsOnReportAvailable({
       emailHtml,
       smsBody: `${entityName}: Your ${reportType} for ${period} is now available. Log in to your investor portal to view it.`,
     }).catch((err) => {
-      console.error(
-        "[notification-delivery] Failed to notify investor:",
-        investorId,
-        err,
-      );
+      logger.error("[notification-delivery] Failed to notify investor", { investorId, error: err instanceof Error ? err.message : String(err) });
     });
   }
 }

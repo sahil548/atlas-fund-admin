@@ -7,6 +7,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { xirr } from "@/lib/computations/irr";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -310,7 +311,7 @@ export async function computeEntityAttribution(entityId: string): Promise<Entity
       totalEntityFairValue += attribution.assetInfo.fairValue * weight;
       totalEntityDistributions += attribution.actual.totalDistributions;
     } catch (err) {
-      console.error(`[performance-attribution] Failed to compute for asset ${alloc.asset.id}:`, err);
+      logger.error(`[performance-attribution] Failed to compute for asset ${alloc.asset.id}`, { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

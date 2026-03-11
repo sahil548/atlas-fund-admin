@@ -5,6 +5,7 @@
  */
 
 import type { IntegrationConnection } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 const ASANA_AUTH_URL = "https://app.asana.com/-/oauth_authorize";
 const ASANA_TOKEN_URL = "https://app.asana.com/-/oauth_token";
@@ -174,11 +175,11 @@ export class AsanaClient {
           synced++;
         } else {
           errors++;
-          console.error(`[asana] Failed to sync task ${task.id}: ${resp.status}`);
+          logger.error(`[asana] Failed to sync task ${task.id}`, { status: resp.status });
         }
       } catch (err) {
         errors++;
-        console.error(`[asana] Error syncing task ${task.id}:`, err);
+        logger.error(`[asana] Error syncing task ${task.id}`, { error: err instanceof Error ? err.message : String(err) });
       }
     }
 

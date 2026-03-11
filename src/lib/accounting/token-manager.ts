@@ -6,6 +6,7 @@
 import { prisma } from "@/lib/prisma";
 import type { OAuthTokens } from "./provider-types";
 import { qboProvider } from "./qbo-provider";
+import { logger } from "@/lib/logger";
 
 /**
  * Store tokens in DB against the AccountingConnection.
@@ -83,7 +84,7 @@ export async function getValidTokens(connectionId: string): Promise<OAuthTokens 
         await storeTokens(connectionId, newTokens);
         return newTokens;
       } catch (err) {
-        console.error("[token-manager] Failed to refresh access token:", err);
+        logger.error("[token-manager] Failed to refresh access token", { error: err instanceof Error ? err.message : String(err) });
         await prisma.accountingConnection.update({
           where: { id: connectionId },
           data: {

@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // ── Encryption helpers (AES-256-GCM) ───────────────────
 
@@ -152,7 +153,7 @@ class AnthropicCompat {
           // Log token usage for cost visibility
           const usage = (response as any).usage;
           if (usage) {
-            console.log(`[AI] ${params.model}: ${usage.input_tokens} in + ${usage.output_tokens} out tokens`);
+            logger.debug(`[AI] ${params.model}: ${usage.input_tokens} in + ${usage.output_tokens} out tokens`);
           }
 
           const textBlock = response.content.find((b: any) => b.type === "text") as any;
@@ -283,7 +284,7 @@ export async function getUserAIConfig(userId: string, firmId: string): Promise<U
         aiEnabled: true,
       };
     } catch (err) {
-      console.error("[ai-config] Failed to decrypt personal API key:", err);
+      logger.error("[ai-config] Failed to decrypt personal API key", { error: err instanceof Error ? err.message : String(err) });
       // Fall through to tenant key
     }
   }

@@ -5,6 +5,7 @@
  */
 
 import type { IntegrationConnection } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -264,7 +265,7 @@ export class GoogleCalendarClient {
         synced++;
       } catch (err) {
         errors++;
-        console.error(`[google-calendar] Error syncing meeting ${meeting.id}:`, err);
+        logger.error(`[google-calendar] Error syncing meeting ${meeting.id}`, { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -299,7 +300,7 @@ export class GoogleCalendarClient {
         synced++;
       } catch (err) {
         errors++;
-        console.error(`[google-calendar] Error syncing task due date ${task.id}:`, err);
+        logger.error(`[google-calendar] Error syncing task due date ${task.id}`, { error: err instanceof Error ? err.message : String(err) });
       }
     }
 

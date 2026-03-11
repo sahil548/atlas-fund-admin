@@ -12,6 +12,7 @@
  */
 
 import crypto from "crypto";
+import { logger } from "@/lib/logger";
 
 const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
 const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET;
@@ -50,7 +51,7 @@ export async function postICReviewToSlack(
 ): Promise<SlackPostResult | null> {
   try {
     if (!SLACK_BOT_TOKEN || !SLACK_IC_CHANNEL) {
-      console.warn("[Slack] SLACK_BOT_TOKEN or SLACK_IC_CHANNEL not configured — skipping IC post.");
+      logger.warn("[Slack] SLACK_BOT_TOKEN or SLACK_IC_CHANNEL not configured — skipping IC post.");
       return null;
     }
 
@@ -145,7 +146,7 @@ export async function postICReviewToSlack(
     const result = await response.json();
 
     if (!result.ok) {
-      console.error("[Slack] Failed to post IC review message:", result.error);
+      logger.error("[Slack] Failed to post IC review message", { error: result.error });
       return null;
     }
 
@@ -154,7 +155,7 @@ export async function postICReviewToSlack(
       channel: result.channel as string,
     };
   } catch (err) {
-    console.error("[Slack] Error posting IC review message:", err);
+    logger.error("[Slack] Error posting IC review message", { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -169,7 +170,7 @@ export async function updateSlackMessage(
 ): Promise<boolean> {
   try {
     if (!SLACK_BOT_TOKEN) {
-      console.warn("[Slack] SLACK_BOT_TOKEN not configured — skipping message update.");
+      logger.warn("[Slack] SLACK_BOT_TOKEN not configured — skipping message update.");
       return false;
     }
 
@@ -189,13 +190,13 @@ export async function updateSlackMessage(
     const result = await response.json();
 
     if (!result.ok) {
-      console.error("[Slack] Failed to update message:", result.error);
+      logger.error("[Slack] Failed to update message", { error: result.error });
       return false;
     }
 
     return true;
   } catch (err) {
-    console.error("[Slack] Error updating message:", err);
+    logger.error("[Slack] Error updating message", { error: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }
@@ -217,14 +218,14 @@ export function verifySlackSignature(
 ): boolean {
   try {
     if (!SLACK_SIGNING_SECRET) {
-      console.warn("[Slack] SLACK_SIGNING_SECRET not configured — skipping signature verification.");
+      logger.warn("[Slack] SLACK_SIGNING_SECRET not configured — skipping signature verification.");
       return true;
     }
 
     // Reject requests older than 5 minutes to prevent replay attacks
     const now = Math.floor(Date.now() / 1000);
     if (Math.abs(now - parseInt(timestamp, 10)) > 300) {
-      console.warn("[Slack] Request timestamp too old — possible replay attack.");
+      logger.warn("[Slack] Request timestamp too old — possible replay attack.");
       return false;
     }
 
@@ -238,7 +239,7 @@ export function verifySlackSignature(
       Buffer.from(signature),
     );
   } catch (err) {
-    console.error("[Slack] Error verifying signature:", err);
+    logger.error("[Slack] Error verifying signature", { error: err instanceof Error ? err.message : String(err) });
     return false;
   }
 }

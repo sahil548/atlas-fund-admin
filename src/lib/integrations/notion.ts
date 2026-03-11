@@ -5,6 +5,7 @@
  */
 
 import type { IntegrationConnection } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 const NOTION_AUTH_URL = "https://api.notion.com/v1/oauth/authorize";
 const NOTION_TOKEN_URL = "https://api.notion.com/v1/oauth/token";
@@ -204,11 +205,11 @@ export class NotionClient {
         } else {
           errors++;
           const errText = await resp.text();
-          console.error(`[notion] Failed to sync deal ${deal.id}: ${resp.status} ${errText}`);
+          logger.error(`[notion] Failed to sync deal ${deal.id}`, { status: resp.status, body: errText });
         }
       } catch (err) {
         errors++;
-        console.error(`[notion] Error syncing deal ${deal.id}:`, err);
+        logger.error(`[notion] Error syncing deal ${deal.id}`, { error: err instanceof Error ? err.message : String(err) });
       }
     }
 

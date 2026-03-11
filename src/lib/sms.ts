@@ -3,6 +3,8 @@
  * Graceful degradation: if env vars missing, logs warning and skips.
  */
 
+import { logger } from "@/lib/logger";
+
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
@@ -15,10 +17,7 @@ export async function sendSMS({
   body: string;
 }): Promise<void> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-    console.warn(
-      "[sms] Twilio env vars not set — skipping SMS delivery to:",
-      to,
-    );
+    logger.warn("[sms] Twilio env vars not set — skipping SMS delivery", { to });
     return;
   }
 
@@ -44,11 +43,11 @@ export async function sendSMS({
 
     if (!res.ok) {
       const errBody = await res.text();
-      console.error("[sms] Twilio error:", res.status, errBody);
+      logger.error("[sms] Twilio error", { status: res.status, body: errBody });
     } else {
-      console.log("[sms] Sent successfully to:", to);
+      logger.info("[sms] Sent successfully", { to });
     }
   } catch (err) {
-    console.error("[sms] Unexpected error sending to:", to, err);
+    logger.error("[sms] Unexpected error sending", { to, error: err instanceof Error ? err.message : String(err) });
   }
 }

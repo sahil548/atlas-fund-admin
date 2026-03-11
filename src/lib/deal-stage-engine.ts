@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { postICReviewToSlack } from "@/lib/slack";
 import { notifyGPTeam } from "@/lib/notifications";
 import { getDDAutoTasks, getClosingAutoTasks } from "@/lib/deal-auto-tasks";
+import { logger } from "@/lib/logger";
 
 /**
  * Central stage engine for deal workflow transitions.
@@ -211,7 +212,7 @@ export async function sendToICReview(
       }
     })
     .catch((err) => {
-      console.error("[Slack] Non-blocking IC post failed:", err);
+      logger.error("[Slack] Non-blocking IC post failed", { error: err instanceof Error ? err.message : String(err) });
     });
 
   return { warning: null, deal: updatedDeal };

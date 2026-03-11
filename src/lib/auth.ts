@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 // ── Lightweight role lookup for API routes ──────────────────
 
@@ -102,7 +103,7 @@ export async function getAuthUser() {
     data: { contactId: contact.id },
   });
 
-  console.log(`[auth] Auto-provisioned firm ${firm.id} + user ${user.id} for ${email}`);
+  logger.info(`[auth] Auto-provisioned firm ${firm.id} + user ${user.id} for ${email}`);
   return { ...user, contactId: contact.id };
 }
 

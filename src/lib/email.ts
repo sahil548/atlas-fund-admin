@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { logger } from "@/lib/logger";
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -19,10 +20,7 @@ export async function sendEmail({
   from?: string;
 }): Promise<void> {
   if (!resend) {
-    console.warn(
-      "[email] RESEND_API_KEY not set — skipping email delivery to:",
-      to,
-    );
+    logger.warn("[email] RESEND_API_KEY not set — skipping email delivery", { to });
     return;
   }
 
@@ -35,11 +33,11 @@ export async function sendEmail({
     });
 
     if (error) {
-      console.error("[email] Resend delivery error:", error);
+      logger.error("[email] Resend delivery error", { error: typeof error === "object" && error !== null && "message" in error ? (error as { message: string }).message : String(error) });
     } else {
-      console.log("[email] Sent successfully to:", to, "| subject:", subject);
+      logger.info("[email] Sent successfully", { to, subject });
     }
   } catch (err) {
-    console.error("[email] Unexpected error sending to:", to, err);
+    logger.error("[email] Unexpected error sending", { to, error: err instanceof Error ? err.message : String(err) });
   }
 }

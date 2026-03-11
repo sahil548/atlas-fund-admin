@@ -3,6 +3,7 @@ import { createAIClient, createUserAIClient, getModelForFirm } from "@/lib/ai-co
 import { generateAIRouteList } from "@/lib/routes";
 import { fmt } from "@/lib/utils";
 import { jsonrepair } from "jsonrepair";
+import { logger } from "@/lib/logger";
 import type { AIResponse, ActionPlan, DatabaseContext, SearchResult } from "./command-bar-types";
 
 /**
@@ -240,7 +241,7 @@ export async function searchAndAnalyze(
       suggestions: (parsed.suggestions || []) as string[],
     };
   } catch (error) {
-    console.error("[AI Service] Error:", error);
+    logger.error("[AI Service] Error", { error: error instanceof Error ? error.message : String(error) });
     return {
       message:
         "I encountered an error processing your request. Please check your API key configuration and try again.",
@@ -364,7 +365,7 @@ If ambiguous (e.g., multiple people named Sarah, unclear which deal), return:
       requiresConfirmation: parsed.actionType !== "AMBIGUOUS" && parsed.actionType !== "ERROR",
     };
   } catch (error) {
-    console.error("[planAction] Error:", error);
+    logger.error("[planAction] Error", { error: error instanceof Error ? error.message : String(error) });
     return errorPlan(
       "I encountered an error parsing your action. Please try again or rephrase your request.",
     );

@@ -1,6 +1,7 @@
 import { createAIClient, getModelForFirm, getPromptTemplate, getCategoryInstructions } from "@/lib/ai-config";
 import type { DealContext } from "@/lib/deal-types";
 import { jsonrepair } from "jsonrepair";
+import { logger } from "@/lib/logger";
 
 // ── Types ────────────────────────────────────────────
 
@@ -420,11 +421,11 @@ export async function runDDAnalysis(
     client = await createAIClient(firmId);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[DD Analysis] createAIClient failed for firm ${firmId}: ${msg}`);
+    logger.error(`[DD Analysis] createAIClient failed for firm ${firmId}: ${msg}`);
     return { result: null, errorReason: `AI client initialization failed: ${msg}` };
   }
   if (!client) {
-    console.warn(`[DD Analysis] No AI client for firm ${firmId} — no API key configured`);
+    logger.warn(`[DD Analysis] No AI client for firm ${firmId} — no API key configured`);
     return { result: null, errorReason: "No AI API key configured. Go to Settings → AI Configuration to add one." };
   }
   timings.clientInit = performance.now() - t0;
@@ -496,7 +497,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
       } catch (retryErr: unknown) {
         const retryMsg = retryErr instanceof Error ? retryErr.message : String(retryErr);
         if (attempt === 2) throw retryErr; // Re-throw on final attempt
-        console.warn(`[DD Analysis] ${type} attempt ${attempt} failed (${retryMsg}), retrying in 2s...`);
+        logger.warn(`[DD Analysis] ${type} attempt ${attempt} failed (${retryMsg}), retrying in 2s...`);
         await new Promise((r) => setTimeout(r, 2000));
       }
     }
@@ -514,7 +515,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
     try {
       parsed = JSON.parse(raw);
     } catch (firstErr) {
-      console.warn(`[DD Analysis] ${type} initial JSON parse failed, attempting repair...`);
+      logger.warn(`[DD Analysis] ${type} initial JSON parse failed, attempting repair...`);
 
       // Try multiple repair strategies in order of robustness
       const extracted = raw.match(/\{[\s\S]*\}/)?.[0];
@@ -534,7 +535,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
         try {
           const fixed = fn();
           repaired = JSON.parse(fixed);
-          console.log(`[DD Analysis] ${type} JSON repaired via ${label}`);
+          logger.debug(`[DD Analysis] ${type} JSON repaired via ${label}`);
           break;
         } catch { /* try next strategy */ }
       }
@@ -552,7 +553,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
     // Log comprehensive timing report
     const label = options?.categoryName || type;
     const outputTokens = raw.length / 4; // rough estimate
-    console.log(
+    logger.debug(
       `[DD Timing] ${label}: total=${(totalMs / 1000).toFixed(1)}s | ` +
       `init=${timings.clientInit.toFixed(0)}ms config=${(timings.configLookup - timings.clientInit).toFixed(0)}ms ` +
       `template=${((timings.templateResolve || 0) - (timings.configLookup || 0)).toFixed(0)}ms ` +
@@ -610,7 +611,7 @@ Be specific to the deal at hand. Reference actual data points, figures, and fact
   } catch (error: unknown) {
     const totalMs = performance.now() - t0;
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`[DD Analysis Service] ${type} LLM call failed after ${(totalMs / 1000).toFixed(1)}s: ${msg}`);
+    logger.error(`[DD Analysis Service] ${type} LLM call failed after ${(totalMs / 1000).toFixed(1)}s: ${msg}`);
     // Extract specific error reasons for UI surfacing
     let errorReason = "AI analysis failed — try re-analyzing.";
     if (msg.includes("credit balance is too low")) {
