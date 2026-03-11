@@ -1357,6 +1357,7 @@ async function main() {
     { deal: deal3, prefix: "ws-3" }, // REAL_ESTATE, EQUITY  → 6 UNIVERSAL + 2 RE = 8
     { deal: deal4, prefix: "ws-4" }, // REAL_ESTATE, DEBT    → 6 UNIVERSAL + 2 RE + Credit DD = 9
     { deal: deal5, prefix: "ws-5" }, // INFRASTRUCTURE, EQUITY → 6 UNIVERSAL + 2 INFRA = 8
+    { deal: deal10, prefix: "ws-10" }, // INFRASTRUCTURE, EQUITY → 6 UNIVERSAL + 2 INFRA = 8 (DUE_DILIGENCE stage)
   ];
 
   for (const { deal, prefix } of dealsToScaffold) {

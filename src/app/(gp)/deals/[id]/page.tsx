@@ -301,15 +301,14 @@ export default function DealDetailPage({
       );
 
       // Show warning if any workstreams fell back to mock data
-      if (mockFallbacks.length > 0) {
-        toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI timed out) — click Re-analyze to retry`);
+      if (mockFallbacks.length > 0 && mockFallbacks.length < analyzable.length) {
+        toast.error(`${mockFallbacks.length} workstream${mockFallbacks.length > 1 ? "s" : ""} used sample data (AI unavailable) — click Re-analyze to retry`);
+      } else if (mockFallbacks.length === analyzable.length && analyzable.length > 0) {
+        toast.success("No AI configured — generating with sample data. Go to Settings to configure AI for full results.");
       }
 
-      // Phase 2: Generate IC Memo from workstream outputs
-      // Skip if ALL workstreams failed — IC memo needs at least some real AI data
-      if (mockFallbacks.length === analyzable.length) {
-        toast.error("All workstreams timed out — IC memo not generated. Click Re-analyze to retry.");
-      } else {
+      // Phase 2: Generate IC Memo
+      {
         setAnalysisProgress((p) =>
           p ? { ...p, current: "IC Memo", phase: "Generating IC Memo", running: new Set(["IC Memo"]), done: new Set(doneSet) } : null
         );
@@ -381,10 +380,14 @@ export default function DealDetailPage({
   // ── Regenerate (re-run all analyses + regenerate IC memo) ──
   async function regenerateMemo() {
     if (!deal) return;
+    const ws = (deal.workstreams || []) as any[];
+    const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
+    if (nonMemo.length === 0) {
+      toast.error("No workstreams found — send the deal to Screening first to create workstreams.");
+      return;
+    }
     setRegenerating(true);
     try {
-      const ws = (deal.workstreams || []) as any[];
-      const nonMemo = ws.filter((w: any) => w.analysisType !== "IC_MEMO");
       await runAnalysesAndMemo(nonMemo, true);
       toast.success("All analyses re-run — IC Memo regenerated");
       mutate(`/api/deals/${id}`);

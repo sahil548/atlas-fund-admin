@@ -204,13 +204,15 @@ export async function POST(
       }));
   }
 
-  // Guard: refuse IC memo if no workstreams have real AI analysis
-  if (isICMemo && workstreamSummaries && workstreamSummaries.length === 0) {
+  // Guard: refuse IC memo if no workstreams exist at all
+  if (isICMemo && deal.workstreams.filter(ws => ws.analysisType !== "IC_MEMO").length === 0) {
     return NextResponse.json(
-      { error: "Cannot generate IC memo — no workstreams have AI analysis yet. Run workstream analyses first, then generate the IC memo." },
+      { error: "Cannot generate IC memo — no workstreams exist yet. Run workstream analyses first." },
       { status: 400 },
     );
   }
+  // Note: if workstreamSummaries is empty (all mock data), we still proceed — the LLM
+  // call will fall back to mock IC memo, which is fine for demo/testing without AI config.
 
   // Call LLM or fallback to mock
   // BUG-03 fix: wrap AI call in Promise.race with 55-second timeout (5s buffer before Vercel's 60s maxDuration)
