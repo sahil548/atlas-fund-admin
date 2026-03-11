@@ -24,6 +24,7 @@ vi.mock("@/lib/prisma", () => ({
     },
     metricSnapshot: {
       upsert: vi.fn(),
+      findMany: vi.fn().mockResolvedValue([]),
     },
   },
 }));
@@ -156,16 +157,18 @@ describe("Dashboard API GET — fire-and-forget snapshot save", () => {
     vi.mocked(prisma.metricSnapshot.upsert).mockResolvedValue({} as never);
   });
 
-  it("calls metricSnapshot.upsert exactly once per GET request", async () => {
+  it("calls metricSnapshot.upsert at least once per GET request (once for aggregate + once per entity)", async () => {
     const req = new Request("http://localhost/api/lp/investor-abc/dashboard");
     const params = Promise.resolve({ investorId: "investor-abc" });
 
     await GET(req, { params });
 
-    // Allow microtasks to flush so the fire-and-forget promise initiates
+    // Allow microtasks to flush so the fire-and-forget promises initiate
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(prisma.metricSnapshot.upsert).toHaveBeenCalledTimes(1);
+    // Route upserts once for the aggregate (__AGGREGATE__) + once per entity commitment.
+    // makeMockInvestor has 1 commitment (entity-1), so total = 2 upsert calls.
+    expect(prisma.metricSnapshot.upsert).toHaveBeenCalledTimes(2);
   });
 
   it("upsert is called with the investor's ID in the where clause", async () => {
