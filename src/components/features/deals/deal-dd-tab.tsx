@@ -143,9 +143,14 @@ export function DealDDTab({ deal }: DealDDTabProps) {
           rerun: !!ws.analysisResult,
         }),
       });
+      if (res.status === 504) {
+        toast.error("AI generation timed out. Try again with a smaller document.");
+        return;
+      }
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Analysis failed");
+        const err = await res.json().catch(() => ({}));
+        const msg = typeof err.error === "string" ? err.error : "Analysis failed";
+        throw new Error(msg);
       }
       // After analysis, trigger IC Memo re-generation if memo exists
       if (deal.screeningResult?.memo) {

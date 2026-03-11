@@ -186,6 +186,10 @@ export function DealOverviewTab({
       const res = await fetch(`/api/deals/${deal.id}/extract-metadata`, {
         method: "POST",
       });
+      if (res.status === 504) {
+        toast.error("AI generation timed out. Try again with a smaller document.");
+        return;
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         const msg = typeof err.error === "string" ? err.error : "Failed to extract metadata";

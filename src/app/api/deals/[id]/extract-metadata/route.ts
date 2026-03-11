@@ -102,9 +102,9 @@ Include any other quantitative or structural fields you find relevant. Use short
 
 IMPORTANT: Return ONLY a valid JSON object. No markdown, no explanation — just the JSON starting with {.`;
 
-  // Call AI with 90-second timeout (BUG-03 pattern)
+  // Call AI with 55-second timeout (BUG-03 fix: leaves 5s buffer before Vercel's 60s maxDuration)
   const aiTimeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("Metadata extraction timed out after 90 seconds")), 90_000),
+    setTimeout(() => reject(new Error("TIMEOUT")), 55_000),
   );
 
   try {
@@ -166,7 +166,13 @@ IMPORTANT: Return ONLY a valid JSON object. No markdown, no explanation — just
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error during metadata extraction";
+    if (message === "TIMEOUT") {
+      return NextResponse.json(
+        { error: "AI generation timed out. Try again with a smaller document." },
+        { status: 504 },
+      );
+    }
     console.error("[extract-metadata] Error:", message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: "AI extraction failed" }, { status: 500 });
   }
 }

@@ -212,16 +212,35 @@ export async function POST(
   }
 
   // Call LLM or fallback to mock
+  // BUG-03 fix: wrap AI call in Promise.race with 55-second timeout (5s buffer before Vercel's 60s maxDuration)
   let result: DDAnalysisResult;
   let aiPowered = false;
   let mockReason: string | null = null;
   const dbSetupMs = performance.now() - routeStart;
 
-  const aiReturn = await runDDAnalysis(firmId, dealCtx, type, {
+  const aiCallPromise = runDDAnalysis(firmId, dealCtx, type, {
     categoryName,
     priorResponses,
     workstreamSummaries,
   });
+  const aiTimeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("TIMEOUT")), 55_000),
+  );
+
+  let aiReturn: DDAnalysisReturn;
+  try {
+    aiReturn = await Promise.race([aiCallPromise, aiTimeoutPromise]);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    if (message === "TIMEOUT") {
+      return NextResponse.json(
+        { error: "AI generation timed out. Try again with a smaller document." },
+        { status: 504 },
+      );
+    }
+    return NextResponse.json({ error: "AI analysis failed" }, { status: 500 });
+  }
+
   if (aiReturn.result) {
     result = aiReturn.result;
     aiPowered = true;
