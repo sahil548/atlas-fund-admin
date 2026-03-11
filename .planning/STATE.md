@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: planning
-stopped_at: Phase 20 context gathered
-last_updated: "2026-03-10T23:03:28.480Z"
+stopped_at: Completed 20-schema-cleanup-ui-polish-01-PLAN.md
+last_updated: "2026-03-11T01:00:07.547Z"
 last_activity: "2026-03-10 — Phase 19 Plan 05 Task 2 human-verified. Dashboard morning briefing surface confirmed: summary bar, alerts, funnel, entity cards, donut chart, activity feed, dark mode. Supporting modules confirmed: reports preview/grouping, entity Reports tab, integrations status dots, notification preferences."
 progress:
   total_phases: 10
   completed_phases: 9
-  total_plans: 48
-  completed_plans: 48
+  total_plans: 58
+  completed_plans: 49
   percent: 100
 ---
 
@@ -23,10 +23,10 @@ progress:
 
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
-- **Phase:** Phase 19 COMPLETE — Dashboard & Supporting Modules
-- **Plan:** All 5/5 plans complete
-- **Status:** Ready to plan
-- **Last activity:** 2026-03-10 — Phase 19 Plan 05 Task 2 human-verified. Dashboard morning briefing surface confirmed: summary bar, alerts, funnel, entity cards, donut chart, activity feed, dark mode. Supporting modules confirmed: reports preview/grouping, entity Reports tab, integrations status dots, notification preferences.
+- **Phase:** Phase 20 — Schema Cleanup & UI Polish
+- **Plan:** 1/10 plans complete (Plan 01 done)
+- **Status:** In progress
+- **Last activity:** 2026-03-10 — Phase 20 Plan 01 complete. Wave 0 foundation: logger utility created, Zod schemas for all 39 JSON blob fields, LP dashboard test fixed (7 → 0 failures), bug-03 timeout pattern tested. Full suite 817 passing.
 
 Progress: [██████████] 100% (84/84 plans)
 
@@ -75,6 +75,7 @@ Progress: [██████████] 100% (84/84 plans)
 | Phase 19 P02 | 40 | 3 tasks | 6 files |
 | Phase 19-dashboard-supporting-modules P03 | 5 | 2 tasks | 6 files |
 | Phase 19-dashboard-supporting-modules P05 | 10 | 2 tasks | 4 files |
+| Phase 20-schema-cleanup-ui-polish P01 | 5 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -267,6 +268,12 @@ Progress: [██████████] 100% (84/84 plans)
 - **Donut center label via overlay div:** Absolute positioned div with pointer-events-none over ResponsiveContainer; simpler than Recharts label prop
 - **Phase 19 human verification complete 2026-03-10:** All DASH-01 through DASH-04 and SUPP-01 through SUPP-06 requirements confirmed passing in browser — dashboard (7 sections), reports, entity Reports tab, integrations status, notifications preferences all working
 
+### Phase 20 Schema Cleanup & UI Polish Decisions (In Progress)
+- **Custom logger zero-dep:** `isDev = process.env.NODE_ENV !== "production"`; error/warn always log via console.error/warn; info/debug only in dev via console.log; LogMeta type = `Record<string, unknown> | string | number | undefined`
+- **json-schemas.ts grouping:** Zod schemas for all 39 Json/Json? fields grouped by model with comments; exported as named exports; all Json? fields use `.nullable()`; dynamic key-value fields use `z.record(z.string(), z.unknown())`
+- **metricSnapshot mock fix:** Added `findMany: vi.fn().mockResolvedValue([])` to mock; corrected upsert count from 1 to 2 — route calls upsert twice per GET: once for `__AGGREGATE__` snapshot + once per entity commitment
+- **raceWithTimeout pattern for BUG-03:** `Promise.race([aiCall, timeoutReject])` with `setTimeout(() => reject(new Error("TIMEOUT")), 55_000)`; catch block checks `error.message === "TIMEOUT"` to return 504 vs 500
+
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
 - Phase 12 (AI Config + Doc Intake) second — infrastructure before any AI feature phases
@@ -285,6 +292,6 @@ Progress: [██████████] 100% (84/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-10T23:03:28.474Z
-- **Stopped at:** Phase 20 context gathered
-- **Resume file:** .planning/phases/20-schema-cleanup-ui-polish/20-CONTEXT.md
+- **Last session:** 2026-03-11T01:00:07.543Z
+- **Stopped at:** Completed 20-schema-cleanup-ui-polish-01-PLAN.md
+- **Resume file:** None
