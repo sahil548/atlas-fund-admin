@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 20-schema-cleanup-ui-polish-08-PLAN.md
-last_updated: "2026-03-11T16:29:19.893Z"
-last_activity: "2026-03-11 — Phase 20 Plan 08 complete. UI polish: animated modal (focus trap + CSS transitions), custom Select dropdown (backward-compat synthetic events), Tabs dark mode, Button ghost variant. 822 tests passing, build zero errors."
+stopped_at: Completed 20-schema-cleanup-ui-polish-09-PLAN.md
+last_updated: "2026-03-11T17:15:54.303Z"
+last_activity: "2026-03-11 — Phase 20 Plan 09 complete. Full dark mode audit + fix across 22 files (all LP and GP pages), 104+ bg-white instances fixed, SectionErrorBoundary wired to analytics/entities/assets/deals detail pages. 822 tests passing, build zero errors."
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
-  completed_plans: 56
-  percent: 97
+  completed_plans: 57
+  percent: 96
 ---
 
 # Atlas — GSD State
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 8/10 plans complete (Plan 08 done)
+- **Plan:** 9/10 plans complete (Plan 09 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-11 — Phase 20 Plan 08 complete. UI polish: animated modal with focus management, custom keyboard-navigable Select dropdown (backward-compatible), Tabs dark mode, Button ghost variant. 822 tests passing, build zero errors.
+- **Last activity:** 2026-03-11 — Phase 20 Plan 09 complete. Full dark mode audit + fix: 22 files (LP + GP pages), 104+ bg-white instances fixed, SectionErrorBoundary wired to analytics/entities/assets/deals detail pages. 822 tests passing, build zero errors.
 
-Progress: [██████████] 96% (90/94 plans)
+Progress: [██████████] 99% (93/94 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -83,6 +83,8 @@ Progress: [██████████] 96% (90/94 plans)
 | Phase 20-schema-cleanup-ui-polish P05 | 30 | 2 tasks | 10 files |
 | Phase 20-schema-cleanup-ui-polish P06 | 25 | 2 tasks | 27 files |
 | Phase 20 P08 | 25 | 2 tasks | 5 files |
+| Phase 20-schema-cleanup-ui-polish P07 | 54 | 2 tasks | 13 files |
+| Phase 20-schema-cleanup-ui-polish P09 | 45 | 2 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -300,6 +302,15 @@ Progress: [██████████] 96% (90/94 plans)
 - **Select onChange backward compat:** Custom Select emits synthetic `React.ChangeEvent<HTMLSelectElement>` by updating a hidden native select's value then creating a synthetic event — all 28+ consumers using `(e) => e.target.value` work without changes
 - **Modal auto-focus delay:** 50ms setTimeout inside useEffect allows React portal to mount before querying DOM for focusable elements (input/button/textarea/select/[tabindex])
 - **PieLabel type cast:** asset-allocation-chart `label={renderLabel as (props: unknown) => React.ReactNode}` bypasses Recharts PieLabel union complexity — matches existing Recharts Tooltip formatter typed as any pattern
+- **SectionErrorBoundary scope (Plan 09):** Wrap entire tab content areas (one boundary per page) rather than every small component — provides error isolation without excessive nesting overhead
+- **Dark mode completeness check pattern (Plan 09):** `grep -rn 'bg-white' src/app/ | grep -v 'dark:'` — zero results = complete coverage; 22 files fixed across LP and GP pages (104+ bg-white, 36 text-gray-900, 28 border-gray-200 instances)
+- **Python str.replace() for bulk dark mode (Plan 09):** regex re.sub() approach failed on class attribute strings; pure str.replace() with exact class strings succeeded with 113 replacements in one pass across 15 GP files
+- **pdf-parse v2 type stub:** PDFParse class-based API (constructor + getText/destroy) — v1 function-based declaration was incorrect for installed v2.4.5
+- **as any 51% reduction:** 37 → 18 via StageActivityMetadata, AssetAllocationEntry, EntityNode, ChartEntry, UserOption, AIClient interfaces; Prisma InputJsonValue casts (extractedFields, dealMetadata, appliedFields, details) remain as any
+- **INTEG-05 verified:** closeDeal() creates Asset with sourceDealId; sourceAssets relation in GET /api/deals/[id]
+- **INTEG-06 verified:** recomputeCapitalAccountForInvestor() sums funded line items → CapitalAccount upsert per day
+- **INTEG-07 verified:** searchAndAnalyze() gathers deals/entities/assets/investors; pageContext injected for deal/asset/entity pages
+- **INTEG-08 verified:** stats route computes entity metrics from funded line items; portfolio-aggregates route provides asset allocation + performers + deployment tracker
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -319,6 +330,6 @@ Progress: [██████████] 96% (90/94 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-11T16:29:19.888Z
-- **Stopped at:** Completed 20-schema-cleanup-ui-polish-08-PLAN.md
+- **Last session:** 2026-03-11T17:15:54.299Z
+- **Stopped at:** Completed 20-schema-cleanup-ui-polish-09-PLAN.md
 - **Resume file:** None
