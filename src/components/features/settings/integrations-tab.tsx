@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
+import { logger } from "@/lib/logger";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -304,7 +305,7 @@ export function IntegrationsTab({ firmId }: IntegrationsTabProps) {
         },
         onExit: (err: unknown) => {
           if (err) {
-            console.error("[plaid] Link exit with error:", err);
+            logger.error("[plaid] Link exit with error:", { error: err instanceof Error ? err.message : String(err) });
           }
           setPlaidConnecting(false);
         },
@@ -312,7 +313,7 @@ export function IntegrationsTab({ firmId }: IntegrationsTabProps) {
 
       linkHandler.open();
     } catch (err) {
-      console.error("[plaid] Connection error:", err);
+      logger.error("[plaid] Connection error:", { error: err instanceof Error ? err.message : String(err) });
       toast.error("Failed to connect bank account");
       setPlaidConnecting(false);
     }

@@ -19,6 +19,7 @@ import { FormField } from "@/components/ui/form-field";
 import { useToast } from "@/components/ui/toast";
 import { LayoutList } from "lucide-react";
 import { formatDate, fmt } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 
 import {
   ASSET_CLASS_LABELS,
@@ -161,7 +162,7 @@ export default function DealsPage() {
       setAllDeals((prev) => [...prev, ...(result.deals ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }

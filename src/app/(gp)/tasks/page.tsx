@@ -14,6 +14,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { CheckSquare, LayoutList, LayoutGrid } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { TasksListView } from "@/components/features/tasks/tasks-list-view";
 import { TasksKanbanView } from "@/components/features/tasks/tasks-kanban-view";
 
@@ -134,7 +135,7 @@ export default function TasksPage() {
       setAllTasks((prev) => [...prev, ...(result.data ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }
@@ -174,7 +175,7 @@ export default function TasksPage() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: task.id, order: idx }),
-        }).catch(() => console.error("Failed to persist order for task", task.id));
+        }).catch(() => logger.error("Failed to persist order for task", { taskId: task.id }));
       }
     });
     setAllTasks((prev) => {

@@ -8,6 +8,7 @@ import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
 import { CreateAssetForm } from "@/components/features/assets/create-asset-form";
 import { AssetMonitoringPanel } from "@/components/features/assets/asset-monitoring-panel";
 import { fmt, pct, formatDate, cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
@@ -146,7 +147,7 @@ export default function AssetsPage() {
       setAllAssets((prev) => [...prev, ...(result.data ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }

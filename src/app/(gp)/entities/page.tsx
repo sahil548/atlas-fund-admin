@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fmt, cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
@@ -105,7 +106,7 @@ export default function EntitiesPage() {
       setAllEntities((prev) => [...prev, ...(result.data ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }

@@ -18,6 +18,7 @@ import { CreateContactForm } from "@/components/features/contacts/create-contact
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt, formatDate } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -100,7 +101,7 @@ export default function DirectoryPage() {
       setAllInvestors((prev) => [...prev, ...(result.data ?? [])]);
       setInvestorCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setInvestorLoadingMore(false);
     }

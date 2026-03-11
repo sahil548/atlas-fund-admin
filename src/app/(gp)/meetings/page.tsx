@@ -12,6 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Video, RefreshCw } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { useToast } from "@/components/ui/toast";
 
 const fetcher = (url: string) =>
@@ -101,7 +102,7 @@ export default function MeetingsPage() {
       setAllMeetings((prev) => [...prev, ...(result.data ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }

@@ -5,6 +5,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
+import { logger } from "@/lib/logger";
 import { InlineEditField } from "./inline-edit-field";
 import { DealEntitySection } from "./deal-entity-section";
 import { mutate } from "swr";
@@ -249,7 +250,7 @@ export function DealOverviewTab({
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("PDF export failed:", err);
+      logger.error("PDF export failed:", { error: err instanceof Error ? err.message : String(err) });
       toast.error("Failed to export PDF");
     } finally {
       setExportingPDF(false);

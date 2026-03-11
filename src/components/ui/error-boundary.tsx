@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import { logger } from "@/lib/logger";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -24,7 +25,7 @@ export class PageErrorBoundary extends Component<ErrorBoundaryProps, ErrorBounda
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[PageErrorBoundary] Uncaught error:", error, info);
+    logger.error("[PageErrorBoundary] Uncaught error:", { error: error instanceof Error ? error.message : String(error), componentStack: info.componentStack });
   }
 
   handleRetry = () => {
@@ -73,7 +74,7 @@ export class SectionErrorBoundary extends Component<ErrorBoundaryProps, ErrorBou
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[SectionErrorBoundary] Uncaught error:", error, info);
+    logger.error("[SectionErrorBoundary] Uncaught error:", { error: error instanceof Error ? error.message : String(error), componentStack: info.componentStack });
   }
 
   handleRetry = () => {

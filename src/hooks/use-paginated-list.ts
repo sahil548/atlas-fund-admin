@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import useSWR from "swr";
+import { logger } from "@/lib/logger";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -107,7 +108,7 @@ export function usePaginatedList<T>(
       setTotal(result.total);
       setCursor(result.nextCursor);
     } catch (err) {
-      console.error("[usePaginatedList] loadMore error:", err);
+      logger.error("[usePaginatedList] loadMore error:", { error: err instanceof Error ? err.message : String(err) });
     } finally {
       setLoadingMore(false);
       loadMoreInProgress.current = false;

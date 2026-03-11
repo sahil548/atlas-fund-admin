@@ -12,6 +12,7 @@ import { KillDealModal } from "@/components/features/deals/kill-deal-modal";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { formatDate } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import Link from "next/link";
 
 // Tab components
@@ -279,7 +280,7 @@ export default function DealDetailPage({
               }
             } else {
               const err = await res.json().catch(() => ({}));
-              console.warn(`Analysis failed for ${w.name}:`, err.error);
+              logger.warn(`Analysis failed for ${w.name}:`, { error: err.error });
               mockFallbacks.push(w.name);
             }
           } catch {
@@ -328,7 +329,7 @@ export default function DealDetailPage({
           ]);
           if (!memoRes.ok) {
             const memoErr = await memoRes.json().catch(() => ({}));
-            console.warn("IC Memo generation failed:", memoErr.error);
+            logger.warn("IC Memo generation failed:", { error: memoErr.error });
           }
         } catch (memoErr: unknown) {
           const msg = memoErr instanceof Error ? memoErr.message : "IC Memo generation failed";

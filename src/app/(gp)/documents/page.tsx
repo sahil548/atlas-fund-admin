@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { DocumentStatusBadge } from "@/components/features/documents/document-status-badge";
 import { DocumentExtractionPanel } from "@/components/features/documents/document-extraction-panel";
 
@@ -128,7 +129,7 @@ export default function DocumentsPage() {
       setAllDocs((prev) => [...prev, ...(result.data ?? [])]);
       setCursor(result.nextCursor ?? null);
     } catch (e) {
-      console.error("Load more failed", e);
+      logger.error("Load more failed", { error: e instanceof Error ? e.message : String(e) });
     } finally {
       setLoadingMore(false);
     }
