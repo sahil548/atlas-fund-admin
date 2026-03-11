@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
+import { ExtractedFieldsSchema, AppliedFieldsSchema } from "@/lib/json-schemas";
 
 export async function GET(
   _req: Request,
@@ -19,5 +20,15 @@ export async function GET(
   });
 
   if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
-  return NextResponse.json(doc);
+
+  // Sanitize high-risk JSON blob fields: extractedFields and appliedFields
+  const safeExtracted = ExtractedFieldsSchema.safeParse(doc.extractedFields);
+  const safeApplied = AppliedFieldsSchema.safeParse(doc.appliedFields);
+  const sanitizedDoc = {
+    ...doc,
+    extractedFields: safeExtracted.success ? safeExtracted.data : null,
+    appliedFields: safeApplied.success ? safeApplied.data : null,
+  };
+
+  return NextResponse.json(sanitizedDoc);
 }

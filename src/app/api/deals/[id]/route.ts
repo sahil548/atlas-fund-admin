@@ -7,6 +7,7 @@ import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
+import { DealMetadataSchema } from "@/lib/json-schemas";
 
 // Flexible top-level PATCH schema — each action branch does further validation
 const PatchDealBodySchema = z.object({
@@ -102,7 +103,15 @@ export async function GET(
     },
   });
   if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(deal);
+
+  // Sanitize high-risk JSON blob field: dealMetadata
+  const safeMeta = DealMetadataSchema.safeParse(deal.dealMetadata);
+  const sanitizedDeal = {
+    ...deal,
+    dealMetadata: safeMeta.success ? safeMeta.data : null,
+  };
+
+  return NextResponse.json(sanitizedDeal);
 }
 
 export async function PUT(

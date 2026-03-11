@@ -6,6 +6,7 @@ import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
+import { NavProxyConfigSchema } from "@/lib/json-schemas";
 
 // Schema for the action-based PATCH body
 const PatchEntityActionSchema = z.object({
@@ -60,7 +61,15 @@ export async function GET(
     },
   });
   if (!entity) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(entity);
+
+  // Sanitize high-risk JSON blob field: navProxyConfig
+  const safeNav = NavProxyConfigSchema.safeParse(entity.navProxyConfig);
+  const sanitizedEntity = {
+    ...entity,
+    navProxyConfig: safeNav.success ? safeNav.data : null,
+  };
+
+  return NextResponse.json(sanitizedEntity);
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {

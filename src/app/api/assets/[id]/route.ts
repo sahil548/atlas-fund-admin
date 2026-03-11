@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateAssetSchema } from "@/lib/schemas";
 import { Prisma } from "@prisma/client";
+import { ProjectedMetricsSchema } from "@/lib/json-schemas";
 
 export async function GET(
   _req: Request,
@@ -61,7 +62,15 @@ export async function GET(
     },
   });
   if (!asset) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(asset);
+
+  // Sanitize high-risk JSON blob field: projectedMetrics
+  const safeProjMetrics = ProjectedMetricsSchema.safeParse(asset.projectedMetrics);
+  const sanitizedAsset = {
+    ...asset,
+    projectedMetrics: safeProjMetrics.success ? safeProjMetrics.data : null,
+  };
+
+  return NextResponse.json(sanitizedAsset);
 }
 
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
