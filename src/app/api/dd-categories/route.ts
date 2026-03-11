@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
+import { parseBody } from "@/lib/api-helpers";
+import { CreateDDCategorySchema, UpdateDDCategorySchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
 /**
@@ -49,27 +51,19 @@ export async function GET(req: NextRequest) {
  * Create a new DDCategoryTemplate.
  */
 export async function POST(req: NextRequest) {
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const name = body.name as string | undefined;
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return NextResponse.json({ error: "Name is required" }, { status: 400 });
-  }
+  const { data, error } = await parseBody(req, CreateDDCategorySchema);
+  if (error) return error;
+  const body = data!;
 
   const template = await prisma.dDCategoryTemplate.create({
     data: {
-      firmId: (body.firmId as string) || null,
-      name: name.trim(),
-      description: (body.description as string) || null,
-      defaultInstructions: (body.defaultInstructions as string) || null,
-      isDefault: body.isDefault === true,
-      scope: (body.scope as string) || "UNIVERSAL",
-      sortOrder: typeof body.sortOrder === "number" ? body.sortOrder : 99,
+      firmId: body.firmId || null,
+      name: body.name.trim(),
+      description: body.description || null,
+      defaultInstructions: body.defaultInstructions || null,
+      isDefault: body.isDefault ?? false,
+      scope: body.scope || "UNIVERSAL",
+      sortOrder: body.sortOrder ?? 99,
     },
   });
 
@@ -81,27 +75,19 @@ export async function POST(req: NextRequest) {
  * Update an existing DDCategoryTemplate.
  */
 export async function PUT(req: NextRequest) {
-  let body: Record<string, unknown>;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
-  }
-
-  const id = body.id as string | undefined;
-  if (!id) {
-    return NextResponse.json({ error: "id is required" }, { status: 400 });
-  }
+  const { data, error } = await parseBody(req, UpdateDDCategorySchema);
+  if (error) return error;
+  const { id, ...fields } = data!;
 
   const updated = await prisma.dDCategoryTemplate.update({
     where: { id },
     data: {
-      ...(body.name !== undefined && { name: String(body.name) }),
-      ...(body.description !== undefined && { description: body.description as string | null }),
-      ...(body.defaultInstructions !== undefined && { defaultInstructions: body.defaultInstructions as string | null }),
-      ...(body.isDefault !== undefined && { isDefault: body.isDefault === true }),
-      ...(body.scope !== undefined && { scope: String(body.scope) }),
-      ...(typeof body.sortOrder === "number" && { sortOrder: body.sortOrder }),
+      ...(fields.name !== undefined && { name: fields.name }),
+      ...(fields.description !== undefined && { description: fields.description }),
+      ...(fields.defaultInstructions !== undefined && { defaultInstructions: fields.defaultInstructions }),
+      ...(fields.isDefault !== undefined && { isDefault: fields.isDefault }),
+      ...(fields.scope !== undefined && { scope: fields.scope }),
+      ...(fields.sortOrder !== undefined && { sortOrder: fields.sortOrder }),
     },
   });
 

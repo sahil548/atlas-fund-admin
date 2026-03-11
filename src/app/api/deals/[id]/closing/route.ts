@@ -5,6 +5,24 @@ import { UpdateClosingChecklistItemSchema } from "@/lib/schemas";
 import { CLOSING_CHECKLIST_TEMPLATES } from "@/lib/closing-templates";
 import { put } from "@vercel/blob";
 import { logger } from "@/lib/logger";
+import { z } from "zod";
+
+// Schema for the action-based POST body
+const ClosingPostSchema = z.union([
+  z.object({ action: z.literal("INITIALIZE") }),
+  z.object({
+    action: z.literal("ADD_CUSTOM"),
+    title: z.string().min(1, "Title is required"),
+  }),
+  z.object({
+    action: z.undefined().optional(),
+    title: z.string().optional(),
+    assigneeId: z.string().nullable().optional(),
+    order: z.number().optional(),
+    notes: z.string().optional(),
+    dueDate: z.string().optional(),
+  }),
+]);
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -28,7 +46,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await req.json();
+  const { data, error } = await parseBody(req, ClosingPostSchema);
+  if (error) return error;
+  const body = data!;
 
   // Initialize from templates
   if (body.action === "INITIALIZE") {
@@ -55,10 +75,6 @@ export async function POST(
 
   // Add custom checklist item
   if (body.action === "ADD_CUSTOM") {
-    if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
-      return NextResponse.json({ error: "Title is required" }, { status: 400 });
-    }
-
     // Get max existing order
     const maxOrderItem = await prisma.closingChecklist.findFirst({
       where: { dealId: id },
@@ -70,7 +86,7 @@ export async function POST(
     const item = await prisma.closingChecklist.create({
       data: {
         dealId: id,
-        title: body.title.trim(),
+        title: (body as { action: "ADD_CUSTOM"; title: string }).title.trim(),
         status: "NOT_STARTED",
         order: nextOrder,
         isCustom: true,
@@ -84,14 +100,18 @@ export async function POST(
   }
 
   // Single item creation (legacy)
+  const legacyBody = body as { title?: string; assigneeId?: string | null; order?: number; notes?: string; dueDate?: string };
+  if (!legacyBody.title) {
+    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+  }
   const item = await prisma.closingChecklist.create({
     data: {
       dealId: id,
-      title: body.title,
-      assigneeId: body.assigneeId || null,
-      order: body.order || 0,
-      notes: body.notes || null,
-      ...(body.dueDate ? { dueDate: new Date(body.dueDate) } : {}),
+      title: legacyBody.title,
+      assigneeId: legacyBody.assigneeId || null,
+      order: legacyBody.order || 0,
+      notes: legacyBody.notes || null,
+      ...(legacyBody.dueDate ? { dueDate: new Date(legacyBody.dueDate) } : {}),
     },
   });
   return NextResponse.json(item, { status: 201 });

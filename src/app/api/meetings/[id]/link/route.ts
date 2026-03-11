@@ -8,6 +8,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
+import { parseBody } from "@/lib/api-helpers";
+import { PatchMeetingLinkSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
 export async function PATCH(
@@ -24,7 +26,9 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const body = await req.json();
+  const { data, error } = await parseBody(req, PatchMeetingLinkSchema);
+  if (error) return error;
+  const body = data!;
 
   const updateData: Record<string, string | null> = {};
 

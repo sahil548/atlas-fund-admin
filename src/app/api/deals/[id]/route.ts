@@ -6,6 +6,12 @@ import { killDeal, reviveDeal, closeDeal, advanceToClosing } from "@/lib/deal-st
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { z } from "zod";
+
+// Flexible top-level PATCH schema — each action branch does further validation
+const PatchDealBodySchema = z.object({
+  action: z.string().optional(),
+}).passthrough();
 
 export async function GET(
   _req: Request,
@@ -148,7 +154,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const body = await req.json();
+  const { data: patchBody, error: patchError } = await parseBody(req, PatchDealBodySchema);
+  if (patchError) return patchError;
+  const body = patchBody!;
 
   const authUser = await getAuthUser();
 

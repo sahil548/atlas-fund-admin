@@ -858,6 +858,128 @@ export const GenerateReportSchema = z.object({
   investorId: z.string().optional(), // for investor-specific capital account statement
 });
 
+// ── Tasks (full) ─────────────────────────────────────────────
+
+export const CreateTaskFullSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).default("TODO"),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
+  assigneeId: z.string().optional(),
+  assigneeName: z.string().optional(),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+  order: z.number().optional(),
+  contextType: z.string().optional(),
+  contextId: z.string().optional(),
+  assetId: z.string().optional(),
+  dealId: z.string().optional(),
+  entityId: z.string().optional(),
+});
+
+export const PatchTaskSchema = z.object({
+  id: z.string().min(1, "Task id is required"),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  status: z.enum(["TODO", "IN_PROGRESS", "DONE"]).optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).optional(),
+  assigneeId: z.string().nullable().optional(),
+  assigneeName: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
+  notes: z.string().optional(),
+  order: z.number().optional(),
+});
+
+// ── Assets (Create) ───────────────────────────────────────────
+
+export const CreateAssetSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  assetClass: z.enum(ASSET_CLASSES),
+  capitalInstrument: z.enum(CAPITAL_INSTRUMENTS).optional(),
+  participationStructure: z.enum(PARTICIPATION_STRUCTURES).optional(),
+  sector: z.string().optional(),
+  status: z.string().optional(),
+  costBasis: z.number().nonnegative("Cost basis must be non-negative"),
+  fairValue: z.number().nonnegative("Fair value must be non-negative"),
+  incomeType: z.string().optional(),
+  entityId: z.string().min(1, "Entity ID is required"),
+  allocationPercent: z.number().min(0).max(100).optional(),
+});
+
+// ── Documents (PATCH link) ─────────────────────────────────────
+
+export const PatchDocumentLinkSchema = z.object({
+  documentId: z.string().min(1, "documentId is required"),
+  capitalCallId: z.string().nullable().optional(),
+  distributionEventId: z.string().nullable().optional(),
+});
+
+// ── Meeting Link ───────────────────────────────────────────────
+
+export const PatchMeetingLinkSchema = z.object({
+  dealId: z.string().nullable().optional(),
+  entityId: z.string().nullable().optional(),
+  assetId: z.string().nullable().optional(),
+});
+
+// ── Notifications ─────────────────────────────────────────────
+
+export const PatchNotificationSchema = z.object({
+  action: z.enum(["MARK_READ", "MARK_ALL_READ"]),
+});
+
+// ── Commitments ───────────────────────────────────────────────
+
+export const PatchCommitmentSchema = z.object({
+  amount: z.number().nonnegative("Amount must be a non-negative number"),
+});
+
+// ── Fundraising Rounds ────────────────────────────────────────
+
+export const CreateFundraisingRoundSchema = z.object({
+  entityId: z.string().min(1, "Entity ID is required"),
+  name: z.string().min(1, "Name is required"),
+  targetAmount: z.number().nonnegative().optional(),
+  status: z.enum(["PLANNING", "OPEN", "FINAL_CLOSE", "CLOSED"]).optional(),
+  closingDate: z.string().optional(),
+});
+
+// ── Fireflies API Key ─────────────────────────────────────────
+
+export const PutFirefliesSchema = z.object({
+  apiKey: z.string().min(1, "API key is required"),
+});
+
+// ── AI Config Test ────────────────────────────────────────────
+
+export const TestAIConnectionSchema = z.object({
+  provider: z.string().min(1, "Provider is required"),
+  apiKey: z.string().min(1, "API key is required"),
+  baseUrl: z.string().optional(),
+});
+
+// ── DD Categories ─────────────────────────────────────────────
+
+export const CreateDDCategorySchema = z.object({
+  firmId: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  defaultInstructions: z.string().optional(),
+  isDefault: z.boolean().optional(),
+  scope: z.string().optional(),
+  sortOrder: z.number().optional(),
+});
+
+export const UpdateDDCategorySchema = z.object({
+  id: z.string().min(1, "id is required"),
+  name: z.string().optional(),
+  description: z.string().nullable().optional(),
+  defaultInstructions: z.string().nullable().optional(),
+  isDefault: z.boolean().optional(),
+  scope: z.string().optional(),
+  sortOrder: z.number().optional(),
+});
+
 // ── Bulk Deal Actions ────────────────────────────────
 
 export const BulkDealActionSchema = z.object({

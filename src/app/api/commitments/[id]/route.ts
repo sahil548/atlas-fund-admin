@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { parseBody } from "@/lib/api-helpers";
+import { PatchCommitmentSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
 export async function PATCH(
@@ -12,15 +14,9 @@ export async function PATCH(
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
 
-    const body = await req.json();
-    const { amount } = body;
-
-    if (typeof amount !== "number" || amount < 0) {
-      return NextResponse.json(
-        { error: "amount must be a non-negative number" },
-        { status: 400 }
-      );
-    }
+    const { data, error } = await parseBody(req, PatchCommitmentSchema);
+    if (error) return error;
+    const { amount } = data!;
 
     // Fetch existing commitment with entity for firm guard
     const commitment = await prisma.commitment.findUnique({

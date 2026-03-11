@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
+import { parseBody } from "@/lib/api-helpers";
+import { CreateAssetSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
@@ -77,16 +79,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { data, error } = await parseBody(req, CreateAssetSchema);
+    if (error) return error;
     const {
       name, assetClass, capitalInstrument, participationStructure,
       sector, status, costBasis, fairValue, incomeType,
       entityId, allocationPercent,
-    } = body;
-
-    if (!name || !assetClass || costBasis == null || fairValue == null || !entityId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
+    } = data!;
 
     const cost = Number(costBasis);
     const fv = Number(fairValue);
@@ -99,7 +98,7 @@ export async function POST(req: NextRequest) {
         capitalInstrument: capitalInstrument || null,
         participationStructure: participationStructure || null,
         sector: sector || null,
-        status: status || "ACTIVE",
+        status: (status || "ACTIVE") as "ACTIVE" | "EXITED" | "WRITTEN_OFF",
         costBasis: cost,
         fairValue: fv,
         moic,

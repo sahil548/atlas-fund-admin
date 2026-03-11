@@ -12,6 +12,8 @@ import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { encryptApiKey } from "@/lib/ai-config";
 import { fetchFirefliesUser } from "@/lib/fireflies";
+import { parseBody } from "@/lib/api-helpers";
+import { PutFirefliesSchema } from "@/lib/schemas";
 
 type Params = Promise<{ id: string }>;
 
@@ -72,17 +74,9 @@ export async function PUT(
     return forbidden();
   }
 
-  let apiKey: string;
-  try {
-    const body = await req.json();
-    apiKey = body.apiKey;
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  if (!apiKey || typeof apiKey !== "string" || apiKey.trim().length === 0) {
-    return NextResponse.json({ error: "API key is required" }, { status: 400 });
-  }
+  const { data, error } = await parseBody(req, PutFirefliesSchema);
+  if (error) return error;
+  const apiKey = data!.apiKey;
 
   // Validate the key by calling Fireflies user query
   let firefliesUser: { email: string; name: string };

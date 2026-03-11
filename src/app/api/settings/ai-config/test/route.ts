@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
 import { testConnection } from "@/lib/ai-config";
+import { parseBody } from "@/lib/api-helpers";
+import { TestAIConnectionSchema } from "@/lib/schemas";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { provider, apiKey, baseUrl } = body;
-
-    if (!provider || !apiKey) {
-      return NextResponse.json(
-        { connected: false, error: "Provider and API key are required" },
-        { status: 400 }
-      );
-    }
+    const { data, error } = await parseBody(req, TestAIConnectionSchema);
+    if (error) return error;
+    const { provider, apiKey, baseUrl } = data!;
 
     const result = await testConnection(provider, apiKey, baseUrl);
     return NextResponse.json(result);

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
+import { parseBody } from "@/lib/api-helpers";
+import { PatchNotificationSchema } from "@/lib/schemas";
 
 export async function PATCH(
   req: Request,
@@ -10,7 +12,9 @@ export async function PATCH(
   if (!authUser) return unauthorized();
 
   const { id } = await params;
-  const body = await req.json();
+  const { data, error } = await parseBody(req, PatchNotificationSchema);
+  if (error) return error;
+  const body = data!;
 
   if (body.action === "MARK_READ") {
     // Verify the notification belongs to the authenticated user

@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
+import { parseBody } from "@/lib/api-helpers";
+import { CreateTaskFullSchema, PatchTaskSchema } from "@/lib/schemas";
 import { sendEmail } from "@/lib/email";
 import { taskAssignedEmailHtml } from "@/lib/email-templates";
 import { logger } from "@/lib/logger";
@@ -99,7 +101,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { data, error } = await parseBody(req, CreateTaskFullSchema);
+    if (error) return error;
+    const body = data!;
     const task = await prisma.task.create({
       data: {
         title: body.title,
@@ -133,9 +137,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = await req.json();
-    if (!body.id)
-      return NextResponse.json({ error: "id required" }, { status: 400 });
+    const { data, error } = await parseBody(req, PatchTaskSchema);
+    if (error) return error;
+    const body = data!;
 
     // Fetch existing task before update to detect assignee change
     const existingTask = await prisma.task.findUnique({
@@ -152,21 +156,21 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    const data: Record<string, unknown> = {};
-    if (body.title !== undefined) data.title = body.title;
-    if (body.description !== undefined) data.description = body.description;
-    if (body.status !== undefined) data.status = body.status;
-    if (body.priority !== undefined) data.priority = body.priority;
-    if (body.assigneeId !== undefined) data.assigneeId = body.assigneeId || null;
-    if (body.assigneeName !== undefined) data.assigneeName = body.assigneeName;
+    const updateData: Record<string, unknown> = {};
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.priority !== undefined) updateData.priority = body.priority;
+    if (body.assigneeId !== undefined) updateData.assigneeId = body.assigneeId || null;
+    if (body.assigneeName !== undefined) updateData.assigneeName = body.assigneeName;
     if (body.dueDate !== undefined)
-      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
-    if (body.notes !== undefined) data.notes = body.notes;
-    if (body.order !== undefined) data.order = body.order;
+      updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.order !== undefined) updateData.order = body.order;
 
     const task = await prisma.task.update({
       where: { id: body.id },
-      data,
+      data: updateData,
       include: {
         assignee: { select: { id: true, name: true, initials: true } },
         deal: { select: { id: true, name: true } },

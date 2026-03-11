@@ -5,6 +5,16 @@ import { UpdateEntitySchema } from "@/lib/schemas";
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { z } from "zod";
+
+// Schema for the action-based PATCH body
+const PatchEntityActionSchema = z.object({
+  action: z.string().optional(),
+  newStatus: z.enum(["ACTIVE", "WINDING_DOWN", "DISSOLVED"]).optional(),
+  reason: z.string().optional(),
+  formationStatus: z.string().optional(),
+  name: z.string().optional(),
+});
 
 export async function GET(
   _req: Request,
@@ -101,10 +111,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!checkPermission(perms, "entities", "full")) return forbidden();
   }
 
-  const body = await req.json();
+  const { data: patchData, error: patchError } = await parseBody(req, PatchEntityActionSchema);
+  if (patchError) return patchError;
+  const body = patchData!;
 
   if (body.action === "TRANSITION_STATUS") {
     const { newStatus, reason } = body;
+    if (!newStatus) {
+      return NextResponse.json({ error: "newStatus is required" }, { status: 400 });
+    }
     const validTransitions: Record<string, string[]> = {
       ACTIVE: ["WINDING_DOWN"],
       WINDING_DOWN: ["DISSOLVED", "ACTIVE"],

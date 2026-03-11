@@ -7,6 +7,8 @@ import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
+import { parseBody } from "@/lib/api-helpers";
+import { PatchDocumentLinkSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
@@ -175,12 +177,9 @@ export async function PATCH(req: Request) {
     const authUser = await getAuthUser();
     if (!authUser) return unauthorized();
 
-    const body = await req.json();
-    const { documentId, capitalCallId, distributionEventId } = body;
-
-    if (!documentId) {
-      return NextResponse.json({ error: "documentId is required" }, { status: 400 });
-    }
+    const { data, error } = await parseBody(req, PatchDocumentLinkSchema);
+    if (error) return error;
+    const { documentId, capitalCallId, distributionEventId } = data!;
 
     const updated = await prisma.document.update({
       where: { id: documentId },

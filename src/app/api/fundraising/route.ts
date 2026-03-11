@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { parseBody } from "@/lib/api-helpers";
+import { CreateFundraisingRoundSchema } from "@/lib/schemas";
 
 export async function GET(req: NextRequest) {
   const entityId = req.nextUrl.searchParams.get("entityId");
@@ -18,7 +20,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const round = await prisma.fundraisingRound.create({ data: body });
+  const { data, error } = await parseBody(req, CreateFundraisingRoundSchema);
+  if (error) return error;
+  const { entityId, name, targetAmount, status, closingDate } = data!;
+  const round = await prisma.fundraisingRound.create({
+    data: {
+      entityId,
+      name,
+      ...(targetAmount !== undefined && { targetAmount }),
+      ...(status !== undefined && { status }),
+      ...(closingDate !== undefined && { closeDate: new Date(closingDate) }),
+    },
+  });
   return NextResponse.json(round, { status: 201 });
 }
