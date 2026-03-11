@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
-status: planning
-stopped_at: Completed 20-schema-cleanup-ui-polish-01-PLAN.md
-last_updated: "2026-03-11T01:00:07.547Z"
-last_activity: "2026-03-10 — Phase 19 Plan 05 Task 2 human-verified. Dashboard morning briefing surface confirmed: summary bar, alerts, funnel, entity cards, donut chart, activity feed, dark mode. Supporting modules confirmed: reports preview/grouping, entity Reports tab, integrations status dots, notification preferences."
+status: executing
+stopped_at: Completed 20-schema-cleanup-ui-polish-02-PLAN.md
+last_updated: "2026-03-11T01:10:01.879Z"
+last_activity: "2026-03-10 — Phase 20 Plan 01 complete. Wave 0 foundation: logger utility created, Zod schemas for all 39 JSON blob fields, LP dashboard test fixed (7 → 0 failures), bug-03 timeout pattern tested. Full suite 817 passing."
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
-  completed_plans: 49
+  completed_plans: 50
   percent: 100
 ---
 
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 1/10 plans complete (Plan 01 done)
+- **Plan:** 2/10 plans complete (Plan 02 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-10 — Phase 20 Plan 01 complete. Wave 0 foundation: logger utility created, Zod schemas for all 39 JSON blob fields, LP dashboard test fixed (7 → 0 failures), bug-03 timeout pattern tested. Full suite 817 passing.
+- **Last activity:** 2026-03-10 — Phase 20 Plan 02 complete. Three bugs fixed: IC memo 504 timeout (BUG-03), DD 0% progress for post-DD deals (BUG-01), pipeline conversion rate guard verified (BUG-02). 822 tests passing.
 
-Progress: [██████████] 100% (84/84 plans)
+Progress: [█████████░] 91% (86/94 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -76,6 +76,7 @@ Progress: [██████████] 100% (84/84 plans)
 | Phase 19-dashboard-supporting-modules P03 | 5 | 2 tasks | 6 files |
 | Phase 19-dashboard-supporting-modules P05 | 10 | 2 tasks | 4 files |
 | Phase 20-schema-cleanup-ui-polish P01 | 5 | 2 tasks | 6 files |
+| Phase 20-schema-cleanup-ui-polish P02 | 10 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -273,6 +274,9 @@ Progress: [██████████] 100% (84/84 plans)
 - **json-schemas.ts grouping:** Zod schemas for all 39 Json/Json? fields grouped by model with comments; exported as named exports; all Json? fields use `.nullable()`; dynamic key-value fields use `z.record(z.string(), z.unknown())`
 - **metricSnapshot mock fix:** Added `findMany: vi.fn().mockResolvedValue([])` to mock; corrected upsert count from 1 to 2 — route calls upsert twice per GET: once for `__AGGREGATE__` snapshot + once per entity commitment
 - **raceWithTimeout pattern for BUG-03:** `Promise.race([aiCall, timeoutReject])` with `setTimeout(() => reject(new Error("TIMEOUT")), 55_000)`; catch block checks `error.message === "TIMEOUT"` to return 504 vs 500
+- **BUG-03 frontend 504 guard:** check `res.status === 504` before `res.ok` in all AI-triggered fetch handlers — clears spinner, shows timeout toast, returns early without parsing body
+- **BUG-01 stage-aware fallback:** IC_REVIEW/CLOSING/CLOSED deals with no workstreams show 100% DD progress (necessarily completed DD); Math.min(100) clamp added to both task-based and workstream-based paths
+- **BUG-02 verified no change needed:** Math.min(100) guard already present on all 3 conversion rates (screeningToDD, ddToIC, icToClose) in deals/route.ts
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -292,6 +296,6 @@ Progress: [██████████] 100% (84/84 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-11T01:00:07.543Z
-- **Stopped at:** Completed 20-schema-cleanup-ui-polish-01-PLAN.md
+- **Last session:** 2026-03-11T01:10:01.876Z
+- **Stopped at:** Completed 20-schema-cleanup-ui-polish-02-PLAN.md
 - **Resume file:** None
