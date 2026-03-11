@@ -421,7 +421,7 @@ export default function SettingsPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium ${tab === t.key ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium ${tab === t.key ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"}`}
           >
             {t.label}
           </button>
@@ -430,7 +430,7 @@ export default function SettingsPage() {
 
       {/* Tab 1: Firm Profile */}
       {tab === "firm" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold">Firm Profile</h3>
             {!editing && (
@@ -485,13 +485,13 @@ export default function SettingsPage() {
 
       {/* Tab 2: Users & Access */}
       {tab === "users" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
             <h3 className="text-sm font-semibold">Users & Access</h3>
             <Button onClick={() => setShowInvite(true)}>+ Invite User</Button>
           </div>
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Name", "Email", "Role", "Status", "AI Access", "Joined", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
@@ -500,7 +500,7 @@ export default function SettingsPage() {
             </thead>
             <tbody>
               {users?.map((u) => (
-                <tr key={u.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={u.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">
@@ -531,7 +531,7 @@ export default function SettingsPage() {
                         }`}
                         title={u.aiEnabled ? "AI enabled — click to disable" : "AI disabled — click to enable"}
                       >
-                        <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-white dark:bg-gray-200 transition-transform ${
                           u.aiEnabled ? "translate-x-5" : "translate-x-1"
                         }`} />
                       </button>
@@ -563,7 +563,7 @@ export default function SettingsPage() {
       {tab === "integrations" && (
         <div className="space-y-4">
           {/* Accounting Integrations (QBO / Xero) */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h3 className="text-sm font-semibold mb-4">Accounting Integrations</h3>
             <div className="space-y-3">
               {accountingEntities?.map((e) => (
@@ -600,8 +600,8 @@ export default function SettingsPage() {
 
       {/* Tab 4: GP Management */}
       {tab === "gp" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
             <div>
               <h3 className="text-sm font-semibold">GP Management</h3>
               <p className="text-xs text-gray-500 mt-0.5">Manage firms across the platform. Each firm has its own entities, deals, and team members.</p>
@@ -609,7 +609,7 @@ export default function SettingsPage() {
             <Button onClick={() => alert("Create firm functionality coming soon.")}>+ Add Firm</Button>
           </div>
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Firm Name", "Legal Name", "Firm ID", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
@@ -618,7 +618,7 @@ export default function SettingsPage() {
             </thead>
             <tbody>
               {firms?.map((f) => (
-                <tr key={f.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={f.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-[10px] font-bold">
@@ -650,8 +650,8 @@ export default function SettingsPage() {
 
       {/* Tab 7: Decision Structures */}
       {tab === "decisions" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
             <div>
               <h3 className="text-sm font-semibold">Decision Structures</h3>
               <p className="text-xs text-gray-500 mt-0.5">
@@ -662,7 +662,7 @@ export default function SettingsPage() {
           </div>
 
           {structures && structures.length > 0 ? (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {structures.map((s) => (
                 <div key={s.id} className="p-4">
                   {editingStructure === s.id ? (
@@ -755,7 +755,7 @@ export default function SettingsPage() {
 
                       {/* Expanded: show members */}
                       {expandedStructure === s.id && (
-                        <div className="mt-3 border-t border-gray-100 pt-3">
+                        <div className="mt-3 border-t border-gray-100 dark:border-gray-700 pt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-xs font-semibold text-gray-700">Members ({s.members.length})</span>
                             <button
@@ -772,7 +772,7 @@ export default function SettingsPage() {
 
                           {/* Add member inline form */}
                           {addMemberStructureId === s.id && (
-                            <div className="flex items-end gap-2 mb-3 p-2 bg-gray-50 rounded-lg">
+                            <div className="flex items-end gap-2 mb-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                               <div className="flex-1">
                                 <label className="block text-[10px] font-medium text-gray-500 mb-1">Team Member</label>
                                 <select
@@ -818,7 +818,7 @@ export default function SettingsPage() {
                           {s.members.length > 0 ? (
                             <div className="space-y-1">
                               {s.members.map((m) => (
-                                <div key={m.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 rounded">
+                                <div key={m.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
                                   <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold">
                                       {m.user.initials || m.user.name.slice(0, 2).toUpperCase()}
@@ -859,9 +859,9 @@ export default function SettingsPage() {
 
       {/* Tab 8: Notifications */}
       {tab === "notifications" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5 max-w-lg">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 max-w-lg">
           <div className="mb-5">
-            <h3 className="text-sm font-semibold text-gray-900">Notification Preferences</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notification Preferences</h3>
             <p className="text-xs text-gray-500 mt-0.5">
               Configure how and when you receive notifications from Atlas.
             </p>
@@ -871,7 +871,7 @@ export default function SettingsPage() {
             {/* Email notifications toggle */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-900" htmlFor="notif-email">
+                <label className="text-sm font-medium text-gray-900 dark:text-gray-100" htmlFor="notif-email">
                   Email notifications
                 </label>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -890,7 +890,7 @@ export default function SettingsPage() {
             {/* SMS notifications toggle */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-900" htmlFor="notif-sms">
+                <label className="text-sm font-medium text-gray-900 dark:text-gray-100" htmlFor="notif-sms">
                   SMS notifications
                 </label>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -908,7 +908,7 @@ export default function SettingsPage() {
 
             {/* Digest frequency selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1.5" htmlFor="digest-frequency">
+              <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1.5" htmlFor="digest-frequency">
                 Digest frequency
               </label>
               <p className="text-xs text-gray-500 mb-2">
@@ -918,7 +918,7 @@ export default function SettingsPage() {
                 id="digest-frequency"
                 value={digestFrequency}
                 onChange={(e) => setDigestFrequency(e.target.value)}
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="real-time">Real-time</option>
                 <option value="daily">Daily digest</option>
@@ -1031,7 +1031,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Email</label>
-              <div className="text-sm text-gray-500 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+              <div className="text-sm text-gray-500 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
                 {editingUser.email}
               </div>
               <p className="text-[10px] text-gray-400 mt-1">Email cannot be changed — it&apos;s linked to their login.</p>

@@ -116,9 +116,9 @@ export default function InvestorDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 pb-0">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 pb-0">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${tab === t.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"}`}>
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${tab === t.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 dark:bg-gray-800 text-gray-500 border-transparent hover:text-gray-700"}`}>
             {t.label}
           </button>
         ))}
@@ -134,14 +134,14 @@ export default function InvestorDetailPage() {
               { label: "Total Distributed", value: fmt(totalDistributed) },
               { label: "Uncalled", value: fmt(totalCommitted - totalCalled) },
             ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
                 <div className="text-lg font-bold mt-1">{s.value}</div>
               </div>
             ))}
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h3 className="text-sm font-semibold mb-3">Commitments by Entity</h3>
             <div className="space-y-2">
               {(inv.commitments || []).map((c: { id: string; amount: number; calledAmount: number; entity: { id: string; name: string } }) => (
@@ -161,7 +161,7 @@ export default function InvestorDetailPage() {
 
       {/* Capital Account Tab */}
       {tab === "capital-account" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-semibold mb-4">Capital Account Statement</h3>
           {capitalAccount && capitalAccount.length > 0 ? (
             <div className="space-y-1 text-sm font-mono">
@@ -177,7 +177,7 @@ export default function InvestorDetailPage() {
                   { l: "Ending Balance", v: fmt(latest.endingBalance), b: true, h: "bg-indigo-50 text-indigo-900" },
                 ];
                 return rows.map((r, i) => (
-                  <div key={i} className={`flex justify-between py-1 px-3 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-2 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""} ${r.c || ""}`}>
+                  <div key={i} className={`flex justify-between py-1 px-3 rounded ${r.b ? "font-semibold border-t border-gray-200 dark:border-gray-700 pt-2 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""} ${r.c || ""}`}>
                     <span>{r.l}</span><span>{r.v}</span>
                   </div>
                 ));
@@ -195,15 +195,15 @@ export default function InvestorDetailPage() {
       {/* Commitments Tab */}
       {tab === "commitments" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Commitments</h3></div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Commitments</h3></div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Entity", "Committed", "Called", "Uncalled", "% Called"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {(inv.commitments || []).map((c: { id: string; amount: number; calledAmount: number; entity: { id: string; name: string } }) => (
-                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="px-3 py-2.5"><Link href={`/entities/${c.entity.id}`} className="text-indigo-700 hover:underline font-medium">{c.entity.name}</Link></td>
                     <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
                     <td className="px-3 py-2.5">{fmt(c.calledAmount)}</td>
@@ -216,9 +216,9 @@ export default function InvestorDetailPage() {
           </div>
 
           {inv.sideLetters && inv.sideLetters.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Side Letters</h3></div>
-              <div className="divide-y divide-gray-50">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Side Letters</h3></div>
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
                 {inv.sideLetters.map((s: { id: string; terms: string; entity: { name: string } }) => (
                   <div key={s.id} className="p-3">
                     <div className="flex items-center gap-2">
@@ -237,9 +237,9 @@ export default function InvestorDetailPage() {
       {/* Activity Tab */}
       {tab === "activity" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Capital Calls</h3></div>
-            <div className="divide-y divide-gray-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Capital Calls</h3></div>
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {(inv.capitalCallLineItems || []).map((item: { id: string; amount: number; status: string; capitalCall: { callNumber: string; callDate: string; dueDate: string; purpose?: string; status: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
@@ -259,9 +259,9 @@ export default function InvestorDetailPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Distributions</h3></div>
-            <div className="divide-y divide-gray-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Distributions</h3></div>
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {(inv.distributionLineItems || []).map((item: { id: string; netAmount: number; income: number; returnOfCapital: number; distribution: { distributionDate: string; source?: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
@@ -286,11 +286,11 @@ export default function InvestorDetailPage() {
 
       {/* Documents Tab */}
       {tab === "documents" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Documents</h3></div>
-          <div className="divide-y divide-gray-50">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Documents</h3></div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
             {(docs || []).map((d: { id: string; name: string; category: string; uploadDate: string }) => (
-              <div key={d.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
+              <div key={d.id} className="p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div className="flex items-center gap-2">
                   <Badge color="indigo">PDF</Badge>
                   <span className="text-sm font-medium">{d.name}</span>
@@ -309,8 +309,8 @@ export default function InvestorDetailPage() {
       {/* Portal Access Tab */}
       {tab === "access" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Portal Access</h3>
               <div className="flex gap-2">
                 {availableUsers.filter((u: any) => u.role === "LP_INVESTOR").length > 0 && (
@@ -321,7 +321,7 @@ export default function InvestorDetailPage() {
             </div>
             {access && access.length > 0 ? (
               <table className="w-full text-xs">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     {["User", "Email", "System Role", "Access Role", "Granted", ""].map((h) => (
                       <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -330,7 +330,7 @@ export default function InvestorDetailPage() {
                 </thead>
                 <tbody>
                   {access.map((a: any) => (
-                    <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-4 py-3 font-medium">
                         <div className="flex items-center gap-2">
                           <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
@@ -370,7 +370,7 @@ export default function InvestorDetailPage() {
             )}
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-4 text-xs text-gray-500">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-xs text-gray-500">
             <strong>About Portal Access:</strong> Users with access can view this investor&apos;s data in the LP portal.
             &quot;Primary&quot; users are the main point of contact. &quot;Viewer&quot; users have read-only access.
             &quot;Admin&quot; users can manage settings for this investor.

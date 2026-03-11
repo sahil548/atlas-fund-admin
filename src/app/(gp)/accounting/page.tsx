@@ -148,12 +148,12 @@ export default function AccountingPage() {
       </div>
 
       {/* Entity list */}
-      <div className="bg-white rounded-xl border border-gray-200">
-        <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div className="flex justify-between items-center px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-semibold">Entity Accounting Connections</h3>
         </div>
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100 dark:divide-gray-700">
           {entities.map((e) => {
             const conn = e.accountingConnection;
             const isExpanded = expandedEntityId === e.id;
@@ -164,7 +164,7 @@ export default function AccountingPage() {
                 {/* Entity row */}
                 <div
                   className={cn(
-                    "flex items-center justify-between px-5 py-3 hover:bg-gray-50 cursor-pointer transition-colors",
+                    "flex items-center justify-between px-5 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors",
                     isExpanded && "bg-indigo-50/30"
                   )}
                   onClick={() => toggleExpand(e.id)}
@@ -257,7 +257,7 @@ export default function AccountingPage() {
                         // Error/disconnected — show Reconnect button
                         <a
                           href={`/api/integrations/qbo/connect?entityId=${e.id}`}
-                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
                           Reconnect
                         </a>
@@ -269,8 +269,8 @@ export default function AccountingPage() {
                           className={cn(
                             "inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
                             isSyncing || conn.syncStatus === "SYNCING"
-                              ? "bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed"
-                              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                              ? "bg-gray-50 dark:bg-gray-800 text-gray-400 border-gray-200 cursor-not-allowed"
+                              : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
                           )}
                         >
                           {isSyncing ? "Syncing..." : "Sync Now"}
@@ -300,7 +300,7 @@ export default function AccountingPage() {
 
                 {/* Drill-in section */}
                 {isExpanded && (
-                  <div className="border-t border-indigo-100 bg-gray-50/50 px-5 py-4">
+                  <div className="border-t border-indigo-100 bg-gray-50/50 dark:bg-gray-800/50 px-5 py-4">
                     {!conn ? (
                       <div className="text-sm text-gray-500 py-4 text-center">
                         No QBO connection for this entity.{" "}
@@ -315,7 +315,7 @@ export default function AccountingPage() {
                     ) : (
                       <div>
                         {/* Drill-in tabs */}
-                        <div className="flex gap-1 mb-4 bg-white rounded-lg border border-gray-200 p-1 w-fit">
+                        <div className="flex gap-1 mb-4 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-1 w-fit">
                           <button
                             onClick={() => setDrillInTab("mapping")}
                             className={cn(

@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 import useSWR, { mutate } from "swr";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
@@ -12,7 +11,7 @@ import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { CheckSquare, LayoutList, LayoutGrid } from "lucide-react";
+import { LayoutList, LayoutGrid } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { TasksListView } from "@/components/features/tasks/tasks-list-view";
@@ -269,6 +268,7 @@ export default function TasksPage() {
         actions={
           <SearchFilterBar
             filters={TASK_FILTERS}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
           >
@@ -291,14 +291,14 @@ export default function TasksPage() {
       />
 
       {/* Tabs row + view toggle + context filter */}
-      <div className="flex items-center justify-between gap-2 border-b border-gray-200 pb-0">
+      <div className="flex items-center justify-between gap-2 border-b border-gray-200 dark:border-gray-700 pb-0">
         <div className="flex gap-1">
           {viewTabs.map((vt) => (
             <button
               key={vt.key}
               onClick={() => setViewTab(vt.key as "my" | "all" | "overdue")}
               className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${
-                viewTab === vt.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
+                viewTab === vt.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 dark:bg-gray-800 text-gray-500 border-transparent hover:text-gray-700"
               }`}
             >
               {vt.label}
@@ -311,7 +311,7 @@ export default function TasksPage() {
           <select
             value={contextFilterValue}
             onChange={(e) => handleContextChange(e.target.value)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             {contextOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -377,16 +377,16 @@ export default function TasksPage() {
         <div className="space-y-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Title *</label>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Task title" />
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" placeholder="Task title" />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Description</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Optional description" />
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" rows={2} placeholder="Optional description" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Priority</label>
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Medium</option>
                 <option value="HIGH">High</option>
@@ -395,7 +395,7 @@ export default function TasksPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Assignee</label>
-              <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                 <option value="">Unassigned</option>
                 {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
@@ -403,7 +403,7 @@ export default function TasksPage() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">Due Date</label>
-            <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+            <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-4">

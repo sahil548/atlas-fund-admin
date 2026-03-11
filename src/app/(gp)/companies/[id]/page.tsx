@@ -157,11 +157,11 @@ export default function CompanyDetailPage() {
 
       {/* Info Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-[10px] text-gray-500 uppercase font-semibold">Contacts</div>
           <div className="text-2xl font-bold mt-1">{company.contacts?.length || 0}</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-[10px] text-gray-500 uppercase font-semibold">Investor Profile</div>
           <div className="text-sm font-medium mt-2">
             {company.investorProfile ? (
@@ -173,7 +173,7 @@ export default function CompanyDetailPage() {
             )}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="text-[10px] text-gray-500 uppercase font-semibold">Website</div>
           <div className="text-sm font-medium mt-2">
             {company.website ? (
@@ -187,7 +187,7 @@ export default function CompanyDetailPage() {
 
       {/* Details */}
       {(company.legalName || company.address || company.notes) && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-semibold mb-3">Details</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             {company.legalName && (
@@ -213,13 +213,13 @@ export default function CompanyDetailPage() {
       )}
 
       {/* Contacts */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-semibold">Contacts at {company.name}</h3>
         </div>
         {company.contacts && company.contacts.length > 0 ? (
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Name", "Title", "Email", "Phone", "Type"].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -228,7 +228,7 @@ export default function CompanyDetailPage() {
             </thead>
             <tbody>
               {company.contacts.map((c: any) => (
-                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">
@@ -254,7 +254,7 @@ export default function CompanyDetailPage() {
 
       {/* Investor Profile */}
       {company.investorProfile && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-semibold mb-3">Investor Profile</h3>
           <div className="flex items-center justify-between">
             <div>

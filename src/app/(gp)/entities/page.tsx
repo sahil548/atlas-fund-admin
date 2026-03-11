@@ -177,7 +177,7 @@ export default function EntitiesPage() {
       {viewMode === "flat" && (
         <SectionPanel noPadding className="overflow-hidden">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Vehicle", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
@@ -200,7 +200,7 @@ export default function EntitiesPage() {
                 </td></tr>
               ) : (
                 allEntities.map((e: any) => (
-                  <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50">
+                  <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="px-3 py-2.5">
                       <Link href={`/entities/${e.id}`} className="font-medium text-indigo-700 hover:underline">{e.name}</Link>
                     </td>
@@ -265,7 +265,7 @@ export default function EntitiesPage() {
           {isLoading && allEntities.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-xl border border-gray-200 h-48 animate-pulse" />
+                <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 h-48 animate-pulse" />
               ))}
             </div>
           ) : (

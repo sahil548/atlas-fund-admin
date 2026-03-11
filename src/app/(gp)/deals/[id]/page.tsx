@@ -25,6 +25,7 @@ import { DealICReviewTab } from "@/components/features/deals/deal-ic-review-tab"
 import { DealClosingTab } from "@/components/features/deals/deal-closing-tab";
 import { DealCoInvestorsSection } from "@/components/features/deals/deal-co-investors-section";
 import { InlineTaskAdd } from "@/components/features/tasks/inline-task-add";
+import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
@@ -127,7 +128,7 @@ function DealTasksTab({ dealId, dealName }: { dealId: string; dealName: string }
   const tasks: any[] = data?.data ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-semibold">Tasks</h3>
         {tasks.length > 0 && (
@@ -139,7 +140,7 @@ function DealTasksTab({ dealId, dealName }: { dealId: string; dealName: string }
       ) : tasks.length > 0 ? (
         <div className="space-y-2">
           {tasks.map((t: any) => (
-            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center gap-3">
                 <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
                   {t.status === "DONE" ? "\u2713" : ""}
@@ -821,15 +822,15 @@ export default function DealDetailPage({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 pb-0">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 pb-0">
         {visibleTabs.map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${
               activeTab === t
-                ? "bg-white text-indigo-700 border-gray-200"
-                : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"
+                ? "bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-300 border-gray-200 dark:border-gray-700"
+                : "bg-gray-50 dark:bg-gray-800 text-gray-500 border-transparent hover:text-gray-700"
             }`}
           >
             {t}
@@ -838,9 +839,11 @@ export default function DealDetailPage({
       </div>
 
       {/* Tab content */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <SectionErrorBoundary>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         {renderTab()}
       </div>
+      </SectionErrorBoundary>
 
       {/* Modals */}
       <EditDealForm

@@ -223,7 +223,7 @@ export default function DirectoryPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`px-4 py-2 text-xs font-medium rounded-lg transition-colors ${
-              tab === t.key ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              tab === t.key ? "bg-indigo-600 text-white" : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
             }`}
           >
             {t.label} ({t.count})
@@ -234,8 +234,8 @@ export default function DirectoryPage() {
       {/* Investors Tab */}
       {tab === "investors" && (
         <div className="space-y-3">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-3 border-b border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-3 border-b border-gray-100 dark:border-gray-700">
               <SearchFilterBar
                 filters={[
                   { key: "type", label: "Type", options: [
@@ -244,6 +244,7 @@ export default function DirectoryPage() {
                     { value: "Family Office", label: "Family Office" },
                   ]},
                 ]}
+                onSearch={handleInvestorSearch}
                 onFilterChange={handleInvestorFilter}
                 activeFilters={investorFilters}
               >
@@ -264,7 +265,7 @@ export default function DirectoryPage() {
               </SearchFilterBar>
             </div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   {["Investor", "Type", "Total Committed", "Vehicles", "KYC", "Linked To", "Advisory", "Pref. Contact", ""].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
@@ -287,7 +288,7 @@ export default function DirectoryPage() {
                   </td></tr>
                 ) : (
                   allInvestors.map((inv: InvestorRow) => (
-                    <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr key={inv.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-3 py-2.5 font-medium"><Link href={`/investors/${inv.id}`} className="text-indigo-700 hover:underline font-medium">{inv.name}</Link></td>
                       <td className="px-3 py-2.5"><Badge>{inv.investorType}</Badge></td>
                       <td className="px-3 py-2.5 font-medium">{fmt(inv.totalCommitted)}</td>
@@ -326,16 +327,16 @@ export default function DirectoryPage() {
 
       {/* Companies Tab */}
       {tab === "companies" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
             <span className="text-[10px] text-gray-500 font-medium">Filter:</span>
-            <select value={companyTypeFilter} onChange={(e) => setCompanyTypeFilter(e.target.value)} className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:border-indigo-400 focus:outline-none">
+            <select value={companyTypeFilter} onChange={(e) => setCompanyTypeFilter(e.target.value)} className="text-xs border border-gray-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-indigo-400 focus:outline-none">
               <option value="">All Types</option>
               {Object.entries(COMPANY_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Company", "Type", "Industry", "Contacts", "Investor", "Website", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -344,7 +345,7 @@ export default function DirectoryPage() {
             </thead>
             <tbody>
               {(companies || []).filter((c: any) => !companyTypeFilter || c.type === companyTypeFilter).map((c: any) => (
-                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium"><Link href={`/companies/${c.id}`} className="text-indigo-700 hover:underline">{c.name}</Link></td>
                   <td className="px-4 py-3"><Badge color={COMPANY_TYPE_COLORS[c.type] || "gray"}>{COMPANY_TYPE_LABELS[c.type] || c.type}</Badge></td>
                   <td className="px-4 py-3 text-gray-600">{c.industry || "\u2014"}</td>
@@ -384,9 +385,9 @@ export default function DirectoryPage() {
 
       {/* Contacts Tab */}
       {tab === "contacts" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Name", "Title", "Company", "Email", "Phone", "Type", "Investor", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -397,7 +398,7 @@ export default function DirectoryPage() {
               {(contacts || []).map((c: any) => (
                 <tr
                   key={c.id}
-                  className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+                  className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                   onClick={() => router.push(`/contacts/${c.id}`)}
                 >
                   <td className="px-4 py-3 font-medium">
@@ -443,9 +444,9 @@ export default function DirectoryPage() {
 
       {/* Team Tab */}
       {tab === "team" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Name", "Email", "Role", "Status", "Joined", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -454,7 +455,7 @@ export default function DirectoryPage() {
             </thead>
             <tbody>
               {(users || []).map((u: any) => (
-                <tr key={u.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={u.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium">
                     <div className="flex items-center gap-2">
                       <span className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-bold flex items-center justify-center flex-shrink-0">{u.initials || u.name?.split(" ").map((n: string) => n[0]).join("")}</span>
@@ -492,9 +493,9 @@ export default function DirectoryPage() {
 
       {/* Side Letters Tab */}
       {tab === "sideLetters" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Investor", "Vehicle", "Terms", ""].map((h) => (
                   <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
@@ -503,7 +504,7 @@ export default function DirectoryPage() {
             </thead>
             <tbody>
               {(sideLetters || []).map((sl: { id: string; investor: { name: string }; entity: { name: string }; terms: string }) => (
-                <tr key={sl.id} className="border-t border-gray-50 hover:bg-gray-50">
+                <tr key={sl.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-4 py-3 font-medium">{sl.investor.name}</td>
                   <td className="px-4 py-3 text-indigo-600">{sl.entity.name}</td>
                   <td className="px-4 py-3 text-gray-600 max-w-[300px] truncate">{sl.terms}</td>

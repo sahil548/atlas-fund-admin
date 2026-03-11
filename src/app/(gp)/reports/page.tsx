@@ -49,11 +49,6 @@ function formatBytes(bytes: number | null | undefined): string {
   return `${bytes} B`;
 }
 
-function reportTypeLabel(type: string): string {
-  const found = REPORT_TYPES.find((rt) => rt.value === type);
-  return found?.label ?? type;
-}
-
 // ── Report grouping helper ───────────────────────────────────
 
 interface ReportGroup {
@@ -119,9 +114,9 @@ function K1TrackingSection({ firmId }: { firmId: string }) {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-gray-900">K-1 Acknowledgment Tracking</h3>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">K-1 Acknowledgment Tracking</h3>
         <p className="text-xs text-gray-500 mt-0.5">
           Per-investor K-1 acknowledgment status. Send reminders to investors with pending documents.
         </p>
@@ -130,7 +125,7 @@ function K1TrackingSection({ firmId }: { firmId: string }) {
       {isLoading ? (
         <div className="text-sm text-gray-400">Loading K-1 status...</div>
       ) : rows.length === 0 ? (
-        <div className="py-8 text-center border border-dashed border-gray-200 rounded-lg">
+        <div className="py-8 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
           <div className="text-sm text-gray-500 font-medium">No K-1 documents distributed yet</div>
           <div className="text-xs text-gray-400 mt-1">
             Upload K-1 PDFs in the K-1 Distribution section below to track acknowledgments.
@@ -140,7 +135,7 @@ function K1TrackingSection({ firmId }: { firmId: string }) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-gray-100">
+              <tr className="border-b border-gray-100 dark:border-gray-700">
                 <th className="text-left py-2 px-3 font-medium text-gray-500">Investor</th>
                 <th className="text-right py-2 px-3 font-medium text-gray-500">Total K-1s</th>
                 <th className="text-right py-2 px-3 font-medium text-gray-500">Acknowledged</th>
@@ -150,12 +145,12 @@ function K1TrackingSection({ firmId }: { firmId: string }) {
                 <th className="text-right py-2 px-3 font-medium text-gray-500">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
               {rows.map((row) => {
                 const isComplete = row.pending === 0;
                 return (
-                  <tr key={row.investorId} className="hover:bg-gray-50">
-                    <td className="py-2.5 px-3 font-medium text-gray-900">{row.investorName}</td>
+                  <tr key={row.investorId} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-gray-100">{row.investorName}</td>
                     <td className="py-2.5 px-3 text-right text-gray-700">{row.total}</td>
                     <td className="py-2.5 px-3 text-right text-green-700">{row.acknowledged}</td>
                     <td className="py-2.5 px-3 text-right text-amber-700">{row.pending}</td>
@@ -372,8 +367,8 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Generate Report Panel */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Generate Report
             </h3>
 
@@ -388,7 +383,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedEntityId}
                   onChange={(e) => setSelectedEntityId(e.target.value)}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select entity...</option>
                   {entities.map((e: any) => (
@@ -412,7 +407,7 @@ export default function ReportsPage() {
                     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                       selectedReportType === rt.value
                         ? "border-indigo-500 bg-indigo-50"
-                        : "border-gray-200 hover:border-gray-300"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-500"
                     }`}
                   >
                     <input
@@ -424,7 +419,7 @@ export default function ReportsPage() {
                       className="mt-0.5 accent-indigo-600"
                     />
                     <div>
-                      <div className="text-xs font-medium text-gray-900">
+                      <div className="text-xs font-medium text-gray-900 dark:text-gray-100">
                         {rt.label}
                       </div>
                       <div className="text-[10px] text-gray-500 mt-0.5">
@@ -447,7 +442,7 @@ export default function ReportsPage() {
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
                   placeholder="e.g. Q4 2025 or 2025"
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <p className="text-[10px] text-gray-400 mt-1">
                   e.g. &quot;Q4 2025&quot; for quarterly, &quot;2025&quot; for annual
@@ -500,8 +495,8 @@ export default function ReportsPage() {
 
         {/* Generated Reports List */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Generated Reports
             </h3>
 
@@ -643,9 +638,9 @@ export default function ReportsPage() {
       <K1TrackingSection firmId={firmId} />
 
       {/* K-1 Distribution Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="mb-5">
-          <h3 className="text-sm font-semibold text-gray-900">K-1 Distribution</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">K-1 Distribution</h3>
           <p className="text-xs text-gray-500 mt-0.5">
             Bulk upload K-1 tax documents. System auto-matches to investors by filename pattern.
           </p>
@@ -665,7 +660,7 @@ export default function ReportsPage() {
                 <select
                   value={k1EntityId}
                   onChange={(e) => setK1EntityId(e.target.value)}
-                  className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select entity...</option>
                   {entities.map((e: any) => (
@@ -687,7 +682,7 @@ export default function ReportsPage() {
                 value={k1TaxYear}
                 onChange={(e) => setK1TaxYear(e.target.value)}
                 placeholder="e.g. 2025"
-                className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
@@ -697,7 +692,7 @@ export default function ReportsPage() {
                 K-1 PDF Files
               </label>
               <div
-                className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+                className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
                 onClick={() => k1InputRef.current?.click()}
               >
                 <div className="text-2xl mb-1">&#128196;</div>
@@ -728,7 +723,7 @@ export default function ReportsPage() {
                   {k1Files.map((file, i) => (
                     <div
                       key={i}
-                      className="flex items-center justify-between px-2 py-1.5 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between px-2 py-1.5 bg-gray-50 dark:bg-gray-800 rounded-lg"
                     >
                       <span className="text-xs text-gray-700 truncate flex-1 mr-2">
                         {file.name}
@@ -788,7 +783,7 @@ export default function ReportsPage() {
               <select
                 value={k1FilterEntityId}
                 onChange={(e) => setK1FilterEntityId(e.target.value)}
-                className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">All entities</option>
                 {entities.map((e: any) => (
@@ -802,7 +797,7 @@ export default function ReportsPage() {
             {k1Loading ? (
               <div className="text-sm text-gray-400">Loading K-1 documents...</div>
             ) : k1Docs.length === 0 ? (
-              <div className="py-8 text-center border border-dashed border-gray-200 rounded-lg">
+              <div className="py-8 text-center border border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
                 <div className="text-sm text-gray-500 font-medium">
                   No K-1s uploaded yet
                 </div>
@@ -811,7 +806,7 @@ export default function ReportsPage() {
                 </div>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100 border border-gray-100 rounded-lg">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700 border border-gray-100 dark:border-gray-700 rounded-lg">
                 {k1Docs.map((doc: any) => (
                   <div
                     key={doc.id}
@@ -822,7 +817,7 @@ export default function ReportsPage() {
                         K-1
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                           {doc.name}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">

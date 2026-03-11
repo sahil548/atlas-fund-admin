@@ -194,6 +194,7 @@ export default function DocumentsPage() {
           <>
             <SearchFilterBar
               filters={DOC_FILTERS}
+              onSearch={handleSearch}
               onFilterChange={handleFilterChange}
               activeFilters={activeFilters}
             >
@@ -221,7 +222,7 @@ export default function DocumentsPage() {
       {/* Document list */}
       <SectionPanel noPadding className="overflow-hidden">
         <table className="w-full text-xs">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               {["Document", "Category", "AI Status", "Associated With", "Upload Date", "Size", "Actions"].map((h) => (
                 <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
@@ -248,7 +249,7 @@ export default function DocumentsPage() {
                 return (
                   <tr
                     key={d.id}
-                    className={`border-t border-gray-50 hover:bg-gray-50 ${
+                    className={`border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 ${
                       d.extractionStatus && d.extractionStatus !== "PENDING" && d.extractionStatus !== "PROCESSING" ? "cursor-pointer" : ""
                     }`}
                     onClick={() => {
@@ -325,7 +326,7 @@ export default function DocumentsPage() {
             <select
               value={uploadForm.category}
               onChange={(e) => setUploadForm((f) => ({ ...f, category: e.target.value }))}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>{c.charAt(0) + c.slice(1).toLowerCase()}</option>
@@ -336,7 +337,7 @@ export default function DocumentsPage() {
             <select
               value={uploadForm.associateWith}
               onChange={(e) => setUploadForm((f) => ({ ...f, associateWith: e.target.value }))}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
+              className="w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400"
             >
               <option value="">General</option>
               {entities && entities.length > 0 && (

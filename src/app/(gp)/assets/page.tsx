@@ -169,7 +169,7 @@ export default function AssetsPage() {
       <th
         className={cn(
           "text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none",
-          "hover:text-gray-900 hover:bg-gray-100 transition-colors",
+          "hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 transition-colors",
           isActive && "text-indigo-700",
         )}
         onClick={() => handleSort(colKey)}
@@ -188,6 +188,7 @@ export default function AssetsPage() {
         actions={
           <SearchFilterBar
             filters={ASSET_FILTERS}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
           >
@@ -215,7 +216,7 @@ export default function AssetsPage() {
 
       <SectionPanel noPadding className="overflow-hidden">
         <table className="w-full text-xs">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
               {SORTABLE_COLUMNS.map((col) => (
                 <SortHeader key={col.key} colKey={col.key}>
@@ -247,7 +248,7 @@ export default function AssetsPage() {
                 return (
                   <tr
                     key={a.id}
-                    className={cn("border-t border-gray-50 hover:bg-gray-50 cursor-pointer", a.status === "EXITED" && "opacity-60")}
+                    className={cn("border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer", a.status === "EXITED" && "opacity-60")}
                     onClick={() => (window.location.href = `/assets/${a.id}`)}
                   >
                     <td className="px-3 py-2.5 font-medium text-indigo-700">

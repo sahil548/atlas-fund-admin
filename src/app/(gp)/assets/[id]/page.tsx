@@ -21,6 +21,7 @@ import { AssetIncomeTab } from "@/components/features/assets/asset-income-tab";
 import { AssetExpensesTab } from "@/components/features/assets/asset-expenses-tab";
 import { fmt, pct, cn, formatDate } from "@/lib/utils";
 import Link from "next/link";
+import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -47,7 +48,7 @@ function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: str
   const tasks: any[] = data?.data ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-semibold">Tasks</h3>
         {tasks.length > 0 && (
@@ -63,7 +64,7 @@ function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: str
           {tasks.map((t: any) => (
             <div
               key={t.id}
-              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -145,11 +146,11 @@ export default function AssetDetailPage({
       {deal && <AssetOriginatedFrom dealId={deal.id} dealName={deal.name} />}
 
       {/* Header */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-lg font-bold text-gray-900">{a.name}</h2>
+              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">{a.name}</h2>
               <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>
                 {ASSET_CLASS_LABELS[a.assetClass]}
               </Badge>
@@ -218,9 +219,9 @@ export default function AssetDetailPage({
             { l: "Gross IRR", v: a.irr ? pct(a.irr) : "---", c: "text-emerald-700" },
             { l: "Income", v: a.incomeType || "---" },
           ].map((s, i) => (
-            <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
+            <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
               <div className="text-[10px] text-gray-500 uppercase">{s.l}</div>
-              <div className={`text-lg font-bold ${s.c || "text-gray-900"}`}>{s.v}</div>
+              <div className={`text-lg font-bold ${s.c || "text-gray-900 dark:text-gray-100"}`}>{s.v}</div>
             </div>
           ))}
         </div>
@@ -228,6 +229,8 @@ export default function AssetDetailPage({
 
       {/* Unified 6-Tab Navigation */}
       <Tabs tabs={[...TABS]} active={tab} onChange={(t) => setTab(t as Tab)} />
+
+      <SectionErrorBoundary>
 
       {/* ── Overview Tab ─────────────────────────────────── */}
       {tab === "overview" && <AssetOverviewTab asset={a} />}
@@ -265,7 +268,7 @@ export default function AssetDetailPage({
 
       {/* ── Documents Tab ────────────────────────────────── */}
       {tab === "documents" && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-semibold">Documents</h3>
             <Button
@@ -281,7 +284,7 @@ export default function AssetDetailPage({
               (d: { id: string; name: string; uploadDate: string; category: string }) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2 hover:bg-gray-100 cursor-pointer"
+                  className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-gray-400">&#128196;</span>
@@ -308,7 +311,7 @@ export default function AssetDetailPage({
         <div className="space-y-4">
           {/* Meetings */}
           {a.meetings?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h3 className="text-sm font-semibold mb-3">Meetings</h3>
               {a.meetings.map(
                 (m: {
@@ -320,7 +323,7 @@ export default function AssetDetailPage({
                 }) => (
                   <div
                     key={m.id}
-                    className="p-3 border border-gray-100 rounded-lg mb-2 hover:border-indigo-200 cursor-pointer"
+                    className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg mb-2 hover:border-indigo-200 cursor-pointer"
                   >
                     <div className="flex justify-between">
                       <div className="flex items-center gap-3">
@@ -340,7 +343,7 @@ export default function AssetDetailPage({
 
           {/* Activity Timeline */}
           {a.activityEvents?.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h3 className="text-sm font-semibold mb-3">Activity Timeline</h3>
               {a.activityEvents.map(
                 (e: {
@@ -380,7 +383,7 @@ export default function AssetDetailPage({
           )}
 
           {/* Governance */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h3 className="text-sm font-semibold mb-3">Governance & Rights</h3>
             <div className={cn("grid grid-cols-2 gap-3 text-sm")}>
               {[
@@ -415,7 +418,7 @@ export default function AssetDetailPage({
 
           {/* Empty state if no activity at all */}
           {!a.meetings?.length && !a.activityEvents?.length && (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
               <div className="text-sm text-gray-400">No activity recorded yet</div>
               <div className="text-xs text-gray-300 mt-1">
                 Meetings, governance events, and timeline activity will display here.
@@ -460,6 +463,8 @@ export default function AssetDetailPage({
         onClose={() => setShowExitModal(false)}
         onSuccess={() => mutate(`/api/assets/${id}`)}
       />
+
+      </SectionErrorBoundary>
     </div>
   );
 }

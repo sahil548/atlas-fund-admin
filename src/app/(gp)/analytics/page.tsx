@@ -3,9 +3,9 @@
 import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
-import { fmt } from "@/lib/utils";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
+import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import {
   BarChart,
   Bar,
@@ -115,6 +115,7 @@ export default function AnalyticsPage() {
       />
 
       {/* Summary Stats Row */}
+      <SectionErrorBoundary>
       <div className="grid grid-cols-4 gap-4">
         <StatCard
           label="Total Pipeline Value"
@@ -137,12 +138,14 @@ export default function AnalyticsPage() {
           sub="Pipeline to closed"
         />
       </div>
+      </SectionErrorBoundary>
 
       {/* Charts Grid */}
+      <SectionErrorBoundary>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Pipeline Value by Stage */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">
             Pipeline Value by Stage
           </h3>
           {valueByStageData.some((d: any) => d.value > 0) ? (
@@ -183,8 +186,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Time in Stage */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             Average Time in Stage
           </h3>
           <p className="text-xs text-gray-500 mb-4">
@@ -231,8 +234,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Deal Velocity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             Deal Velocity
           </h3>
           <p className="text-xs text-gray-500 mb-4">
@@ -280,7 +283,7 @@ export default function AnalyticsPage() {
             <div className="mt-3 text-center">
               <span className="text-xs text-gray-500">
                 Average time to close:{" "}
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
                   {dealVelocity.avgDaysToClose} days
                 </span>
               </span>
@@ -289,8 +292,8 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Conversion Funnel */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             Conversion Funnel
           </h3>
           <p className="text-xs text-gray-500 mb-4">
@@ -343,10 +346,10 @@ export default function AnalyticsPage() {
             ].map((cr) => (
               <div
                 key={cr.label}
-                className="bg-gray-50 rounded-lg p-2 text-center"
+                className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center"
               >
                 <div className="text-[10px] text-gray-500">{cr.label}</div>
-                <div className="text-sm font-semibold text-gray-900">
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {cr.value}%
                 </div>
               </div>
@@ -357,8 +360,8 @@ export default function AnalyticsPage() {
 
       {/* Deal Throughput */}
       {throughputData.some((d: any) => d.entering > 0 || d.exiting > 0) && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">
             Deal Throughput
           </h3>
           <p className="text-xs text-gray-500 mb-4">
@@ -413,10 +416,10 @@ export default function AnalyticsPage() {
       )}
 
       {/* Dead Deal Analysis — Kill Reason Breakdown */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex items-start justify-between mb-1">
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
               Dead Deal Analysis
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
@@ -488,6 +491,7 @@ export default function AnalyticsPage() {
           </div>
         )}
       </div>
+      </SectionErrorBoundary>
     </div>
   );
 }

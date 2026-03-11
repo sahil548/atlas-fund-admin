@@ -6,14 +6,13 @@ import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
-import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { CreateCapitalCallForm } from "@/components/features/capital/create-capital-call-form";
 import { CreateDistributionForm } from "@/components/features/capital/create-distribution-form";
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { WaterfallPreviewPanel } from "@/components/features/waterfall/waterfall-preview-panel";
-import { fmt, pct, formatDate, cn } from "@/lib/utils";
+import { fmt, formatDate, cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
@@ -150,7 +149,7 @@ export default function TransactionsPage() {
         actions={
           <div className="flex gap-2">
             <button onClick={() => setShowCreateCC(true)} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700">+ Capital Call</button>
-            <button onClick={() => setShowCreateDist(true)} className="px-3 py-1.5 bg-white text-gray-700 border border-gray-200 rounded-lg text-xs font-medium hover:bg-gray-50">+ Distribution</button>
+            <button onClick={() => setShowCreateDist(true)} className="px-3 py-1.5 bg-white text-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800">+ Distribution</button>
           </div>
         }
       />
@@ -176,7 +175,7 @@ export default function TransactionsPage() {
             key={t.key}
             onClick={() => { setTab(t.key); setEntityFilter(""); setStatusFilter(""); }}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              tab === t.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+              tab === t.key ? "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {t.label} <span className="text-gray-400 ml-1">{t.count}</span>
@@ -186,14 +185,14 @@ export default function TransactionsPage() {
 
       {/* Capital Calls Tab */}
       {tab === "calls" && (
-        <div className="bg-white rounded-xl border border-gray-200">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
           {/* Filters + Export */}
-          <div className="flex gap-2 p-3 border-b border-gray-100">
-            <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <div className="flex gap-2 p-3 border-b border-gray-100 dark:border-gray-700">
+            <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Entities</option>
               {entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Statuses</option>
               {["DRAFT", "ISSUED", "FUNDED", "PARTIALLY_FUNDED", "OVERDUE"].map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
             </select>
@@ -212,7 +211,7 @@ export default function TransactionsPage() {
             />
           </div>
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 <th className="text-left px-3 py-2 font-semibold text-gray-600">Call #</th>
                 <th className="text-left px-3 py-2 font-semibold text-gray-600">Entity</th>
@@ -246,12 +245,12 @@ export default function TransactionsPage() {
                     <tr
                       key={c.id}
                       className={cn(
-                        "border-t border-gray-50 hover:bg-gray-50 cursor-pointer",
+                        "border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer",
                         overdue && "bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30"
                       )}
                       onClick={() => router.push(`/transactions/capital-calls/${c.id}`)}
                     >
-                      <td className="px-3 py-2 font-medium text-gray-900">{c.callNumber}</td>
+                      <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">{c.callNumber}</td>
                       <td className="px-3 py-2 text-gray-600">{c.entity?.name}</td>
                       <td className="px-3 py-2 text-right font-medium">{fmt(c.amount)}</td>
                       <td className="px-3 py-2 text-gray-500">{formatDate(c.callDate)}</td>
@@ -284,14 +283,14 @@ export default function TransactionsPage() {
 
       {/* Distributions Tab */}
       {tab === "distributions" && (
-        <div className="bg-white rounded-xl border border-gray-200">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
           {/* Filters + Export */}
-          <div className="flex gap-2 p-3 border-b border-gray-100">
-            <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <div className="flex gap-2 p-3 border-b border-gray-100 dark:border-gray-700">
+            <select value={entityFilter} onChange={(e) => setEntityFilter(e.target.value)} className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Entities</option>
               {entities.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
             </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
               <option value="">All Statuses</option>
               {["DRAFT", "APPROVED", "PAID"].map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -315,7 +314,7 @@ export default function TransactionsPage() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <th className="text-left px-3 py-2 font-semibold text-gray-600">Entity</th>
                   <th className="text-left px-3 py-2 font-semibold text-gray-600">Date</th>
@@ -347,10 +346,10 @@ export default function TransactionsPage() {
                   filteredDists.map((d) => (
                     <tr
                       key={d.id}
-                      className="border-t border-gray-50 hover:bg-gray-50 cursor-pointer"
+                      className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                       onClick={() => router.push(`/transactions/distributions/${d.id}`)}
                     >
-                      <td className="px-3 py-2 font-medium text-gray-900">{d.entity?.name}</td>
+                      <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">{d.entity?.name}</td>
                       <td className="px-3 py-2 text-gray-500">{formatDate(d.distributionDate)}</td>
                       <td className="px-3 py-2 text-right font-medium">{fmt(d.grossAmount)}</td>
                       <td className="px-3 py-2 text-gray-600 max-w-[140px] truncate">{d.source || "—"}</td>
@@ -378,13 +377,13 @@ export default function TransactionsPage() {
           {templates.map((t) => {
             const isExpanded = expandedTemplate === t.id;
             return (
-              <div key={t.id} className="bg-white rounded-xl border border-gray-200">
+              <div key={t.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
                 <div
-                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   onClick={() => setExpandedTemplate(isExpanded ? null : t.id)}
                 >
                   <div>
-                    <div className="text-sm font-semibold text-gray-900">{t.name}</div>
+                    <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t.name}</div>
                     <div className="text-xs text-gray-500 mt-0.5">{t.description}</div>
                     {/* Fee config summary */}
                     <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -418,16 +417,16 @@ export default function TransactionsPage() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-gray-100 p-4 space-y-2">
+                  <div className="border-t border-gray-100 dark:border-gray-700 p-4 space-y-2">
                     {t.tiers
                       .sort((a, b) => a.tierOrder - b.tierOrder)
                       .map((tier) => (
-                        <div key={tier.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <div key={tier.id} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                           <div className="w-7 h-7 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                             {tier.tierOrder}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-gray-900">{tier.name}</div>
+                            <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{tier.name}</div>
                             {tier.description && <div className="text-[10px] text-gray-500 truncate">{tier.description}</div>}
                           </div>
                           {/* LP / GP Split Bar */}
@@ -481,7 +480,7 @@ export default function TransactionsPage() {
 
                     {/* Waterfall Scenario Preview Panel */}
                     {previewTemplateId === t.id && (
-                      <div className="border-t border-gray-100 pt-4">
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
                         <WaterfallPreviewPanel
                           templateId={t.id}
                           templateName={t.name}
@@ -529,7 +528,7 @@ export default function TransactionsPage() {
                           <tbody>
                             {(calcResults[t.id].tiers || []).map((tier: any, i: number) => (
                               <tr key={i} className="border-b border-emerald-100">
-                                <td className="py-1.5 text-gray-900">{tier.name}</td>
+                                <td className="py-1.5 text-gray-900 dark:text-gray-100">{tier.name}</td>
                                 <td className="py-1.5 text-right font-medium">{fmt(tier.totalAllocated)}</td>
                                 <td className="py-1.5 text-right text-blue-700">{fmt(tier.allocatedLP)}</td>
                                 <td className="py-1.5 text-right text-orange-700">{fmt(tier.allocatedGP)}</td>
@@ -579,7 +578,7 @@ export default function TransactionsPage() {
                                 <tbody>
                                   {calcResults[t.id].perInvestorBreakdown.map((b: PerInvestorBreakdown) => (
                                     <tr key={b.investorId} className="border-b border-emerald-50">
-                                      <td className="py-1 text-gray-900">{b.investorName}</td>
+                                      <td className="py-1 text-gray-900 dark:text-gray-100">{b.investorName}</td>
                                       <td className="py-1 text-right text-gray-500">{(b.proRataShare * 100).toFixed(1)}%</td>
                                       <td className="py-1 text-right font-medium text-blue-700">{fmt(b.lpAllocation)}</td>
                                     </tr>
@@ -597,7 +596,7 @@ export default function TransactionsPage() {
             );
           })}
           {templatesLoading && templates.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <div className="space-y-3 p-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse" />
@@ -605,7 +604,7 @@ export default function TransactionsPage() {
               </div>
             </div>
           ) : templates.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <EmptyState
                 icon={<ArrowLeftRight className="h-10 w-10" />}
                 title="No waterfall templates yet"
@@ -659,8 +658,8 @@ export default function TransactionsPage() {
       {/* Waterfall Calculate Modal */}
       {showCalcModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowCalcModal(null)}>
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-semibold text-gray-900">Calculate Waterfall Distribution</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Calculate Waterfall Distribution</h3>
             <p className="text-xs text-gray-500">Select an entity and enter the distributable amount to run the waterfall calculation.</p>
             <div className="space-y-3">
               <div>
@@ -668,7 +667,7 @@ export default function TransactionsPage() {
                 <select
                   value={calcForm.entityId}
                   onChange={(e) => setCalcForm((f) => ({ ...f, entityId: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select entity…</option>
                   {entities.map((e) => (
@@ -683,7 +682,7 @@ export default function TransactionsPage() {
                   value={calcForm.distributableAmount}
                   onChange={(e) => setCalcForm((f) => ({ ...f, distributableAmount: e.target.value }))}
                   placeholder="e.g. 5000000"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>

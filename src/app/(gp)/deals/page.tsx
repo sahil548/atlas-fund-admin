@@ -183,7 +183,7 @@ export default function DealsPage() {
   function toggleDealSelection(id: string) {
     setSelectedDealIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   }
@@ -324,6 +324,7 @@ export default function DealsPage() {
         actions={
           <SearchFilterBar
             filters={DEAL_FILTERS}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
           >
@@ -349,9 +350,9 @@ export default function DealsPage() {
       {/* Pipeline Analytics */}
       {analytics && (
         <SectionErrorBoundary>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900">Pipeline Analytics</h3>
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pipeline Analytics</h3>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-gray-400">{data?.total ?? deals.length} total deals</span>
                 <Link href="/analytics" className="text-xs text-indigo-600 hover:underline font-medium">
@@ -362,9 +363,9 @@ export default function DealsPage() {
 
             {/* Top-level stats */}
             <div className="grid grid-cols-4 gap-3">
-              <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
                 <div className="text-[10px] text-gray-500">Active Deals</div>
-                <div className="text-lg font-bold text-gray-900">{analytics.totalActiveDeals}</div>
+                <div className="text-lg font-bold text-gray-900 dark:text-gray-100">{analytics.totalActiveDeals}</div>
               </div>
               <button onClick={() => setShowClosed(true)} className="bg-emerald-50 dark:bg-emerald-950 rounded-lg p-3 text-center hover:ring-2 hover:ring-emerald-300 transition-all cursor-pointer">
                 <div className="text-[10px] text-emerald-600 dark:text-emerald-400">Closed</div>
@@ -423,7 +424,7 @@ export default function DealsPage() {
               ].map((s) => (
                 <div key={s.label} className={`border ${s.border} rounded-lg p-2 text-center`}>
                   <div className="text-[10px] text-gray-500">{s.label}</div>
-                  <div className="text-xs font-semibold text-gray-900">
+                  <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">
                     {s.value >= 1_000_000_000
                       ? `$${(s.value / 1_000_000_000).toFixed(1)}B`
                       : s.value >= 1_000_000
@@ -527,7 +528,7 @@ export default function DealsPage() {
 
                           <Link
                             href={`/deals/${p.id}`}
-                            className={`block bg-white rounded-lg p-3 shadow-sm border cursor-pointer hover:border-indigo-300 transition-colors pl-8 ${
+                            className={`block bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border cursor-pointer hover:border-indigo-300 transition-colors pl-8 ${
                               isSelected
                                 ? "border-indigo-400 ring-1 ring-indigo-300"
                                 : "border-gray-100"
@@ -764,7 +765,7 @@ export default function DealsPage() {
               key={p.id}
               href={`/deals/${p.id}`}
               onClick={() => setShowClosed(false)}
-              className="block bg-white rounded-lg p-3 shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300 transition-colors"
+              className="block bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-emerald-100 cursor-pointer hover:border-emerald-300 transition-colors"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-sm font-medium truncate pr-2">{p.name}</div>
@@ -800,7 +801,7 @@ export default function DealsPage() {
               key={p.id}
               href={`/deals/${p.id}`}
               onClick={() => setShowDead(false)}
-              className="block bg-white rounded-lg p-3 shadow-sm border border-red-100 cursor-pointer hover:border-red-300 transition-colors opacity-80"
+              className="block bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-red-100 cursor-pointer hover:border-red-300 transition-colors opacity-80"
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-sm font-medium truncate pr-2">{p.name}</div>

@@ -25,6 +25,7 @@ import { RegulatoryFilingsTab } from "@/components/features/entities/regulatory-
 import { EntityFinancialSummaryCard } from "@/components/features/entities/entity-financial-summary-card";
 import { EntityPeriodBreakdown } from "@/components/features/entities/entity-period-breakdown";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
+import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -36,7 +37,7 @@ function EntityTasksSection({ entityId, entityName }: { entityId: string; entity
   const tasks: any[] = data?.data ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-semibold">Tasks</h3>
         {tasks.length > 0 && (
@@ -48,7 +49,7 @@ function EntityTasksSection({ entityId, entityName }: { entityId: string; entity
       ) : tasks.length > 0 ? (
         <div className="space-y-2">
           {tasks.map((t: any) => (
-            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="flex items-center gap-3">
                 <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
                   {t.status === "DONE" ? "\u2713" : ""}
@@ -383,13 +384,15 @@ export default function EntityDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 pb-0">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 pb-0">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${tab === t.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 text-gray-500 border-transparent hover:text-gray-700"}`}>
+          <button key={t.key} onClick={() => setTab(t.key)} className={`px-3 py-1.5 text-xs font-medium rounded-t-lg border border-b-0 ${tab === t.key ? "bg-white text-indigo-700 border-gray-200" : "bg-gray-50 dark:bg-gray-800 text-gray-500 border-transparent hover:text-gray-700"}`}>
             {t.label}
           </button>
         ))}
       </div>
+
+      <SectionErrorBoundary>
 
       {/* Formation Tab */}
       {tab === "formation" && (
@@ -410,11 +413,11 @@ export default function EntityDetailPage() {
           )}
 
           {/* Task list */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden divide-y divide-gray-50 dark:divide-gray-700">
             {formationTasks.map((task: any) => (
               <div key={task.id}>
                 <div
-                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50"
+                  className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                   onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
                 >
                   {/* Status dot */}
@@ -426,7 +429,7 @@ export default function EntityDetailPage() {
                   {/* Order */}
                   <span className="text-[10px] text-gray-400 font-mono w-4">{task.order}</span>
                   {/* Title */}
-                  <span className={`flex-1 text-sm ${task.status === "DONE" ? "line-through text-gray-400" : "text-gray-900"}`}>
+                  <span className={`flex-1 text-sm ${task.status === "DONE" ? "line-through text-gray-400" : "text-gray-900 dark:text-gray-100"}`}>
                     {task.title}
                   </span>
                   {/* Assignee */}
@@ -457,7 +460,7 @@ export default function EntityDetailPage() {
 
                 {/* Expanded details */}
                 {expandedTask === task.id && (
-                  <div className="px-4 pb-4 pt-1 bg-gray-50 border-t border-gray-100">
+                  <div className="px-4 pb-4 pt-1 bg-gray-50 border-t border-gray-100 dark:border-gray-700">
                     <div className="grid grid-cols-3 gap-3">
                       {/* Status select */}
                       <div>
@@ -465,7 +468,7 @@ export default function EntityDetailPage() {
                         <select
                           value={task.status}
                           onChange={(ev) => updateFormationTask(task.id, { status: ev.target.value })}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         >
                           <option value="TODO">To Do</option>
                           <option value="IN_PROGRESS">In Progress</option>
@@ -487,7 +490,7 @@ export default function EntityDetailPage() {
                           type="date"
                           value={task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""}
                           onChange={(ev) => updateFormationTask(task.id, { dueDate: ev.target.value || null })}
-                          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                       </div>
                     </div>
@@ -498,7 +501,7 @@ export default function EntityDetailPage() {
                         defaultValue={task.notes || ""}
                         onBlur={(ev) => updateFormationTask(task.id, { notes: ev.target.value })}
                         rows={2}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                         placeholder="Add notes..."
                       />
                     </div>
@@ -542,7 +545,7 @@ export default function EntityDetailPage() {
               { label: "DPI", value: metrics?.dpi != null ? `${metrics.dpi.toFixed(2)}x` : "N/A" },
               { label: "IRR", value: metrics?.irr != null ? `${(metrics.irr * 100).toFixed(1)}%` : "N/A" },
             ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
                 <div className="text-lg font-bold mt-1">{s.value}</div>
               </div>
@@ -557,7 +560,7 @@ export default function EntityDetailPage() {
               { label: "Fund Term", value: e.fundTermYears ? `${e.fundTermYears} years` : "\u2014" },
               { label: "Unfunded", value: inputs ? fmt(Math.max(0, (e.totalCommitments || 0) - inputs.totalCalled)) : "\u2014" },
             ].map((s) => (
-              <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4">
+              <div key={s.label} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <div className="text-[10px] text-gray-500 uppercase font-semibold">{s.label}</div>
                 <div className="text-lg font-bold mt-1">{s.value}</div>
               </div>
@@ -578,15 +581,15 @@ export default function EntityDetailPage() {
             </>
           )}
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Asset Allocations</h3></div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Asset Allocations</h3></div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Asset", "Type", "Allocation %", "Cost Basis", "Fair Value"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {(e.assetAllocations || []).map((a: { id: string; allocationPercent: number; costBasis: number; asset: { id: string; name: string; assetClass: string; fairValue: number } }) => (
-                  <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50">
+                  <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="px-3 py-2.5"><Link href={`/assets/${a.asset.id}`} className="text-indigo-700 hover:underline font-medium">{a.asset.name}</Link></td>
                     <td className="px-3 py-2.5"><Badge color="blue">{a.asset.assetClass?.replace(/_/g, " ")}</Badge></td>
                     <td className="px-3 py-2.5">{a.allocationPercent.toFixed(1)}%</td>
@@ -601,24 +604,24 @@ export default function EntityDetailPage() {
 
           {/* Plaid Bank Accounts card — only shown when a Plaid connection exists for this entity */}
           {plaidData?.connected === true && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <h3 className="text-sm font-semibold">Bank Accounts (Plaid)</h3>
                 <Badge color="green">Connected</Badge>
               </div>
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
                 {plaidData.accounts && plaidData.accounts.length > 0 ? (
                   plaidData.accounts.map((acct: { accountId: string; name: string; officialName: string | null; type: string; subtype: string | null; currentBalance: number | null; availableBalance: number | null }) => (
                     <div key={acct.accountId} className="px-4 py-3 flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-medium text-gray-900">{acct.name}</div>
+                        <div className="text-xs font-medium text-gray-900 dark:text-gray-100">{acct.name}</div>
                         {acct.officialName && acct.officialName !== acct.name && (
                           <div className="text-[10px] text-gray-400">{acct.officialName}</div>
                         )}
                         <div className="text-[10px] text-gray-500 mt-0.5 capitalize">{acct.type}{acct.subtype ? ` · ${acct.subtype}` : ""}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs font-semibold text-gray-900">{acct.currentBalance != null ? fmt(acct.currentBalance) : "—"}</div>
+                        <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">{acct.currentBalance != null ? fmt(acct.currentBalance) : "—"}</div>
                         {acct.availableBalance != null && acct.availableBalance !== acct.currentBalance && (
                           <div className="text-[10px] text-gray-400">{fmt(acct.availableBalance)} available</div>
                         )}
@@ -633,7 +636,7 @@ export default function EntityDetailPage() {
           )}
 
           {/* Fee Calculation */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-semibold">Fee Calculation</h3>
@@ -651,15 +654,15 @@ export default function EntityDetailPage() {
             </div>
             {feeResult && (
               <div className="grid grid-cols-3 gap-3 mt-2">
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">Management Fee</div>
                   <div className="text-sm font-bold mt-1">{fmt(feeResult.managementFee)}</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">Carried Interest</div>
                   <div className="text-sm font-bold mt-1">{fmt(feeResult.carriedInterest)}</div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-3">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                   <div className="text-[10px] text-gray-500 uppercase font-semibold">Period</div>
                   <div className="text-sm font-bold mt-1">{feeResult.periodDate}</div>
                 </div>
@@ -669,8 +672,8 @@ export default function EntityDetailPage() {
 
           {/* Performance Attribution */}
           {attributionData && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold">Performance Attribution</h3>
                   <p className="text-xs text-gray-500 mt-0.5">
@@ -679,16 +682,16 @@ export default function EntityDetailPage() {
                 </div>
                 <div className="flex gap-4 text-xs text-gray-500">
                   {attributionData.entityMetrics?.totalIRR != null && (
-                    <span>Fund IRR: <span className="font-semibold text-gray-900">{(attributionData.entityMetrics.totalIRR * 100).toFixed(1)}%</span></span>
+                    <span>Fund IRR: <span className="font-semibold text-gray-900 dark:text-gray-100">{(attributionData.entityMetrics.totalIRR * 100).toFixed(1)}%</span></span>
                   )}
                   {attributionData.entityMetrics?.totalTVPI != null && (
-                    <span>TVPI: <span className="font-semibold text-gray-900">{attributionData.entityMetrics.totalTVPI.toFixed(2)}x</span></span>
+                    <span>TVPI: <span className="font-semibold text-gray-900 dark:text-gray-100">{attributionData.entityMetrics.totalTVPI.toFixed(2)}x</span></span>
                   )}
                 </div>
               </div>
               {attributionData.rankedByContribution && attributionData.rankedByContribution.length > 0 ? (
                 <table className="w-full text-xs">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       {["Rank", "Asset", "IRR", "MOIC", "Contribution %", "vs Projected"].map((h) => (
                         <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
@@ -697,9 +700,9 @@ export default function EntityDetailPage() {
                   </thead>
                   <tbody>
                     {attributionData.rankedByContribution.map((item: any, idx: number) => (
-                      <tr key={item.assetId} className="border-t border-gray-50 hover:bg-gray-50">
+                      <tr key={item.assetId} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="px-3 py-2.5 text-gray-400 font-mono">#{idx + 1}</td>
-                        <td className="px-3 py-2.5 font-medium text-gray-900">{item.assetName}</td>
+                        <td className="px-3 py-2.5 font-medium text-gray-900 dark:text-gray-100">{item.assetName}</td>
                         <td className="px-3 py-2.5">
                           {item.irr != null ? `${(item.irr * 100).toFixed(1)}%` : "N/A"}
                         </td>
@@ -736,7 +739,7 @@ export default function EntityDetailPage() {
       {tab === "nav" && (
         <div className="space-y-4">
           {/* NAV Proxy Configuration */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">NAV Proxy Configuration</h3>
               {!proxyEdit && (
@@ -764,7 +767,7 @@ export default function EntityDetailPage() {
                         max="100"
                         value={proxyEdit[key as keyof typeof proxyEdit]}
                         onChange={(ev) => setProxyEdit({ ...proxyEdit, [key]: ev.target.value })}
-                        className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       />
                     </div>
                   ))}
@@ -795,7 +798,7 @@ export default function EntityDetailPage() {
           </div>
 
           {/* Main NAV computation */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold">Two-Layer NAV &mdash; {e.name}</h3>
               {e.accountingConnection && (
@@ -807,7 +810,7 @@ export default function EntityDetailPage() {
             {navData ? (
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 1: Cost Basis (from QBO)</div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Layer 1: Cost Basis (from QBO)</div>
                   <div className="space-y-1 text-sm font-mono">
                     {[
                       { l: "Cash & equivalents", v: fmt(navData.layer1.cashEquivalents) },
@@ -817,14 +820,14 @@ export default function EntityDetailPage() {
                       { l: "Less: Liabilities", v: `(${fmt(navData.layer1.liabilities)})`, d: true },
                       { l: "Cost Basis NAV", v: fmt(navData.layer1.costBasisNAV), b: true, h: "bg-gray-100" },
                     ].map((r, i) => (
-                      <div key={i} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""}`}>
+                      <div key={i} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 dark:border-gray-700 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""}`}>
                         <span>{r.l}</span><span>{r.v}</span>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Layer 2: Fair Value Overlay (Atlas)</div>
+                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">Layer 2: Fair Value Overlay (Atlas)</div>
                   <div className="space-y-1 text-sm font-mono">
                     {(navData.layer2.assets || []).map((a: { assetName: string; unrealizedGain: number; valuationMethod: string | null }, i: number) => (
                       <div key={i} className="flex justify-between py-0.5 px-2 rounded text-emerald-700">
@@ -840,7 +843,7 @@ export default function EntityDetailPage() {
                       { l: "- Accrued Carry", v: `(${fmt(navData.layer2.accruedCarry)})`, d: true },
                       { l: "Economic NAV", v: fmt(navData.economicNAV), b: true, h: "bg-indigo-50 text-indigo-900" },
                     ].map((r, i) => (
-                      <div key={`s-${i}`} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""}`}>
+                      <div key={`s-${i}`} className={`flex justify-between py-0.5 px-2 rounded ${r.b ? "font-semibold border-t border-gray-200 dark:border-gray-700 pt-1.5 mt-1" : ""} ${r.h || ""} ${r.d ? "text-gray-400" : ""} ${r.g ? "text-emerald-700" : ""}`}>
                         <span>{r.l}</span><span>{r.v}</span>
                       </div>
                     ))}
@@ -853,19 +856,19 @@ export default function EntityDetailPage() {
           </div>
 
           {/* NAV History */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700">
               <h3 className="text-sm font-semibold">NAV History</h3>
               <p className="text-[10px] text-gray-500 mt-0.5">Snapshots stored each time NAV is computed</p>
             </div>
             {navHistory && navHistory.length > 0 ? (
               <table className="w-full text-xs">
-                <thead className="bg-gray-50">
+                <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>{["Date", "Cost Basis NAV", "Economic NAV", "Unrealized Gain", "Accrued Carry"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {navHistory.map((snap: { id: string; periodDate: string; costBasisNAV: number; economicNAV: number; unrealizedGain?: number; accruedCarry?: number }) => (
-                    <tr key={snap.id} className="border-t border-gray-50 hover:bg-gray-50">
+                    <tr key={snap.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-3 py-2.5">{formatDate(snap.periodDate)}</td>
                       <td className="px-3 py-2.5 font-medium">{fmt(snap.costBasisNAV)}</td>
                       <td className="px-3 py-2.5 font-bold text-indigo-700">{fmt(snap.economicNAV)}</td>
@@ -885,19 +888,19 @@ export default function EntityDetailPage() {
       {/* Capital Tab */}
       {tab === "capital" && (
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Capital Calls ({(e.capitalCalls || []).length})</h3>
               <Button size="sm" onClick={() => setShowCapCall(true)}>+ New Call</Button>
             </div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Call #", "Call Date", "Due Date", "Amount", "Purpose", "Status", "Funded %", "Actions"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {(e.capitalCalls || []).map((c: { id: string; callNumber: string; callDate: string; dueDate: string; amount: number; purpose?: string; status: string; fundedPercent: number; lineItems?: any[] }) => (
                   <>
-                    <tr key={c.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}>
+                    <tr key={c.id} className="border-t border-gray-50 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800" onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}>
                       <td className="px-3 py-2.5 font-medium text-indigo-700">{c.callNumber}</td>
                       <td className="px-3 py-2.5">{formatDate(c.callDate)}</td>
                       <td className="px-3 py-2.5">{formatDate(c.dueDate)}</td>
@@ -917,7 +920,7 @@ export default function EntityDetailPage() {
                     </tr>
                     {expandedCall === c.id && (
                       <tr key={`${c.id}-exp`}>
-                        <td colSpan={8} className="bg-gray-50 border-t border-gray-100 px-4 py-3">
+                        <td colSpan={8} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
                           <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
                           {(c.lineItems || []).length === 0 ? (
                             <div className="text-xs text-gray-400">No line items.</div>
@@ -928,7 +931,7 @@ export default function EntityDetailPage() {
                               </thead>
                               <tbody>
                                 {(c.lineItems || []).map((li: any) => (
-                                  <tr key={li.id} className="border-t border-gray-100">
+                                  <tr key={li.id} className="border-t border-gray-100 dark:border-gray-700">
                                     <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
                                     <td className="py-1.5 pr-3 font-medium">{fmt(li.amount)}</td>
                                     <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
@@ -953,19 +956,19 @@ export default function EntityDetailPage() {
             </table>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Distributions ({(e.distributions || []).length})</h3>
               <Button size="sm" onClick={() => setShowDist(true)}>+ New Distribution</Button>
             </div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Date", "Type", "Gross", "ROC", "Income", "LT Gain", "Carry", "Net to LPs", "Status", "Actions"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {(e.distributions || []).map((d: { id: string; distributionDate: string; source?: string; distributionType?: string; grossAmount: number; returnOfCapital: number; income: number; longTermGain: number; carriedInterest: number; netToLPs: number; status: string; lineItems?: any[] }) => (
                   <Fragment key={d.id}>
-                    <tr className="border-t border-gray-50 cursor-pointer hover:bg-gray-50" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
+                    <tr className="border-t border-gray-50 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800" onClick={() => setExpandedDist(expandedDist === d.id ? null : d.id)}>
                       <td className="px-3 py-2.5">{formatDate(d.distributionDate)}</td>
                       <td className="px-3 py-2.5"><Badge color="blue">{d.distributionType || d.source || "\u2014"}</Badge></td>
                       <td className="px-3 py-2.5 font-medium">{fmt(d.grossAmount)}</td>
@@ -988,7 +991,7 @@ export default function EntityDetailPage() {
                     </tr>
                     {expandedDist === d.id && (
                       <tr key={`${d.id}-exp`}>
-                        <td colSpan={10} className="bg-gray-50 border-t border-gray-100 px-4 py-3">
+                        <td colSpan={10} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
                           <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
                           {(d.lineItems || []).length === 0 ? (
                             <div className="text-xs text-gray-400">No line items.</div>
@@ -999,7 +1002,7 @@ export default function EntityDetailPage() {
                               </thead>
                               <tbody>
                                 {(d.lineItems || []).map((li: any) => (
-                                  <tr key={li.id} className="border-t border-gray-100">
+                                  <tr key={li.id} className="border-t border-gray-100 dark:border-gray-700">
                                     <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
                                     <td className="py-1.5 pr-3 font-medium">{fmt(li.grossAmount)}</td>
                                     <td className="py-1.5 pr-3 font-bold">{fmt(li.netAmount)}</td>
@@ -1027,15 +1030,15 @@ export default function EntityDetailPage() {
       {tab === "investors" && (
         <div className="space-y-4">
           {/* Committed Investors Table */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Committed Investors ({(e.commitments || []).length})</h3></div>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Committed Investors ({(e.commitments || []).length})</h3></div>
             <table className="w-full text-xs">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Investor", "Type", "Commitment", "Called", "Uncalled", "KYC"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
               </thead>
               <tbody>
                 {(e.commitments || []).map((c: { id: string; amount: number; calledAmount: number; investor: { id: string; name: string; investorType: string; kycStatus: string } }) => (
-                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50">
+                  <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                     <td className="px-3 py-2.5"><Link href={`/investors/${c.investor.id}`} className="text-indigo-700 hover:underline font-medium">{c.investor.name}</Link></td>
                     <td className="px-3 py-2.5"><Badge color="blue">{c.investor.investorType}</Badge></td>
                     <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
@@ -1050,15 +1053,15 @@ export default function EntityDetailPage() {
           </div>
 
           {/* Side Letters Section */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Side Letters ({(e.sideLetters || []).length})</h3>
               <Button size="sm" onClick={() => setShowCreateSideLetter(true)}>+ Add Side Letter</Button>
             </div>
             {(e.sideLetters || []).length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400">No side letters. Add one to track investor-specific terms.</div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-50 dark:divide-gray-700">
                 {(e.sideLetters || []).map((sl: { id: string; investor: { id: string; name: string }; entity: { id: string; name: string }; terms: string; rules: { id: string; ruleType: string; isActive: boolean }[] }) => (
                   <div key={sl.id} className="p-4">
                     <div className="flex items-start justify-between">
@@ -1080,7 +1083,7 @@ export default function EntityDetailPage() {
                       </Button>
                     </div>
                     {selectedSideLetterId === sl.id && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                         <SideLetterRulesPanel
                           sideLetterId={sl.id}
                           investorName={sl.investor.name}
@@ -1107,7 +1110,7 @@ export default function EntityDetailPage() {
       {tab === "waterfall" && (
         <div className="space-y-4">
           {e.waterfallTemplate ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="text-sm font-semibold">{e.waterfallTemplate.name}</h3>
@@ -1133,7 +1136,7 @@ export default function EntityDetailPage() {
               {(!e.waterfallTemplate.tiers || e.waterfallTemplate.tiers.length === 0) && <div className="text-sm text-gray-400 py-4 text-center">No tiers configured.</div>}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-center">
               <div className="text-sm text-gray-500 mb-3">No waterfall template assigned to this entity.</div>
               <Button size="sm" onClick={() => setShowTemplate(true)}>+ Create Template</Button>
             </div>
@@ -1143,14 +1146,14 @@ export default function EntityDetailPage() {
 
       {/* Meetings Tab */}
       {tab === "meetings" && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Meetings ({(e.meetings || []).length})</h3>
             <Button size="sm" onClick={() => setShowMeeting(true)}>+ Log Meeting</Button>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
             {(e.meetings || []).map((m: { id: string; title: string; meetingDate: string; meetingType?: string; source: string; hasTranscript: boolean; actionItems: number; decisions?: string[] }) => (
-              <div key={m.id} className="p-3 hover:bg-gray-50">
+              <div key={m.id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-xs text-gray-400 mr-2">{formatDate(m.meetingDate)}</span>
@@ -1173,7 +1176,7 @@ export default function EntityDetailPage() {
       {tab === "documents" && (
         <>
         {/* E-Signature Packages */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 mb-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-semibold">E-Signature Packages</h3>
@@ -1211,11 +1214,11 @@ export default function EntityDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="p-4 border-b border-gray-100"><h3 className="text-sm font-semibold">Documents ({(e.documents || []).length})</h3></div>
-          <div className="divide-y divide-gray-50">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Documents ({(e.documents || []).length})</h3></div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-700">
             {(e.documents || []).map((d: { id: string; name: string; category: string; uploadDate: string }) => (
-              <div key={d.id} className="p-3 flex items-center justify-between hover:bg-gray-50">
+              <div key={d.id} className="p-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800">
                 <div className="flex items-center gap-2">
                   <Badge color="indigo">PDF</Badge>
                   <span className="text-sm font-medium">{d.name}</span>
@@ -1368,26 +1371,26 @@ export default function EntityDetailPage() {
             <div className="space-y-4">
               {/* Pipeline Summary */}
               <div className="grid grid-cols-4 gap-3">
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Target Raise</div>
                   <div className="text-lg font-bold mt-1">$300.0M</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Hard Commits</div>
                   <div className="text-lg font-bold text-green-600 mt-1">$40.0M</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Soft Commits</div>
                   <div className="text-lg font-bold text-blue-600 mt-1">$125.0M</div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                   <div className="text-[10px] text-gray-500 uppercase tracking-wider">Pipeline</div>
                   <div className="text-lg font-bold text-amber-600 mt-1">$245.0M</div>
                 </div>
               </div>
 
               {/* Fundraising Pipeline Kanban */}
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold">Fundraising Pipeline</h3>
                   <button
@@ -1401,12 +1404,12 @@ export default function EntityDetailPage() {
                   <div>
                     <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider mb-2">Identified</div>
                     <div className="space-y-2">
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
                         <div className="text-xs font-medium">CPP Investments</div>
                         <div className="text-[10px] text-gray-500">Pension</div>
                         <div className="text-xs font-semibold text-gray-700 mt-1">$80.0M</div>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
+                      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-100 dark:border-gray-700">
                         <div className="text-xs font-medium">Singapore GIC</div>
                         <div className="text-[10px] text-gray-500">Sovereign Wealth</div>
                         <div className="text-xs font-semibold text-gray-700 mt-1">$100.0M</div>
@@ -1458,7 +1461,7 @@ export default function EntityDetailPage() {
       {tab === "regulatory" && (
         <div className="space-y-4">
           {/* Entity legal details */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
             <h3 className="text-sm font-semibold mb-4">Legal Details</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><span className="text-xs text-gray-500">State of Formation</span><div className="font-medium">{e.stateOfFormation || "\u2014"}</div></div>
@@ -1532,6 +1535,8 @@ export default function EntityDetailPage() {
           onSuccess={() => mutate(`/api/entities/${id}`)}
         />
       )}
+
+      </SectionErrorBoundary>
     </div>
   );
 }
@@ -1543,7 +1548,7 @@ function TeamUserSelect({ value, onChange }: { value: string; onChange: (val: st
     <select
       value={value}
       onChange={(ev) => onChange(ev.target.value)}
-      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
     >
       <option value="">Unassigned</option>
       {(users || []).map((u: any) => (
