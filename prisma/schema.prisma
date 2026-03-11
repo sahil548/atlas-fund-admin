@@ -109,7 +109,7 @@ enum AccountingProvider {
 
 enum SyncStatus {
   CONNECTED
-  SYNCING
+  SYNCING       // Set by accounting sync route (api/accounting/connections/[id]/sync) — actively used
   DISCONNECTED
   ERROR
 }
@@ -229,7 +229,7 @@ enum UserRole {
 
 enum InviteStatus {
   ACCEPTED
-  PENDING
+  PENDING   // Set by invite route (api/users/invite) and shown in settings page — actively used
 }
 
 enum NotificationChannel {
