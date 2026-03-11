@@ -11,10 +11,10 @@ const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new E
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const LEDGER_TYPE_COLORS: Record<string, string> = {
-  CONTRIBUTION: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700",
-  DISTRIBUTION: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700",
-  FEE: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-red-100 text-red-700",
-  INCOME: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 text-emerald-700",
+  CONTRIBUTION: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300",
+  DISTRIBUTION: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300",
+  FEE: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300",
+  INCOME: "text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300",
 };
 
 export default function LPActivityPage() {
@@ -33,11 +33,11 @@ export default function LPActivityPage() {
   return (
     <div className="space-y-5">
       {/* Capital Account Running Ledger */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-start justify-between gap-3">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-sm font-semibold">Capital Account</h3>
-            <div className="text-xs text-gray-500 mt-0.5">Running ledger of your contributions, distributions, and fees</div>
+            <h3 className="text-sm font-semibold dark:text-gray-100">Capital Account</h3>
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Running ledger of your contributions, distributions, and fees</div>
           </div>
           <ExportButton
             data={(capitalAccount?.ledger ?? []).map((entry: any) => ({
@@ -54,25 +54,25 @@ export default function LPActivityPage() {
 
         {/* Entity summaries */}
         {!caLoading && capitalAccount?.entities && capitalAccount.entities.length > 0 && (
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {capitalAccount.entities.map((entity: { entityId: string; entityName: string; commitment: number; currentBalance: number; totalContributed: number; totalDistributed: number }) => (
-              <div key={entity.entityId} className="bg-white rounded-lg border border-gray-200 p-3">
-                <div className="text-xs font-semibold text-gray-700 mb-2">{entity.entityName}</div>
+              <div key={entity.entityId} className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
+                <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">{entity.entityName}</div>
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Commitment</span>
-                    <span className="font-medium">{fmt(entity.commitment)}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Commitment</span>
+                    <span className="font-medium dark:text-gray-200">{fmt(entity.commitment)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Contributed</span>
+                    <span className="text-gray-500 dark:text-gray-400">Contributed</span>
                     <span className="font-medium text-red-600">{fmt(entity.totalContributed)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Distributed</span>
+                    <span className="text-gray-500 dark:text-gray-400">Distributed</span>
                     <span className="font-medium text-green-600">{fmt(entity.totalDistributed)}</span>
                   </div>
-                  <div className="flex justify-between border-t border-gray-100 pt-1 mt-1">
-                    <span className="text-gray-500 font-medium">Current Balance</span>
+                  <div className="flex justify-between border-t border-gray-100 dark:border-gray-700 pt-1 mt-1">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium">Current Balance</span>
                     <span className={`font-bold ${entity.currentBalance >= 0 ? "text-green-700" : "text-red-700"}`}>
                       {fmt(entity.currentBalance)}
                     </span>
@@ -86,10 +86,10 @@ export default function LPActivityPage() {
         {/* Ledger table */}
         {!caLoading && capitalAccount?.ledger && capitalAccount.ledger.length > 0 ? (
           <table className="w-full text-xs">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {["Date", "Type", "Entity", "Description", "Amount", "Balance"].map((h) => (
-                  <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600">{h}</th>
+                  <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -102,19 +102,19 @@ export default function LPActivityPage() {
                 amount: number;
                 runningBalance: number;
               }, idx: number) => (
-                <tr key={idx} className="border-t border-gray-50 hover:bg-gray-50">
-                  <td className="px-4 py-2.5 text-gray-500">{new Date(entry.date).toLocaleDateString()}</td>
+                <tr key={idx} className="border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{new Date(entry.date).toLocaleDateString()}</td>
                   <td className="px-4 py-2.5">
-                    <span className={LEDGER_TYPE_COLORS[entry.type] || "text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600"}>
+                    <span className={LEDGER_TYPE_COLORS[entry.type] || "text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"}>
                       {entry.type}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-700">{entry.entityName}</td>
-                  <td className="px-4 py-2.5 text-gray-600">{entry.description}</td>
+                  <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300">{entry.entityName}</td>
+                  <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">{entry.description}</td>
                   <td className={`px-4 py-2.5 font-medium ${entry.amount >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {entry.amount >= 0 ? "+" : ""}{fmt(entry.amount)}
                   </td>
-                  <td className={`px-4 py-2.5 font-bold ${entry.runningBalance >= 0 ? "text-gray-900" : "text-red-700"}`}>
+                  <td className={`px-4 py-2.5 font-bold ${entry.runningBalance >= 0 ? "text-gray-900 dark:text-gray-100" : "text-red-700"}`}>
                     {fmt(entry.runningBalance)}
                   </td>
                 </tr>
@@ -122,19 +122,19 @@ export default function LPActivityPage() {
             </tbody>
           </table>
         ) : (
-          <div className="px-4 py-6 text-center text-sm text-gray-400">
+          <div className="px-4 py-6 text-center text-sm text-gray-400 dark:text-gray-500">
             {caLoading ? "Loading capital account..." : "No capital account activity yet."}
           </div>
         )}
       </div>
 
       {/* Capital Calls */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold mb-1">Capital Calls</h3>
-        <div className="text-xs text-gray-500 mb-4">Notices issued to you</div>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="text-sm font-semibold dark:text-gray-100 mb-1">Capital Calls</h3>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">Notices issued to you</div>
         <div className="space-y-3">
           {data.capitalCalls?.length === 0 && (
-            <div className="text-xs text-gray-400">No capital calls yet.</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">No capital calls yet.</div>
           )}
           {data.capitalCalls?.map((item: {
             id: string;
@@ -149,10 +149,10 @@ export default function LPActivityPage() {
               entity: { name: string };
             };
           }) => (
-            <div key={item.id} className="p-4 bg-gray-50 rounded-xl">
+            <div key={item.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-semibold dark:text-gray-100">
                     Call #{item.capitalCall.callNumber}
                   </span>
                   <Badge color={
@@ -164,28 +164,28 @@ export default function LPActivityPage() {
                     {item.capitalCall.status.toLowerCase()}
                   </Badge>
                 </div>
-                <div className="text-sm font-semibold">{fmt(item.amount)}</div>
+                <div className="text-sm font-semibold dark:text-gray-100">{fmt(item.amount)}</div>
               </div>
               <div className="grid grid-cols-4 gap-2 text-xs">
                 <div>
-                  <span className="text-gray-500">Entity:</span>{" "}
-                  <span className="font-medium">{item.capitalCall.entity.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Entity:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">{item.capitalCall.entity.name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Call Date:</span>{" "}
-                  <span className="font-medium">
+                  <span className="text-gray-500 dark:text-gray-400">Call Date:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">
                     {new Date(item.capitalCall.callDate).toLocaleDateString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Due:</span>{" "}
-                  <span className="font-medium">
+                  <span className="text-gray-500 dark:text-gray-400">Due:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">
                     {new Date(item.capitalCall.dueDate).toLocaleDateString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Purpose:</span>{" "}
-                  <span className="font-medium">{item.capitalCall.purpose || "\u2014"}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Purpose:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">{item.capitalCall.purpose || "\u2014"}</span>
                 </div>
               </div>
             </div>
@@ -194,12 +194,12 @@ export default function LPActivityPage() {
       </div>
 
       {/* Distributions */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold mb-1">Distributions</h3>
-        <div className="text-xs text-gray-500 mb-4">Proceeds distributed to you</div>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="text-sm font-semibold dark:text-gray-100 mb-1">Distributions</h3>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">Proceeds distributed to you</div>
         <div className="space-y-3">
           {data.distributions?.length === 0 && (
-            <div className="text-xs text-gray-400">No distributions yet.</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500">No distributions yet.</div>
           )}
           {data.distributions?.map((item: {
             id: string;
@@ -215,34 +215,34 @@ export default function LPActivityPage() {
               entity: { name: string };
             };
           }) => (
-            <div key={item.id} className="p-4 bg-gray-50 rounded-xl">
+            <div key={item.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold">
+                  <span className="text-sm font-semibold dark:text-gray-100">
                     {item.distribution.source || "Distribution"}
                   </span>
                   <Badge color="green">received</Badge>
                 </div>
-                <div className="text-sm font-semibold">{fmt(item.netAmount)}</div>
+                <div className="text-sm font-semibold dark:text-gray-100">{fmt(item.netAmount)}</div>
               </div>
               <div className="grid grid-cols-4 gap-2 text-xs">
                 <div>
-                  <span className="text-gray-500">Entity:</span>{" "}
-                  <span className="font-medium">{item.distribution.entity.name}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Entity:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">{item.distribution.entity.name}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Date:</span>{" "}
-                  <span className="font-medium">
+                  <span className="text-gray-500 dark:text-gray-400">Date:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">
                     {new Date(item.distribution.distributionDate).toLocaleDateString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Income:</span>{" "}
-                  <span className="font-medium">{fmt(item.income)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Income:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">{fmt(item.income)}</span>
                 </div>
                 <div>
-                  <span className="text-gray-500">Return of Capital:</span>{" "}
-                  <span className="font-medium">{fmt(item.returnOfCapital)}</span>
+                  <span className="text-gray-500 dark:text-gray-400">Return of Capital:</span>{" "}
+                  <span className="font-medium dark:text-gray-200">{fmt(item.returnOfCapital)}</span>
                 </div>
               </div>
             </div>

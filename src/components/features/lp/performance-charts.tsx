@@ -55,9 +55,9 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold mb-3">Performance History</h3>
-        <div className="text-sm text-gray-400">Loading performance history...</div>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="text-sm font-semibold dark:text-gray-100 mb-3">Performance History</h3>
+        <div className="text-sm text-gray-400 dark:text-gray-500">Loading performance history...</div>
       </div>
     );
   }
@@ -73,9 +73,9 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
     : [];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold">Performance History</h3>
+        <h3 className="text-sm font-semibold dark:text-gray-100">Performance History</h3>
         <div className="flex gap-1">
           {(["quarterly", "monthly"] as const).map((g) => (
             <button
@@ -85,7 +85,7 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
                 "px-3 py-1 text-xs font-medium rounded-lg transition-colors",
                 granularity === g
                   ? "bg-indigo-600 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
               )}
             >
               {g === "quarterly" ? "Quarterly" : "Monthly"}
@@ -95,8 +95,8 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
       </div>
 
       {!hasData ? (
-        <div className="text-sm text-gray-400 text-center py-8">
-          <div className="font-medium text-gray-500 mb-1">No performance history yet</div>
+        <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
+          <div className="font-medium text-gray-500 dark:text-gray-400 mb-1">No performance history yet</div>
           <div className="text-xs max-w-sm mx-auto">
             Performance charts will appear once metrics are computed over multiple periods. Each time
             you visit this page, a data point is recorded.
@@ -106,7 +106,7 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Panel 1: Return Metrics */}
           <div>
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
               Return Metrics
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -193,7 +193,7 @@ export function PerformanceCharts({ investorId }: PerformanceChartsProps) {
 
           {/* Panel 2: NAV Over Time */}
           <div>
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
               NAV Over Time
             </div>
             <ResponsiveContainer width="100%" height={220}>

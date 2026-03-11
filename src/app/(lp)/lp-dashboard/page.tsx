@@ -55,15 +55,15 @@ export default function LPDashboardPage() {
           { l: "DPI", v: data.dpi != null ? `${data.dpi.toFixed(2)}x` : "\u2014" },
           { l: "RVPI", v: data.rvpi != null ? `${data.rvpi.toFixed(2)}x` : "\u2014" },
         ].map((m, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-            <div className="text-xs text-gray-500 uppercase">{m.l}</div>
-            <div className="text-2xl font-semibold mt-1">{m.v}</div>
+          <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 text-center">
+            <div className="text-xs text-gray-500 dark:text-gray-400 uppercase">{m.l}</div>
+            <div className="text-2xl font-semibold mt-1 dark:text-gray-100">{m.v}</div>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold mb-3">Your Commitments by Entity</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="text-sm font-semibold dark:text-gray-100 mb-3">Your Commitments by Entity</h3>
         {entityMetrics.length > 0 ? (
           <div className="space-y-2">
             {entityMetrics.map((em) => (
@@ -72,26 +72,26 @@ export default function LPDashboardPage() {
                 href={`/lp-account?entityId=${em.entityId}`}
                 className="block"
               >
-                <div className="flex items-center justify-between py-2.5 px-3 border border-gray-100 rounded-lg hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer">
-                  <div className="text-sm font-medium text-gray-900">{em.entityName}</div>
+                <div className="flex items-center justify-between py-2.5 px-3 border border-gray-100 dark:border-gray-700 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors cursor-pointer">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{em.entityName}</div>
                   <div className="flex gap-5 text-xs">
                     <div className="text-right w-20">
-                      <div className="text-gray-500">Committed</div>
-                      <div className="font-medium">{fmt(em.commitment)}</div>
+                      <div className="text-gray-500 dark:text-gray-400">Committed</div>
+                      <div className="font-medium dark:text-gray-200">{fmt(em.commitment)}</div>
                     </div>
                     <div className="text-right w-16">
-                      <div className="text-gray-500">Called</div>
-                      <div className="font-medium">{fmt(em.calledAmount)}</div>
+                      <div className="text-gray-500 dark:text-gray-400">Called</div>
+                      <div className="font-medium dark:text-gray-200">{fmt(em.calledAmount)}</div>
                     </div>
                     <div className="text-right w-16">
-                      <div className="text-gray-500">IRR</div>
+                      <div className="text-gray-500 dark:text-gray-400">IRR</div>
                       <div className={`font-medium ${em.irr != null && em.irr > 0 ? "text-emerald-700" : "text-gray-400"}`}>
                         {em.irr != null ? `${(em.irr * 100).toFixed(1)}%` : "---"}
                       </div>
                     </div>
                     <div className="text-right w-16">
-                      <div className="text-gray-500">TVPI</div>
-                      <div className={`font-medium ${em.tvpi != null && em.tvpi > 1 ? "text-emerald-700" : em.tvpi != null ? "text-gray-700" : "text-gray-400"}`}>
+                      <div className="text-gray-500 dark:text-gray-400">TVPI</div>
+                      <div className={`font-medium ${em.tvpi != null && em.tvpi > 1 ? "text-emerald-700" : em.tvpi != null ? "text-gray-700 dark:text-gray-300" : "text-gray-400"}`}>
                         {em.tvpi != null ? `${em.tvpi.toFixed(2)}x` : "---"}
                       </div>
                     </div>
@@ -103,16 +103,16 @@ export default function LPDashboardPage() {
         ) : (
           // Fallback to simple list if entityMetrics not available yet
           data.investor?.commitments?.map((c: { entity: { id: string; name: string }; amount: number; calledAmount: number }) => (
-            <div key={c.entity.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-              <div className="text-sm font-medium">{c.entity.name}</div>
+            <div key={c.entity.id} className="flex items-center justify-between py-2.5 border-b border-gray-50 dark:border-gray-700 last:border-0">
+              <div className="text-sm font-medium dark:text-gray-100">{c.entity.name}</div>
               <div className="flex gap-6 text-xs">
                 <div className="text-right w-20">
-                  <div className="text-gray-500">Committed</div>
-                  <div className="font-medium">{fmt(c.amount)}</div>
+                  <div className="text-gray-500 dark:text-gray-400">Committed</div>
+                  <div className="font-medium dark:text-gray-200">{fmt(c.amount)}</div>
                 </div>
                 <div className="text-right w-16">
-                  <div className="text-gray-500">Called</div>
-                  <div className="font-medium">{fmt(c.calledAmount)}</div>
+                  <div className="text-gray-500 dark:text-gray-400">Called</div>
+                  <div className="font-medium dark:text-gray-200">{fmt(c.calledAmount)}</div>
                 </div>
               </div>
             </div>

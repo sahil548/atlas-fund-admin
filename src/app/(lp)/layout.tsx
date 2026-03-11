@@ -19,7 +19,7 @@ function InvestorGate({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="text-lg font-semibold text-gray-700 mb-2">No Investor Profile</div>
+          <div className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">No Investor Profile</div>
           <p className="text-sm text-gray-500">
             Your account is not linked to any investor profiles.
             <br />
@@ -34,12 +34,12 @@ function InvestorGate({ children }: { children: React.ReactNode }) {
     <div>
       {/* Investor picker — only shown when user has access to multiple investors */}
       {investors.length > 1 && (
-        <div className="mb-4 flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-2">
+        <div className="mb-4 flex items-center gap-3 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2">
           <span className="text-xs text-gray-500 font-medium">Viewing as:</span>
           <select
             value={investorId || ""}
             onChange={(e) => setInvestorId(e.target.value)}
-            className="text-sm font-semibold bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer text-gray-900"
+            className="text-sm font-semibold bg-transparent border-none focus:outline-none focus:ring-0 cursor-pointer text-gray-900 dark:text-gray-100"
           >
             {investors.map((inv) => (
               <option key={inv.id} value={inv.id}>

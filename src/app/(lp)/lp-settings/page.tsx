@@ -119,18 +119,18 @@ export default function LPSettingsPage() {
   return (
     <div className="space-y-5 max-w-2xl">
       <div>
-        <h1 className="text-lg font-semibold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Settings</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
           Manage your notification preferences and contact information.
         </p>
       </div>
 
       {/* Section 1: Contact Information */}
-      <div className={cn("bg-white rounded-xl border border-gray-200 p-5 space-y-4", isSaving && "opacity-70 pointer-events-none")}>
-        <h2 className="text-sm font-semibold text-gray-900">Contact Information</h2>
+      <div className={cn("bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4", isSaving && "opacity-70 pointer-events-none")}>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Contact Information</h2>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-700" htmlFor="email">
+          <label className="text-xs font-medium text-gray-700 dark:text-gray-300" htmlFor="email">
             Email Address
           </label>
           <input
@@ -141,13 +141,13 @@ export default function LPSettingsPage() {
               update("emailAddress", e.target.value || null)
             }
             placeholder="your@email.com"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <p className="text-xs text-gray-400">Used for email notifications and reports</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Used for email notifications and reports</p>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-700" htmlFor="phone">
+          <label className="text-xs font-medium text-gray-700 dark:text-gray-300" htmlFor="phone">
             Phone Number
           </label>
           <input
@@ -158,17 +158,17 @@ export default function LPSettingsPage() {
               update("phoneNumber", e.target.value || null)
             }
             placeholder="+1 (555) 000-0000"
-            className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full text-sm border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <p className="text-xs text-gray-400">Required for SMS notifications</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Required for SMS notifications</p>
         </div>
       </div>
 
       {/* Section 2: Preferred Channel */}
-      <div className={cn("bg-white rounded-xl border border-gray-200 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
+      <div className={cn("bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Preferred Channel</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Preferred Channel</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Choose how you&apos;d like to receive notifications
           </p>
         </div>
@@ -193,21 +193,21 @@ export default function LPSettingsPage() {
                 onChange={() => update("preferredChannel", value)}
                 className="accent-indigo-600"
               />
-              <span className="text-sm text-gray-700">{label}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
             </label>
           ))}
         </div>
 
         {showSmsWarning && (
-          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
             Please enter a phone number above to receive SMS notifications.
           </p>
         )}
       </div>
 
       {/* Section 3: Notification Categories */}
-      <div className={cn("bg-white rounded-xl border border-gray-200 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
-        <h2 className="text-sm font-semibold text-gray-900">Notification Categories</h2>
+      <div className={cn("bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notification Categories</h2>
 
         <div className="space-y-3">
           {(
@@ -240,23 +240,23 @@ export default function LPSettingsPage() {
                 className="mt-0.5 accent-indigo-600"
               />
               <div>
-                <div className="text-sm font-medium text-gray-700">{label}</div>
-                <div className="text-xs text-gray-400">{description}</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">{description}</div>
               </div>
             </label>
           ))}
         </div>
 
-        <div className="bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2.5 text-xs text-indigo-700">
+        <div className="bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-800 rounded-lg px-3 py-2.5 text-xs text-indigo-700 dark:text-indigo-300">
           Capital call notices are always delivered immediately regardless of your digest preference.
         </div>
       </div>
 
       {/* Section 4: Digest Preference */}
-      <div className={cn("bg-white rounded-xl border border-gray-200 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
+      <div className={cn("bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-3", isSaving && "opacity-70 pointer-events-none")}>
         <div>
-          <h2 className="text-sm font-semibold text-gray-900">Digest Preference</h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Digest Preference</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Choose how frequently you receive non-urgent notifications
           </p>
         </div>
@@ -294,8 +294,8 @@ export default function LPSettingsPage() {
                 className="mt-0.5 accent-indigo-600"
               />
               <div>
-                <div className="text-sm font-medium text-gray-700">{label}</div>
-                <div className="text-xs text-gray-400">{description}</div>
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">{description}</div>
               </div>
             </label>
           ))}
@@ -303,7 +303,7 @@ export default function LPSettingsPage() {
       </div>
 
       {isSaving && (
-        <p className="text-xs text-gray-400 text-right">Saving preferences...</p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 text-right">Saving preferences...</p>
       )}
     </div>
   );

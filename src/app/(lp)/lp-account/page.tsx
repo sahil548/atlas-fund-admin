@@ -274,11 +274,11 @@ export default function LPAccountPage() {
       </div>
 
       {/* Period Summary Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold mb-3">Period Summary</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+        <h3 className="text-sm font-semibold dark:text-gray-100 mb-3">Period Summary</h3>
         {periodSummaries.length === 0 ? (
-          <div className="text-sm text-gray-400 text-center py-4">
-            <div className="font-medium text-gray-500 mb-1">No period summaries yet</div>
+          <div className="text-sm text-gray-400 dark:text-gray-500 text-center py-4">
+            <div className="font-medium text-gray-500 dark:text-gray-400 mb-1">No period summaries yet</div>
             <div className="text-xs max-w-sm mx-auto">
               Period summaries will appear once capital account activity is recorded. Each capital
               call funded or distribution paid creates a ledger entry.
@@ -288,26 +288,26 @@ export default function LPAccountPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Period</th>
-                  <th className="text-right py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Contributions</th>
-                  <th className="text-right py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Distributions</th>
-                  <th className="text-right py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Fees</th>
-                  <th className="text-right py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Net Change</th>
-                  <th className="text-right py-2 px-2 font-medium text-gray-500 uppercase tracking-wide">Ending Balance</th>
+                <tr className="border-b border-gray-100 dark:border-gray-700">
+                  <th className="text-left py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Period</th>
+                  <th className="text-right py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Contributions</th>
+                  <th className="text-right py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Distributions</th>
+                  <th className="text-right py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Fees</th>
+                  <th className="text-right py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Net Change</th>
+                  <th className="text-right py-2 px-2 font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ending Balance</th>
                 </tr>
               </thead>
               <tbody>
                 {periodSummaries.map((p) => (
-                  <tr key={p.period} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-2 px-2 font-medium text-gray-700">{p.period}</td>
-                    <td className="py-2 px-2 text-right text-blue-700">{fmtSigned(p.contributions)}</td>
-                    <td className="py-2 px-2 text-right text-emerald-700">{fmtSigned(p.distributions)}</td>
-                    <td className="py-2 px-2 text-right text-gray-500">{p.fees > 0 ? fmtSigned(-p.fees) : "$0"}</td>
-                    <td className={`py-2 px-2 text-right font-medium ${p.netChange >= 0 ? "text-emerald-700" : "text-gray-700"}`}>
+                  <tr key={p.period} className="border-b border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="py-2 px-2 font-medium text-gray-700 dark:text-gray-300">{p.period}</td>
+                    <td className="py-2 px-2 text-right text-blue-700 dark:text-blue-400">{fmtSigned(p.contributions)}</td>
+                    <td className="py-2 px-2 text-right text-emerald-700 dark:text-emerald-400">{fmtSigned(p.distributions)}</td>
+                    <td className="py-2 px-2 text-right text-gray-500 dark:text-gray-400">{p.fees > 0 ? fmtSigned(-p.fees) : "$0"}</td>
+                    <td className={`py-2 px-2 text-right font-medium ${p.netChange >= 0 ? "text-emerald-700 dark:text-emerald-400" : "text-gray-700 dark:text-gray-300"}`}>
                       {fmtSigned(p.netChange)}
                     </td>
-                    <td className="py-2 px-2 text-right font-semibold text-gray-800">{fmtSigned(p.endingBalance)}</td>
+                    <td className="py-2 px-2 text-right font-semibold text-gray-800 dark:text-gray-200">{fmtSigned(p.endingBalance)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -317,11 +317,11 @@ export default function LPAccountPage() {
       </div>
 
       {/* Capital Account Section */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex justify-between items-start mb-4">
           <div>
-            <h3 className="text-sm font-semibold">Capital Account — {data.investorName}</h3>
-            <div className="text-xs text-gray-500">
+            <h3 className="text-sm font-semibold dark:text-gray-100">Capital Account — {data.investorName}</h3>
+            <div className="text-xs text-gray-500 dark:text-gray-400">
               {data.entities.length} {data.entities.length === 1 ? "entity" : "entities"} · {data.ledger.length} transactions
             </div>
           </div>
@@ -353,12 +353,12 @@ export default function LPAccountPage() {
             <div
               key={i}
               className={`flex justify-between py-0.5 px-2 rounded ${
-                r.hl ? "bg-indigo-50 text-indigo-900 font-semibold mt-2" : ""
-              } ${r.s && !r.hl ? "font-semibold border-t border-gray-200 pt-2 mt-1" : ""} ${
-                r.label ? "text-gray-400 text-xs uppercase tracking-wide pt-2 mt-1" : ""
-              } ${r.b ? "font-semibold" : ""} ${r.inc ? "text-emerald-700" : ""} ${
-                r.cap ? "text-indigo-700" : ""
-              } ${r.neg ? "text-gray-500" : ""}`}
+                r.hl ? "bg-indigo-50 dark:bg-indigo-950 text-indigo-900 dark:text-indigo-100 font-semibold mt-2" : ""
+              } ${r.s && !r.hl ? "font-semibold border-t border-gray-200 dark:border-gray-700 pt-2 mt-1 dark:text-gray-100" : ""} ${
+                r.label ? "text-gray-400 dark:text-gray-500 text-xs uppercase tracking-wide pt-2 mt-1" : ""
+              } ${r.b ? "font-semibold" : ""} ${r.inc ? "text-emerald-700 dark:text-emerald-400" : ""} ${
+                r.cap ? "text-indigo-700 dark:text-indigo-400" : ""
+              } ${r.neg ? "text-gray-500 dark:text-gray-400" : ""}`}
             >
               <span>{r.l}</span>
               <span>{r.v}</span>
@@ -371,7 +371,7 @@ export default function LPAccountPage() {
             ["bg-emerald-500", "Distributions"],
             ["bg-gray-500", "Fees"],
           ].map(([c, l]) => (
-            <div key={l} className="flex items-center gap-1.5">
+            <div key={l} className="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
               <span className={`w-2 h-2 rounded-full ${c}`} />
               {l}
             </div>
@@ -385,32 +385,32 @@ export default function LPAccountPage() {
             { l: "DPI", v: dpi },
             { l: "RVPI", v: rvpi },
           ].map((m, i) => (
-            <div key={i} className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-xs text-gray-500">
+            <div key={i} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
+              <div className="text-xs text-gray-500 dark:text-gray-400">
                 {m.l}
                 {isDateFiltered && data.periodMetrics && (
-                  <span className="ml-1 text-indigo-500 font-medium">({metricsLabel})</span>
+                  <span className="ml-1 text-indigo-500 dark:text-indigo-400 font-medium">({metricsLabel})</span>
                 )}
               </div>
-              <div className="text-lg font-semibold">{m.v}</div>
+              <div className="text-lg font-semibold dark:text-gray-100">{m.v}</div>
             </div>
           ))}
         </div>
 
         {/* Per-entity breakdown */}
         {data.entities.length > 1 && (
-          <div className="mt-4 border-t border-gray-200 pt-3">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Per Entity</h4>
+          <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Per Entity</h4>
             <div className="space-y-2">
               {data.entities.map((entity) => (
-                <div key={entity.entityId} className="flex justify-between items-center text-sm bg-gray-50 rounded-lg px-3 py-2">
+                <div key={entity.entityId} className="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2">
                   <div>
-                    <div className="font-medium">{entity.entityName}</div>
-                    <div className="text-xs text-gray-500">Commitment: {fmtSigned(entity.commitment)}</div>
+                    <div className="font-medium dark:text-gray-100">{entity.entityName}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Commitment: {fmtSigned(entity.commitment)}</div>
                   </div>
                   <div className="text-right">
-                    <div className="font-semibold">{fmtSigned(entity.currentBalance)}</div>
-                    <div className="text-xs text-gray-500">Balance</div>
+                    <div className="font-semibold dark:text-gray-100">{fmtSigned(entity.currentBalance)}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Balance</div>
                   </div>
                 </div>
               ))}
@@ -420,11 +420,11 @@ export default function LPAccountPage() {
 
         {/* Recent ledger entries */}
         {data.ledger.length > 0 && (
-          <div className="mt-4 border-t border-gray-200 pt-3">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Activity Ledger</h4>
+          <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Activity Ledger</h4>
             <div className="space-y-1 text-xs">
               {data.ledger.slice(-10).reverse().map((entry, i) => (
-                <div key={i} className="flex justify-between items-center py-1 px-2 rounded hover:bg-gray-50">
+                <div key={i} className="flex justify-between items-center py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800">
                   <div className="flex items-center gap-2">
                     <span className={`w-1.5 h-1.5 rounded-full ${
                       entry.type === "CONTRIBUTION" ? "bg-blue-500" :
@@ -432,14 +432,14 @@ export default function LPAccountPage() {
                       entry.type === "FEE" ? "bg-gray-400" :
                       "bg-indigo-500"
                     }`} />
-                    <span className="text-gray-600">{entry.description}</span>
-                    <span className="text-gray-400">{entry.entityName}</span>
+                    <span className="text-gray-600 dark:text-gray-400">{entry.description}</span>
+                    <span className="text-gray-400 dark:text-gray-500">{entry.entityName}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={entry.amount >= 0 ? "text-emerald-700 font-medium" : "text-gray-600"}>
+                    <span className={entry.amount >= 0 ? "text-emerald-700 dark:text-emerald-400 font-medium" : "text-gray-600 dark:text-gray-400"}>
                       {fmtSigned(entry.amount)}
                     </span>
-                    <span className="text-gray-400 w-16 text-right">
+                    <span className="text-gray-400 dark:text-gray-500 w-16 text-right">
                       {new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </span>
                   </div>
