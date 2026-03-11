@@ -4,14 +4,14 @@ milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
 stopped_at: Completed 20-schema-cleanup-ui-polish-06-PLAN.md
-last_updated: "2026-03-11T15:03:16.214Z"
-last_activity: 2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors.
+last_updated: "2026-03-11T15:04:13.853Z"
+last_activity: 2026-03-11 — Phase 20 Plan 06 complete. Dead code cleanup: zero console.* calls verified, 27 files cleaned of unused imports/variables/directives. 822 tests passing, build zero errors.
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
   completed_plans: 54
-  percent: 91
+  percent: 96
 ---
 
 # Atlas — GSD State
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 5/10 plans complete (Plan 05 done)
+- **Plan:** 6/10 plans complete (Plan 06 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-11 — Phase 20 Plan 05 complete. parseBody validation applied to all remaining mutation API routes (8 routes across ai-config, ai-prompts, checklist, esignature, invite, deals/tasks). DocumentCategory as any eliminated. JSON blob write schemas typed via json-schemas.ts. 822 tests passing, build zero errors.
+- **Last activity:** 2026-03-11 — Phase 20 Plan 06 complete. Dead code cleanup: zero console.* calls verified across entire src/ tree (Plan 03 was comprehensive). Removed unused imports/variables from 27 files. Removed 16 stale eslint-disable directives. 822 tests passing, build zero errors.
 
 Progress: [██████████] 96% (90/94 plans)
 
@@ -81,6 +81,7 @@ Progress: [██████████] 96% (90/94 plans)
 | Phase 20-schema-cleanup-ui-polish P04 | ~411min | 2 tasks | 1 file |
 | Phase 20-schema-cleanup-ui-polish P05 | 53 | 2 tasks | 19 files |
 | Phase 20-schema-cleanup-ui-polish P05 | 30 | 2 tasks | 10 files |
+| Phase 20-schema-cleanup-ui-polish P06 | 25 | 2 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -292,6 +293,9 @@ Progress: [██████████] 96% (90/94 plans)
 - **DocumentCategory as any fix:** parseDocumentCategory() typed helper validates FormData category strings against Prisma enum, defaults to OTHER — FormData routes cannot use parseBody
 - **Typed JSON blob write schemas:** UpdateDealSchema.dealMetadata → DealMetadataSchema.optional(); UpdateAssetSchema/UpdateAssetProjectionsSchema.projectedMetrics → ProjectedMetricsSchema.optional(); UpdateEntitySchema.navProxyConfig → NavProxyConfigSchema.optional()
 - **Entity PUT Prisma type cast:** `rest as Record<string, unknown>` resolves EntityUpdateInput/EntityUncheckedUpdateInput union ambiguity from waterfallTemplateId — necessary when typed navProxyConfig added to UpdateEntitySchema
+- **Plan 06 console migration pre-verified:** Plan 03 was comprehensive — zero console.* calls found in pages/components; Plan 06 Task 1 required no file changes
+- **Dead query removal:** recalcWorkstreamProgress had a findUnique for ws.analysisResult that was never used — removed; function still correct
+- **Unused eslint-disable removal convention:** Remove `/* eslint-disable @typescript-eslint/no-explicit-any */` when all `any` usages are gone — 16 files cleaned
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
