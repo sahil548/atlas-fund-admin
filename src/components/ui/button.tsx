@@ -6,6 +6,7 @@ const variants: Record<string, string> = {
   primary: "bg-indigo-600 text-white hover:bg-indigo-700 border-transparent",
   secondary: "bg-white text-gray-700 hover:bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700",
   danger: "bg-red-600 text-white hover:bg-red-700 border-transparent",
+  ghost: "bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900 border-transparent dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white",
 };
 
 const sizeClasses: Record<string, string> = {
@@ -14,7 +15,7 @@ const sizeClasses: Record<string, string> = {
 };
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary" | "secondary" | "danger" | "ghost";
   size?: "sm" | "md";
   loading?: boolean;
 }

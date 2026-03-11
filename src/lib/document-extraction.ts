@@ -2,6 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { createUserAIClient, createAIClient, getModelForFirm } from "@/lib/ai-config";
 import { logger } from "@/lib/logger";
 
+/** Minimal interface satisfied by both OpenAI and AnthropicCompat clients. */
+interface AIClient {
+  chat: {
+    completions: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- params vary between OpenAI/Anthropic
+      create(params: any): Promise<{ choices?: Array<{ message?: { content?: string | null } }> }>;
+    };
+  };
+}
+
 const MAX_EXTRACTED_CHARS = 50_000;
 
 /**
@@ -23,8 +33,7 @@ export async function extractTextFromBuffer(
       fileName.toLowerCase().endsWith(".pdf")
     ) {
       // pdf-parse v2 exports PDFParse as a class (not a callable function)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { PDFParse } = await import("pdf-parse") as any;
+      const { PDFParse } = await import("pdf-parse");
       const parser = new PDFParse({ data: buffer });
       try {
         const result = await parser.getText();
@@ -127,8 +136,7 @@ export async function extractDocumentFields(
     });
 
     // Get AI client — use user-specific config if userId provided, otherwise firm-level
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let client: any;
+    let client: AIClient | null = null;
     let model: string;
 
     if (userId) {
@@ -163,7 +171,7 @@ export async function extractDocumentFields(
       setTimeout(() => reject(new Error("AI summarization timed out after 90 seconds")), 90_000),
     );
 
-    const aiCall = client.chat.completions.create({
+    const aiCall = client!.chat.completions.create({
       model,
       messages: [
         { role: "system", content: SUMMARIZATION_PROMPT },
@@ -181,14 +189,13 @@ export async function extractDocumentFields(
     const raw = response.choices?.[0]?.message?.content || "{}";
 
     // Parse JSON with regex fallback
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let parsed: Record<string, any>;
+    let parsed: Record<string, unknown>;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(raw) as Record<string, unknown>;
     } catch {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        parsed = JSON.parse(jsonMatch[0]);
+        parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
       } else {
         throw new Error("Failed to parse AI summarization response as JSON");
       }
@@ -205,12 +212,13 @@ export async function extractDocumentFields(
       risks: Array.isArray(parsed.risks) ? parsed.risks : [],
     };
 
-    // Save extraction results
+    // Save extraction results — Prisma Json field requires InputJsonValue which doesn't accept
+    // Record<string, unknown> directly; as any is the idiomatic cast for structured JSON writes
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json InputJsonValue cast
     await prisma.document.update({
       where: { id: documentId },
       data: {
         extractionStatus: "COMPLETE",
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         extractedFields: extractedFields as any,
         extractionError: null,
       },

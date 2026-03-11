@@ -23,13 +23,26 @@ function fmt(n: number) {
   return `$${n.toFixed(0)}`;
 }
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+interface ChartEntry {
+  name: string;
+  value: number;
+  _total?: number;
+}
 
-function CustomTooltip({ active, payload }: any) {
+interface TooltipPayload {
+  payload: ChartEntry;
+}
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: TooltipPayload[];
+}
+
+function CustomTooltip({ active, payload }: TooltipProps) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const total: number = payload[0].payload._total ?? 1;
-  const label = (ASSET_CLASS_LABELS as any)[d.name] || d.name;
+  const total: number = d._total ?? 1;
+  const label = ASSET_CLASS_LABELS[d.name] || d.name;
   const pct = total > 0 ? ((d.value / total) * 100).toFixed(1) : "0.0";
   return (
     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-xs">
@@ -40,9 +53,9 @@ function CustomTooltip({ active, payload }: any) {
   );
 }
 
-function renderLabel({ name, percent }: any) {
-  if (percent <= 0.05) return "";
-  const label = (ASSET_CLASS_LABELS as any)[name] || name;
+function renderLabel({ name, percent }: { name?: string; percent?: number }) {
+  if (!name || !percent || percent <= 0.05) return "";
+  const label = ASSET_CLASS_LABELS[name] || name;
   return `${label} ${(percent * 100).toFixed(0)}%`;
 }
 
@@ -59,10 +72,10 @@ export function AssetAllocationChart() {
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 text-xs text-gray-400 dark:text-gray-500">No active assets to chart.</div>
     );
 
-  const total: number = data.outerRing.reduce((sum: number, d: any) => sum + d.value, 0);
+  const total: number = data.outerRing.reduce((sum: number, d: ChartEntry) => sum + d.value, 0);
 
   // Inject total into each item so tooltip can compute percentage
-  const chartData = data.outerRing.map((d: any) => ({ ...d, _total: total }));
+  const chartData: ChartEntry[] = data.outerRing.map((d: ChartEntry) => ({ ...d, _total: total }));
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
@@ -82,10 +95,10 @@ export function AssetAllocationChart() {
               outerRadius={110}
               innerRadius={60}
               paddingAngle={2}
-              label={renderLabel}
+              label={renderLabel as (props: unknown) => React.ReactNode}
               labelLine={false}
             >
-              {chartData.map((entry: any, i: number) => (
+              {chartData.map((entry: ChartEntry, i: number) => (
                 <Cell
                   key={i}
                   fill={ASSET_CLASS_HEX[entry.name] || "#9ca3af"}
@@ -107,14 +120,14 @@ export function AssetAllocationChart() {
 
       {/* Simplified legend */}
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-        {data.outerRing.map((entry: any) => (
+        {data.outerRing.map((entry: ChartEntry) => (
           <div key={entry.name} className="flex items-center gap-1.5">
             <div
               className="w-2.5 h-2.5 rounded-full flex-shrink-0"
               style={{ backgroundColor: ASSET_CLASS_HEX[entry.name] || "#9ca3af" }}
             />
             <span className="text-[10px] text-gray-700 dark:text-gray-300">
-              {(ASSET_CLASS_LABELS as any)[entry.name] || entry.name}
+              {ASSET_CLASS_LABELS[entry.name] || entry.name}
             </span>
           </div>
         ))}

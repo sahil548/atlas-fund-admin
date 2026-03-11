@@ -7,6 +7,14 @@ import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
 import { logAudit } from "@/lib/audit";
 
+/** Typed metadata shape for DealActivity stage transitions. */
+interface StageActivityMetadata {
+  toStage?: string;
+  newStage?: string;
+  fromStage?: string;
+  [key: string]: unknown;
+}
+
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
   const firmId = authUser?.firmId || req.nextUrl.searchParams.get("firmId");
@@ -58,7 +66,7 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const dealsWithDaysInStage = rawDeals.map((deal) => {
     const stageEntry = deal.activities.find(
-      (a) => a.activityType.includes("STAGE") && ((a.metadata as any)?.toStage === deal.stage || (a.metadata as any)?.newStage === deal.stage),
+      (a) => a.activityType.includes("STAGE") && ((a.metadata as StageActivityMetadata)?.toStage === deal.stage || (a.metadata as StageActivityMetadata)?.newStage === deal.stage),
     );
     const enteredAt = stageEntry ? new Date(stageEntry.createdAt) : new Date(deal.createdAt);
     const daysInStage = Math.max(0, Math.floor((now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24)));

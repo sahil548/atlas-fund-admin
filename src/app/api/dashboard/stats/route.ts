@@ -5,7 +5,16 @@ import { computeMetrics } from "@/lib/computations/metrics";
 import { xirr } from "@/lib/computations/irr";
 import { logger } from "@/lib/logger";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** Local type for asset allocation entries returned by entity include. */
+interface AssetAllocationEntry {
+  costBasis: number | null;
+  allocationPercent: number;
+  asset: {
+    costBasis: number;
+    fairValue: number;
+    valuations?: unknown[];
+  };
+}
 
 export async function GET() {
   try {
@@ -181,7 +190,7 @@ export async function GET() {
       const liabPct = proxyConfig?.liabilitiesPercent ?? 0.02;
 
       const investmentsAtCost = entity.assetAllocations.reduce(
-        (sum: number, alloc: any) =>
+        (sum: number, alloc: AssetAllocationEntry) =>
           sum + (alloc.costBasis ?? alloc.asset.costBasis * (alloc.allocationPercent / 100)),
         0
       );
@@ -191,7 +200,7 @@ export async function GET() {
       const liabs = Math.round(totalA * liabPct);
       const costBasisNAV = totalA - liabs;
 
-      const totalUnrealized = entity.assetAllocations.reduce((sum: number, alloc: any) => {
+      const totalUnrealized = entity.assetAllocations.reduce((sum: number, alloc: AssetAllocationEntry) => {
         const allocCost = alloc.costBasis ?? alloc.asset.costBasis * (alloc.allocationPercent / 100);
         const allocFair = alloc.asset.fairValue * (alloc.allocationPercent / 100);
         return sum + (allocFair - allocCost);

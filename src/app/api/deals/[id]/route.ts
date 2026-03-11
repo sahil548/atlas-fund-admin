@@ -148,7 +148,7 @@ export async function PUT(
   if (data!.thesisNotes !== undefined) updateData.thesisNotes = data!.thesisNotes;
   if (data!.investmentRationale !== undefined) updateData.investmentRationale = data!.investmentRationale;
   if (data!.additionalContext !== undefined) updateData.additionalContext = data!.additionalContext;
-  if ((data as any).dealMetadata !== undefined) updateData.dealMetadata = (data as any).dealMetadata;
+  if (data!.dealMetadata !== undefined) updateData.dealMetadata = data!.dealMetadata;
   if (data!.sourcedByContactId !== undefined) updateData.sourcedByContactId = data!.sourcedByContactId;
 
   const deal = await prisma.deal.update({ where: { id }, data: updateData });

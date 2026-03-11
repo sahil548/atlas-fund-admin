@@ -3,8 +3,6 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export async function GET() {
   try {
     const authUser = await getAuthUser();
@@ -156,14 +154,14 @@ export async function GET() {
 
         for (const call of entity.capitalCalls) {
           const callAmount = call.lineItems.reduce(
-            (s: number, li: any) => s + li.amount,
+            (s: number, li: { amount: number }) => s + li.amount,
             0
           );
           totalCalled += callAmount;
 
           const fundedAmount = call.lineItems
-            .filter((li: any) => li.status === "Funded")
-            .reduce((s: number, li: any) => s + li.amount, 0);
+            .filter((li: { status: string }) => li.status === "Funded")
+            .reduce((s: number, li: { amount: number }) => s + li.amount, 0);
           totalDeployed += fundedAmount;
         }
 

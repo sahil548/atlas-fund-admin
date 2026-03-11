@@ -5,7 +5,18 @@ import { computeMetrics } from "@/lib/computations/metrics";
 import { xirr } from "@/lib/computations/irr";
 import { logger } from "@/lib/logger";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** Local type for asset allocation entries with full asset include. */
+interface AssetAllocationWithIncomes {
+  costBasis: number | null;
+  allocationPercent: number;
+  asset: {
+    costBasis: number;
+    fairValue: number;
+    entryDate: Date | null;
+    incomeEvents: Array<{ date: Date; amount: number }>;
+    valuations: unknown[];
+  };
+}
 
 export async function GET(
   _req: Request,
@@ -119,9 +130,9 @@ export async function GET(
     let totalCostBasis = 0;
     let totalFairValue = 0;
 
-    for (const alloc of entity.assetAllocations) {
+    for (const alloc of entity.assetAllocations as AssetAllocationWithIncomes[]) {
       const allocCost =
-        (alloc as any).costBasis ??
+        alloc.costBasis ??
         alloc.asset.costBasis * (alloc.allocationPercent / 100);
       const allocFair = alloc.asset.fairValue * (alloc.allocationPercent / 100);
       totalCostBasis += allocCost;
@@ -154,8 +165,8 @@ export async function GET(
     // --- Compute Gross IRR from asset-level cash flows ---
     const assetCashFlows: { date: Date; amount: number }[] = [];
 
-    for (const alloc of entity.assetAllocations) {
-      const asset = alloc.asset as any;
+    for (const alloc of entity.assetAllocations as AssetAllocationWithIncomes[]) {
+      const asset = alloc.asset;
       const allocPct = alloc.allocationPercent / 100;
 
       // Outflow: cost basis at entry
@@ -203,7 +214,7 @@ export async function GET(
       }
       periodBreakdownMap[period].total += event.amount;
       const assetKey = event.assetId || "unallocated";
-      const assetName = (event as any).asset?.name || "Unallocated";
+      const assetName = (event as { asset?: { name?: string } }).asset?.name || "Unallocated";
       if (!periodBreakdownMap[period].byAsset[assetKey]) {
         periodBreakdownMap[period].byAsset[assetKey] = { assetName, amount: 0 };
       }

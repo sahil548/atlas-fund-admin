@@ -68,18 +68,23 @@ export function CreateEntityForm({ open, onClose }: Props) {
     } catch (err: unknown) {
       let msg = "Failed to create entity";
       if (err && typeof err === "object") {
-        if ("message" in err && typeof (err as any).message === "string") {
-          msg = (err as any).message;
-        } else if ("error" in err) {
-          const e = (err as any).error;
+        const errObj = err as Record<string, unknown>;
+        if ("message" in errObj && typeof errObj.message === "string") {
+          msg = errObj.message;
+        } else if ("error" in errObj) {
+          const e = errObj.error as Record<string, unknown> | string | null | undefined;
           if (typeof e === "string") {
             msg = e;
-          } else if (e?.formErrors?.length) {
-            msg = e.formErrors.join(", ");
-          } else if (e?.fieldErrors) {
-            msg = Object.entries(e.fieldErrors)
-              .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`)
-              .join("; ");
+          } else if (e && typeof e === "object") {
+            const formErrors = e.formErrors;
+            const fieldErrors = e.fieldErrors;
+            if (Array.isArray(formErrors) && formErrors.length > 0) {
+              msg = (formErrors as string[]).join(", ");
+            } else if (fieldErrors && typeof fieldErrors === "object") {
+              msg = Object.entries(fieldErrors as Record<string, string[]>)
+                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : String(v)}`)
+                .join("; ");
+            }
           }
         }
       }

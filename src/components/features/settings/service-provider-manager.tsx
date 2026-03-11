@@ -24,6 +24,7 @@ interface ServiceProvider {
   name: string;
   email: string;
   initials: string | null;
+  role: string;
   entityAccess: string[];
 }
 
@@ -65,7 +66,7 @@ export function ServiceProviderManager({ entityId }: Props) {
   const [savingFor, setSavingFor] = useState<string | null>(null);
   const [selectedEntityIds, setSelectedEntityIds] = useState<Record<string, string[]>>({});
 
-  const serviceProviders = allUsers?.filter((u) => (u as any).role === "SERVICE_PROVIDER") ?? [];
+  const serviceProviders = allUsers?.filter((u) => u.role === "SERVICE_PROVIDER") ?? [];
 
   async function loadEntityAccess(userId: string) {
     if (entityAccessData[userId]) return;

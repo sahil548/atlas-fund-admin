@@ -2,7 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/** Typed metadata shape for DealActivity stage transitions. */
+interface StageActivityMetadata {
+  toStage?: string;
+  newStage?: string;
+  fromStage?: string;
+  [key: string]: unknown;
+}
 
 function parseTargetSize(s: string | null): number {
   if (!s) return 0;
@@ -16,14 +22,6 @@ function parseTargetSize(s: string | null): number {
 }
 
 const ACTIVE_STAGES = ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"];
-const STAGE_ORDER: Record<string, number> = {
-  SCREENING: 0,
-  DUE_DILIGENCE: 1,
-  IC_REVIEW: 2,
-  CLOSING: 3,
-  CLOSED: 4,
-  DEAD: 5,
-};
 
 export async function GET(req: NextRequest) {
   const authUser = await getAuthUser();
@@ -90,7 +88,7 @@ export async function GET(req: NextRequest) {
     const stageEntry = deal.activities.find(
       (a) =>
         a.activityType.includes("STAGE") &&
-        (a.metadata as any)?.newStage === deal.stage
+        (a.metadata as StageActivityMetadata)?.newStage === deal.stage
     );
 
     const enteredAt = stageEntry ? new Date(stageEntry.createdAt) : new Date(deal.createdAt);
@@ -117,7 +115,6 @@ export async function GET(req: NextRequest) {
   for (let i = 5; i >= 0; i--) {
     const d = new Date();
     d.setMonth(d.getMonth() - i);
-    const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
     const label = d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 
     // Count deals that have a CLOSED activity in this month
@@ -125,7 +122,7 @@ export async function GET(req: NextRequest) {
       const closedActivity = deal.activities.find(
         (a) =>
           a.activityType.includes("STAGE") &&
-          ((a.metadata as any)?.newStage === "CLOSED" || a.activityType.includes("CLOSED"))
+          ((a.metadata as StageActivityMetadata)?.newStage === "CLOSED" || a.activityType.includes("CLOSED"))
       );
       if (closedActivity) {
         const actDate = new Date(closedActivity.createdAt);
@@ -224,7 +221,7 @@ export async function GET(req: NextRequest) {
   const deadDeals = deals.filter((d) => d.stage === "DEAD");
   const killReasonMap: Record<string, number> = {};
   for (const deal of deadDeals) {
-    const reason = (deal as any).killReason || "Unknown";
+    const reason = deal.killReason || "Unknown";
     killReasonMap[reason] = (killReasonMap[reason] || 0) + 1;
   }
   const killReasonBreakdown = Object.entries(killReasonMap)

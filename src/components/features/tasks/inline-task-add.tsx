@@ -5,13 +5,16 @@ import useSWR from "swr";
 import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API error ${r.status}`);
     return r.json();
   });
+
+interface UserOption {
+  id: string;
+  name: string;
+}
 
 interface InlineTaskAddProps {
   contextType: "deal" | "asset" | "entity";
@@ -41,7 +44,7 @@ export function InlineTaskAdd({
   const [submitting, setSubmitting] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: users = [] } = useSWR(
+  const { data: users = [] } = useSWR<UserOption[]>(
     firmId && showForm ? `/api/users?firmId=${firmId}` : null,
     fetcher,
   );
@@ -141,7 +144,7 @@ export function InlineTaskAdd({
           className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
           <option value="">Unassigned</option>
-          {(users as any[]).map((u: any) => (
+          {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name}
             </option>

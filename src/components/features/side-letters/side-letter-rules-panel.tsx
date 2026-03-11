@@ -300,7 +300,7 @@ export function SideLetterRulesPanel({ sideLetterId, investorName, entityName }:
                 className="flex items-start justify-between gap-3 border border-gray-200 rounded-lg p-3"
               >
                 <div className="flex items-start gap-2">
-                  <Badge color={RULE_TYPE_COLORS[rule.ruleType] as any}>
+                  <Badge color={RULE_TYPE_COLORS[rule.ruleType] ?? "gray"}>
                     {RULE_TYPE_LABELS[rule.ruleType] ?? rule.ruleType}
                   </Badge>
                   <div>
