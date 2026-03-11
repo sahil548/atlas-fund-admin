@@ -71,7 +71,6 @@ export function CreditManagementPanel({ asset: a }: Props) {
         ).length;
 
         // Effective interest rate: fixedRate or referenceRate + spreadBps
-        const effectiveRate = ag.fixedRate ?? null;
         const interestRateLabel =
           ag.interestRateType === "FLOATING" && ag.referenceRate
             ? `${ag.referenceRate}${ag.spreadBps ? ` + ${ag.spreadBps}bps` : ""}`

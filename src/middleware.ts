@@ -91,8 +91,6 @@ export default clerkMiddleware(async (auth, req) => {
   // Only enforce if we have a role (production Clerk with metadata)
   // In dev/mock mode (no Clerk session claims), skip role enforcement
   if (role) {
-    const { pathname } = req.nextUrl;
-
     // LP_INVESTOR must not access GP pages → redirect to /lp/dashboard
     if (role === "LP_INVESTOR") {
       if (isGPPageRoute(req)) {

@@ -4,8 +4,6 @@ import Link from "next/link";
 import { Eye, DollarSign, FileText } from "lucide-react";
 import { fmt, pct } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface EntityCardProps {
   entityId: string;
   name: string;

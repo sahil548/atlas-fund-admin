@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { postICReviewToSlack } from "@/lib/slack";
 import { notifyGPTeam } from "@/lib/notifications";
-import { getDDAutoTasks, getClosingAutoTasks } from "@/lib/deal-auto-tasks";
+import { getClosingAutoTasks } from "@/lib/deal-auto-tasks";
 import { logger } from "@/lib/logger";
 
 /**
@@ -510,10 +510,6 @@ export async function closeDeal(
  * Recalculate workstream progress (totalTasks & completedTasks) after task mutations.
  */
 export async function recalcWorkstreamProgress(workstreamId: string) {
-  const ws = await prisma.dDWorkstream.findUnique({
-    where: { id: workstreamId },
-    select: { analysisResult: true },
-  });
   const tasks = await prisma.dDTask.findMany({
     where: { workstreamId },
     select: { status: true },

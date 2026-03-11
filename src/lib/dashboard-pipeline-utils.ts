@@ -10,8 +10,6 @@ const ACTIVE_PIPELINE_STAGES = [
   "CLOSING",
 ] as const;
 
-type ActiveStage = (typeof ACTIVE_PIPELINE_STAGES)[number];
-
 export interface PipelineStageRow {
   stage: string;
   count: number;

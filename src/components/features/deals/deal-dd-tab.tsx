@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
@@ -364,13 +361,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     return "bg-gray-300";
   }
 
-  // Priority badge color
-  function priorityColor(priority: string | null) {
-    if (priority === "HIGH") return "red";
-    if (priority === "LOW") return "green";
-    return "yellow";
-  }
-
   // Check if date is overdue
   function isOverdue(date: string | null) {
     if (!date) return false;
@@ -634,7 +624,6 @@ export function DealDDTab({ deal }: DealDDTabProps) {
               {sortedWorkstreams.map((ws: any) => {
                 const commentCount = ws._count?.comments ?? 0;
                 const attachmentCount = ws._count?.attachments ?? 0;
-                const isSelected = selectedWsId === ws.id;
                 const isExpanded = !!expandedWs[ws.id];
                 const wsTasks = (ws.tasks || []) as any[];
                 const wsCompletedTasks = wsTasks.filter((t: any) => t.status === "DONE").length;

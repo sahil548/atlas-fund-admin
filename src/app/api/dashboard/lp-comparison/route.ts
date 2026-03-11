@@ -5,8 +5,6 @@ import { computeMetrics } from "@/lib/computations/metrics";
 import { xirr } from "@/lib/computations/irr";
 import { logger } from "@/lib/logger";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export async function GET() {
   try {
     const authUser = await getAuthUser();

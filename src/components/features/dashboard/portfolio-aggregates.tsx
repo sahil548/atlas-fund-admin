@@ -7,8 +7,6 @@ import { TopBottomPerformers } from "./top-bottom-performers";
 import { CapitalDeploymentTracker } from "./capital-deployment-tracker";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API error ${r.status}`);

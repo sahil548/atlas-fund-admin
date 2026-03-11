@@ -3,7 +3,7 @@
  * White-label design: entity name only, no Atlas branding.
  */
 
-import { StyleSheet, Font } from "@react-pdf/renderer";
+import { StyleSheet } from "@react-pdf/renderer";
 
 // ── Style Definitions ──────────────────────────────────────
 

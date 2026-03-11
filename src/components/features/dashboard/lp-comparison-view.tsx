@@ -5,8 +5,6 @@ import useSWR from "swr";
 import { fmt } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API error ${r.status}`);

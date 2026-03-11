@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
-import { useFirm } from "@/components/providers/firm-provider";
 import { logger } from "@/lib/logger";
 
 const fetcher = (url: string) =>
@@ -48,7 +47,7 @@ interface IntegrationCardProps {
 function IntegrationCard({
   name,
   description,
-  provider,
+  provider: _provider,
   isConfigured,
   connection,
   onConnect,

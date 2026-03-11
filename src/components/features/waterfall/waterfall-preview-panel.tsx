@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { fmt, pct, cn } from "@/lib/utils";
+import { fmt, cn } from "@/lib/utils";
 import { WaterfallScenarioChart } from "./waterfall-scenario-chart";
 
 interface WaterfallTierResult {

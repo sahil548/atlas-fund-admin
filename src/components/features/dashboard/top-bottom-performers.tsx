@@ -1,10 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { fmt } from "@/lib/utils";
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface Performer {
   assetId: string;
   name: string;

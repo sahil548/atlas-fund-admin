@@ -11,8 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { fmt } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface Props {
   asset: {
     id: string;

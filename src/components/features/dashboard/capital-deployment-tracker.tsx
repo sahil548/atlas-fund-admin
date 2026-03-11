@@ -2,8 +2,6 @@
 
 import { fmt } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface EntityDeployment {
   entityId: string;
   entityName: string;
@@ -31,8 +29,6 @@ export function CapitalDeploymentTracker({
   entities,
   aggregate,
 }: CapitalDeploymentTrackerProps) {
-  const maxCommitted = Math.max(...entities.map((e) => e.totalCommitted), 1);
-
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div className="p-4 border-b border-gray-100">

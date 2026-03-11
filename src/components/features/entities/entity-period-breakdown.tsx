@@ -4,8 +4,6 @@ import { useState } from "react";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { fmt } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface AssetAmount {
   assetName: string;
   amount: number;

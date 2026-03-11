@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { formatDateShort } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface ActivityItem {
   id: string;
   type: "DEAL_ACTIVITY" | "CAPITAL_CALL" | "DISTRIBUTION";

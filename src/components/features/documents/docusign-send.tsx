@@ -6,8 +6,6 @@ import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { Badge } from "@/components/ui/badge";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API ${r.status}`);

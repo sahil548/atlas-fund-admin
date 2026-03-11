@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 interface DocumentSummary {
   documentType?: string;
   summary?: string;

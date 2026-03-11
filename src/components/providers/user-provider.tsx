@@ -4,8 +4,6 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { useUser as useClerkUser } from "@clerk/nextjs";
 import useSWR from "swr";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 // Check at module level whether Clerk is configured

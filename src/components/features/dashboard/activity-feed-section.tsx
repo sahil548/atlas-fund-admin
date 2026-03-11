@@ -7,8 +7,6 @@ import { useFirm } from "@/components/providers/firm-provider";
 import { cn } from "@/lib/utils";
 import type { ActivityItem, ActivityType } from "@/lib/activity-feed-helpers";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 // ── Fetcher ────────────────────────────────────────────────────
 
 const fetcher = (url: string) =>

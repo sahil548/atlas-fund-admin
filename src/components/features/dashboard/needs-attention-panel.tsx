@@ -6,8 +6,6 @@ import useSWR from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { CheckCircle } from "lucide-react";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API error ${r.status}`);

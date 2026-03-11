@@ -8,7 +8,6 @@ import { useToast } from "@/components/ui/toast";
 import { useFirm } from "@/components/providers/firm-provider";
 import { cn } from "@/lib/utils";
 import {
-  DEFAULT_PROMPT_TEMPLATES,
   MODULE_LABELS,
   getDefaultContent,
 } from "@/lib/default-prompt-templates";

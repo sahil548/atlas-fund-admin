@@ -11,8 +11,6 @@ import { ContactDealsTab } from "@/components/features/contacts/contact-deals-ta
 import { ContactConnectionsTab } from "@/components/features/contacts/contact-connections-tab";
 import { cn } from "@/lib/utils";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 type TabId = "activity" | "deals" | "connections";

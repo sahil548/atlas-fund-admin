@@ -72,7 +72,7 @@ export class AsanaClient {
    */
   static async exchangeCode(
     code: string,
-    firmId: string
+    _firmId: string
   ): Promise<{
     accessToken: string;
     refreshToken: string;
