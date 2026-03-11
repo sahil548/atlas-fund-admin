@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateWaterfallTierSchema, UpdateWaterfallTierSchema } from "@/lib/schemas";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
   const { data, error } = await parseBody(req, CreateWaterfallTierSchema);
@@ -35,7 +36,7 @@ export async function DELETE(req: Request) {
     await prisma.waterfallTier.delete({ where: { id: tierId } });
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("[waterfall-templates/tiers] DELETE", err);
+    logger.error("[waterfall-templates/tiers] DELETE", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to delete tier" }, { status: 500 });
   }
 }

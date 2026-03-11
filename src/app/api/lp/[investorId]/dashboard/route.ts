@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { xirr } from "@/lib/computations/irr";
 import { computeMetrics } from "@/lib/computations/metrics";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -127,7 +128,7 @@ export async function GET(
       totalCalled,
       totalDistributed,
     },
-  }).catch((err: unknown) => console.error("[metric-snapshot] save failed:", err));
+  }).catch((err: unknown) => logger.error("[metric-snapshot] save failed:", { error: err instanceof Error ? err.message : String(err) }));
 
   // ── Per-Entity Metrics for LP-07 ──
   const entityMetrics: {
@@ -234,7 +235,7 @@ export async function GET(
         totalCalled: entityCalled,
         totalDistributed: entityDistributed,
       },
-    }).catch((err: unknown) => console.error("[metric-snapshot-entity] save failed:", err));
+    }).catch((err: unknown) => logger.error("[metric-snapshot-entity] save failed:", { error: err instanceof Error ? err.message : String(err) }));
   }
 
   // Fetch recent MetricSnapshot history for sparklines (per-entity, excludes aggregate)

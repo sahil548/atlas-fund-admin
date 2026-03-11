@@ -7,6 +7,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -33,7 +34,7 @@ export async function GET(
 
     return NextResponse.json(meeting);
   } catch (err) {
-    console.error("[meetings/[id]] GET Error:", err);
+    logger.error("[meetings/[id]] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load meeting" }, { status: 500 });
   }
 }

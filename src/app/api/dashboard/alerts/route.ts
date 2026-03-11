@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { buildAlerts } from "@/lib/dashboard-alerts-utils";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/dashboard/alerts
@@ -82,7 +83,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[dashboard/alerts] Error:", err);
+    logger.error("[dashboard/alerts] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load dashboard alerts" },
       { status: 500 }

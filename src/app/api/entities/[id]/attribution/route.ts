@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { computeEntityAttribution } from "@/lib/computations/performance-attribution";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -16,7 +17,7 @@ export async function GET(
     const attribution = await computeEntityAttribution(id);
     return NextResponse.json(attribution);
   } catch (err: any) {
-    console.error("[entities/attribution] GET error:", err);
+    logger.error("[entities/attribution] GET error:", { error: err instanceof Error ? err.message : String(err) });
     if (err.message?.includes("not found")) {
       return NextResponse.json({ error: "Entity not found" }, { status: 404 });
     }

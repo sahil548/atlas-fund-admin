@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { getValidTokens } from "@/lib/accounting/token-manager";
 import { qboProvider } from "@/lib/accounting/qbo-provider";
+import { logger } from "@/lib/logger";
 
 /** Get the last day of the previous month as YYYY-MM-DD */
 function lastDayOfPreviousMonth(): string {
@@ -135,7 +136,7 @@ export async function POST(
       );
     }
   } catch (err: unknown) {
-    console.error("[sync] Error:", err);
+    logger.error("[sync] Error:", { error: err instanceof Error ? err.message : String(err) });
     const message = err instanceof Error ? err.message : "Sync failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }

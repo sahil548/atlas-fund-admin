@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
       total: paginated.total,
     });
   } catch (err) {
-    console.error("[assets] GET Error:", err);
+    logger.error("[assets] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load assets" }, { status: 500 });
   }
 }
@@ -121,7 +122,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(asset, { status: 201 });
   } catch (err) {
-    console.error("[assets] POST Error:", err);
+    logger.error("[assets] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create asset" }, { status: 500 });
   }
 }

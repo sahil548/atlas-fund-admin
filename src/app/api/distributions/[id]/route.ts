@@ -6,6 +6,7 @@ import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { recomputeAllInvestorCapitalAccounts } from "@/lib/capital-activity-engine";
 import { notifyInvestorsOnDistribution } from "@/lib/notification-delivery";
+import { logger } from "@/lib/logger";
 
 // Valid forward-only status transitions
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -81,7 +82,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("[distributions/[id]] GET error:", err);
+    logger.error("[distributions/[id]] GET error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load distribution" },
       { status: 500 },
@@ -176,12 +177,12 @@ export async function PATCH(
     if (data!.status === "PAID" && existing.status !== "PAID") {
       await recomputeAllInvestorCapitalAccounts(existing.entityId);
       // Fire-and-forget: notify investors (never blocks the status change)
-      notifyInvestorsOnDistribution(id).catch(console.error);
+      notifyInvestorsOnDistribution(id).catch((e: unknown) => logger.error("Operation failed", { error: e instanceof Error ? e.message : String(e) }));
     }
 
     return NextResponse.json(updated);
   } catch (err) {
-    console.error("[distributions/[id]] PATCH error:", err);
+    logger.error("[distributions/[id]] PATCH error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to update distribution" },
       { status: 500 },

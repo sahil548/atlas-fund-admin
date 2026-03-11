@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { CreateMeetingSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       total: paginated.total,
     });
   } catch (err) {
-    console.error("[meetings] GET Error:", err);
+    logger.error("[meetings] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load meetings" }, { status: 500 });
   }
 }
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(meeting, { status: 201 });
   } catch (err) {
-    console.error("[meetings] POST Error:", err);
+    logger.error("[meetings] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create meeting" }, { status: 500 });
   }
 }

@@ -7,6 +7,7 @@ import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
+import { logger } from "@/lib/logger";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -128,7 +129,7 @@ export async function POST(req: Request) {
         const text = await extractTextFromBuffer(buffer, originalFileName, mimeType);
         if (text.length > 0) extractedText = text;
       } catch (err) {
-        console.error("[documents] Text extraction failed:", err);
+        logger.error("[documents] Text extraction failed:", { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -157,14 +158,14 @@ export async function POST(req: Request) {
     if (doc.extractedText && firmId && shouldExtractAI(doc.category)) {
       extractDocumentFields(doc.id, doc.category, doc.extractedText, firmId, authUser?.id)
         .catch((err) => {
-          console.error("[documents] Background AI extraction error:", err);
+          logger.error("[documents] Background AI extraction error:", { error: err instanceof Error ? err.message : String(err) });
         });
     }
 
     return NextResponse.json(doc, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";
-    console.error("[documents POST] Error:", message);
+    logger.error("[documents POST] Error:", { error: message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -192,7 +193,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json(updated);
   } catch (err: any) {
     if (err.code === "P2025") return NextResponse.json({ error: "Document not found" }, { status: 404 });
-    console.error("[documents] PATCH error:", err);
+    logger.error("[documents] PATCH error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to update document" }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(companies);
   } catch (err) {
-    console.error("[companies] GET Error:", err);
+    logger.error("[companies] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load companies" },
       { status: 500 },
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(company, { status: 201 });
   } catch (err) {
-    console.error("[companies] POST Error:", err);
+    logger.error("[companies] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create company" },
       { status: 500 },

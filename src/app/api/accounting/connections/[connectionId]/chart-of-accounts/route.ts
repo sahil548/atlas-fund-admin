@@ -4,6 +4,7 @@ import { getAuthUser, unauthorized } from "@/lib/auth";
 import { getValidTokens } from "@/lib/accounting/token-manager";
 import { qboProvider } from "@/lib/accounting/qbo-provider";
 import { detectAtlasBucket } from "@/lib/accounting/provider-types";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   req: Request,
@@ -107,7 +108,7 @@ export async function GET(
       totalAccounts: accounts.length,
     });
   } catch (err: unknown) {
-    console.error("[chart-of-accounts] Error:", err);
+    logger.error("[chart-of-accounts] Error:", { error: err instanceof Error ? err.message : String(err) });
     const message = err instanceof Error ? err.message : "Failed to fetch chart of accounts";
     return NextResponse.json({ error: message }, { status: 500 });
   }

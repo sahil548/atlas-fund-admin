@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { createAIClient, getModelForFirm } from "@/lib/ai-config";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 // Vercel Hobby plan caps at 60s
 export const maxDuration = 60;
@@ -172,7 +173,7 @@ IMPORTANT: Return ONLY a valid JSON object. No markdown, no explanation — just
         { status: 504 },
       );
     }
-    console.error("[extract-metadata] Error:", message);
+    logger.error("[extract-metadata] Error:", { error: message });
     return NextResponse.json({ error: "AI extraction failed" }, { status: 500 });
   }
 }

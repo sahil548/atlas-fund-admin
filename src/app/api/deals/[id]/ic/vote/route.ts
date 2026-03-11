@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { CastICVoteSchema } from "@/lib/schemas";
 import { sendBackToDueDiligence } from "@/lib/deal-stage-engine";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/deals/[id]/ic/vote
@@ -78,7 +79,7 @@ export async function POST(
       );
     } catch (err) {
       // Log but don't fail the vote if send back fails
-      console.error("[IC Vote] Send back failed:", err);
+      logger.error("[IC Vote] Send back failed:", { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

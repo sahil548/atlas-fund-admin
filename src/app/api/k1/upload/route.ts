@@ -19,6 +19,7 @@ import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnK1Available } from "@/lib/notification-delivery";
 import { normalizeName, extractInvestorNameFromFilename, matchInvestor } from "@/lib/k1-matching";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -128,11 +129,7 @@ export async function POST(req: Request) {
           entityName: entity.name,
           taxYear: parseInt(taxYear, 10),
         }).catch((err: any) => {
-          console.error(
-            "[k1/upload] Failed to notify investor:",
-            matchedInvestor?.id,
-            err,
-          );
+          logger.error("[k1/upload] Failed to notify investor", { investorId: matchedInvestor?.id, error: err instanceof Error ? err.message : String(err) });
         });
       } else {
         unmatched.push(file.name);
@@ -148,7 +145,7 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (err: any) {
-    console.error("[k1/upload]", err);
+    logger.error("[k1/upload]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: err.message || "Failed to upload K-1 files" },
       { status: 500 },

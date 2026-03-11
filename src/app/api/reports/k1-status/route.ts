@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -90,7 +91,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(result);
   } catch (err: any) {
-    console.error("[reports/k1-status]", err);
+    logger.error("[reports/k1-status]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: err.message || "Failed to fetch K-1 status" },
       { status: 500 }

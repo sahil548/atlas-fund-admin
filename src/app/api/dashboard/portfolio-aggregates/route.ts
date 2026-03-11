@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -257,7 +258,7 @@ export async function GET() {
       recentActivity,
     });
   } catch (err) {
-    console.error("[dashboard/portfolio-aggregates] Error:", err);
+    logger.error("[dashboard/portfolio-aggregates] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load portfolio aggregates" },
       { status: 500 }

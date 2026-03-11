@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/documents/serve?url=<encoded blob URL>
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
       headers,
     });
   } catch (err) {
-    console.error("[documents/serve] Error:", err);
+    logger.error("[documents/serve] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "File not found" }, { status: 404 });
   }
 }

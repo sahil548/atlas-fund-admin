@@ -8,6 +8,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   req: Request,
@@ -60,7 +61,7 @@ export async function PATCH(
     if (err.code === "P2003") {
       return NextResponse.json({ error: "Referenced record not found" }, { status: 400 });
     }
-    console.error("[meetings/link] PATCH Error:", err);
+    logger.error("[meetings/link] PATCH Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to link meeting" }, { status: 500 });
   }
 }

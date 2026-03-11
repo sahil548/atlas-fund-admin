@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { z } from "zod";
 import { computeWaterfall, type WaterfallConfig, type InvestorShare } from "@/lib/computations/waterfall";
+import { logger } from "@/lib/logger";
 
 const CalculateWaterfallSchema = z.object({
   entityId: z.string().min(1, "Entity is required"),
@@ -181,7 +182,7 @@ export async function POST(
       },
     });
   } catch (err) {
-    console.error("[waterfall-templates/calculate]", err);
+    logger.error("[waterfall-templates/calculate]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Waterfall calculation failed" }, { status: 500 });
   }
 }

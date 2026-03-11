@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { CreateCapitalCallLineItemSchema } from "@/lib/schemas";
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -56,7 +57,7 @@ export async function GET(
 
     return NextResponse.json(enriched);
   } catch (err) {
-    console.error("[capital-calls/[id]/line-items] GET error:", err);
+    logger.error("[capital-calls/[id]/line-items] GET error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load line items" },
       { status: 500 },
@@ -147,7 +148,7 @@ export async function POST(
 
     return NextResponse.json(lineItem, { status: 201, headers });
   } catch (err) {
-    console.error("[capital-calls/[id]/line-items] POST error:", err);
+    logger.error("[capital-calls/[id]/line-items] POST error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create line item" },
       { status: 500 },

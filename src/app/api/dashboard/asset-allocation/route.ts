@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -65,7 +66,7 @@ export async function GET() {
 
     return NextResponse.json({ outerRing, innerRing, totalFairValue });
   } catch (err) {
-    console.error("[dashboard/asset-allocation] Error:", err);
+    logger.error("[dashboard/asset-allocation] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load asset allocation" },
       { status: 500 },

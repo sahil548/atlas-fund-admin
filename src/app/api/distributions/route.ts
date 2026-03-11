@@ -5,6 +5,7 @@ import { CreateDistributionSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -33,7 +34,7 @@ export async function GET() {
     });
     return NextResponse.json(distributions);
   } catch (err) {
-    console.error("[distributions] GET Error:", err);
+    logger.error("[distributions] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load distributions" },
       { status: 500 },
@@ -125,7 +126,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(distWithLineItems, { status: 201 });
   } catch (err) {
-    console.error("[distributions] POST Error:", err);
+    logger.error("[distributions] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create distribution" },
       { status: 500 },

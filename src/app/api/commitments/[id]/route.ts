@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   req: Request,
@@ -61,7 +62,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (err) {
-    console.error("[commitments/[id]]", err);
+    logger.error("[commitments/[id]]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to update commitment" }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { computeMetrics } from "@/lib/computations/metrics";
 import { xirr } from "@/lib/computations/irr";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -223,7 +224,7 @@ export async function GET() {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[dashboard/lp-comparison] Error:", err);
+    logger.error("[dashboard/lp-comparison] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load LP comparison" },
       { status: 500 }

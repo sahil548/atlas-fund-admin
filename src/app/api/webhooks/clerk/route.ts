@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { prisma } from "@/lib/prisma";
 import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/webhooks/clerk
@@ -15,7 +16,7 @@ import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
 export async function POST(req: Request) {
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
   if (!WEBHOOK_SECRET) {
-    console.error("[clerk-webhook] CLERK_WEBHOOK_SECRET not set");
+    logger.error("[clerk-webhook] CLERK_WEBHOOK_SECRET not set");
     return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
   }
 
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
       "svix-signature": svixSignature,
     }) as typeof event;
   } catch (err) {
-    console.error("[clerk-webhook] Verification failed:", err);
+    logger.error("[clerk-webhook] Verification failed:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -72,7 +73,7 @@ async function handleUserCreated(data: Record<string, unknown>) {
   const emailAddresses = data.email_addresses as Array<{ email_address: string }> | undefined;
   const email = emailAddresses?.[0]?.email_address;
   if (!email) {
-    console.error("[clerk-webhook] user.created missing email");
+    logger.error("[clerk-webhook] user.created missing email");
     return NextResponse.json({ error: "No email in event" }, { status: 400 });
   }
 
@@ -115,7 +116,7 @@ async function handleUserCreated(data: Record<string, unknown>) {
       });
     }
 
-    console.log(`[clerk-webhook] Linked pre-invited user ${email} to firm ${existingUser.firmId}`);
+    logger.info(`[clerk-webhook] Linked pre-invited user ${email} to firm ${existingUser.firmId}`);
     return NextResponse.json({ action: "linked", userId: existingUser.id, firmId: existingUser.firmId });
   }
 
@@ -153,7 +154,7 @@ async function handleUserCreated(data: Record<string, unknown>) {
   const defaultCategories = getDefaultDDCategoriesForFirm(firm.id);
   await prisma.dDCategoryTemplate.createMany({ data: defaultCategories });
 
-  console.log(`[clerk-webhook] Created firm ${firm.id} + user ${user.id} + ${defaultCategories.length} DD templates for ${email}`);
+  logger.info(`[clerk-webhook] Created firm ${firm.id} + user ${user.id} + ${defaultCategories.length} DD templates for ${email}`);
   return NextResponse.json({ action: "created", userId: user.id, firmId: firm.id });
 }
 
@@ -167,7 +168,7 @@ async function handleUserDeleted(data: Record<string, unknown>) {
 
   if (!email) {
     // Clerk sometimes omits email on delete — try by Clerk ID fallback
-    console.warn("[clerk-webhook] user.deleted missing email, skipping");
+    logger.warn("[clerk-webhook] user.deleted missing email, skipping");
     return NextResponse.json({ received: true });
   }
 
@@ -177,7 +178,7 @@ async function handleUserDeleted(data: Record<string, unknown>) {
       where: { email },
       data: { isActive: false },
     });
-    console.log(`[clerk-webhook] Soft-deleted user ${email}`);
+    logger.info(`[clerk-webhook] Soft-deleted user ${email}`);
   }
 
   return NextResponse.json({ action: "soft_deleted" });

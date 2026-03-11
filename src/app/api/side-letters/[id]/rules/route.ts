@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateSideLetterRuleSchema } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -44,7 +45,7 @@ export async function POST(
     });
     return NextResponse.json(rule, { status: 201 });
   } catch (err) {
-    console.error("[side-letters/[id]/rules] POST Error:", err);
+    logger.error("[side-letters/[id]/rules] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create rule" }, { status: 500 });
   }
 }

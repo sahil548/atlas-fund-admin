@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -199,11 +200,11 @@ export async function GET(
           details: fullResponse as any,
         },
       })
-      .catch((e: any) => console.error("[nav] Snapshot upsert failed:", e));
+      .catch((e: any) => logger.error("[nav] Snapshot upsert failed:", { error: e instanceof Error ? e.message : String(e) }));
 
     return NextResponse.json(fullResponse);
   } catch (err) {
-    console.error("[nav/entityId]", err);
+    logger.error("[nav/entityId]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to compute NAV" }, { status: 500 });
   }
 }

@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,7 +65,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(docs);
   } catch (err) {
-    console.error("[reports]", err);
+    logger.error("[reports]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to fetch reports" },
       { status: 500 }

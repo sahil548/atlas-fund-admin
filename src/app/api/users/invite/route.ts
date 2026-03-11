@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const InviteSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -98,11 +99,11 @@ export async function POST(req: Request) {
       emailAddress: email,
       redirectUrl,
     });
-    console.log(`[invite] Sent Clerk invitation email to ${email}`);
+    logger.info(`[invite] Sent Clerk invitation email to ${email}`);
   } catch (err) {
-    console.warn(`[invite] Failed to send Clerk invitation email to ${email}:`, err);
+    logger.warn(`[invite] Failed to send Clerk invitation email to ${email}:`, { error: err instanceof Error ? err.message : String(err) });
   }
 
-  console.log(`[invite] ${authUser.email} invited ${email} to firm ${authUser.firmId} as ${role}`);
+  logger.info(`[invite] ${authUser.email} invited ${email} to firm ${authUser.firmId} as ${role}`);
   return NextResponse.json(user, { status: 201 });
 }

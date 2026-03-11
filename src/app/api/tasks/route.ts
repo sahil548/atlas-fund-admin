@@ -4,6 +4,7 @@ import { getAuthUser } from "@/lib/auth";
 import { parsePaginationParams, buildPaginatedResult } from "@/lib/pagination";
 import { sendEmail } from "@/lib/email";
 import { taskAssignedEmailHtml } from "@/lib/email-templates";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -91,7 +92,7 @@ export async function GET(req: NextRequest) {
       total: paginated.total,
     });
   } catch (err) {
-    console.error("[tasks] GET Error:", err);
+    logger.error("[tasks] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load tasks" }, { status: 500 });
   }
 }
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(task, { status: 201 });
   } catch (err) {
-    console.error("[tasks] POST Error:", err);
+    logger.error("[tasks] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
   }
 }
@@ -210,14 +211,14 @@ export async function PATCH(req: NextRequest) {
           });
         } catch (emailErr) {
           // Log but don't fail the PATCH — email is best-effort
-          console.error("[tasks] Failed to send task assignment email:", emailErr);
+          logger.error("[tasks] Failed to send task assignment email:", { error: emailErr instanceof Error ? emailErr.message : String(emailErr) });
         }
       }
     }
 
     return NextResponse.json(task);
   } catch (err) {
-    console.error("[tasks] PATCH Error:", err);
+    logger.error("[tasks] PATCH Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
   }
 }

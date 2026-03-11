@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AsanaClient } from "@/lib/integrations/asana";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest): Promise<Response> {
   const { searchParams } = new URL(req.url);
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     tokens = await AsanaClient.exchangeCode(code, firmId);
   } catch (err) {
-    console.error("[asana/callback] Token exchange failed:", err);
+    logger.error("[asana/callback] Token exchange failed:", { error: err instanceof Error ? err.message : String(err) });
     const redirectUrl = new URL("/settings", req.url);
     redirectUrl.searchParams.set("error", "asana_token_exchange_failed");
     return NextResponse.redirect(redirectUrl.toString());

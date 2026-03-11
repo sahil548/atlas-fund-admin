@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(contacts);
   } catch (err) {
-    console.error("[contacts] GET Error:", err);
+    logger.error("[contacts] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load contacts" },
       { status: 500 },
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(contact, { status: 201 });
   } catch (err) {
-    console.error("[contacts] POST Error:", err);
+    logger.error("[contacts] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create contact" },
       { status: 500 },

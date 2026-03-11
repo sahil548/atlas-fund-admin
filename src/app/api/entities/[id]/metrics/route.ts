@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { computeMetrics } from "@/lib/computations/metrics";
 import { xirr } from "@/lib/computations/irr";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -256,7 +257,7 @@ export async function GET(
       periodBreakdown,
     });
   } catch (err) {
-    console.error("[entities/metrics]", err);
+    logger.error("[entities/metrics]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to compute metrics" }, { status: 500 });
   }
 }

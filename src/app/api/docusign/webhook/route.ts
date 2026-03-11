@@ -13,6 +13,7 @@ import { getDocuSignClient } from "@/lib/docusign";
 import { put } from "@vercel/blob";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       body = JSON.parse(text);
     }
   } catch (err) {
-    console.error("[docusign/webhook] Failed to parse body:", err);
+    logger.error("[docusign/webhook] Failed to parse body:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
   }
 
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     body.data?.envelopeSummary?.status;
 
   if (!envelopeId || !dsStatus) {
-    console.warn("[docusign/webhook] Missing envelopeId or status in payload:", JSON.stringify(body).slice(0, 500));
+    logger.warn("[docusign/webhook] Missing envelopeId or status in payload:", JSON.stringify(body).slice(0, 500));
     // Return 200 so DocuSign doesn't retry indefinitely
     return NextResponse.json({ message: "Event acknowledged (no actionable data)" });
   }
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   });
 
   if (!pkg) {
-    console.warn(`[docusign/webhook] No ESignaturePackage found for envelopeId=${envelopeId}`);
+    logger.warn(`[docusign/webhook] No ESignaturePackage found for envelopeId=${envelopeId}`);
     return NextResponse.json({ message: "Acknowledged — package not found" });
   }
 
@@ -151,12 +152,12 @@ export async function POST(req: NextRequest): Promise<Response> {
             },
           });
 
-          console.log(`[docusign/webhook] Signed document stored for envelope ${envelopeId}`);
+          logger.info(`[docusign/webhook] Signed document stored for envelope ${envelopeId}`);
         }
       }
     } catch (err) {
       // Non-fatal — status was already updated
-      console.error(`[docusign/webhook] Failed to download/store signed document for ${envelopeId}:`, err);
+      logger.error(`[docusign/webhook] Failed to download/store signed document for ${envelopeId}:`, { error: err instanceof Error ? err.message : String(err) });
     }
   }
 

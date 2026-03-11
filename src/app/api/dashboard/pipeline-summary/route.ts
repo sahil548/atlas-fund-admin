@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { groupPipelineStages } from "@/lib/dashboard-pipeline-utils";
+import { logger } from "@/lib/logger";
 
 /**
  * GET /api/dashboard/pipeline-summary
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ stages });
   } catch (err) {
-    console.error("[dashboard/pipeline-summary] Error:", err);
+    logger.error("[dashboard/pipeline-summary] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load pipeline summary" },
       { status: 500 }

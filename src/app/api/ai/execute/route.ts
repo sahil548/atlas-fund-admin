@@ -5,6 +5,7 @@ import { planAction } from "@/lib/ai-service";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 
 // CIM field key → Deal model field mapping
 const CIM_FIELD_MAP: Record<string, string> = {
@@ -219,7 +220,7 @@ export async function POST(req: Request) {
           headers: authHeaders,
           body: JSON.stringify({ type: ddType || "DD_FINANCIAL" }),
         }).catch((err) =>
-          console.error("[execute] DD analysis trigger failed:", err),
+          logger.error("[execute] DD analysis trigger failed:", { error: err instanceof Error ? err.message : String(err) }),
         );
         return NextResponse.json({
           success: true,
@@ -243,7 +244,7 @@ export async function POST(req: Request) {
           headers: authHeaders,
           body: JSON.stringify({ type: "IC_MEMO" }),
         }).catch((err) =>
-          console.error("[execute] IC memo trigger failed:", err),
+          logger.error("[execute] IC memo trigger failed:", { error: err instanceof Error ? err.message : String(err) }),
         );
         return NextResponse.json({
           success: true,
@@ -299,7 +300,7 @@ export async function POST(req: Request) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             data: { appliedFields: appliedFieldsData as any },
           }).catch((err) =>
-            console.error("[execute] Failed to update appliedFields:", err),
+            logger.error("[execute] Failed to update appliedFields:", { error: err instanceof Error ? err.message : String(err) }),
           );
         }
 
@@ -353,7 +354,7 @@ export async function POST(req: Request) {
       }
     }
   } catch (err) {
-    console.error("[execute] Unexpected error:", err);
+    logger.error("[execute] Unexpected error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "An unexpected error occurred during action execution." },
       { status: 500 },

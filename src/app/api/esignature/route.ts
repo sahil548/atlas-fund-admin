@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { getDocuSignClient } from "@/lib/docusign";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const CreateESignatureSchema = z.object({
   title: z.string().min(1),
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     const arrayBuf = await fileRes.arrayBuffer();
     documentBuffer = Buffer.from(arrayBuf);
   } catch (err) {
-    console.error("[esignature] Failed to download document:", err);
+    logger.error("[esignature] Failed to download document:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to retrieve document file" }, { status: 500 });
   }
 
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       subject: subject ?? `Please sign: ${title}`,
     });
   } catch (err) {
-    console.error("[esignature] Failed to create DocuSign envelope:", err);
+    logger.error("[esignature] Failed to create DocuSign envelope:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to send document for signature via DocuSign" }, { status: 500 });
   }
 

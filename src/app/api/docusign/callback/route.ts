@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DocuSignClient } from "@/lib/docusign";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest): Promise<Response> {
   const { searchParams } = new URL(req.url);
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     tokens = await DocuSignClient.exchangeCode(code);
   } catch (err) {
-    console.error("[docusign/callback] Token exchange failed:", err);
+    logger.error("[docusign/callback] Token exchange failed:", { error: err instanceof Error ? err.message : String(err) });
     const redirectUrl = new URL("/settings", req.url);
     redirectUrl.searchParams.set("error", "docusign_token_failed");
     return NextResponse.redirect(redirectUrl.toString());

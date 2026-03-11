@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GoogleCalendarClient } from "@/lib/integrations/google-calendar";
+import { logger } from "@/lib/logger";
 
 export async function POST(_req: Request): Promise<Response> {
   const authUser = await getAuthUser();
@@ -42,7 +43,7 @@ export async function POST(_req: Request): Promise<Response> {
       });
     }
   } catch (err) {
-    console.error("[google-calendar/sync] Token refresh failed:", err);
+    logger.error("[google-calendar/sync] Token refresh failed:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Google Calendar token expired. Please reconnect from Settings > Integrations." },
       { status: 401 }
@@ -92,7 +93,7 @@ export async function POST(_req: Request): Promise<Response> {
     const events = await client.listEvents("primary", timeMin, timeMax);
     fromGoogle = { count: events.length };
   } catch (err) {
-    console.error("[google-calendar/sync] Failed to fetch events:", err);
+    logger.error("[google-calendar/sync] Failed to fetch events:", { error: err instanceof Error ? err.message : String(err) });
     // Non-fatal — we still report toGoogle syncs
   }
 

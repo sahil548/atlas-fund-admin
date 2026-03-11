@@ -5,6 +5,7 @@ import { UpdateCapitalCallSchema } from "@/lib/schemas";
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnCapitalCall } from "@/lib/notification-delivery";
+import { logger } from "@/lib/logger";
 
 // Valid forward-only status transitions
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -86,7 +87,7 @@ export async function GET(
       },
     });
   } catch (err) {
-    console.error("[capital-calls/[id]] GET error:", err);
+    logger.error("[capital-calls/[id]] GET error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load capital call" },
       { status: 500 },
@@ -148,12 +149,12 @@ export async function PATCH(
 
     // Fire-and-forget: notify investors when status transitions to ISSUED
     if (data!.status === "ISSUED" && existing.status !== "ISSUED") {
-      notifyInvestorsOnCapitalCall(id).catch(console.error);
+      notifyInvestorsOnCapitalCall(id).catch((e: unknown) => logger.error("Operation failed", { error: e instanceof Error ? e.message : String(e) }));
     }
 
     return NextResponse.json(updated);
   } catch (err) {
-    console.error("[capital-calls/[id]] PATCH error:", err);
+    logger.error("[capital-calls/[id]] PATCH error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to update capital call" },
       { status: 500 },

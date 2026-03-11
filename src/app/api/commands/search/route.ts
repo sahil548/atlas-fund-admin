@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { SearchResult } from "@/lib/command-bar-types";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") || "";
@@ -206,7 +207,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ results: results.slice(0, 15) });
   } catch (error) {
-    console.error("[Commands Search] Error:", error);
+    logger.error("[Commands Search] Error:", { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json({ results: [] });
   }
 }

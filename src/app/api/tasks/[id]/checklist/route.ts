@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const CreateChecklistItemSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -28,7 +29,7 @@ export async function GET(
     });
     return NextResponse.json(items);
   } catch (err) {
-    console.error("[tasks/checklist] GET Error:", err);
+    logger.error("[tasks/checklist] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load checklist items" },
       { status: 500 },
@@ -67,7 +68,7 @@ export async function POST(
     });
     return NextResponse.json(item, { status: 201 });
   } catch (err) {
-    console.error("[tasks/checklist] POST Error:", err);
+    logger.error("[tasks/checklist] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create checklist item" },
       { status: 500 },
@@ -105,7 +106,7 @@ export async function PATCH(
         { status: 404 },
       );
     }
-    console.error("[tasks/checklist] PATCH Error:", err);
+    logger.error("[tasks/checklist] PATCH Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to update checklist item" },
       { status: 500 },
@@ -141,7 +142,7 @@ export async function DELETE(
         { status: 404 },
       );
     }
-    console.error("[tasks/checklist] DELETE Error:", err);
+    logger.error("[tasks/checklist] DELETE Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to delete checklist item" },
       { status: 500 },

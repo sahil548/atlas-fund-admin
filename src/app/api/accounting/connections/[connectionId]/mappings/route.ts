@@ -4,6 +4,7 @@ import { getAuthUser, unauthorized } from "@/lib/auth";
 import { parseBody } from "@/lib/api-helpers";
 import { z } from "zod";
 import { AtlasAccountBucketEnum, CreateAccountMappingSchema } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
 
 // Schema for bulk mapping creation
 const BulkAccountMappingSchema = z.object({
@@ -49,7 +50,7 @@ export async function GET(
 
     return NextResponse.json({ mappings });
   } catch (err: unknown) {
-    console.error("[mappings] GET Error:", err);
+    logger.error("[mappings] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load mappings" }, { status: 500 });
   }
 }
@@ -120,7 +121,7 @@ export async function POST(
 
     return NextResponse.json({ created: created.count }, { status: 201 });
   } catch (err: unknown) {
-    console.error("[mappings] POST Error:", err);
+    logger.error("[mappings] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     const message = err instanceof Error ? err.message : "Failed to save mappings";
     return NextResponse.json({ error: message }, { status: 500 });
   }
@@ -169,7 +170,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (err: unknown) {
-    console.error("[mappings] PATCH Error:", err);
+    logger.error("[mappings] PATCH Error:", { error: err instanceof Error ? err.message : String(err) });
     const message = err instanceof Error ? err.message : "Failed to update mapping";
     return NextResponse.json({ error: message }, { status: 500 });
   }

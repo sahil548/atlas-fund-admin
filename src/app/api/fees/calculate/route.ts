@@ -5,6 +5,7 @@ import { getAuthUser, unauthorized } from "@/lib/auth";
 import { z } from "zod";
 import { calculateFees, type FeeConfig, type FeeInputs } from "@/lib/computations/fee-engine";
 import { integrateSideLetterWithFeeCalc, type AdjustedFeeResult } from "@/lib/computations/side-letter-engine";
+import { logger } from "@/lib/logger";
 
 const CalculateFeesSchema = z.object({
   entityId: z.string().min(1, "Entity is required"),
@@ -112,7 +113,7 @@ export async function POST(req: Request) {
       }
     } catch (sideLetterErr) {
       // Side letter query failure must NOT break base fee calculation
-      console.error("[fees/calculate] Side letter integration failed (non-fatal):", sideLetterErr);
+      logger.error("[fees/calculate] Side letter integration failed (non-fatal):", { error: sideLetterErr instanceof Error ? sideLetterErr.message : String(sideLetterErr) });
     }
 
     // Upsert FeeCalculation record for entity + periodDate
@@ -163,7 +164,7 @@ export async function POST(req: Request) {
       perInvestorAdjustments,
     });
   } catch (err) {
-    console.error("[fees/calculate]", err);
+    logger.error("[fees/calculate]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Fee calculation failed" }, { status: 500 });
   }
 }

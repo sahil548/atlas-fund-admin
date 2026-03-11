@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { CreateSideLetterSchema, CreateSideLetterRuleSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { z } from "zod";
+import { logger } from "@/lib/logger";
 
 const CreateSideLetterWithRulesSchema = CreateSideLetterSchema.extend({
   rules: z.array(CreateSideLetterRuleSchema.omit({ sideLetterId: true })).optional(),
@@ -24,7 +25,7 @@ export async function GET() {
     });
     return NextResponse.json(sideLetters);
   } catch (err) {
-    console.error("[side-letters] GET Error:", err);
+    logger.error("[side-letters] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load side letters" },
       { status: 500 },
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(sideLetter, { status: 201 });
   } catch (err) {
-    console.error("[side-letters] POST Error:", err);
+    logger.error("[side-letters] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create side letter" },
       { status: 500 },

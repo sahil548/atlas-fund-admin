@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
 import { xirr } from "@/lib/computations/irr";
 import { computeMetrics } from "@/lib/computations/metrics";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   req: Request,
@@ -309,7 +310,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (err) {
-    console.error("[investors/capital-account]", err);
+    logger.error("[investors/capital-account]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load capital account" },
       { status: 500 }

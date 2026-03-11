@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateNotificationPreferencesSchema } from "@/lib/schemas";
+import { logger } from "@/lib/logger";
 
 const DEFAULT_NOTIFICATION_TYPES = {
   capitalActivity: true,
@@ -55,7 +56,7 @@ export async function GET(
       gpOverrides: GP_OVERRIDES,
     });
   } catch (e: unknown) {
-    console.error("[notification-preferences GET]", e);
+    logger.error("[notification-preferences GET]", { error: e instanceof Error ? e.message : String(e) });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
@@ -108,7 +109,7 @@ export async function PUT(
       gpOverrides: GP_OVERRIDES,
     });
   } catch (e: unknown) {
-    console.error("[notification-preferences PUT]", e);
+    logger.error("[notification-preferences PUT]", { error: e instanceof Error ? e.message : String(e) });
     const err = e as { code?: string };
     if (err.code === "P2002") {
       return NextResponse.json({ error: "Preferences record already exists" }, { status: 409 });

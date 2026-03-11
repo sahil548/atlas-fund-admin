@@ -18,6 +18,7 @@ import {
   type CapitalAccountStatementData,
 } from "@/lib/pdf/capital-account-statement";
 import { FundSummaryReport, type FundSummaryData } from "@/lib/pdf/fund-summary";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -387,7 +388,7 @@ export async function POST(req: Request) {
         reportType: reportTypeLabel(reportType),
         period: periodLabel,
       }).catch((err: any) => {
-        console.error("[reports/generate] Failed to send investor notifications:", err);
+        logger.error("[reports/generate] Failed to send investor notifications:", { error: err instanceof Error ? err.message : String(err) });
       });
     }
 
@@ -403,7 +404,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (err: any) {
-    console.error("[reports/generate]", err);
+    logger.error("[reports/generate]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: err.message || "Failed to generate report" },
       { status: 500 }

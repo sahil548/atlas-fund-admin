@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { UpdateDistributionLineItemSchema } from "@/lib/schemas";
 import { getAuthUser, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 export async function PATCH(
   req: Request,
@@ -70,7 +71,7 @@ export async function PATCH(
 
     return NextResponse.json(updated);
   } catch (err) {
-    console.error("[distributions/[id]/line-items/[lineItemId]] PATCH error:", err);
+    logger.error("[distributions/[id]/line-items/[lineItemId]] PATCH error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to update line item" },
       { status: 500 },

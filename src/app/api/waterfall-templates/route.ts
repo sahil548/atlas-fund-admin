@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateWaterfallTemplateSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -18,7 +19,7 @@ export async function GET() {
     });
     return NextResponse.json(templates);
   } catch (err) {
-    console.error("[waterfall-templates] GET Error:", err);
+    logger.error("[waterfall-templates] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load waterfall templates" },
       { status: 500 },
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
     const template = await prisma.waterfallTemplate.create({ data: data! });
     return NextResponse.json(template, { status: 201 });
   } catch (err) {
-    console.error("[waterfall-templates] POST Error:", err);
+    logger.error("[waterfall-templates] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to create waterfall template" },
       { status: 500 },

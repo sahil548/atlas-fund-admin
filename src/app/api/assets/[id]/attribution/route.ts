@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { UpdateAssetProjectionsSchema } from "@/lib/schemas";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -20,7 +21,7 @@ export async function GET(
     const attribution = await computeAssetAttribution(id);
     return NextResponse.json(attribution);
   } catch (err: any) {
-    console.error("[assets/attribution] GET error:", err);
+    logger.error("[assets/attribution] GET error:", { error: err instanceof Error ? err.message : String(err) });
     if (err.message?.includes("not found")) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
@@ -54,7 +55,7 @@ export async function PATCH(
 
     return NextResponse.json({ id: asset.id, message: "Projections updated" });
   } catch (err: any) {
-    console.error("[assets/attribution] PATCH error:", err);
+    logger.error("[assets/attribution] PATCH error:", { error: err instanceof Error ? err.message : String(err) });
     if (err.code === "P2025") {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }

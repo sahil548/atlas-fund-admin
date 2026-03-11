@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { CATEGORY_NAME_TO_TYPE } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { DEFAULT_DD_CATEGORIES, getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/deals/[id]/screen
@@ -47,7 +48,7 @@ export async function POST(
   if (templates.length === 0 && firmId) {
     const defaults = getDefaultDDCategoriesForFirm(firmId);
     await prisma.dDCategoryTemplate.createMany({ data: defaults });
-    console.log(`[screen] Auto-provisioned ${defaults.length} default DD templates for firm ${firmId}`);
+    logger.info(`[screen] Auto-provisioned ${defaults.length} default DD templates for firm ${firmId}`);
 
     templates = await prisma.dDCategoryTemplate.findMany({
       where: { firmId, scope: { in: scopes } },

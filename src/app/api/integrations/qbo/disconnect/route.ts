@@ -14,6 +14,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { qboProvider } from "@/lib/accounting/qbo-provider";
 import { z } from "zod";
 import type { OAuthTokens } from "@/lib/accounting/provider-types";
+import { logger } from "@/lib/logger";
 
 const DisconnectSchema = z.object({
   entityId: z.string().min(1, "entityId is required"),
@@ -46,7 +47,7 @@ export async function POST(req: Request): Promise<Response> {
     const tokens = connection.oauthCredentials as unknown as OAuthTokens;
     if (tokens.refreshToken) {
       qboProvider.revokeTokens(tokens).catch((err) => {
-        console.error("[qbo/disconnect] Token revocation failed (non-fatal):", err);
+        logger.error("[qbo/disconnect] Token revocation failed (non-fatal):", { error: err instanceof Error ? err.message : String(err) });
       });
     }
   }

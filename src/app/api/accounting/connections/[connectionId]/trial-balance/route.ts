@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import type { TrialBalanceEntry } from "@/lib/accounting/provider-types";
+import { logger } from "@/lib/logger";
 
 type AtlasBucketKey =
   | "CASH"
@@ -159,7 +160,7 @@ export async function GET(
       availablePeriods,
     });
   } catch (err: unknown) {
-    console.error("[trial-balance] Error:", err);
+    logger.error("[trial-balance] Error:", { error: err instanceof Error ? err.message : String(err) });
     const message = err instanceof Error ? err.message : "Failed to fetch trial balance";
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -8,6 +8,7 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { GoogleCalendarClient } from "@/lib/integrations/google-calendar";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest): Promise<Response> {
   const { searchParams } = new URL(req.url);
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     tokens = await GoogleCalendarClient.exchangeCode(code, firmId);
   } catch (err) {
-    console.error("[google-calendar/callback] Token exchange failed:", err);
+    logger.error("[google-calendar/callback] Token exchange failed:", { error: err instanceof Error ? err.message : String(err) });
     const redirectUrl = new URL("/settings", req.url);
     redirectUrl.searchParams.set("error", "gcal_token_exchange_failed");
     return NextResponse.redirect(redirectUrl.toString());

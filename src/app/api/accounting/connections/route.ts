@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { UpdateAccountingConnectionSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -18,7 +19,7 @@ export async function GET() {
     });
     return NextResponse.json(entities);
   } catch (err) {
-    console.error("[accounting/connections] Error:", err);
+    logger.error("[accounting/connections] Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load accounting connections" },
       { status: 500 },
@@ -39,7 +40,7 @@ export async function PATCH(req: Request) {
     });
     return NextResponse.json(conn);
   } catch (err) {
-    console.error("[accounting/connections] PATCH Error:", err);
+    logger.error("[accounting/connections] PATCH Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to update accounting connection" },
       { status: 500 },

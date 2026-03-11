@@ -14,6 +14,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -66,7 +67,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(documents);
   } catch (err: any) {
-    console.error("[k1]", err);
+    logger.error("[k1]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: err.message || "Failed to fetch K-1 documents" },
       { status: 500 },

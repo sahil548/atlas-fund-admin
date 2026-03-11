@@ -10,6 +10,7 @@ import { getAuthUser, unauthorized } from "@/lib/auth";
 import { parseBody } from "@/lib/api-helpers";
 import { z } from "zod";
 import { createLinkToken } from "@/lib/integrations/plaid";
+import { logger } from "@/lib/logger";
 
 const CreateLinkTokenSchema = z.object({
   entityId: z.string().min(1),
@@ -35,7 +36,7 @@ export async function POST(req: Request): Promise<Response> {
     return NextResponse.json({ link_token: linkToken });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to create Plaid link token";
-    console.error("[plaid/create-link-token]", err);
+    logger.error("[plaid/create-link-token]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -38,7 +39,7 @@ export async function GET(
 
     return NextResponse.json(history);
   } catch (err) {
-    console.error("[nav/history]", err);
+    logger.error("[nav/history]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load NAV history" }, { status: 500 });
   }
 }

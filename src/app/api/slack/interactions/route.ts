@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifySlackSignature, updateSlackMessage } from "@/lib/slack";
+import { logger } from "@/lib/logger";
 
 /**
  * POST /api/slack/interactions
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     if (!atlasUser) {
       // If no Atlas user found, acknowledge but warn
-      console.warn(
+      logger.warn(
         `[Slack] No Atlas user found for Slack user ${slackUserId}. Vote will not be recorded.`,
       );
       return NextResponse.json(
@@ -117,7 +118,7 @@ export async function POST(req: NextRequest) {
         icProcess.slackMessageId,
         `${atlasUser.name} voted ${vote} on ${dealName}`,
       ).catch((err) => {
-        console.error("[Slack] Failed to update message after vote:", err);
+        logger.error("[Slack] Failed to update message after vote:", { error: err instanceof Error ? err.message : String(err) });
       });
     }
 
@@ -141,7 +142,7 @@ export async function POST(req: NextRequest) {
       { status: 200 },
     );
   } catch (err) {
-    console.error("[Slack] Error handling interaction:", err);
+    logger.error("[Slack] Error handling interaction:", { error: err instanceof Error ? err.message : String(err) });
     // Always return 200 to Slack to avoid retries
     return NextResponse.json(
       { text: "An error occurred processing your action." },

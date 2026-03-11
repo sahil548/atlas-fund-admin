@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getAccounts, getTransactions } from "@/lib/integrations/plaid";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: Request): Promise<Response> {
   const authUser = await getAuthUser();
@@ -89,7 +90,7 @@ export async function GET(req: Request): Promise<Response> {
     transactions = await getTransactions(connection, startDate, endDate);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch Plaid data";
-    console.error("[plaid/accounts]", err);
+    logger.error("[plaid/accounts]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 

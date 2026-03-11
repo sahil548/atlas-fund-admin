@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { detectMFNGaps } from "@/lib/computations/side-letter-engine";
+import { logger } from "@/lib/logger";
 
 export async function GET(
   _req: Request,
@@ -20,7 +21,7 @@ export async function GET(
     const gaps = await detectMFNGaps(sideLetter.entityId);
     return NextResponse.json(gaps);
   } catch (err) {
-    console.error("[side-letters/[id]/mfn] GET Error:", err);
+    logger.error("[side-letters/[id]/mfn] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to detect MFN gaps" }, { status: 500 });
   }
 }

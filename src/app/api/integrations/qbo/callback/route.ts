@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { qboProvider } from "@/lib/accounting/qbo-provider";
 import { storeTokens } from "@/lib/accounting/token-manager";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest): Promise<Response> {
   const { searchParams } = new URL(req.url);
@@ -49,7 +50,7 @@ export async function GET(req: NextRequest): Promise<Response> {
   try {
     tokens = await qboProvider.exchangeCodeForTokens(code, realmId);
   } catch (err) {
-    console.error("[qbo/callback] Token exchange failed:", err);
+    logger.error("[qbo/callback] Token exchange failed:", { error: err instanceof Error ? err.message : String(err) });
     const redirectUrl = new URL("/accounting", req.url);
     redirectUrl.searchParams.set("error", "token_exchange_failed");
     return NextResponse.redirect(redirectUrl.toString());
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest): Promise<Response> {
     }
   } catch (err) {
     // Non-fatal — company name is cosmetic
-    console.error("[qbo/callback] Failed to fetch company name (non-fatal):", err);
+    logger.error("[qbo/callback] Failed to fetch company name (non-fatal):", { error: err instanceof Error ? err.message : String(err) });
   }
 
   // Delete CSRF cookie and redirect to accounting with success indicator

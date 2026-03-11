@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { parseBody } from "@/lib/api-helpers";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -79,14 +80,14 @@ export async function POST(req: Request) {
       "Document",
       documentIds.join(","),
       { count: documentIds.length, investorId }
-    ).catch((err) => console.error("[audit] K1_ACKNOWLEDGE failed:", err));
+    ).catch((err) => logger.error("[audit] K1_ACKNOWLEDGE failed:", { error: err instanceof Error ? err.message : String(err) }));
 
     return NextResponse.json({
       acknowledged: result.count,
       acknowledgedAt: acknowledgedAt.toISOString(),
     });
   } catch (err: any) {
-    console.error("[k1/acknowledge]", err);
+    logger.error("[k1/acknowledge]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: err.message || "Failed to acknowledge K-1 documents" },
       { status: 500 }

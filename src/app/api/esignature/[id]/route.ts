@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { getDocuSignClient } from "@/lib/docusign";
+import { logger } from "@/lib/logger";
 
 function mapDocuSignStatus(dsStatus: string): string | null {
   switch (dsStatus.toLowerCase()) {
@@ -66,7 +67,7 @@ export async function PATCH(
   try {
     dsStatus = await client.getEnvelopeStatus(pkg.externalId);
   } catch (err) {
-    console.error("[esignature/[id]] Status check failed:", err);
+    logger.error("[esignature/[id]] Status check failed:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to fetch status from DocuSign" }, { status: 500 });
   }
 

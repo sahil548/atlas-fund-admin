@@ -5,6 +5,7 @@ import { CreateInvestorSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { parsePaginationParams, buildPrismaArgs, buildPaginatedResult } from "@/lib/pagination";
+import { logger } from "@/lib/logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -70,7 +71,7 @@ export async function GET(req: NextRequest) {
       total: paginated.total,
     });
   } catch (err) {
-    console.error("[investors] GET Error:", err);
+    logger.error("[investors] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to load investors" }, { status: 500 });
   }
 }
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
     const investor = await prisma.investor.create({ data: data! });
     return NextResponse.json(investor, { status: 201 });
   } catch (err) {
-    console.error("[investors] POST Error:", err);
+    logger.error("[investors] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create investor" }, { status: 500 });
   }
 }

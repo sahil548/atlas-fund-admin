@@ -7,6 +7,7 @@ import { recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
 import { getDDAutoTasks } from "@/lib/deal-auto-tasks";
 import { type DealContext } from "@/lib/deal-types";
 import { getAuthUser } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import {
   runDDAnalysis,
   DD_ANALYSIS_META,
@@ -247,7 +248,7 @@ export async function POST(
   } else {
     result = isICMemo ? generateMockICMemo(deal) : generateMockWorkstream(deal, type);
     mockReason = aiReturn.errorReason || "AI analysis failed — try re-analyzing.";
-    console.warn(`[dd-analyze] ${type} for deal ${id}: fell back to mock data. firmId=${firmId} reason=${mockReason}`);
+    logger.warn(`[dd-analyze] ${type} for deal ${id}: fell back to mock data. firmId=${firmId} reason=${mockReason}`);
   }
 
   // Sort order
@@ -480,7 +481,7 @@ export async function POST(
 
   const totalRouteMs = performance.now() - routeStart;
   const label = rawCategoryName || type;
-  console.log(
+  logger.info(
     `[dd-analyze] ${label} for deal ${id}: ` +
     `total=${(totalRouteMs / 1000).toFixed(1)}s | ` +
     `dbSetup=${(dbSetupMs / 1000).toFixed(1)}s llm+parse=${((totalRouteMs - dbSetupMs - dbWriteMs) / 1000).toFixed(1)}s ` +

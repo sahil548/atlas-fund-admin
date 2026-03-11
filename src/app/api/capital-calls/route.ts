@@ -5,6 +5,7 @@ import { CreateCapitalCallSchema } from "@/lib/schemas";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -33,7 +34,7 @@ export async function GET() {
     });
     return NextResponse.json(calls);
   } catch (err) {
-    console.error("[capital-calls] GET Error:", err);
+    logger.error("[capital-calls] GET Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json(
       { error: "Failed to load capital calls" },
       { status: 500 },
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(callWithLineItems, { status: 201 });
   } catch (e: unknown) {
-    console.error("[capital-calls] POST Error:", e);
+    logger.error("[capital-calls] POST Error:", { error: e instanceof Error ? e.message : String(e) });
     const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: message }, { status: 500 });
   }

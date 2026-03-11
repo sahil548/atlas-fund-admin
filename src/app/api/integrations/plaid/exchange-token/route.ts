@@ -11,6 +11,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { exchangePublicToken } from "@/lib/integrations/plaid";
+import { logger } from "@/lib/logger";
 
 const ExchangeTokenSchema = z.object({
   publicToken: z.string().min(1),
@@ -41,7 +42,7 @@ export async function POST(req: Request): Promise<Response> {
     tokens = await exchangePublicToken(publicToken, firmId, entityId);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Plaid token exchange failed";
-    console.error("[plaid/exchange-token]", err);
+    logger.error("[plaid/exchange-token]", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 

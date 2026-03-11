@@ -11,6 +11,7 @@ import { z } from "zod";
 import { parseBody } from "@/lib/api-helpers";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { logger } from "@/lib/logger";
 
 const RemindSchema = z.object({
   investorId: z.string(),
@@ -38,7 +39,7 @@ export async function POST(req: Request) {
     "Investor",
     investorId,
     {}
-  ).catch((err) => console.error("[audit] K1_REMINDER_SENT failed:", err));
+  ).catch((err) => logger.error("[audit] K1_REMINDER_SENT failed:", { error: err instanceof Error ? err.message : String(err) }));
 
   return NextResponse.json({ success: true, message: "Reminder logged" });
 }

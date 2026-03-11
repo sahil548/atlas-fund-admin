@@ -5,6 +5,7 @@ import path from "path";
 import { writeFile, mkdir } from "fs/promises";
 import { getAuthUser } from "@/lib/auth";
 import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
+import { logger } from "@/lib/logger";
 
 // Allow time for PDF text extraction on Vercel serverless
 export const maxDuration = 60;
@@ -73,7 +74,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const text = await extractTextFromBuffer(buffer, originalFileName, mimeType);
         if (text.length > 0) extractedText = text;
       } catch (err) {
-        console.error("[documents] Text extraction failed:", err);
+        logger.error("[documents] Text extraction failed:", { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -97,14 +98,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (extractedText && firmId && shouldExtractAI(document.category)) {
       extractDocumentFields(document.id, document.category, extractedText, firmId, authUser?.id)
         .catch((err) => {
-          console.error("[deal-docs] Background AI extraction error:", err);
+          logger.error("[deal-docs] Background AI extraction error:", { error: err instanceof Error ? err.message : String(err) });
         });
     }
 
     return NextResponse.json(document, { status: 201 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Upload failed";
-    console.error("[documents POST] Error:", message);
+    logger.error("[documents POST] Error:", { error: message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

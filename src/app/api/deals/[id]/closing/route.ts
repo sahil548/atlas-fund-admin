@@ -4,6 +4,7 @@ import { parseBody } from "@/lib/api-helpers";
 import { UpdateClosingChecklistItemSchema } from "@/lib/schemas";
 import { CLOSING_CHECKLIST_TEMPLATES } from "@/lib/closing-templates";
 import { put } from "@vercel/blob";
+import { logger } from "@/lib/logger";
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -167,7 +168,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "File upload failed";
-      console.error("[closing PATCH] File upload error:", message);
+      logger.error("[closing PATCH] File upload error:", { error: message });
       return NextResponse.json({ error: message }, { status: 500 });
     }
   }

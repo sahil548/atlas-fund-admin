@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getDefaultDDCategoriesForFirm } from "@/lib/default-dd-categories";
+import { logger } from "@/lib/logger";
 
 /**
  * Ensures default DD category templates exist for a firm.
@@ -12,7 +13,7 @@ async function ensureDefaultTemplates(firmId: string) {
   if (count === 0) {
     const defaults = getDefaultDDCategoriesForFirm(firmId);
     await prisma.dDCategoryTemplate.createMany({ data: defaults });
-    console.log(`[dd-categories] Auto-provisioned ${defaults.length} default templates for firm ${firmId}`);
+    logger.info(`[dd-categories] Auto-provisioned ${defaults.length} default templates for firm ${firmId}`);
   }
 }
 
