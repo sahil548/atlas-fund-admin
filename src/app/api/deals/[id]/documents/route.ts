@@ -6,6 +6,14 @@ import { writeFile, mkdir } from "fs/promises";
 import { getAuthUser } from "@/lib/auth";
 import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
 import { logger } from "@/lib/logger";
+import { DocumentCategory } from "@prisma/client";
+
+const VALID_CATEGORIES = Object.values(DocumentCategory) as string[];
+
+function parseDocumentCategory(value: string): DocumentCategory {
+  if (VALID_CATEGORIES.includes(value)) return value as DocumentCategory;
+  return DocumentCategory.OTHER;
+}
 
 // Allow time for PDF text extraction on Vercel serverless
 export const maxDuration = 60;
@@ -81,8 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const document = await prisma.document.create({
       data: {
         name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: category as any,
+        category: parseDocumentCategory(category),
         dealId: id,
         fileUrl,
         fileSize,

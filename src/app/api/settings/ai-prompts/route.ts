@@ -1,15 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CreateAIPromptTemplateSchema } from "@/lib/schemas";
+import { parseBody } from "@/lib/api-helpers";
 import { DEFAULT_PROMPT_TEMPLATES } from "@/lib/default-prompt-templates";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
-
-async function getFirmId(): Promise<string> {
-  const authUser = await getAuthUser();
-  if (!authUser?.firmId) throw new Error("Not authenticated");
-  return authUser.firmId;
-}
 
 // GET — returns all templates (DB rows merged with defaults for uncustomized types)
 export async function GET(req: Request) {
@@ -75,42 +70,32 @@ export async function PUT(req: Request) {
 
   const firmId = authUser.firmId!;
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
-
-  const result = CreateAIPromptTemplateSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: result.error.flatten() }, { status: 400 });
-  }
-  const data = result.data;
+  const { data, error } = await parseBody(req, CreateAIPromptTemplateSchema);
+  if (error) return error;
 
   try {
     const template = await prisma.aIPromptTemplate.upsert({
       where: {
-        firmId_type: { firmId, type: data.type },
+        firmId_type: { firmId, type: data!.type },
       },
       create: {
         firmId,
-        type: data.type,
-        module: data.module,
-        name: data.name,
-        description: data.description || null,
-        content: data.content,
+        type: data!.type,
+        module: data!.module,
+        name: data!.name,
+        description: data!.description || null,
+        content: data!.content,
         isDefault: false,
-        isActive: data.isActive,
-        sortOrder: data.sortOrder,
+        isActive: data!.isActive,
+        sortOrder: data!.sortOrder,
       },
       update: {
-        name: data.name,
-        description: data.description || null,
-        content: data.content,
+        name: data!.name,
+        description: data!.description || null,
+        content: data!.content,
         isDefault: false,
-        isActive: data.isActive,
-        sortOrder: data.sortOrder,
+        isActive: data!.isActive,
+        sortOrder: data!.sortOrder,
       },
     });
     return NextResponse.json({ ...template, persisted: true });

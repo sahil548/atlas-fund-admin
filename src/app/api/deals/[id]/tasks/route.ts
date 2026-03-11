@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
-import { CreateDDTaskSchema, UpdateDDTaskSchema } from "@/lib/schemas";
+import { CreateDDTaskSchema, UpdateDDTaskSchema, DeleteDDTaskSchema } from "@/lib/schemas";
 import { recalcWorkstreamProgress } from "@/lib/deal-stage-engine";
 
 /**
@@ -134,11 +134,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: dealId } = await params;
-  const body = await req.json();
-  const taskId = body?.id;
-  if (!taskId) {
-    return NextResponse.json({ error: "Task id required" }, { status: 400 });
-  }
+  const { data, error } = await parseBody(req, DeleteDDTaskSchema);
+  if (error) return error;
+
+  const taskId = data!.id;
 
   const existing = await prisma.dDTask.findUnique({
     where: { id: taskId },

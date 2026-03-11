@@ -11,38 +11,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { getDocuSignClient } from "@/lib/docusign";
-import { z } from "zod";
+import { parseBody } from "@/lib/api-helpers";
+import { CreateESignatureSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
-
-const CreateESignatureSchema = z.object({
-  title: z.string().min(1),
-  // Either documentId (Document model) OR fileUrl+documentName for ad-hoc use
-  documentId: z.string().optional().nullable(),
-  fileUrl: z.string().url().optional().nullable(),
-  documentName: z.string().optional().nullable(),
-  dealId: z.string().optional().nullable(),
-  entityId: z.string().optional().nullable(),
-  signers: z.array(z.object({ name: z.string().min(1), email: z.string().email() })).min(1),
-  subject: z.string().optional(),
-});
 
 export async function POST(req: NextRequest): Promise<Response> {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
-  }
+  const { data: parsed, error: parseError } = await parseBody(req, CreateESignatureSchema);
+  if (parseError) return parseError;
 
-  const parsed = CreateESignatureSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const { title, documentId, fileUrl: directFileUrl, documentName: directDocName, dealId, entityId, signers, subject } = parsed.data;
+  const { title, documentId, fileUrl: directFileUrl, documentName: directDocName, dealId, entityId, signers, subject } = parsed!;
 
   if (!documentId && !directFileUrl) {
     return NextResponse.json({ error: "Either documentId or fileUrl is required" }, { status: 400 });

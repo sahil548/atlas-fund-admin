@@ -1026,3 +1026,46 @@ export const UpdateCoInvestorSchema = z.object({
   status: z.enum(CO_INVESTOR_STATUSES).optional(),
   notes: z.string().nullable().optional(),
 });
+
+// ── User Invite ─────────────────────────────────────────────────────────────
+
+export const InviteUserSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  role: z.enum(["GP_ADMIN", "GP_TEAM", "SERVICE_PROVIDER", "LP_INVESTOR"]),
+  name: z.string().optional(),
+});
+
+// ── Task Checklist ──────────────────────────────────────────────────────────
+
+export const CreateChecklistItemSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+});
+
+export const UpdateChecklistItemSchema = z.object({
+  itemId: z.string().min(1),
+  isChecked: z.boolean().optional(),
+  title: z.string().optional(),
+});
+
+export const DeleteChecklistItemSchema = z.object({
+  itemId: z.string().min(1),
+});
+
+// ── DD Task Delete ───────────────────────────────────────────────────────────
+
+export const DeleteDDTaskSchema = z.object({
+  id: z.string().min(1, "Task id is required"),
+});
+
+// ── E-Signature ──────────────────────────────────────────────────────────────
+
+export const CreateESignatureSchema = z.object({
+  title: z.string().min(1),
+  documentId: z.string().optional().nullable(),
+  fileUrl: z.string().url().optional().nullable(),
+  documentName: z.string().optional().nullable(),
+  dealId: z.string().optional().nullable(),
+  entityId: z.string().optional().nullable(),
+  signers: z.array(z.object({ name: z.string().min(1), email: z.string().email() })).min(1),
+  subject: z.string().optional(),
+});

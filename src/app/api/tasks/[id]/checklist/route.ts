@@ -1,21 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
+import { parseBody } from "@/lib/api-helpers";
+import {
+  CreateChecklistItemSchema,
+  UpdateChecklistItemSchema,
+  DeleteChecklistItemSchema,
+} from "@/lib/schemas";
 import { logger } from "@/lib/logger";
-
-const CreateChecklistItemSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-});
-
-const UpdateChecklistItemSchema = z.object({
-  itemId: z.string().min(1),
-  isChecked: z.boolean().optional(),
-  title: z.string().optional(),
-});
-
-const DeleteChecklistItemSchema = z.object({
-  itemId: z.string().min(1),
-});
 
 export async function GET(
   _req: NextRequest,
@@ -43,15 +34,8 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await req.json();
-
-    const parsed = CreateChecklistItemSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Invalid input" },
-        { status: 400 },
-      );
-    }
+    const { data, error } = await parseBody(req, CreateChecklistItemSchema);
+    if (error) return error;
 
     const maxPos = await prisma.taskChecklistItem.aggregate({
       where: { taskId: id },
@@ -62,7 +46,7 @@ export async function POST(
     const item = await prisma.taskChecklistItem.create({
       data: {
         taskId: id,
-        title: parsed.data.title,
+        title: data!.title,
         position,
       },
     });
@@ -82,17 +66,10 @@ export async function PATCH(
 ) {
   try {
     await params; // consume params (taskId unused for PATCH — itemId is used)
-    const body = await req.json();
+    const { data, error } = await parseBody(req, UpdateChecklistItemSchema);
+    if (error) return error;
 
-    const parsed = UpdateChecklistItemSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Invalid input" },
-        { status: 400 },
-      );
-    }
-
-    const { itemId, ...updateData } = parsed.data;
+    const { itemId, ...updateData } = data!;
     const item = await prisma.taskChecklistItem.update({
       where: { id: itemId },
       data: updateData,
@@ -120,18 +97,11 @@ export async function DELETE(
 ) {
   try {
     await params; // consume params
-    const body = await req.json();
-
-    const parsed = DeleteChecklistItemSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message || "Invalid input" },
-        { status: 400 },
-      );
-    }
+    const { data, error } = await parseBody(req, DeleteChecklistItemSchema);
+    if (error) return error;
 
     await prisma.taskChecklistItem.delete({
-      where: { id: parsed.data.itemId },
+      where: { id: data!.itemId },
     });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

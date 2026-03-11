@@ -10,6 +10,14 @@ import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@
 import { parseBody } from "@/lib/api-helpers";
 import { PatchDocumentLinkSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
+import { DocumentCategory } from "@prisma/client";
+
+const VALID_CATEGORIES = Object.values(DocumentCategory) as string[];
+
+function parseDocumentCategory(value: string): DocumentCategory {
+  if (VALID_CATEGORIES.includes(value)) return value as DocumentCategory;
+  return DocumentCategory.OTHER;
+}
 
 const USE_BLOB = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -138,8 +146,7 @@ export async function POST(req: Request) {
     const doc = await prisma.document.create({
       data: {
         name,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        category: category as any,
+        category: parseDocumentCategory(category),
         assetId,
         entityId,
         dealId,
