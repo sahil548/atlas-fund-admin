@@ -619,6 +619,7 @@ model Asset {
 
   @@index([assetClass])
   @@index([status])
+  // Note: Asset has no direct firmId — queried via entityAllocations.entity.firmId
 }
 
 model AssetEntityAllocation {
@@ -926,6 +927,11 @@ model CapitalCall {
   entity    Entity              @relation(fields: [entityId], references: [id])
   lineItems CapitalCallLineItem[]
   documents Document[]
+
+  // Optimizes: GET /api/capital-calls?status=OVERDUE (overdue call queries filter by status)
+  @@index([status])
+  // Optimizes: GET /api/capital-calls?entityId=xxx&status=ISSUED (entity-scoped status queries)
+  @@index([entityId, status])
 }
 
 model CapitalCallLineItem {
@@ -1208,6 +1214,8 @@ model Deal {
   @@index([stage])
   @@index([firmId])
   @@index([sourcedByContactId])
+  // Optimizes: GET /api/deals?firmId=xxx&stage=SCREENING (common pipeline query pattern)
+  @@index([firmId, stage])
 }
 
 model ICProcess {
@@ -1407,6 +1415,8 @@ model DealActivity {
   deal Deal @relation(fields: [dealId], references: [id])
 
   @@index([dealId])
+  // Optimizes: activity feed queries filtering by type (e.g. STAGE events for daysInStage computation)
+  @@index([dealId, activityType])
 }
 
 model DealEntity {
@@ -1552,6 +1562,8 @@ model Task {
   @@index([dealId])
   @@index([entityId])
   @@index([assigneeId])
+  // Optimizes: GET /api/tasks?assetId=xxx (asset-scoped task queries)
+  @@index([assetId])
 }
 
 model TaskChecklistItem {
@@ -1588,6 +1600,11 @@ model Meeting {
   asset  Asset?  @relation(fields: [assetId], references: [id])
   deal   Deal?   @relation(fields: [dealId], references: [id])
   entity Entity? @relation(fields: [entityId], references: [id])
+
+  // Optimizes: GET /api/meetings?firmId=xxx (firm-scoped meeting list queries)
+  @@index([firmId])
+  // Optimizes: GET /api/meetings?entityId=xxx (entity-scoped meeting queries)
+  @@index([entityId])
 }
 
 model Document {
@@ -1622,6 +1639,14 @@ model Document {
   investor          Investor?          @relation(fields: [investorId], references: [id])
   capitalCall       CapitalCall?       @relation(fields: [capitalCallId], references: [id])
   distributionEvent DistributionEvent? @relation(fields: [distributionEventId], references: [id])
+
+  // Note: Document has no direct firmId — queried via entity.firmId or deal.firmId
+  // Optimizes: GET /api/documents?entityId=xxx (entity-scoped document queries)
+  @@index([entityId])
+  // Optimizes: GET /api/documents?dealId=xxx (deal-scoped document queries)
+  @@index([dealId])
+  // Optimizes: document extraction pipeline queries filtering by status
+  @@index([extractionStatus])
 }
 
 model Notification {
@@ -1921,6 +1946,8 @@ model AuditLog {
   @@index([userId])
   @@index([targetType, targetId])
   @@index([createdAt])
+  // Optimizes: GET /api/audit-logs?firmId=xxx&startDate=...&endDate=... (time-range queries per firm)
+  @@index([firmId, createdAt])
 }
 
 // ============================================================
