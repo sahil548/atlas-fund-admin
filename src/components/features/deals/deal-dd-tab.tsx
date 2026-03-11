@@ -103,12 +103,16 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     (ws: any) => ws.status === "COMPLETE",
   ).length;
   // BUG-01 fix: fall back to workstream-status-based progress when no tasks.
+  // Stage-aware fallback: deals past DD (IC_REVIEW, CLOSING, CLOSED) with no tasks necessarily completed DD.
+  const POST_DD_STAGES = ["IC_REVIEW", "CLOSING", "CLOSED"];
   const overallPct =
     totalTasks > 0
-      ? Math.round((completedTasks / totalTasks) * 100)
+      ? Math.min(100, Math.round((completedTasks / totalTasks) * 100))
       : workstreams.length > 0
-        ? Math.round((completeCategories / workstreams.length) * 100)
-        : 0;
+        ? Math.min(100, Math.round((completeCategories / workstreams.length) * 100))
+        : POST_DD_STAGES.includes(deal.stage)
+          ? 100  // Deal advanced past DD — DD was necessarily completed
+          : 0;
   const progressBasis = totalTasks > 0 ? "tasks" : "workstreams";
 
   // ---- Analysis triggers ----

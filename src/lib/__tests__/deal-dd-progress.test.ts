@@ -18,10 +18,13 @@ interface Workstream {
 }
 
 /**
- * Exact port of the overallPct calculation from deal-dd-tab.tsx lines 67–84.
+ * Exact port of the overallPct calculation from deal-dd-tab.tsx.
  * Implementation files are read-only — this function mirrors the logic verbatim.
+ * Includes stage parameter to support post-DD stage-aware fallback (BUG-01 fix).
  */
-function computeOverallPct(workstreams: Workstream[]): number {
+const POST_DD_STAGES = ["IC_REVIEW", "CLOSING", "CLOSED"];
+
+function computeOverallPct(workstreams: Workstream[], stage = "DUE_DILIGENCE"): number {
   const totalTasks = workstreams.reduce(
     (sum, ws) => sum + (ws.totalTasks ?? 0),
     0,
@@ -35,12 +38,15 @@ function computeOverallPct(workstreams: Workstream[]): number {
   ).length;
 
   // BUG-01 fix: fall back to workstream-status-based progress when no tasks.
+  // Stage-aware fallback: deals past DD with no tasks necessarily completed DD.
   const overallPct =
     totalTasks > 0
-      ? Math.round((completedTasks / totalTasks) * 100)
+      ? Math.min(100, Math.round((completedTasks / totalTasks) * 100))
       : workstreams.length > 0
-        ? Math.round((completeCategories / workstreams.length) * 100)
-        : 0;
+        ? Math.min(100, Math.round((completeCategories / workstreams.length) * 100))
+        : POST_DD_STAGES.includes(stage)
+          ? 100
+          : 0;
 
   return overallPct;
 }
@@ -127,19 +133,36 @@ describe("DD tab overall progress calculation (BUG-01 regression)", () => {
 
   // ── Invariant: result never exceeds 100% ─────────────────────────────────
 
-  it("never returns more than 100% under any input", () => {
+  it("never returns more than 100% even with anomalous task data (completedTasks > totalTasks)", () => {
     // Hypothetical data anomaly: completedTasks > totalTasks
     const workstreams: Workstream[] = [
       { totalTasks: 2, completedTasks: 5, status: "COMPLETE" },
     ];
-    // Math.round(5/2 * 100) = 250 — the raw formula overflows; verify behavior
+    // Math.min(100, Math.round(5/2 * 100)) = Math.min(100, 250) = 100
     const result = computeOverallPct(workstreams);
-    // NOTE: The current implementation does NOT clamp the task-based path.
-    // This test documents the actual behavior: if the DB has bad data,
-    // overallPct CAN exceed 100 in the task-based path.
-    // The workstream-status fallback path IS bounded by 0..100.
-    // This is intentional documentation, not a bug assertion.
-    expect(typeof result).toBe("number");
-    expect(isNaN(result)).toBe(false);
+    expect(result).toBe(100);
+    expect(result).toBeLessThanOrEqual(100);
+  });
+
+  // ── Stage-aware fallback: post-DD deals with no workstreams show 100% ────
+
+  it("returns 100% for IC_REVIEW deal with no workstreams (necessarily completed DD)", () => {
+    expect(computeOverallPct([], "IC_REVIEW")).toBe(100);
+  });
+
+  it("returns 100% for CLOSING deal with no workstreams", () => {
+    expect(computeOverallPct([], "CLOSING")).toBe(100);
+  });
+
+  it("returns 100% for CLOSED deal with no workstreams", () => {
+    expect(computeOverallPct([], "CLOSED")).toBe(100);
+  });
+
+  it("returns 0% for DUE_DILIGENCE deal with no workstreams", () => {
+    expect(computeOverallPct([], "DUE_DILIGENCE")).toBe(0);
+  });
+
+  it("returns 0% for SCREENING deal with no workstreams", () => {
+    expect(computeOverallPct([], "SCREENING")).toBe(0);
   });
 });
