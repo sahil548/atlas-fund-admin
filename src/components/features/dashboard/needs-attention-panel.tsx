@@ -85,9 +85,9 @@ export function NeedsAttentionPanel() {
         </div>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-gray-800">
-          {visibleAlerts.map((alert) => (
+          {visibleAlerts.map((alert, idx) => (
             <div
-              key={alert.id}
+              key={`${alert.type}-${alert.id}-${idx}`}
               className="flex items-center gap-3 px-5 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
             >
               {/* Severity dot */}

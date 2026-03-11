@@ -67,8 +67,9 @@ export default function TransactionsPage() {
   const { data: capitalCalls = [], isLoading: callsLoading } = useSWR<CapitalCall[]>("/api/capital-calls", fetcher);
   const { data: distributions = [], isLoading: distsLoading } = useSWR<Distribution[]>("/api/distributions", fetcher);
   const { data: templates = [], isLoading: templatesLoading } = useSWR<WaterfallTemplate[]>("/api/waterfall-templates", fetcher);
-  const { data: entities = [] } = useSWR<Entity[]>(`/api/entities?firmId=${firmId}`, (url: string) =>
-    fetcher(url).then((r: any) => r.data ?? r),
+  const { data: entities = [] } = useSWR<Entity[]>(
+    firmId ? `/api/entities?firmId=${firmId}` : null,
+    (url: string) => fetcher(url).then((r: any) => Array.isArray(r.data) ? r.data : Array.isArray(r) ? r : []),
   );
 
   const [tab, setTab] = useState<Tab>("calls");
