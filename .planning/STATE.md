@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 20-schema-cleanup-ui-polish-02-PLAN.md
-last_updated: "2026-03-11T01:10:01.879Z"
-last_activity: "2026-03-10 — Phase 20 Plan 01 complete. Wave 0 foundation: logger utility created, Zod schemas for all 39 JSON blob fields, LP dashboard test fixed (7 → 0 failures), bug-03 timeout pattern tested. Full suite 817 passing."
+stopped_at: Completed 20-schema-cleanup-ui-polish-03-PLAN.md
+last_updated: "2026-03-11T01:17:31.480Z"
+last_activity: "2026-03-10 — Phase 20 Plan 02 complete. Three bugs fixed: IC memo 504 timeout (BUG-03), DD 0% progress for post-DD deals (BUG-01), pipeline conversion rate guard verified (BUG-02). 822 tests passing."
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
-  completed_plans: 50
-  percent: 100
+  completed_plans: 51
+  percent: 91
 ---
 
 # Atlas — GSD State
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 2/10 plans complete (Plan 02 done)
+- **Plan:** 3/10 plans complete (Plan 03 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-10 — Phase 20 Plan 02 complete. Three bugs fixed: IC memo 504 timeout (BUG-03), DD 0% progress for post-DD deals (BUG-01), pipeline conversion rate guard verified (BUG-02). 822 tests passing.
+- **Last activity:** 2026-03-11 — Phase 20 Plan 03 complete. Console migration: all console.log/warn/error calls replaced with structured logger across 19 src/lib/ files and 80 src/app/api/ route files. Zero console.* calls remain in server-side code. 822 tests passing, build zero errors.
 
 Progress: [█████████░] 91% (86/94 plans)
 
@@ -77,6 +77,7 @@ Progress: [█████████░] 91% (86/94 plans)
 | Phase 19-dashboard-supporting-modules P05 | 10 | 2 tasks | 4 files |
 | Phase 20-schema-cleanup-ui-polish P01 | 5 | 2 tasks | 6 files |
 | Phase 20-schema-cleanup-ui-polish P02 | 10 | 2 tasks | 5 files |
+| Phase 20-schema-cleanup-ui-polish P03 | 11 | 2 tasks | 99 files |
 
 ## Accumulated Context
 
@@ -277,6 +278,9 @@ Progress: [█████████░] 91% (86/94 plans)
 - **BUG-03 frontend 504 guard:** check `res.status === 504` before `res.ok` in all AI-triggered fetch handlers — clears spinner, shows timeout toast, returns early without parsing body
 - **BUG-01 stage-aware fallback:** IC_REVIEW/CLOSING/CLOSED deals with no workstreams show 100% DD progress (necessarily completed DD); Math.min(100) clamp added to both task-based and workstream-based paths
 - **BUG-02 verified no change needed:** Math.min(100) guard already present on all 3 conversion rates (screeningToDD, ddToIC, icToClose) in deals/route.ts
+- **Console migration error serialization:** `{ error: err instanceof Error ? err.message : String(err) }` — safe pattern for `unknown` typed errors; string vars (message, msg) use `{ error: message }` directly
+- **Bulk Python migration for 80 API routes:** Fast but needs 2 cleanup passes — initial pass for import+replacement, second pass for type-safety (instanceof guard), manual fix for multi-arg cases
+- **logger.info vs logger.debug for API routes:** Successful operations (email sent, user invited) -> logger.info; timing/diagnostic data -> logger.debug; all fire-and-forget catch handlers use logger.error
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -296,6 +300,6 @@ Progress: [█████████░] 91% (86/94 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-11T01:10:01.876Z
-- **Stopped at:** Completed 20-schema-cleanup-ui-polish-02-PLAN.md
+- **Last session:** 2026-03-11T01:17:31.476Z
+- **Stopped at:** Completed 20-schema-cleanup-ui-polish-03-PLAN.md
 - **Resume file:** None
