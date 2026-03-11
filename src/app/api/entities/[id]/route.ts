@@ -96,7 +96,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const entity = await prisma.entity.update({
     where: { id },
     data: {
-      ...rest,
+      ...(rest as Record<string, unknown>),
       ...(investmentPeriodEnd ? { investmentPeriodEnd: new Date(investmentPeriodEnd) } : {}),
     },
   });

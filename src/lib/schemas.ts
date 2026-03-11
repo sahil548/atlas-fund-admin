@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DealMetadataSchema, NavProxyConfigSchema, ProjectedMetricsSchema } from "@/lib/json-schemas";
 
 // ── Pagination ────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ export const UpdateDealSchema = z.object({
   thesisNotes: z.string().nullable().optional(),
   investmentRationale: z.string().nullable().optional(),
   additionalContext: z.string().nullable().optional(),
-  dealMetadata: z.record(z.string(), z.unknown()).nullable().optional(),
+  dealMetadata: DealMetadataSchema.optional(),
 });
 
 export const KillDealSchema = z.object({
@@ -304,7 +305,7 @@ export const UpdateAssetSchema = z.object({
   // Phase 4: projection fields (GP manual override)
   projectedIRR: z.number().nullable().optional(),
   projectedMultiple: z.number().nullable().optional(),
-  projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
+  projectedMetrics: ProjectedMetricsSchema.optional(),
   // Phase 14-04: review schedule fields
   nextReview: z.string().nullable().optional(),
 });
@@ -312,7 +313,7 @@ export const UpdateAssetSchema = z.object({
 export const UpdateAssetProjectionsSchema = z.object({
   projectedIRR: z.number().nullable().optional(),
   projectedMultiple: z.number().nullable().optional(),
-  projectedMetrics: z.record(z.string(), z.unknown()).nullable().optional(),
+  projectedMetrics: ProjectedMetricsSchema.optional(),
 });
 
 export const ExitAssetSchema = z.object({
@@ -681,6 +682,7 @@ export const UpdateEntitySchema = z.object({
   extensionOptions: z.string().optional(),
   fiscalYearEnd: z.string().optional(),
   regulatoryFilings: z.any().optional(),
+  navProxyConfig: NavProxyConfigSchema.optional(),
   legalCounsel: z.string().optional(),
   taxPreparer: z.string().optional(),
   ein: z.string().optional(),
