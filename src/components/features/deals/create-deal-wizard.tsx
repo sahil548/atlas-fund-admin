@@ -327,7 +327,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                   ? "bg-indigo-600 text-white"
                   : s < step
                     ? "bg-emerald-500 text-white"
-                    : "bg-gray-100 text-gray-400"
+                    : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
               }`}
             >
               {s < step ? "\u2713" : s}
@@ -552,7 +552,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
 
           {/* Queued docs */}
           {docs.length === 0 ? (
-            <div className="text-center py-4 text-gray-400 text-sm border-2 border-dashed border-gray-200 rounded-lg">
+            <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg">
               No documents queued. You can add documents later.
             </div>
           ) : (
@@ -569,7 +569,7 @@ export function CreateDealWizard({ open, onClose }: Props) {
                       {doc.category}
                     </span>
                     {doc.file && (
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-gray-500 dark:text-gray-400">
                         {(doc.file.size / 1024).toFixed(0)} KB
                       </span>
                     )}

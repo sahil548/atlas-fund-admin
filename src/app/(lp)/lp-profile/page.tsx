@@ -71,7 +71,7 @@ export default function LPProfilePage() {
   }, [data]);
 
   if (!investorId || isLoading || !data) {
-    return <div className="text-sm text-gray-400">Loading...</div>;
+    return <div className="text-sm text-gray-500 dark:text-gray-400">Loading...</div>;
   }
 
   function handleCancel() {
@@ -140,7 +140,7 @@ export default function LPProfilePage() {
             {data.legalName}
           </p>
         </div>
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+        <p className="text-[10px] text-gray-500 dark:text-gray-500 mt-1.5">
           Legal name is managed by the fund administrator
         </p>
       </div>
@@ -290,7 +290,7 @@ export default function LPProfilePage() {
               {maskTaxId(data.taxId)}
             </p>
           )}
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+          <p className="text-[10px] text-gray-500 dark:text-gray-500 mt-1.5">
             Your tax ID is encrypted and displayed in masked format for security
           </p>
         </div>

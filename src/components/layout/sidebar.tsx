@@ -68,7 +68,7 @@ export function Sidebar({
               className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
                 portal === "gp"
                   ? "bg-indigo-600 text-white"
-                  : "text-slate-400"
+                  : "text-slate-300 hover:text-white"
               }`}
             >
               GP Admin
@@ -78,7 +78,7 @@ export function Sidebar({
               className={`flex-1 text-[10px] py-1.5 rounded-md font-medium ${
                 portal === "lp"
                   ? "bg-indigo-600 text-white"
-                  : "text-slate.400"
+                  : "text-slate-300 hover:text-white"
               }`}
             >
               LP Portal

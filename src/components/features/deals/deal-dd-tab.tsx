@@ -669,7 +669,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                           )}
                         </div>
                         {ws.analysisResult && (
-                          <span className="text-[10px] text-indigo-500 ml-4">
+                          <span className={`text-[10px] ml-4 ${ws.analysisResult.aiPowered ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
                             {ws.analysisResult.aiPowered ? "AI analyzed" : "Sample data"}
                           </span>
                         )}

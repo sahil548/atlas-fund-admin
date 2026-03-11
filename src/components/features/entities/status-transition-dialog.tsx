@@ -170,7 +170,7 @@ export function StatusTransitionDialog({
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Reason <span className="text-gray-400">(optional)</span>
+            Reason <span className="text-gray-500 dark:text-gray-400">(optional)</span>
           </label>
           <textarea
             value={reason}
