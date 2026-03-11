@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 20-schema-cleanup-ui-polish-03-PLAN.md
-last_updated: "2026-03-11T01:17:31.480Z"
-last_activity: "2026-03-10 — Phase 20 Plan 02 complete. Three bugs fixed: IC memo 504 timeout (BUG-03), DD 0% progress for post-DD deals (BUG-01), pipeline conversion rate guard verified (BUG-02). 822 tests passing."
+stopped_at: Completed 20-schema-cleanup-ui-polish-05-PLAN.md
+last_updated: "2026-03-11T08:32:00.000Z"
+last_activity: "2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors."
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
-  completed_plans: 51
+  completed_plans: 52
   percent: 91
 ---
 
@@ -24,9 +24,9 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 3/10 plans complete (Plan 03 done)
+- **Plan:** 4/10 plans complete (Plan 04 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-11 — Phase 20 Plan 03 complete. Console migration: all console.log/warn/error calls replaced with structured logger across 19 src/lib/ files and 80 src/app/api/ route files. Zero console.* calls remain in server-side code. 822 tests passing, build zero errors.
+- **Last activity:** 2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors.
 
 Progress: [█████████░] 91% (86/94 plans)
 
@@ -78,6 +78,8 @@ Progress: [█████████░] 91% (86/94 plans)
 | Phase 20-schema-cleanup-ui-polish P01 | 5 | 2 tasks | 6 files |
 | Phase 20-schema-cleanup-ui-polish P02 | 10 | 2 tasks | 5 files |
 | Phase 20-schema-cleanup-ui-polish P03 | 11 | 2 tasks | 99 files |
+| Phase 20-schema-cleanup-ui-polish P04 | ~411min | 2 tasks | 1 file |
+| Phase 20-schema-cleanup-ui-polish P05 | 53 | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -272,6 +274,10 @@ Progress: [█████████░] 91% (86/94 plans)
 
 ### Phase 20 Schema Cleanup & UI Polish Decisions (In Progress)
 - **Custom logger zero-dep:** `isDev = process.env.NODE_ENV !== "production"`; error/warn always log via console.error/warn; info/debug only in dev via console.log; LogMeta type = `Record<string, unknown> | string | number | undefined`
+- **Schema index audit:** Asset/Document/Task models have no direct firmId field — queried via join relations; firmId indexes on these models are not feasible
+- **SyncStatus.SYNCING documented:** confirmed active use in `api/accounting/connections/[id]/sync` route; retained with comment
+- **InviteStatus.PENDING documented:** confirmed active use in `api/users/invite` route and settings page; retained with comment
+- **Force-reset index migration:** `@@index` additions require `prisma db push --force-reset` to create PostgreSQL indexes; AiConfig table wiped and requires re-entry of tenant AI key in Settings after each force-reset
 - **json-schemas.ts grouping:** Zod schemas for all 39 Json/Json? fields grouped by model with comments; exported as named exports; all Json? fields use `.nullable()`; dynamic key-value fields use `z.record(z.string(), z.unknown())`
 - **metricSnapshot mock fix:** Added `findMany: vi.fn().mockResolvedValue([])` to mock; corrected upsert count from 1 to 2 — route calls upsert twice per GET: once for `__AGGREGATE__` snapshot + once per entity commitment
 - **raceWithTimeout pattern for BUG-03:** `Promise.race([aiCall, timeoutReject])` with `setTimeout(() => reject(new Error("TIMEOUT")), 55_000)`; catch block checks `error.message === "TIMEOUT"` to return 504 vs 500
@@ -300,6 +306,6 @@ Progress: [█████████░] 91% (86/94 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-11T01:17:31.476Z
-- **Stopped at:** Completed 20-schema-cleanup-ui-polish-03-PLAN.md
+- **Last session:** 2026-03-11T08:32:00.000Z
+- **Stopped at:** Completed 20-04-PLAN.md
 - **Resume file:** None
