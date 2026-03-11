@@ -9,7 +9,7 @@ import { NextResponse } from "next/server";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { NotionClient } from "@/lib/integrations/notion";
 
-export async function GET(req: Request): Promise<Response> {
+export async function GET(_req: Request): Promise<Response> {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
   if (authUser.role !== "GP_ADMIN") return forbidden();

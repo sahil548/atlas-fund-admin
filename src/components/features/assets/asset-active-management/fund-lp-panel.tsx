@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { fmt, pct, cn, formatDate } from "@/lib/utils";
+import { fmt, pct, formatDate } from "@/lib/utils";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 

@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUser, unauthorized } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: NextRequest): Promise<Response> {
+export async function GET(_req: NextRequest): Promise<Response> {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 

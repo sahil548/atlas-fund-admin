@@ -170,6 +170,7 @@ export default function MeetingsPage() {
         actions={
           <SearchFilterBar
             filters={MEETING_FILTERS}
+            onSearch={handleSearch}
             onFilterChange={handleFilterChange}
             activeFilters={activeFilters}
           >

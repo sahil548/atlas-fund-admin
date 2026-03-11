@@ -13,7 +13,7 @@ import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   const authUser = await getAuthUser();
   if (!authUser) return unauthorized();
 

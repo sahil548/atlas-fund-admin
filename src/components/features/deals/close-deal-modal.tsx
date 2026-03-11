@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import useSWR, { mutate as globalMutate } from "swr";
+import useSWR from "swr";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

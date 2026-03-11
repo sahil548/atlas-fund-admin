@@ -18,7 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnK1Available } from "@/lib/notification-delivery";
-import { normalizeName, extractInvestorNameFromFilename, matchInvestor } from "@/lib/k1-matching";
+import { extractInvestorNameFromFilename, matchInvestor } from "@/lib/k1-matching";
 import { logger } from "@/lib/logger";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

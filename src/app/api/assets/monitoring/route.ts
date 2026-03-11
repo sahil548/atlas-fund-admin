@@ -12,7 +12,6 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
-  const day90 = addDays(now, 90);
   const day180 = addDays(now, 180);
 
   try {

@@ -58,7 +58,6 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   const [perInvestorAllocations, setPerInvestorAllocations] = useState<PerInvestorAllocation[]>([]);
   const [showPerInvestor, setShowPerInvestor] = useState(false);
   const [waterfallRan, setWaterfallRan] = useState(false);
-  const [hasUnfundedWarning, setHasUnfundedWarning] = useState(false);
   const [showWaterfallPreview, setShowWaterfallPreview] = useState(false);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
 

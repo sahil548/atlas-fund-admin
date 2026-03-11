@@ -22,7 +22,6 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
   const toast = useToast();
   const { trigger, isLoading } = useMutation(`/api/assets/${asset.id}`, { method: "PUT", revalidateKeys: ["/api/assets", `/api/assets/${asset.id}`] });
   const [form, setForm] = useState({ fairValue: "", status: "", sector: "", incomeType: "" });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) setForm({ fairValue: String(asset.fairValue || ""), status: asset.status || "ACTIVE", sector: asset.sector || "", incomeType: asset.incomeType || "" });
@@ -46,7 +45,7 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="Edit Asset" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={isLoading} onClick={handleSubmit}>Save Changes</Button></>}>
       <div className="space-y-3">
-        <FormField label="Fair Value" error={errors.fairValue}><CurrencyInput value={form.fairValue} onChange={(v) => set("fairValue", v)} /></FormField>
+        <FormField label="Fair Value"><CurrencyInput value={form.fairValue} onChange={(v) => set("fairValue", v)} /></FormField>
         <FormField label="Status"><Select value={form.status} onChange={(e) => set("status", e.target.value)} options={STATUSES} /></FormField>
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Sector"><Input value={form.sector} onChange={(e) => set("sector", e.target.value)} /></FormField>

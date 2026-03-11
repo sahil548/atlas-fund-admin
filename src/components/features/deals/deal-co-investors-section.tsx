@@ -383,7 +383,7 @@ export function DealCoInvestorsSection({ dealId }: Props) {
               {(["contact", "company"] as const).map((m) => (
                 <button
                   key={m}
-                  onClick={() => setAddForm((p) => ({ ...defaultForm(), mode: m }))}
+                  onClick={() => setAddForm((_p) => ({ ...defaultForm(), mode: m }))}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     addForm.mode === m
                       ? "bg-indigo-600 text-white border-indigo-600"
