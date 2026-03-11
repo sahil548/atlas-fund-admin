@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Intelligence Platform
 status: executing
-stopped_at: Completed 20-schema-cleanup-ui-polish-05-PLAN.md
-last_updated: "2026-03-11T08:32:00.000Z"
-last_activity: "2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors."
+stopped_at: Completed 20-schema-cleanup-ui-polish-06-PLAN.md
+last_updated: "2026-03-11T15:03:16.214Z"
+last_activity: 2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors.
 progress:
   total_phases: 10
   completed_phases: 9
   total_plans: 58
-  completed_plans: 52
+  completed_plans: 54
   percent: 91
 ---
 
@@ -24,11 +24,11 @@ progress:
 ## Current Position
 - **Milestone:** v2.0 (Intelligence Platform)
 - **Phase:** Phase 20 — Schema Cleanup & UI Polish
-- **Plan:** 4/10 plans complete (Plan 04 done)
+- **Plan:** 5/10 plans complete (Plan 05 done)
 - **Status:** In progress
-- **Last activity:** 2026-03-11 — Phase 20 Plan 04 complete. Database indexes added to 7 models (CapitalCall, Deal, Document, DealActivity, AuditLog, Task, Meeting). Orphaned enum values audited and documented. Schema migrated via force-reset + seed. 822 tests passing, build zero errors.
+- **Last activity:** 2026-03-11 — Phase 20 Plan 05 complete. parseBody validation applied to all remaining mutation API routes (8 routes across ai-config, ai-prompts, checklist, esignature, invite, deals/tasks). DocumentCategory as any eliminated. JSON blob write schemas typed via json-schemas.ts. 822 tests passing, build zero errors.
 
-Progress: [█████████░] 91% (86/94 plans)
+Progress: [██████████] 96% (90/94 plans)
 
 ## Performance Metrics
 - Plans completed (v1.0): 36 plans across 10 phases
@@ -80,6 +80,7 @@ Progress: [█████████░] 91% (86/94 plans)
 | Phase 20-schema-cleanup-ui-polish P03 | 11 | 2 tasks | 99 files |
 | Phase 20-schema-cleanup-ui-polish P04 | ~411min | 2 tasks | 1 file |
 | Phase 20-schema-cleanup-ui-polish P05 | 53 | 2 tasks | 19 files |
+| Phase 20-schema-cleanup-ui-polish P05 | 30 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -287,6 +288,10 @@ Progress: [█████████░] 91% (86/94 plans)
 - **Console migration error serialization:** `{ error: err instanceof Error ? err.message : String(err) }` — safe pattern for `unknown` typed errors; string vars (message, msg) use `{ error: message }` directly
 - **Bulk Python migration for 80 API routes:** Fast but needs 2 cleanup passes — initial pass for import+replacement, second pass for type-safety (instanceof guard), manual fix for multi-arg cases
 - **logger.info vs logger.debug for API routes:** Successful operations (email sent, user invited) -> logger.info; timing/diagnostic data -> logger.debug; all fire-and-forget catch handlers use logger.error
+- **parseBody covers all mutation routes:** Only 2 legitimate exceptions remain — docusign/webhook (content-type detection for external webhook) and contacts/[id]/tags DELETE (body fallback for DELETE endpoint)
+- **DocumentCategory as any fix:** parseDocumentCategory() typed helper validates FormData category strings against Prisma enum, defaults to OTHER — FormData routes cannot use parseBody
+- **Typed JSON blob write schemas:** UpdateDealSchema.dealMetadata → DealMetadataSchema.optional(); UpdateAssetSchema/UpdateAssetProjectionsSchema.projectedMetrics → ProjectedMetricsSchema.optional(); UpdateEntitySchema.navProxyConfig → NavProxyConfigSchema.optional()
+- **Entity PUT Prisma type cast:** `rest as Record<string, unknown>` resolves EntityUpdateInput/EntityUncheckedUpdateInput union ambiguity from waterfallTemplateId — necessary when typed navProxyConfig added to UpdateEntitySchema
 
 ### Phase Ordering Rationale
 - Phase 11 (Foundation) first — shared component changes break all 30 pages if done mid-stream
@@ -306,6 +311,6 @@ Progress: [█████████░] 91% (86/94 plans)
 
 ## Session Continuity
 - **Initialized:** 2026-03-08
-- **Last session:** 2026-03-11T08:32:00.000Z
-- **Stopped at:** Completed 20-04-PLAN.md
+- **Last session:** 2026-03-11T15:03:16.211Z
+- **Stopped at:** Completed 20-schema-cleanup-ui-polish-06-PLAN.md
 - **Resume file:** None
