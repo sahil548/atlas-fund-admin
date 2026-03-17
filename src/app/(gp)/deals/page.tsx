@@ -5,15 +5,12 @@ import useSWR from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { CreateDealWizard } from "@/components/features/deals/create-deal-wizard";
 import { Modal } from "@/components/ui/modal";
 import { useFirm } from "@/components/providers/firm-provider";
-import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { useToast } from "@/components/ui/toast";
@@ -57,25 +54,6 @@ const VALID_ADVANCE_STAGES: Record<string, string> = {
   DUE_DILIGENCE: "IC_REVIEW",
 };
 
-const DEAL_FILTERS = [
-  {
-    key: "stage",
-    label: "Stage",
-    options: [
-      { value: "SCREENING", label: "Screening" },
-      { value: "DUE_DILIGENCE", label: "Due Diligence" },
-      { value: "IC_REVIEW", label: "IC Review" },
-      { value: "CLOSING", label: "Closing" },
-      { value: "CLOSED", label: "Closed" },
-    ],
-  },
-  {
-    key: "assetClass",
-    label: "Asset Class",
-    options: Object.entries(ASSET_CLASS_LABELS).map(([value, label]) => ({ value, label })),
-  },
-];
-
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
     if (!r.ok) throw new Error(`API error ${r.status}`);
@@ -87,13 +65,10 @@ const fetcher = (url: string) =>
 export default function DealsPage() {
   const { firmId } = useFirm();
   const toast = useToast();
-  const [showCreate, setShowCreate] = useState(false);
   const [showDead, setShowDead] = useState(false);
   const [showClosed, setShowClosed] = useState(false);
 
-  // Search, filters, and cursor state
-  const [search, setSearch] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  // Cursor-based pagination state
   const [cursor, setCursor] = useState<string | null>(null);
   const [allDeals, setAllDeals] = useState<any[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -117,14 +92,10 @@ export default function DealsPage() {
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
       const params = new URLSearchParams({ firmId, limit: "50" });
-      if (search) params.set("search", search);
-      for (const [k, v] of Object.entries(activeFilters)) {
-        if (v) params.set(k, v);
-      }
       if (currentCursor) params.set("cursor", currentCursor);
       return `/api/deals?${params.toString()}`;
     },
-    [firmId, search, activeFilters],
+    [firmId],
   );
 
   const { data, isLoading, mutate } = useSWR(buildUrl(null), fetcher, {
@@ -140,18 +111,6 @@ export default function DealsPage() {
   const gpUsers = (usersData ?? []).filter(
     (u: any) => u.role === "GP_ADMIN" || u.role === "GP_TEAM",
   );
-
-  const handleSearch = useCallback((q: string) => {
-    setSearch(q);
-    setAllDeals([]);
-    setCursor(null);
-  }, []);
-
-  const handleFilterChange = useCallback((key: string, value: string) => {
-    setActiveFilters((prev) => ({ ...prev, [key]: value }));
-    setAllDeals([]);
-    setCursor(null);
-  }, []);
 
   const handleLoadMore = useCallback(async () => {
     if (!cursor || loadingMore) return;
@@ -170,14 +129,6 @@ export default function DealsPage() {
 
   const deals = allDeals;
   const hasMore = !!cursor;
-  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
-
-  const handleClearFilters = () => {
-    setSearch("");
-    setActiveFilters({});
-    setAllDeals([]);
-    setCursor(null);
-  };
 
   // Toggle deal selection
   function toggleDealSelection(id: string) {
@@ -318,49 +269,11 @@ export default function DealsPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="Deal Pipeline"
-        subtitle={`${data?.total ?? deals.length} deals`}
-        actions={
-          <SearchFilterBar
-            filters={DEAL_FILTERS}
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-            activeFilters={activeFilters}
-          >
-            <ExportButton
-              data={deals.map((d: any) => ({
-                id: d.id,
-                name: d.name,
-                assetClass: d.assetClass,
-                stage: d.stage,
-                targetReturn: d.targetReturn ?? "",
-                targetSize: d.targetSize ?? "",
-                dealLead: d.dealLead?.name ?? "",
-                status: d.status ?? d.stage,
-                createdAt: d.createdAt ? formatDate(d.createdAt) : "",
-              }))}
-              fileName="Deals_Export"
-            />
-            <Button onClick={() => setShowCreate(true)}>+ New Deal</Button>
-          </SearchFilterBar>
-        }
-      />
 
       {/* Pipeline Analytics */}
       {analytics && (
         <SectionErrorBoundary>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Pipeline Analytics</h3>
-              <div className="flex items-center gap-3">
-                <span className="text-[10px] text-gray-400">{data?.total ?? deals.length} total deals</span>
-                <Link href="/analytics" className="text-xs text-indigo-600 hover:underline font-medium">
-                  View Full Analytics &rarr;
-                </Link>
-              </div>
-            </div>
-
             {/* Top-level stats */}
             <div className="grid grid-cols-4 gap-3">
               <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-center">
@@ -376,7 +289,7 @@ export default function DealsPage() {
                 <div className="text-lg font-bold text-red-600 dark:text-red-300">{analytics.totalDeadDeals}</div>
               </button>
               <div className="bg-indigo-50 dark:bg-indigo-950 rounded-lg p-3 text-center">
-                <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Pipeline Value</div>
+                <div className="text-[10px] text-indigo-600 dark:text-indigo-400">Our Pipeline</div>
                 <div className="text-lg font-bold text-indigo-700 dark:text-indigo-300">
                   {analytics.pipelineValue >= 1_000_000_000
                     ? `$${(analytics.pipelineValue / 1_000_000_000).toFixed(1)}B`
@@ -389,70 +302,43 @@ export default function DealsPage() {
               </div>
             </div>
 
-            {/* Deal Flow Funnel */}
-            <div>
-              <div className="text-xs font-semibold text-gray-700 mb-2">Deal Flow</div>
-              <div className="space-y-1.5">
-                {[
-                  { label: "Screening", count: analytics.stageDistribution.SCREENING ?? 0, color: "bg-gray-400", pct: 100 },
-                  { label: "Due Diligence", count: analytics.stageDistribution.DUE_DILIGENCE ?? 0, color: "bg-blue-500", pct: analytics.conversionRates.screeningToDD },
-                  { label: "IC Review", count: analytics.stageDistribution.IC_REVIEW ?? 0, color: "bg-amber-500", pct: analytics.conversionRates.ddToIC },
-                  { label: "Closing", count: analytics.stageDistribution.CLOSING ?? 0, color: "bg-emerald-500", pct: analytics.conversionRates.icToClose },
-                ].map((stage) => (
-                  <div key={stage.label} className="flex items-center gap-3">
-                    <span className="text-[10px] text-gray-600 w-24 text-right">{stage.label}</span>
-                    <div className="flex-1 bg-gray-100 rounded-full h-3 relative overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${stage.color} transition-all`}
-                        style={{ width: `${Math.max(stage.pct, stage.count > 0 ? 5 : 0)}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-medium text-gray-700 w-6 text-right">{stage.count}</span>
-                    <span className="text-[10px] text-gray-400 w-10">{stage.pct}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Value by stage */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { label: "Screening", value: analytics.valueByStage.SCREENING ?? 0, border: "border-gray-200 dark:border-gray-700" },
-                { label: "Due Diligence", value: analytics.valueByStage.DUE_DILIGENCE ?? 0, border: "border-blue-200 dark:border-blue-800" },
-                { label: "IC Review", value: analytics.valueByStage.IC_REVIEW ?? 0, border: "border-amber-200 dark:border-amber-800" },
-                { label: "Closing", value: analytics.valueByStage.CLOSING ?? 0, border: "border-emerald-200 dark:border-emerald-800" },
-              ].map((s) => (
-                <div key={s.label} className={`border ${s.border} rounded-lg p-2 text-center`}>
-                  <div className="text-[10px] text-gray-500">{s.label}</div>
-                  <div className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    {s.value >= 1_000_000_000
-                      ? `$${(s.value / 1_000_000_000).toFixed(1)}B`
-                      : s.value >= 1_000_000
-                      ? `$${(s.value / 1_000_000).toFixed(0)}M`
-                      : s.value >= 1_000
-                      ? `$${(s.value / 1_000).toFixed(0)}K`
-                      : s.value > 0
-                      ? `$${s.value.toLocaleString()}`
-                      : "—"}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Top Kill Reasons */}
-            {analytics.killReasonBreakdown && analytics.killReasonBreakdown.length > 0 && (
+            {/* Bottom row: Kill Reasons + Export + Analytics link */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-medium text-gray-500">Top Kill Reasons:</span>
-                {analytics.killReasonBreakdown.slice(0, 3).map((kr) => (
-                  <span
-                    key={kr.reason}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-medium"
-                  >
-                    {kr.reason} ({kr.count})
-                  </span>
-                ))}
+                {analytics.killReasonBreakdown && analytics.killReasonBreakdown.length > 0 && (
+                  <>
+                    <span className="text-[10px] font-medium text-gray-500">Top Kill Reasons:</span>
+                    {analytics.killReasonBreakdown.slice(0, 3).map((kr) => (
+                      <span
+                        key={kr.reason}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-medium"
+                      >
+                        {kr.reason} ({kr.count})
+                      </span>
+                    ))}
+                  </>
+                )}
               </div>
-            )}
+              <div className="flex items-center gap-3">
+                <ExportButton
+                  data={deals.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    assetClass: d.assetClass,
+                    stage: d.stage,
+                    targetReturn: d.targetReturn ?? "",
+                    targetSize: d.targetSize ?? "",
+                    dealLead: d.dealLead?.name ?? "",
+                    status: d.status ?? d.stage,
+                    createdAt: d.createdAt ? formatDate(d.createdAt) : "",
+                  }))}
+                  fileName="Deals_Export"
+                />
+                <Link href="/analytics" className="text-xs text-indigo-600 hover:underline font-medium">
+                  View Full Analytics &rarr;
+                </Link>
+              </div>
+            </div>
           </div>
         </SectionErrorBoundary>
       )}
@@ -477,11 +363,8 @@ export default function DealsPage() {
       ) : deals.length === 0 ? (
         <EmptyState
           icon={<LayoutList className="h-10 w-10" />}
-          title={hasFilters ? "No results match your filters" : "No deals yet"}
-          description={!hasFilters ? "Create your first deal to start tracking your pipeline" : undefined}
-          action={!hasFilters ? { label: "+ New Deal", onClick: () => setShowCreate(true) } : undefined}
-          filtered={hasFilters}
-          onClearFilters={hasFilters ? handleClearFilters : undefined}
+          title="No deals yet"
+          description="Use the command bar (⌘K) to create your first deal"
         />
       ) : (
         <>
@@ -508,6 +391,28 @@ export default function DealsPage() {
                       const closingPct = closingTotal > 0 ? Math.round((closingComplete / closingTotal) * 100) : 0;
                       const showClosingProgress = p.stage === "CLOSING" && closingTotal > 0;
                       const isSelected = selectedDealIds.has(p.id);
+
+                      // Deadline computation
+                      const deadlineDate = p.nextDeadline ? new Date(p.nextDeadline) : null;
+                      const deadlineDaysAway = deadlineDate ? Math.ceil((deadlineDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+                      const deadlineColor = deadlineDaysAway !== null
+                        ? deadlineDaysAway < 0 ? "text-red-600" : deadlineDaysAway <= 7 ? "text-amber-600" : "text-gray-500"
+                        : "";
+
+                      // Freshness computation
+                      const lastActivity = p.lastActivityAt ? new Date(p.lastActivityAt) : new Date(p.createdAt);
+                      const daysSinceActivity = Math.max(0, Math.floor((new Date().getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)));
+                      const freshnessLabel = daysSinceActivity <= 3 ? `Active ${daysSinceActivity}d ago` : daysSinceActivity <= 14 ? `Quiet ${daysSinceActivity}d ago` : `Stale ${daysSinceActivity}d ago`;
+                      const freshnessColor = daysSinceActivity <= 3 ? "text-emerald-600" : daysSinceActivity <= 14 ? "text-amber-500" : "text-red-500";
+
+                      // Screening indicators
+                      const aiScore = p.screeningResult?.aiScore ?? p.screeningResult?.score ?? null;
+                      const docCount = p._count?.documents ?? 0;
+
+                      // IC vote status
+                      const icVotes = p.icProcess?.votes ?? [];
+                      const icApproved = icVotes.filter((v: any) => v.vote === "APPROVE" || v.decision === "APPROVE").length;
+                      const icTotal = icVotes.length;
 
                       return (
                         <div key={p.id} className="relative group">
@@ -557,6 +462,38 @@ export default function DealsPage() {
                                 </Badge>
                               )}
                             </div>
+
+                            {/* Deadline indicator */}
+                            {p.nextDeadlineLabel && deadlineDate && (
+                              <div className={`mt-1.5 text-[10px] font-medium ${deadlineColor} flex items-center gap-1`}>
+                                <span>{deadlineDaysAway !== null && deadlineDaysAway < 0 ? "⚠" : "📅"}</span>
+                                <span>{p.nextDeadlineLabel}: {deadlineDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                                {deadlineDaysAway !== null && deadlineDaysAway < 0 && <span className="text-red-600 font-semibold">(overdue)</span>}
+                                {deadlineDaysAway !== null && deadlineDaysAway >= 0 && deadlineDaysAway <= 7 && <span>({deadlineDaysAway}d)</span>}
+                              </div>
+                            )}
+
+                            {/* Screening indicators — only for SCREENING stage */}
+                            {p.stage === "SCREENING" && (
+                              <div className="mt-1.5 flex items-center gap-2">
+                                {aiScore !== null ? (
+                                  <span className="flex items-center gap-1 text-[10px] font-medium">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${aiScore >= 80 ? "bg-emerald-500" : aiScore >= 60 ? "bg-amber-500" : "bg-red-500"}`} />
+                                    <span className="text-gray-600">Score: {Math.round(aiScore)}</span>
+                                  </span>
+                                ) : docCount > 0 ? (
+                                  <span className="text-[10px] text-gray-500">{docCount} doc{docCount !== 1 ? "s" : ""}</span>
+                                ) : null}
+                              </div>
+                            )}
+
+                            {/* IC vote status — only for IC_REVIEW stage */}
+                            {p.stage === "IC_REVIEW" && icTotal > 0 && (
+                              <div className="mt-1.5 text-[10px] text-gray-600 font-medium">
+                                {icApproved} approve / {icTotal} cast
+                              </div>
+                            )}
+
                             {showDDProgress && (
                               <div className="mt-2 flex items-center gap-2">
                                 <div className="flex-1 bg-gray-200 rounded-full h-1.5">
@@ -578,7 +515,7 @@ export default function DealsPage() {
                               <div className="mt-1 text-[10px] text-red-500 line-clamp-2">{p.killReasonText}</div>
                             )}
                             <div className="mt-2 flex justify-between text-[10px] text-gray-500">
-                              <span>{p.targetSize || ""}</span>
+                              <span>{p.targetCheckSize || p.targetSize || ""}</span>
                               <div className="flex items-center gap-1.5">
                                 {p.daysInStage != null && (
                                   <span
@@ -596,12 +533,20 @@ export default function DealsPage() {
                                 <span>{p.counterparty || ""}</span>
                               </div>
                             </div>
+                            {/* Freshness indicator */}
+                            <div className={`mt-1 text-[10px] font-medium ${freshnessColor}`}>
+                              {freshnessLabel}
+                            </div>
                           </Link>
                         </div>
                       );
                     })}
                     {items.length === 0 && (
-                      <div className="text-center py-6 text-[10px] text-gray-400">No deals in this stage</div>
+                      <div className="text-center py-6 text-[10px] text-gray-400">
+                        {s.k === "CLOSING"
+                          ? "No deals in closing. Deals move here after IC approval."
+                          : "No deals in this stage"}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -647,8 +592,6 @@ export default function DealsPage() {
           </button>
         </div>
       )}
-
-      <CreateDealWizard open={showCreate} onClose={() => setShowCreate(false)} />
 
       {/* Bulk Kill Modal */}
       <Modal
@@ -777,7 +720,7 @@ export default function DealsPage() {
                 </Badge>
               </div>
               <div className="mt-2 flex justify-between text-[10px] text-gray-500">
-                <span>{p.targetSize || ""}</span>
+                <span>{p.targetCheckSize || p.targetSize || ""}</span>
                 <span>{p.counterparty || ""}</span>
               </div>
             </Link>
@@ -817,7 +760,7 @@ export default function DealsPage() {
                 <div className="mt-1 text-[10px] text-red-500 line-clamp-2">{p.killReasonText}</div>
               )}
               <div className="mt-2 flex justify-between text-[10px] text-gray-500">
-                <span>{p.targetSize || ""}</span>
+                <span>{p.targetCheckSize || p.targetSize || ""}</span>
                 <span>{p.counterparty || ""}</span>
               </div>
             </Link>

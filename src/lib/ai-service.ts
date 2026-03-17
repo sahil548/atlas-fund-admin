@@ -106,6 +106,94 @@ async function gatherContext(firmId: string): Promise<DatabaseContext> {
   };
 }
 
+/**
+ * Gather deal-specific context for AI enrichment when user is on a deal page.
+ */
+async function gatherDealContext(dealId: string): Promise<string | null> {
+  try {
+    const deal = await prisma.deal.findUnique({
+      where: { id: dealId },
+      select: {
+        name: true,
+        stage: true,
+        sector: true,
+        description: true,
+        thesisNotes: true,
+        investmentRationale: true,
+        targetSize: true,
+        targetCheckSize: true,
+        targetReturn: true,
+        projectedExitTimeframe: true,
+        gpName: true,
+        counterparty: true,
+        source: true,
+        assetClass: true,
+        capitalInstrument: true,
+        participationStructure: true,
+        documents: {
+          select: { name: true, category: true, createdAt: true },
+          orderBy: { createdAt: "desc" as const },
+          take: 10,
+        },
+        notes: {
+          select: { content: true, createdAt: true },
+          orderBy: { createdAt: "desc" as const },
+          take: 5,
+        },
+        meetings: {
+          select: { title: true, summary: true, meetingDate: true },
+          orderBy: { meetingDate: "desc" as const },
+          take: 5,
+        },
+        activities: {
+          select: { description: true, createdAt: true },
+          orderBy: { createdAt: "desc" as const },
+          take: 10,
+        },
+      },
+    });
+
+    if (!deal) return null;
+
+    const parts: string[] = ["\nDEAL-SPECIFIC CONTEXT:"];
+
+    parts.push(`Name: ${deal.name} | Stage: ${deal.stage} | Sector: ${deal.sector || "N/A"}`);
+    if (deal.targetSize) parts.push(`Target Size: ${deal.targetSize} | Check Size: ${deal.targetCheckSize || "N/A"} | Target Return: ${deal.targetReturn || "N/A"}`);
+    if (deal.projectedExitTimeframe) parts.push(`Exit Timeframe: ${deal.projectedExitTimeframe}`);
+    if (deal.assetClass) parts.push(`Asset Class: ${deal.assetClass} | Instrument: ${deal.capitalInstrument || "N/A"} | Structure: ${deal.participationStructure || "N/A"}`);
+    if (deal.gpName) parts.push(`GP/Sponsor: ${deal.gpName} | Counterparty: ${deal.counterparty || "N/A"} | Source: ${deal.source || "N/A"}`);
+    if (deal.description) parts.push(`Description: ${deal.description.slice(0, 300)}`);
+    if (deal.investmentRationale) parts.push(`Investment Rationale: ${deal.investmentRationale.slice(0, 300)}`);
+    if (deal.thesisNotes) parts.push(`Thesis: ${deal.thesisNotes.slice(0, 300)}`);
+
+    if (deal.documents.length > 0) {
+      parts.push(`\nDocuments (${deal.documents.length}):`);
+      deal.documents.forEach((d) => parts.push(`  - ${d.name} [${d.category || "Uncategorized"}]`));
+    }
+
+    if (deal.notes.length > 0) {
+      parts.push(`\nRecent Notes (${deal.notes.length}):`);
+      deal.notes.forEach((n) => parts.push(`  - ${n.content.slice(0, 150)}`));
+    }
+
+    if (deal.meetings.length > 0) {
+      parts.push(`\nRecent Meetings (${deal.meetings.length}):`);
+      deal.meetings.forEach((m) =>
+        parts.push(`  - ${m.title}${m.summary ? `: ${m.summary.slice(0, 150)}` : ""}`)
+      );
+    }
+
+    if (deal.activities.length > 0) {
+      parts.push(`\nRecent Activity:`);
+      deal.activities.slice(0, 5).forEach((a) => parts.push(`  - ${a.description}`));
+    }
+
+    return parts.join("\n");
+  } catch {
+    return null;
+  }
+}
+
 function buildSystemPrompt(
   ctx: DatabaseContext,
   pageContext?: { pageType: string; entityId?: string; entityName?: string },
@@ -131,16 +219,22 @@ function buildSystemPrompt(
     : "No recent activity";
 
   // Build optional page context section (omit when pageType is "other" or absent)
-  const pageContextSection =
+  let pageContextSection = "";
+  if (
     pageContext &&
     pageContext.pageType !== "other" &&
     (pageContext.entityName || pageContext.entityId)
-      ? `
+  ) {
+    pageContextSection = `
 CURRENT PAGE CONTEXT:
 The GP is currently viewing ${pageContext.pageType}: "${pageContext.entityName || pageContext.entityId}" (id: ${pageContext.entityId || "unknown"}).
 When the user says "this deal", "this asset", or "this entity", they mean this specific item.
-`
-      : "";
+`;
+    // Add deal-specific deep context if available
+    if (pageContext.pageType === "deal" && pageContext.entityId && (pageContext as any)._dealContext) {
+      pageContextSection += (pageContext as any)._dealContext;
+    }
+  }
 
   return `You are Atlas AI, the intelligent assistant for Atlas — a fund administration platform managing fund entities, LP relationships, deal pipeline, and portfolio assets.
 
@@ -216,7 +310,17 @@ export async function searchAndAnalyze(
 
   try {
     const ctx = await gatherContext(firmId);
-    const systemPrompt = buildSystemPrompt(ctx, pageContext);
+
+    // Enrich page context with deal-specific data when on a deal page
+    let enrichedPageContext = pageContext;
+    if (pageContext?.pageType === "deal" && pageContext.entityId) {
+      const dealContext = await gatherDealContext(pageContext.entityId);
+      if (dealContext) {
+        enrichedPageContext = { ...pageContext, _dealContext: dealContext } as any;
+      }
+    }
+
+    const systemPrompt = buildSystemPrompt(ctx, enrichedPageContext);
     const model = await getModelForFirm(firmId);
 
     const response = await client.chat.completions.create({

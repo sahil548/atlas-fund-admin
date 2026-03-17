@@ -52,8 +52,8 @@ export async function GET(req: NextRequest) {
         icProcess: { include: { votes: true } },
         dealLead: { select: { id: true, name: true, initials: true } },
         closingChecklist: { select: { id: true, status: true } },
+        _count: { select: { documents: true } },
         activities: {
-          where: { activityType: { contains: "STAGE" } },
           select: { activityType: true, createdAt: true, metadata: true },
           orderBy: { createdAt: "desc" },
         },
@@ -70,10 +70,12 @@ export async function GET(req: NextRequest) {
     );
     const enteredAt = stageEntry ? new Date(stageEntry.createdAt) : new Date(deal.createdAt);
     const daysInStage = Math.max(0, Math.floor((now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24)));
+    // Compute last activity timestamp (activities already ordered desc)
+    const lastActivityAt = deal.activities[0]?.createdAt ?? deal.createdAt;
     // Strip raw activities before returning to client
     const { activities, ...rest } = deal;
     void activities; // suppress unused var warning
-    return { ...rest, daysInStage };
+    return { ...rest, daysInStage, lastActivityAt };
   });
 
   const paginated = buildPaginatedResult(dealsWithDaysInStage, params.limit, total);
@@ -84,6 +86,7 @@ export async function GET(req: NextRequest) {
     select: {
       stage: true,
       targetSize: true,
+      targetCheckSize: true,
       killReason: true,
       screeningResult: { select: { id: true } },
     },
@@ -130,12 +133,12 @@ export async function GET(req: NextRequest) {
   for (const stage of ["SCREENING", "DUE_DILIGENCE", "IC_REVIEW", "CLOSING"]) {
     valueByStage[stage] = allDeals
       .filter((d) => d.stage === stage)
-      .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
+      .reduce((sum, d) => sum + parseTargetSize(d.targetCheckSize ?? d.targetSize), 0);
   }
 
   const pipelineValue = allDeals
     .filter((d) => !["CLOSED", "DEAD"].includes(d.stage))
-    .reduce((sum, d) => sum + parseTargetSize(d.targetSize), 0);
+    .reduce((sum, d) => sum + parseTargetSize(d.targetCheckSize ?? d.targetSize), 0);
 
   const totalDeals = allDeals.length;
   const pastScreening = allDeals.filter((d) =>

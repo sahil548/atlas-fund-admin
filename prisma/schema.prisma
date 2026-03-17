@@ -218,6 +218,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   DONE
+  ARCHIVED
 }
 
 enum UserRole {
@@ -448,6 +449,9 @@ model Entity {
   // Phase 3: NAV proxy configuration
   navProxyConfig       Json?              // { cashPercent, otherAssetsPercent, liabilitiesPercent }
   contactInteractions  ContactInteraction[] @relation("EntityContactInteractions")
+  savedConversations   SavedConversation[]
+  unitClasses          UnitClass[]
+
 }
 
 model AccountingConnection {
@@ -556,6 +560,7 @@ model User {
   decisionMemberships DecisionMember[]
   auditLogs           AuditLog[]
   contactInteractions ContactInteraction[] @relation("UserContactInteractions")
+  savedConversations  SavedConversation[] @relation("UserSavedConversations")
 }
 
 // ============================================================
@@ -616,6 +621,7 @@ model Asset {
   expenses           AssetExpense[]
   activityEvents     ActivityEvent[]
   notes              Note[]
+  savedConversations SavedConversation[]
 
   @@index([assetClass])
   @@index([status])
@@ -835,6 +841,8 @@ model Investor {
   documents              Document[]
   notes                  Note[]
   metricSnapshots        MetricSnapshot[]
+  savedConversations     SavedConversation[]
+  ownershipUnits         OwnershipUnit[]
 }
 
 model Commitment {
@@ -850,6 +858,48 @@ model Commitment {
   entity   Entity   @relation(fields: [entityId], references: [id])
 
   @@unique([investorId, entityId])
+}
+
+model UnitClass {
+  id                  String          @id @default(cuid())
+  entityId            String
+  name                String
+  classType           UnitClassType   @default(LP_UNIT)
+  description         String?
+  unitPrice           Float           @default(1000)
+  totalAuthorized     Float?
+  totalIssued         Float           @default(0)
+  preferredReturnRate Float?
+  managementFeeRate   Float?
+  votingRights        Boolean         @default(true)
+  status              UnitClassStatus @default(ACTIVE)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  entity         Entity          @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  ownershipUnits OwnershipUnit[]
+
+  @@unique([entityId, name])
+  @@index([entityId])
+}
+
+model OwnershipUnit {
+  id              String              @id @default(cuid())
+  unitClassId     String
+  investorId      String
+  unitsIssued     Float
+  unitCost        Float
+  acquisitionDate DateTime
+  status          OwnershipUnitStatus @default(ACTIVE)
+  notes           String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  unitClass UnitClass @relation(fields: [unitClassId], references: [id], onDelete: Cascade)
+  investor  Investor  @relation(fields: [investorId], references: [id])
+
+  @@index([unitClassId])
+  @@index([investorId])
 }
 
 model SideLetter {
@@ -1185,6 +1235,13 @@ model Deal {
   previousStage  DealStage?   // Stage before kill (for revive)
   dealMetadata   Json?        // AI-extracted structured data (size, target return, terms, structure)
 
+  // Deadline tracking
+  nextDeadline      DateTime?
+  nextDeadlineLabel String?    // e.g., "Exclusivity expires", "IC Meeting"
+
+  // Investment horizon
+  projectedExitTimeframe String?  // e.g., "3-5 years", "2028", "7+ years"
+
   // CRM sourcing attribution
   sourcedByContactId  String?
   sourcedByContact    Contact? @relation("DealSourceContact", fields: [sourcedByContactId], references: [id])
@@ -1210,6 +1267,7 @@ model Deal {
   sourceAssets       Asset[]        @relation("AssetSourceDeal")
   contactInteractions ContactInteraction[] @relation("DealContactInteractions")
   coInvestors         DealCoInvestor[]
+  savedConversations  SavedConversation[]
 
   @@index([stage])
   @@index([firmId])
@@ -1529,6 +1587,31 @@ model Note {
   investor Investor? @relation(fields: [investorId], references: [id])
 }
 
+model SavedConversation {
+  id         String   @id @default(cuid())
+  title      String
+  messages   Json     // [{ role, content, timestamp }]
+  summary    String?
+  dealId     String?
+  assetId    String?
+  entityId   String?
+  investorId String?
+  authorId   String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+  asset    Asset?    @relation(fields: [assetId], references: [id])
+  entity   Entity?   @relation(fields: [entityId], references: [id])
+  investor Investor? @relation(fields: [investorId], references: [id])
+  author   User      @relation("UserSavedConversations", fields: [authorId], references: [id])
+
+  @@index([dealId])
+  @@index([assetId])
+  @@index([entityId])
+  @@index([investorId])
+}
+
 // ============================================================
 // TASKS & MEETINGS
 // ============================================================
@@ -1740,6 +1823,26 @@ enum FundraisingRoundStatus {
   OPEN
   FINAL_CLOSE
   CLOSED
+}
+
+enum UnitClassType {
+  LP_UNIT
+  GP_UNIT
+  CARRIED_INTEREST
+  MANAGEMENT
+}
+
+enum UnitClassStatus {
+  ACTIVE
+  FROZEN
+  RETIRED
+}
+
+enum OwnershipUnitStatus {
+  ACTIVE
+  REDEEMED
+  TRANSFERRED
+  CANCELLED
 }
 
 enum ProspectStatus {
@@ -2016,3 +2119,5 @@ model MetricSnapshot {
   @@unique([investorId, entityId, periodDate])
   @@index([investorId, periodDate])
 }
+
+// ============================================================

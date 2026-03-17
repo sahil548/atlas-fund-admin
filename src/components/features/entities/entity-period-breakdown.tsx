@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { fmt } from "@/lib/utils";
 
@@ -126,9 +126,8 @@ export function EntityPeriodBreakdown({ periodBreakdown }: EntityPeriodBreakdown
           </thead>
           <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
             {displayData.map((row) => (
-              <>
+              <Fragment key={row.period}>
                 <tr
-                  key={row.period}
                   className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                   onClick={() =>
                     setExpandedPeriod(expandedPeriod === row.period ? null : row.period)
@@ -205,7 +204,7 @@ export function EntityPeriodBreakdown({ periodBreakdown }: EntityPeriodBreakdown
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

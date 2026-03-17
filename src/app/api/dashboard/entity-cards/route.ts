@@ -101,9 +101,11 @@ export async function GET() {
       // Capital deployment from funded line items
       const cashFlows: { date: Date; amount: number }[] = [];
       let capitalDeployed = 0;
+      let totalCalled = 0;
 
       for (const call of entity.capitalCalls) {
         for (const li of call.lineItems) {
+          totalCalled += li.amount;
           if (li.status === "Funded" && li.paidDate) {
             capitalDeployed += li.amount;
             cashFlows.push({ date: new Date(li.paidDate), amount: -li.amount });
@@ -124,7 +126,7 @@ export async function GET() {
       }
 
       const totalCommitted = entity.totalCommitments ?? 0;
-      const dryPowder = Math.max(0, totalCommitted - capitalDeployed);
+      const dryPowder = Math.max(0, totalCalled - capitalDeployed);
       const deploymentPct =
         totalCommitted > 0
           ? Math.min(100, (capitalDeployed / totalCommitted) * 100)

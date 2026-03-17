@@ -53,6 +53,7 @@ interface Props {
     source?: string;
     counterparty?: string;
     sourcedByContactId?: string;
+    projectedExitTimeframe?: string;
     description?: string;
     thesisNotes?: string;
     investmentRationale?: string;
@@ -89,6 +90,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
     thesisNotes: "",
     investmentRationale: "",
     additionalContext: "",
+    projectedExitTimeframe: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -112,6 +114,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
         thesisNotes: deal.thesisNotes || "",
         investmentRationale: deal.investmentRationale || "",
         additionalContext: deal.additionalContext || "",
+        projectedExitTimeframe: deal.projectedExitTimeframe || "",
       });
   }, [open, deal]);
 
@@ -198,7 +201,7 @@ export function EditDealForm({ open, onClose, deal }: Props) {
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
             Deal Size & Return
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <FormField label="Total Raise">
               <Input
                 value={form.targetSize}
@@ -218,6 +221,13 @@ export function EditDealForm({ open, onClose, deal }: Props) {
                 value={form.targetReturn}
                 onChange={(e) => set("targetReturn", e.target.value)}
                 placeholder="e.g. 2.5-3x MOIC"
+              />
+            </FormField>
+            <FormField label="Exit Timeframe">
+              <Input
+                value={form.projectedExitTimeframe}
+                onChange={(e) => set("projectedExitTimeframe", e.target.value)}
+                placeholder="e.g. 3-5 years"
               />
             </FormField>
           </div>

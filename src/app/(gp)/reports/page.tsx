@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
@@ -185,7 +185,15 @@ function K1TrackingSection({ firmId }: { firmId: string }) {
   );
 }
 
-export default function ReportsPage() {
+export default function ReportsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="text-sm text-gray-400">Loading...</div>}>
+      <ReportsPage />
+    </Suspense>
+  );
+}
+
+function ReportsPage() {
   const { firmId } = useFirm();
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -239,7 +247,7 @@ export default function ReportsPage() {
     : null;
   const { data: k1Data, isLoading: k1Loading } = useSWR(k1Key, fetcher);
 
-  const entities: any[] = entitiesData?.data ?? entitiesData ?? [];
+  const entities: any[] = Array.isArray(entitiesData?.data) ? entitiesData.data : Array.isArray(entitiesData) ? entitiesData : [];
   const reports: any[] = Array.isArray(reportsData) ? reportsData : [];
   const k1Docs: any[] = Array.isArray(k1Data) ? k1Data : [];
 

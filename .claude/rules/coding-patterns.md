@@ -147,6 +147,31 @@ useEffect(() => { fetch("/api/deals").then(r => r.json()).then(setData); }, []);
 // ✅ Use SWR (handles caching, dedup, revalidation, loading state)
 const { data } = useSWR(`/api/deals?firmId=${firmId}`, fetcher);
 
+// ❌ Bare fragment inside .map() — missing key causes React warnings
+{items.map((item) => (
+  <>
+    <tr>...</tr>
+    <tr>...</tr>
+  </>
+))}
+// ✅ Always use keyed Fragment inside .map()
+import { Fragment } from "react";
+{items.map((item) => (
+  <Fragment key={item.id}>
+    <tr>...</tr>
+    <tr>...</tr>
+  </Fragment>
+))}
+
+// ❌ Nested <button> inside <button> — invalid HTML, causes hydration errors
+<button onClick={handleOuter}>
+  <button onClick={handleInner}>Inner</button>
+</button>
+// ✅ Use <div> with role="button" for outer clickable area
+<div role="button" tabIndex={0} onClick={handleOuter} onKeyDown={(e) => e.key === "Enter" && handleOuter()}>
+  <button onClick={(e) => { e.stopPropagation(); handleInner(); }}>Inner</button>
+</div>
+
 // ❌ Catching Prisma errors generically
 try { await prisma.deal.create({ data }) } catch (e) { return NextResponse.json({ error: "Failed" }, { status: 500 }); }
 // ✅ Return specific errors

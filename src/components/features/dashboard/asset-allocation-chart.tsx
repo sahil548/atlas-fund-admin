@@ -78,21 +78,21 @@ export function AssetAllocationChart() {
   const chartData: ChartEntry[] = data.outerRing.map((d: ChartEntry) => ({ ...d, _total: total }));
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-      <div className="mb-3">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="mb-2">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Asset Allocation</h3>
         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">By fair value across all entities</p>
       </div>
 
       <div className="relative flex justify-center">
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={220}>
           <PieChart>
             <Pie
               data={chartData}
               dataKey="value"
               cx="50%"
               cy="50%"
-              outerRadius={110}
+              outerRadius={100}
               innerRadius={60}
               paddingAngle={2}
               label={renderLabel as (props: unknown) => React.ReactNode}

@@ -414,9 +414,12 @@ export function RegulatoryFilingsTab({ entity, onUpdate }: RegulatoryFilingsTabP
 
       {/* ── Jurisdictions Section ── */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <button
-          className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+        <div
+          role="button"
+          tabIndex={0}
+          className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
           onClick={() => setJurisdictionsOpen(!jurisdictionsOpen)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setJurisdictionsOpen(!jurisdictionsOpen); } }}
         >
           <div className="flex items-center gap-2">
             <svg
@@ -435,7 +438,7 @@ export function RegulatoryFilingsTab({ entity, onUpdate }: RegulatoryFilingsTabP
           >
             + Add Jurisdiction
           </button>
-        </button>
+        </div>
 
         {jurisdictionsOpen && (
           <div className="border-t border-gray-100">
@@ -580,9 +583,12 @@ export function RegulatoryFilingsTab({ entity, onUpdate }: RegulatoryFilingsTabP
 
       {/* ── Filings Section ── */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <button
-          className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors"
+        <div
+          role="button"
+          tabIndex={0}
+          className="w-full flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
           onClick={() => setFilingsOpen(!filingsOpen)}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setFilingsOpen(!filingsOpen); } }}
         >
           <div className="flex items-center gap-2">
             <svg
@@ -606,7 +612,7 @@ export function RegulatoryFilingsTab({ entity, onUpdate }: RegulatoryFilingsTabP
           >
             + Add Filing
           </button>
-        </button>
+        </div>
 
         {filingsOpen && (
           <div className="border-t border-gray-100">

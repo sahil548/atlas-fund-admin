@@ -35,7 +35,12 @@ export async function GET(req: NextRequest) {
     }
     if (contextId) baseWhere.contextId = contextId;
     if (assigneeId) baseWhere.assigneeId = assigneeId;
-    if (params.filters?.status) baseWhere.status = params.filters.status;
+    // Filter by status — exclude ARCHIVED by default unless explicitly requested
+    if (params.filters?.status) {
+      baseWhere.status = params.filters.status;
+    } else {
+      baseWhere.status = { not: "ARCHIVED" };
+    }
     if (params.filters?.priority) baseWhere.priority = params.filters.priority;
     if (dealId) baseWhere.dealId = dealId;
     if (entityId) baseWhere.entityId = entityId;

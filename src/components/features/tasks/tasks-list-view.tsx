@@ -168,57 +168,57 @@ export function TasksListView({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <table className="w-full text-xs">
-        <thead>
-          <tr className="bg-gray-50 text-gray-500 text-left">
-            <th className="px-2 py-2.5 w-8"></th>
-            <th className="px-3 py-2.5 font-medium">Title</th>
-            <th className="px-3 py-2.5 font-medium">Status</th>
-            <th className="px-3 py-2.5 font-medium">Priority</th>
-            <th className="px-3 py-2.5 font-medium">Context</th>
-            <th className="px-3 py-2.5 font-medium">Assignee</th>
-            <th className="px-3 py-2.5 font-medium">Due Date</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {isLoading ? (
-            <TableSkeleton columns={7} />
-          ) : localTasks.length === 0 ? (
-            <tr>
-              <td colSpan={7}>
-                <EmptyState
-                  icon={<CheckSquare className="h-10 w-10" />}
-                  title={
-                    hasFilters
-                      ? "No results match your filters"
-                      : viewTab === "my"
-                      ? "No tasks assigned to you"
-                      : viewTab === "overdue"
-                      ? "No overdue tasks"
-                      : "No tasks yet"
-                  }
-                  description={
-                    !hasFilters && viewTab === "all"
-                      ? "Create a task to start tracking your to-dos"
-                      : undefined
-                  }
-                  action={
-                    !hasFilters && viewTab === "all"
-                      ? { label: "+ New Task", onClick: onNewTask }
-                      : undefined
-                  }
-                  filtered={hasFilters}
-                  onClearFilters={hasFilters ? onClearFilters : undefined}
-                />
-              </td>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-gray-50 text-gray-500 text-left">
+              <th className="px-2 py-2.5 w-8"></th>
+              <th className="px-3 py-2.5 font-medium">Title</th>
+              <th className="px-3 py-2.5 font-medium">Status</th>
+              <th className="px-3 py-2.5 font-medium">Priority</th>
+              <th className="px-3 py-2.5 font-medium">Context</th>
+              <th className="px-3 py-2.5 font-medium">Assignee</th>
+              <th className="px-3 py-2.5 font-medium">Due Date</th>
             </tr>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {isLoading ? (
+              <TableSkeleton columns={7} />
+            ) : localTasks.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <EmptyState
+                    icon={<CheckSquare className="h-10 w-10" />}
+                    title={
+                      hasFilters
+                        ? "No results match your filters"
+                        : viewTab === "my"
+                        ? "No tasks assigned to you"
+                        : viewTab === "overdue"
+                        ? "No overdue tasks"
+                        : "No tasks yet"
+                    }
+                    description={
+                      !hasFilters && viewTab === "all"
+                        ? "Create a task to start tracking your to-dos"
+                        : undefined
+                    }
+                    action={
+                      !hasFilters && viewTab === "all"
+                        ? { label: "+ New Task", onClick: onNewTask }
+                        : undefined
+                    }
+                    filtered={hasFilters}
+                    onClearFilters={hasFilters ? onClearFilters : undefined}
+                  />
+                </td>
+              </tr>
+            ) : (
               <SortableContext items={localTasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                 {localTasks.map((task: any) => (
                   <SortableTaskRow
@@ -228,10 +228,10 @@ export function TasksListView({
                   />
                 ))}
               </SortableContext>
-            </DndContext>
-          )}
-        </tbody>
-      </table>
-    </div>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </DndContext>
   );
 }

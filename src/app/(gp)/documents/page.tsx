@@ -69,9 +69,10 @@ const DOC_FILTERS = [
 
 export default function DocumentsPage() {
   const { firmId } = useFirm();
-  const { data: entities } = useSWR<EntityOption[]>(`/api/entities?firmId=${firmId}`, (url: string) =>
+  const { data: entitiesRaw } = useSWR(`/api/entities?firmId=${firmId}`, (url: string) =>
     fetch(url).then((r) => r.json()).then((r) => r.data ?? r),
   );
+  const entities: EntityOption[] = Array.isArray(entitiesRaw) ? entitiesRaw : [];
   const { data: assets } = useSWR<AssetOption[]>(`/api/assets?firmId=${firmId}`, (url: string) =>
     fetch(url).then((r) => r.json()).then((r) => r.data ?? r),
   );

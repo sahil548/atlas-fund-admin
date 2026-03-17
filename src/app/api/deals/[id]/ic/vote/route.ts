@@ -93,27 +93,80 @@ export async function POST(
   let quorumMet = false;
   let thresholdMet = false;
 
+  let autoDecision: string | null = null;
+
   if (structure) {
     const voterCount = structure.members.filter(
       (m) => m.role === "VOTER" || !m.role,
     ).length;
     quorumMet = totalVotes >= structure.quorumRequired;
     thresholdMet = approveCount >= structure.approvalThreshold;
+    const allVotersVoted = totalVotes >= voterCount;
 
-    // Update IC process status based on vote counts (do not auto-advance)
-    await prisma.iCProcess.update({
-      where: { id: deal.icProcess.id },
-      data: {
-        status: thresholdMet && quorumMet
-          ? "threshold_met"
-          : `${totalVotes}_of_${voterCount}_voted`,
-      },
-    });
+    // Auto-decision logic:
+    // 1. Quorum + threshold met → auto APPROVED
+    // 2. All voters voted + threshold NOT met → auto REJECTED → deal DEAD
+    // (SEND_BACK already handled above for individual votes)
+    if (thresholdMet && quorumMet && !deal.icProcess.finalDecision) {
+      autoDecision = "APPROVED";
+      await prisma.iCProcess.update({
+        where: { id: deal.icProcess.id },
+        data: {
+          finalDecision: "APPROVED",
+          status: "approved",
+          decidedAt: new Date(),
+          decisionNotes: `Auto-approved: ${approveCount} approvals met threshold of ${structure.approvalThreshold}`,
+        },
+      });
+      await prisma.dealActivity.create({
+        data: {
+          dealId,
+          activityType: "IC_DECISION",
+          description: `IC auto-approved: ${approveCount} approvals met threshold of ${structure.approvalThreshold}`,
+          metadata: { decision: "APPROVED", approveCount, totalVotes, threshold: structure.approvalThreshold },
+        },
+      });
+    } else if (allVotersVoted && !thresholdMet && !deal.icProcess.finalDecision) {
+      autoDecision = "REJECTED";
+      await prisma.iCProcess.update({
+        where: { id: deal.icProcess.id },
+        data: {
+          finalDecision: "REJECTED",
+          status: "rejected",
+          decidedAt: new Date(),
+          decisionNotes: `Auto-rejected: ${approveCount} approvals did not meet threshold of ${structure.approvalThreshold} (all ${voterCount} members voted)`,
+        },
+      });
+      await prisma.dealActivity.create({
+        data: {
+          dealId,
+          activityType: "IC_DECISION",
+          description: `IC auto-rejected: ${approveCount}/${structure.approvalThreshold} approvals (all ${voterCount} voted)`,
+          metadata: { decision: "REJECTED", approveCount, totalVotes, threshold: structure.approvalThreshold },
+        },
+      });
+      // Move deal to DEAD
+      await prisma.deal.update({
+        where: { id: dealId },
+        data: { stage: "DEAD", killReason: "IC Rejected", killReasonText: `IC vote: ${approveCount}/${structure.approvalThreshold} approvals insufficient`, previousStage: "IC_REVIEW" },
+      });
+    } else {
+      // Just update status string
+      await prisma.iCProcess.update({
+        where: { id: deal.icProcess.id },
+        data: {
+          status: thresholdMet && quorumMet
+            ? "threshold_met"
+            : `${totalVotes}_of_${voterCount}_voted`,
+        },
+      });
+    }
   }
 
   return NextResponse.json(
     {
       vote: voteRecord,
+      autoDecision,
       summary: {
         totalVotes,
         approveCount,

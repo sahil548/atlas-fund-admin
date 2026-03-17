@@ -40,9 +40,19 @@ interface DealForDDTab {
 
 interface DealDDTabProps {
   deal: DealForDDTab;
+  triggerRunAll?: boolean;
+  onRunAllComplete?: () => void;
+  onProgressUpdate?: (progress: {
+    total: number;
+    completed: number;
+    phase?: string;
+    workstreamNames?: string[];
+    running?: Set<string>;
+    done?: Set<string>;
+  } | null) => void;
 }
 
-export function DealDDTab({ deal }: DealDDTabProps) {
+export function DealDDTab({ deal, triggerRunAll, onRunAllComplete, onProgressUpdate }: DealDDTabProps) {
   const toast = useToast();
   const [selectedWsId, setSelectedWsId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -66,12 +76,36 @@ export function DealDDTab({ deal }: DealDDTabProps) {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [savingTask, setSavingTask] = useState(false);
 
+  // Trigger analysis from parent (process bar button)
+  useEffect(() => {
+    if (triggerRunAll && !analyzingAll && analyzingWs === null) {
+      runAllAnalysis();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerRunAll]);
+
   const allWorkstreams = (deal.workstreams || []) as any[];
   // IC_MEMO is not a workstream - it's in AIScreeningResult
   const workstreams = allWorkstreams.filter((w: any) => w.analysisType !== "IC_MEMO");
   const sortedWorkstreams = [...workstreams].sort(
     (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
   );
+
+  // Wrapper to update both local state and page-level progress banner
+  function updateProgress(updater: typeof allProgress | ((prev: typeof allProgress) => typeof allProgress)) {
+    setAllProgress((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (onProgressUpdate) {
+        if (next) {
+          const wsNames = sortedWorkstreams.map((w: any) => w.name);
+          onProgressUpdate({ ...next, workstreamNames: wsNames });
+        } else {
+          onProgressUpdate(null);
+        }
+      }
+      return next;
+    });
+  }
 
   // Extract team members for assignee dropdown (from the deal or from workstream assignees)
   const teamMembers: { id: string; name: string; initials: string }[] = [];
@@ -193,7 +227,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     const totalSteps = targetWorkstreams.length + 1;
     const runningSet = new Set<string>();
     const doneSet = new Set<string>();
-    setAllProgress({
+    updateProgress({
       total: totalSteps,
       completed: 0,
       running: new Set(runningSet),
@@ -210,7 +244,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       while (nextIdx < targetWorkstreams.length) {
         const ws = targetWorkstreams[nextIdx++];
         runningSet.add(ws.name);
-        setAllProgress((p) =>
+        updateProgress((p) =>
           p ? { ...p, running: new Set(runningSet), done: new Set(doneSet) } : null,
         );
         const type = ws.analysisType || NAME_TO_TYPE[ws.name] || "DD_CUSTOM";
@@ -243,7 +277,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
         completedCount++;
         doneSet.add(ws.name);
         runningSet.delete(ws.name);
-        setAllProgress((p) =>
+        updateProgress((p) =>
           p
             ? {
                 ...p,
@@ -263,7 +297,7 @@ export function DealDDTab({ deal }: DealDDTabProps) {
     );
 
     // Phase 2: Auto-generate IC Memo
-    setAllProgress((p) =>
+    updateProgress((p) =>
       p ? { ...p, phase: "Generating IC Memo", running: new Set(["IC Memo"]) } : null,
     );
     try {
@@ -286,9 +320,10 @@ export function DealDDTab({ deal }: DealDDTabProps) {
       );
     }
 
-    setAllProgress(null);
+    updateProgress(null);
     mutate(`/api/deals/${deal.id}`);
     setAnalyzingAll(false);
+    onRunAllComplete?.();
   }
 
   async function patchWorkstream(wsId: string, updates: Record<string, unknown>) {
@@ -477,82 +512,13 @@ export function DealDDTab({ deal }: DealDDTabProps) {
                   </Button>
                 ) : null;
               })()}
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => runAllAnalysis()}
-                disabled={analyzingAll || analyzingWs !== null}
-              >
-                {analyzingAll ? "Analyzing..." : "Run All Analysis"}
-              </Button>
+              {/* "Run All Analysis" button lives in the page-level process bar */}
             </div>
           </div>
         </div>
       )}
 
-      {/* Parallel Analysis Progress Banner */}
-      {allProgress && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 animate-in fade-in">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-xs font-semibold text-indigo-800">
-                {allProgress.phase === "Generating IC Memo"
-                  ? "Generating IC Memo..."
-                  : `Running ${allProgress.running.size} workstream${allProgress.running.size !== 1 ? "s" : ""} in parallel`}
-              </span>
-            </div>
-            <span className="text-xs text-indigo-600 font-medium">
-              {allProgress.completed}/{allProgress.total} complete
-            </span>
-          </div>
-          <div className="bg-indigo-200 rounded-full h-1.5 mb-2">
-            <div
-              className="h-1.5 rounded-full bg-indigo-500 transition-all duration-500"
-              style={{
-                width: `${allProgress.total > 0 ? Math.round((allProgress.completed / allProgress.total) * 100) : 0}%`,
-              }}
-            />
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {sortedWorkstreams.map((ws) => {
-              const isDone = allProgress.done.has(ws.name);
-              const isRunning = allProgress.running.has(ws.name);
-              return (
-                <span
-                  key={ws.id}
-                  className={`text-[10px] px-1.5 py-0.5 rounded transition-colors duration-300 ${
-                    isDone
-                      ? "bg-emerald-100 text-emerald-700"
-                      : isRunning
-                        ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
-                        : "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  {isDone ? "\u2713 " : isRunning ? "\u25CF " : ""}
-                  {ws.name}
-                </span>
-              );
-            })}
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded transition-colors duration-300 ${
-                allProgress.running.has("IC Memo")
-                  ? "bg-indigo-200 text-indigo-800 font-semibold animate-pulse"
-                  : allProgress.done.has("IC Memo")
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              {allProgress.done.has("IC Memo")
-                ? "\u2713 "
-                : allProgress.running.has("IC Memo")
-                  ? "\u25CF "
-                  : ""}
-              IC Memo
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Progress banner removed — page-level analysisProgress banner handles this */}
 
       {/* SCREENING stage empty state */}
       {deal.stage === "SCREENING" && workstreams.length === 0 && (

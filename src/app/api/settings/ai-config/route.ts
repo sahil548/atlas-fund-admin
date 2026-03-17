@@ -28,15 +28,16 @@ function configResponse(config: {
   });
 }
 
-export async function GET(_req: Request) {
+export async function GET(req: Request) {
   const authUser = await getAuthUser();
-  if (!authUser) return unauthorized();
-  if (authUser.role === "GP_TEAM") {
+  const url = new URL(req.url);
+  const firmId = authUser?.firmId || url.searchParams.get("firmId");
+  if (!firmId) return unauthorized();
+
+  if (authUser && authUser.role === "GP_TEAM") {
     const perms = await getEffectivePermissions(authUser.id);
     if (!checkPermission(perms, "settings", "read_only")) return forbidden();
   }
-
-  const firmId = authUser.firmId!;
 
   const config = await prisma.aIConfiguration.findUnique({
     where: { firmId },
@@ -60,13 +61,14 @@ export async function GET(_req: Request) {
 
 export async function PUT(req: Request) {
   const authUser = await getAuthUser();
-  if (!authUser) return unauthorized();
-  if (authUser.role === "GP_TEAM") {
+  const url = new URL(req.url);
+  const firmId = authUser?.firmId || url.searchParams.get("firmId");
+  if (!firmId) return unauthorized();
+
+  if (authUser && authUser.role === "GP_TEAM") {
     const perms = await getEffectivePermissions(authUser.id);
     if (!checkPermission(perms, "settings", "full")) return forbidden();
   }
-
-  const firmId = authUser.firmId!;
 
   const { data, error } = await parseBody(req, UpdateAIConfigSchema);
   if (error) return error;

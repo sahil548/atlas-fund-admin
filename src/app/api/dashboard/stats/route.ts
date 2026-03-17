@@ -63,7 +63,12 @@ export async function GET() {
         where: assetRelFilter,
         include: { entityAllocations: { include: { entity: true } } },
       }),
-      prisma.deal.findMany({ where: directFilter }),
+      prisma.deal.findMany({
+        where: {
+          ...directFilter,
+          stage: { notIn: ["CLOSED", "DEAD"] },
+        },
+      }),
       prisma.capitalCall.findMany({
         where: entityRelFilter,
         include: { entity: { select: { name: true } } },

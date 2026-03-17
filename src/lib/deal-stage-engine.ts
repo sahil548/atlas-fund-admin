@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { postICReviewToSlack } from "@/lib/slack";
 import { notifyGPTeam } from "@/lib/notifications";
 import { getClosingAutoTasks } from "@/lib/deal-auto-tasks";
+import { CLOSING_CHECKLIST_TEMPLATES } from "@/lib/closing-templates";
 import { logger } from "@/lib/logger";
 
 /**
@@ -57,6 +58,20 @@ export async function checkAndAdvanceDeal(dealId: string) {
             contextType: "deal",
             contextId: deal.id,
           },
+        });
+      }
+
+      // Auto-initialize closing checklist from templates
+      const existingChecklist = await prisma.closingChecklist.count({ where: { dealId } });
+      if (existingChecklist === 0) {
+        await prisma.closingChecklist.createMany({
+          data: CLOSING_CHECKLIST_TEMPLATES.map((t, i) => ({
+            dealId,
+            title: t.title,
+            order: i + 1,
+            status: "NOT_STARTED" as const,
+            isCustom: false,
+          })),
         });
       }
 
@@ -260,6 +275,12 @@ export async function killDeal(
     },
   });
 
+  // Archive all non-DONE tasks so they don't clutter the Tasks module
+  await prisma.task.updateMany({
+    where: { dealId, status: { not: "DONE" } },
+    data: { status: "ARCHIVED" },
+  });
+
   // Non-blocking notification
   notifyGPTeam({
     type: "STAGE_CHANGE",
@@ -304,6 +325,12 @@ export async function reviveDeal(dealId: string) {
         revivedToStage,
       },
     },
+  });
+
+  // Restore archived tasks back to TODO
+  await prisma.task.updateMany({
+    where: { dealId, status: "ARCHIVED" },
+    data: { status: "TODO" },
   });
 
   // Non-blocking notification
@@ -586,6 +613,20 @@ export async function advanceToClosing(dealId: string) {
         contextType: "deal",
         contextId: deal.id,
       },
+    });
+  }
+
+  // Auto-initialize closing checklist from templates
+  const existingChecklist = await prisma.closingChecklist.count({ where: { dealId } });
+  if (existingChecklist === 0) {
+    await prisma.closingChecklist.createMany({
+      data: CLOSING_CHECKLIST_TEMPLATES.map((t, i) => ({
+        dealId,
+        title: t.title,
+        order: i + 1,
+        status: "NOT_STARTED" as const,
+        isCustom: false,
+      })),
     });
   }
 

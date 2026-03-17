@@ -1,15 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import { logger } from "@/lib/logger";
 import { InlineEditField } from "./inline-edit-field";
+import { InlineSelectField } from "./inline-select-field";
 import { DealEntitySection } from "./deal-entity-section";
 import { mutate } from "swr";
-import type { AnalysisProgress } from "@/app/(gp)/deals/[id]/page";
 import {
   ASSET_CLASS_LABELS,
   ASSET_CLASS_COLORS,
@@ -17,8 +19,10 @@ import {
   PARTICIPATION_LABELS,
   PARTICIPATION_COLORS,
 } from "@/lib/constants";
-import { formatDate } from "@/lib/utils";
+import { formatDate, fmt } from "@/lib/utils";
 import { FileDown } from "lucide-react";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 // Memo sections, previous versions, and workstream shapes come from JSON fields —
 // remaining any usages below are for those API response fields only.
@@ -42,11 +46,13 @@ interface DealForOverviewTab {
   thesisNotes: string | null;
   description: string | null;
   additionalContext: string | null;
+  projectedExitTimeframe?: string | null;
   dealMetadata?: Record<string, unknown> | null;
   dealLead?: { id: string; name?: string | null; initials?: string | null } | null;
   documents?: Array<unknown>;
   notes?: Array<unknown>;
   workstreams?: Array<{ analysisType?: string | null }>;
+  sourceAssets?: Array<{ id: string; name: string; costBasis?: number | null; fairValue?: number | null; moic?: number | null; irr?: number | null }>;
   screeningResult?: {
     memo?: Record<string, any> | null;
     memoGeneratedAt?: string | null;
@@ -123,19 +129,13 @@ const DEBT_FIELDS = [
 
 interface DealOverviewTabProps {
   deal: DealForOverviewTab;
-  analysisProgress: AnalysisProgress | null;
-  ddStarting: boolean;
   regenerating: boolean;
-  startScreening: () => void;
   regenerateMemo: () => void;
 }
 
 export function DealOverviewTab({
   deal,
-  analysisProgress,
-  ddStarting,
   regenerating,
-  startScreening,
   regenerateMemo,
 }: DealOverviewTabProps) {
   const [sourceDataOpen, setSourceDataOpen] = useState(false);
@@ -145,6 +145,52 @@ export function DealOverviewTab({
   const [extracting, setExtracting] = useState(false);
   const [exportingPDF, setExportingPDF] = useState(false);
   const toast = useToast();
+  const { firmId } = useFirm();
+
+  // Directory data for party selectors
+  const { data: companies, isLoading: companiesLoading } = useSWR(
+    `/api/companies?firmId=${firmId}`,
+    fetcher
+  );
+  const { data: contactsData, isLoading: contactsLoading } = useSWR(
+    `/api/contacts?firmId=${firmId}&limit=200`,
+    fetcher
+  );
+  const contacts = contactsData?.contacts || contactsData || [];
+
+  // Build selector options
+  const gpOptions = useMemo(() => {
+    if (!companies) return [];
+    const gpCompanies = (companies as any[]).filter((c: any) => c.type === "GP");
+    const otherCompanies = (companies as any[]).filter((c: any) => c.type !== "GP");
+    return [
+      ...gpCompanies.map((c: any) => ({ value: c.name, label: c.name, sublabel: "GP" })),
+      ...otherCompanies.map((c: any) => ({ value: c.name, label: c.name, sublabel: c.type?.replace(/_/g, " ") })),
+    ];
+  }, [companies]);
+
+  const counterpartyOptions = useMemo(() => {
+    if (!companies) return [];
+    const cpCompanies = (companies as any[]).filter((c: any) =>
+      ["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)
+    );
+    const otherCompanies = (companies as any[]).filter((c: any) =>
+      !["COUNTERPARTY", "OPERATING_COMPANY"].includes(c.type)
+    );
+    return [
+      ...cpCompanies.map((c: any) => ({ value: c.name, label: c.name, sublabel: c.type?.replace(/_/g, " ") })),
+      ...otherCompanies.map((c: any) => ({ value: c.name, label: c.name, sublabel: c.type?.replace(/_/g, " ") })),
+    ];
+  }, [companies]);
+
+  const sourceOptions = useMemo(() => {
+    if (!contacts) return [];
+    return (contacts as any[]).map((c: any) => ({
+      value: `${c.firstName} ${c.lastName}`.trim(),
+      label: `${c.firstName} ${c.lastName}`.trim(),
+      sublabel: c.company?.name || c.email || c.type,
+    }));
+  }, [contacts]);
 
   const isScreening = deal.stage === "SCREENING";
   const workstreams = ((deal.workstreams || []) as any[]).filter(
@@ -154,7 +200,7 @@ export function DealOverviewTab({
   // IC Memo data
   const sr = deal.screeningResult;
   const hasMemo = !!sr?.memo;
-  const isAnalyzing = !!analysisProgress;
+  const isAnalyzing = false;
 
   const previousMemoVersions: any[] = sr?.previousVersions
     ? (Array.isArray(sr.previousVersions) ? sr.previousVersions.filter((v: any) => v.memo) : [])
@@ -262,72 +308,7 @@ export function DealOverviewTab({
       {/* ── SCREENING stage ── */}
       {isScreening && (
         <>
-          {/* Screening Stage Banner */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-5 text-white">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm font-bold flex items-center gap-2">
-                  Screening Stage
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30">
-                    ACTIVE
-                  </span>
-                </div>
-                <p className="text-xs text-gray-300 mt-0.5">
-                  Upload documents and review deal details, then run AI screening to generate workstream analyses and an IC Memo.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Run AI Screening CTA */}
-          <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 border-2 border-dashed border-purple-300 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-7 h-7 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <div className="text-base font-semibold text-purple-900">Ready to screen this deal?</div>
-                <p className="text-sm text-purple-700 mt-1">
-                  AI will analyze all uploaded documents across {workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} and generate a unified IC Memo with scoring and recommendations.
-                </p>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-purple-500">
-                  <span>{deal.documents?.length ?? 0} document{(deal.documents?.length ?? 0) !== 1 ? "s" : ""} uploaded</span>
-                  <span>·</span>
-                  <span>{workstreams.length} workstream{workstreams.length !== 1 ? "s" : ""} configured</span>
-                </div>
-                {!analysisProgress && (
-                  <div className="mt-4">
-                    <Button loading={ddStarting} onClick={startScreening} className="bg-purple-600 hover:bg-purple-700 text-white px-6">
-                      Run AI Screening
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Review Details */}
-          <div>
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Review Details</div>
-            <div className="grid grid-cols-3 gap-6">
-              <div className="col-span-2 space-y-6">
-                {renderDealFields()}
-              </div>
-              <div className="space-y-3">
-                <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
-                <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
-                <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
-              </div>
-            </div>
-          </div>
-
+          {renderDealFields()}
           {/* Investment Vehicle */}
           <DealEntitySection dealId={deal.id} />
         </>
@@ -336,97 +317,72 @@ export function DealOverviewTab({
       {/* ── Post-screening: 4-Section Dashboard ── */}
       {!isScreening && (
         <>
-          {/* ═══ SECTION 1: Header Card ═══ */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl p-5 text-white">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h2 className="text-xl font-bold truncate">{deal.name}</h2>
-                  {deal.aiScore != null && (
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                      deal.aiScore >= 70 ? "bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-400/40" :
-                      deal.aiScore >= 50 ? "bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/40" :
-                      "bg-red-400/20 text-red-300 ring-1 ring-red-400/40"
-                    }`}>
-                      {deal.aiScore}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge color={stageColor[deal.stage] || "gray"}>
-                    {stageLabel[deal.stage] || deal.stage}
-                  </Badge>
-                  <Badge color={ASSET_CLASS_COLORS[deal.assetClass] || "gray"}>
-                    {ASSET_CLASS_LABELS[deal.assetClass] || deal.assetClass}
-                  </Badge>
-                  {deal.capitalInstrument && (
-                    <Badge color={deal.capitalInstrument === "DEBT" ? "orange" : "blue"}>
-                      {CAPITAL_INSTRUMENT_LABELS[deal.capitalInstrument] || deal.capitalInstrument}
-                    </Badge>
-                  )}
-                  {deal.participationStructure && (
-                    <Badge color={PARTICIPATION_COLORS[deal.participationStructure] || "gray"}>
-                      {PARTICIPATION_LABELS[deal.participationStructure] || deal.participationStructure}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="mt-3 flex items-center gap-4 text-sm text-gray-300 flex-wrap">
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span>{deal.dealLead?.name || "No lead assigned"}</span>
-                  </div>
-                  {deal.targetSize && (
-                    <div className="flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{deal.targetSize}</span>
-                    </div>
-                  )}
-                  {deal.source && (
-                    <span className="text-xs text-gray-400">Source: {deal.source}</span>
-                  )}
-                  {deal.counterparty && (
-                    <span className="text-xs text-gray-400">Counterparty: {deal.counterparty}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Deal lead initials avatar */}
-              {deal.dealLead && (
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-sm font-bold text-white flex-shrink-0 ml-4">
-                  {deal.dealLead.initials || deal.dealLead.name?.charAt(0) || "?"}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ═══ SECTION 2: Key Metrics ═══ */}
+          {/* Stage-specific quick stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard
-              label="Target Return"
-              value={deal.targetReturn || metadata.targetReturn || "--"}
-              small
-            />
-            <StatCard
-              label="Target Check Size"
-              value={deal.targetCheckSize || metadata.targetCheckSize || "--"}
-              small
-            />
-            <StatCard
-              label="Deal Size"
-              value={deal.targetSize || metadata.dealSize || "--"}
-              small
-            />
-            <StatCard
-              label="Projected Cash Flow"
-              value={metadata.projectedCashFlow || "Not available"}
-              small
-            />
+            {deal.stage === "DUE_DILIGENCE" && (() => {
+              const ws = ((deal.workstreams || []) as any[]).filter((w: any) => w.analysisType !== "IC_MEMO");
+              const complete = ws.filter((w: any) => w.status === "COMPLETE").length;
+              const inProgress = ws.filter((w: any) => w.status === "IN_PROGRESS").length;
+              return (
+                <>
+                  <StatCard label="Workstreams" value={`${complete}/${ws.length} done`} small />
+                  <StatCard label="In Progress" value={String(inProgress)} small />
+                  <StatCard label="Target Return" value={deal.targetReturn || "--"} small />
+                  <StatCard label="Exit Timeframe" value={deal.projectedExitTimeframe || "--"} small />
+                </>
+              );
+            })()}
+
+            {deal.stage === "IC_REVIEW" && (() => {
+              const votes = (deal as any).icProcess?.votes || [];
+              const approve = votes.filter((v: any) => v.vote === "APPROVE").length;
+              const structure = (deal as any).targetEntity?.decisionStructure;
+              const voterCount = structure?.members?.filter((m: any) => m.role === "VOTER" || !m.role).length || votes.length;
+              return (
+                <>
+                  <StatCard label="IC Votes" value={`${votes.length}/${voterCount}`} small />
+                  <StatCard label="Approvals" value={String(approve)} small />
+                  <StatCard label="AI Score" value={deal.aiScore != null ? String(deal.aiScore) : "--"} small />
+                  <StatCard label="Exit Timeframe" value={deal.projectedExitTimeframe || "--"} small />
+                </>
+              );
+            })()}
+
+            {deal.stage === "CLOSING" && (() => {
+              const items = ((deal as any).closingChecklist || []) as any[];
+              const complete = items.filter((i: any) => i.completed || i.status === "COMPLETE").length;
+              return (
+                <>
+                  <StatCard label="Closing Progress" value={`${complete}/${items.length}`} small />
+                  <StatCard label="Target Check" value={deal.targetCheckSize || "--"} small />
+                  <StatCard label="Target Return" value={deal.targetReturn || "--"} small />
+                  <StatCard label="Exit Timeframe" value={deal.projectedExitTimeframe || "--"} small />
+                </>
+              );
+            })()}
+
+            {deal.stage === "CLOSED" && (() => {
+              const asset = deal.sourceAssets?.[0];
+              const costBasis = asset?.costBasis;
+              const fairValue = asset?.fairValue;
+              return (
+                <>
+                  <StatCard label="Cost Basis" value={costBasis != null ? fmt(costBasis) : "--"} small />
+                  <StatCard label="Fair Value" value={fairValue != null ? fmt(fairValue) : "--"} small />
+                  <StatCard label="MOIC" value={asset?.moic != null ? `${asset.moic.toFixed(2)}x` : "--"} small />
+                  <StatCard label="IRR" value={asset?.irr != null ? `${(asset.irr * 100).toFixed(1)}%` : "--"} small />
+                </>
+              );
+            })()}
+
+            {deal.stage === "DEAD" && (
+              <>
+                <StatCard label="Target Return" value={deal.targetReturn || "--"} small />
+                <StatCard label="Deal Size" value={deal.targetSize || "--"} small />
+                <StatCard label="Target Check" value={deal.targetCheckSize || "--"} small />
+                <StatCard label="AI Score" value={deal.aiScore != null ? String(deal.aiScore) : "--"} small />
+              </>
+            )}
           </div>
 
           {/* ═══ SECTIONS 3 & 4: IC Memo Summary + Deal Terms (2-col on lg) ═══ */}
@@ -694,7 +650,6 @@ export function DealOverviewTab({
                     {renderDealFields()}
                   </div>
                   <div className="space-y-3">
-                    <StatCard label="Stage" value={stageLabel[deal.stage] || deal.stage} small />
                     <StatCard label="Documents" value={String(deal.documents?.length ?? 0)} small />
                     <StatCard label="Notes" value={String(deal.notes?.length ?? 0)} small />
                   </div>
@@ -716,10 +671,11 @@ export function DealOverviewTab({
         {/* Deal Size & Return */}
         <div>
           <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">Deal Size &amp; Return</h4>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <InlineEditField label="Total Raise" value={deal.targetSize} field="targetSize" dealId={deal.id} placeholder="e.g. $50M" />
             <InlineEditField label="Target Check Size" value={deal.targetCheckSize} field="targetCheckSize" dealId={deal.id} placeholder="e.g. $10M" />
             <InlineEditField label="Target Return" value={deal.targetReturn} field="targetReturn" dealId={deal.id} placeholder="e.g. 2.5x / 25% IRR" />
+            <InlineEditField label="Exit Timeframe" value={deal.projectedExitTimeframe ?? null} field="projectedExitTimeframe" dealId={deal.id} placeholder="e.g. 3-5 years" />
           </div>
         </div>
 
@@ -731,9 +687,9 @@ export function DealOverviewTab({
               <div className="text-[11px] text-gray-500 mb-1">Deal Lead</div>
               <div className="text-sm font-medium text-gray-900">{deal.dealLead?.name || "Unassigned"}</div>
             </div>
-            <InlineEditField label="GP Name" value={deal.gpName} field="gpName" dealId={deal.id} placeholder="e.g. Acme Capital" />
-            <InlineEditField label="Source" value={deal.source} field="source" dealId={deal.id} placeholder="e.g. Direct / Broker" />
-            <InlineEditField label="Counterparty" value={deal.counterparty} field="counterparty" dealId={deal.id} placeholder="e.g. Seller LLC" />
+            <InlineSelectField label="GP / Sponsor" value={deal.gpName} field="gpName" dealId={deal.id} options={gpOptions} placeholder="Select from directory..." allowCustom loading={companiesLoading} />
+            <InlineSelectField label="Source" value={deal.source} field="source" dealId={deal.id} options={sourceOptions} placeholder="Select from directory..." allowCustom loading={contactsLoading} />
+            <InlineSelectField label="Counterparty" value={deal.counterparty} field="counterparty" dealId={deal.id} options={counterpartyOptions} placeholder="Select from directory..." allowCustom loading={companiesLoading} />
           </div>
         </div>
 

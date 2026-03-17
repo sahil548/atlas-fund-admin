@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
 import { cn } from "@/lib/utils";
 import type { ActivityItem, ActivityType } from "@/lib/activity-feed-helpers";
+
+const LAST_VISIT_KEY = "atlas_dashboard_last_visit";
 
 // ── Fetcher ────────────────────────────────────────────────────
 
@@ -67,7 +69,7 @@ function ActivitySkeleton() {
   return (
     <div className="divide-y divide-gray-100 dark:divide-gray-800">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex items-start gap-3 px-4 py-3 animate-pulse">
+        <div key={i} className="flex items-start gap-3 px-4 py-2.5 animate-pulse">
           <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
             <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
@@ -82,10 +84,22 @@ function ActivitySkeleton() {
 
 // ── ActivityFeedSection ────────────────────────────────────────
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 5;
 
 export function ActivityFeedSection() {
   const { firmId } = useFirm();
+
+  // Track last visit for "new" badges
+  const lastVisitRef = useRef<number>(0);
+  useEffect(() => {
+    const stored = localStorage.getItem(LAST_VISIT_KEY);
+    if (stored) lastVisitRef.current = parseInt(stored, 10);
+    // Update last visit timestamp after a short delay so user sees "new" badges
+    const timer = setTimeout(() => {
+      localStorage.setItem(LAST_VISIT_KEY, String(Date.now()));
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Filter state
   const [activeTypes, setActiveTypes] = useState<Set<ActivityType>>(new Set());
@@ -176,9 +190,9 @@ export function ActivityFeedSection() {
   // ── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-800">
+      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Activity Feed
         </h3>
@@ -252,8 +266,10 @@ export function ActivityFeedSection() {
               color: "bg-gray-100 text-gray-600",
             };
 
+            const isNew = lastVisitRef.current > 0 && new Date(activity.date).getTime() > lastVisitRef.current;
+
             return (
-              <div key={activity.id} className="flex items-start gap-3 px-4 py-3">
+              <div key={activity.id} className="flex items-start gap-3 px-4 py-2.5">
                 {/* Type icon */}
                 <div
                   className={cn(
@@ -266,9 +282,16 @@ export function ActivityFeedSection() {
 
                 {/* Description + entity name */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                    {activity.description}
-                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
+                      {activity.description}
+                    </p>
+                    {isNew && (
+                      <span className="flex-shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
+                        NEW
+                      </span>
+                    )}
+                  </div>
                   {activity.entityName && (
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                       {activity.entityName}
@@ -302,7 +325,7 @@ export function ActivityFeedSection() {
             disabled={isLoading}
             className="w-full text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 font-medium py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950 transition-colors disabled:opacity-50"
           >
-            {isLoading ? "Loading..." : "Load 20 more"}
+            {isLoading ? "Loading..." : "Load more"}
           </button>
         </div>
       )}

@@ -28,24 +28,27 @@ interface VehicleCardProps {
 }
 
 function VehicleCard({ entity }: VehicleCardProps) {
-  // Compute NAV from navComputations or fallback
+  // Prefer computed totalFairValue from API, fallback to navComputations
   const latestNav = entity.navComputations?.[0];
-  const nav = latestNav?.nav ?? null;
+  const nav = entity.totalFairValue > 0
+    ? entity.totalFairValue
+    : latestNav?.nav ?? null;
 
   // IRR and TVPI from navComputations
   const irr = latestNav?.irr ?? null;
   const tvpi = latestNav?.tvpi ?? null;
 
-  // Capital metrics
-  const totalCommitted = entity.totalCommitments ?? entity.commitments?.reduce(
-    (sum: number, c: any) => sum + (c.committedAmount ?? 0),
-    0,
-  ) ?? 0;
+  // Capital metrics from enriched API response
+  const totalCommitted = entity.totalCommitted ?? entity.totalCommitments ?? 0;
   const totalCalled = entity.totalCalled ?? 0;
-  const deploymentPct = totalCommitted > 0 ? (totalCalled / totalCommitted) * 100 : 0;
+  const dryPowder = entity.dryPowder ?? 0;
+  const uncalledCapital = entity.uncalledCapital ?? 0;
+  const dpi = entity.dpi ?? 0;
+  const deploymentPct = entity.deploymentPct ?? (totalCommitted > 0 ? (totalCalled / totalCommitted) * 100 : 0);
+  const assetCount = entity.assetCount ?? entity.assetAllocations?.length ?? 0;
 
-  // Asset count
-  const assetCount = entity.assetAllocations?.length ?? 0;
+  // Dry powder color — green if substantial (>10% of committed), gray if minimal
+  const dryPowderSignificant = totalCommitted > 0 && dryPowder > totalCommitted * 0.1;
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:border-indigo-200 dark:hover:border-indigo-700 hover:shadow-md transition-all overflow-hidden">
@@ -70,12 +73,12 @@ function VehicleCard({ entity }: VehicleCardProps) {
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        {/* Primary Metrics Row */}
+        <div className="grid grid-cols-3 gap-2 mb-2">
           <div>
             <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">NAV</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {nav !== null ? fmt(nav) : "—"}
+              {nav !== null && nav > 0 ? fmt(nav) : "—"}
             </div>
           </div>
           <div>
@@ -89,13 +92,33 @@ function VehicleCard({ entity }: VehicleCardProps) {
                   : "text-gray-400 dark:text-gray-500"
               }`}
             >
-              {irr != null ? `${(irr * 100).toFixed(1)}%` : "N/A"}
+              {irr != null ? `${(irr * 100).toFixed(1)}%` : "—"}
             </div>
           </div>
           <div>
             <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">TVPI</div>
             <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {tvpi != null ? `${tvpi.toFixed(2)}x` : <span className="text-gray-400 text-xs">N/A</span>}
+              {tvpi != null ? `${tvpi.toFixed(2)}x` : "—"}
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary Metrics Row */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">DPI</div>
+            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {dpi > 0 ? `${dpi.toFixed(2)}x` : "—"}
+            </div>
+          </div>
+          <div className="col-span-2">
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-0.5">Dry Powder</div>
+            <div className={`text-sm font-semibold ${
+              dryPowderSignificant
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-gray-900 dark:text-gray-100"
+            }`}>
+              {dryPowder > 0 ? fmt(dryPowder) : "—"}
             </div>
           </div>
         </div>
@@ -114,13 +137,20 @@ function VehicleCard({ entity }: VehicleCardProps) {
               style={{ width: `${Math.min(deploymentPct, 100)}%` }}
             />
           </div>
-          <div className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
-            {deploymentPct.toFixed(0)}% deployed
+          <div className="flex items-center justify-between mt-0.5">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              {deploymentPct.toFixed(0)}% deployed
+            </span>
+            {uncalledCapital > 0 && (
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                {fmt(uncalledCapital)} uncalled
+              </span>
+            )}
           </div>
         </div>
 
         {/* Footer: asset count + vintage + view button */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
           <div className="text-[10px] text-gray-400 dark:text-gray-500 space-x-2">
             <span>{assetCount} asset{assetCount !== 1 ? "s" : ""}</span>
             {entity.vintageYear && (
@@ -150,7 +180,7 @@ export function VehicleCardsView({ entities }: VehicleCardsViewProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {entities.map((entity: any) => (
         <VehicleCard key={entity.id} entity={entity} />
       ))}

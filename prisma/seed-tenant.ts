@@ -147,6 +147,7 @@ async function main() {
       entityType: "MAIN_FUND",
       vehicleStructure: "LLC",
       vintageYear: 2019,
+      targetSize: 350_000_000,
       totalCommitments: 300_000_000,
       status: "ACTIVE",
     },
@@ -161,6 +162,7 @@ async function main() {
       entityType: "MAIN_FUND",
       vehicleStructure: "LP",
       vintageYear: 2022,
+      targetSize: 600_000_000,
       totalCommitments: 500_000_000,
       status: "ACTIVE",
     },
@@ -175,6 +177,7 @@ async function main() {
       entityType: "MAIN_FUND",
       vehicleStructure: "LLC",
       vintageYear: 2023,
+      targetSize: 250_000_000,
       totalCommitments: 120_000_000,
       status: "ACTIVE",
     },
@@ -189,6 +192,7 @@ async function main() {
       entityType: "MAIN_FUND",
       vehicleStructure: "LP",
       vintageYear: 2024,
+      targetSize: 150_000_000,
       totalCommitments: 75_000_000,
       status: "ACTIVE",
     },
@@ -286,6 +290,85 @@ async function main() {
   for (const ac of acctConnections) {
     await prisma.accountingConnection.create({ data: ac });
   }
+
+  // ============================================================
+  // FUNDRAISING ROUNDS & PROSPECTS
+  // ============================================================
+  console.log("Creating fundraising rounds...");
+
+  // Fund III is actively fundraising (OPEN) — 48% closed
+  await prisma.fundraisingRound.create({
+    data: {
+      id: "cac-fr-1",
+      entityId: "cac-entity-3",
+      name: "CAC Fund III — Initial Close",
+      targetAmount: 250_000_000,
+      raisedAmount: 120_000_000,
+      status: "OPEN",
+      openDate: new Date("2025-06-01"),
+      closeDate: new Date("2026-09-30"),
+      prospects: {
+        create: [
+          { id: "cac-fp-1", investorName: "CPP Investments", investorType: "PENSION", targetAmount: 40_000_000, hardCommitAmount: 40_000_000, status: "HARD_COMMIT" },
+          { id: "cac-fp-2", investorName: "Ontario Teachers", investorType: "PENSION", targetAmount: 30_000_000, softCommitAmount: 30_000_000, status: "SOFT_COMMIT" },
+          { id: "cac-fp-3", investorName: "Singapore GIC", investorType: "SOVEREIGN_WEALTH", targetAmount: 50_000_000, softCommitAmount: 50_000_000, status: "SOFT_COMMIT" },
+          { id: "cac-fp-4", investorName: "Yale Endowment", investorType: "ENDOWMENT", targetAmount: 25_000_000, status: "DD_IN_PROGRESS" },
+          { id: "cac-fp-5", investorName: "Abu Dhabi IA", investorType: "SOVEREIGN_WEALTH", targetAmount: 35_000_000, status: "MEETING_SCHEDULED" },
+          { id: "cac-fp-6", investorName: "CalPERS", investorType: "PENSION", targetAmount: 20_000_000, status: "CONTACTED" },
+        ],
+      },
+    },
+  });
+
+  // Growth Fund is actively fundraising (OPEN) — 50% closed
+  await prisma.fundraisingRound.create({
+    data: {
+      id: "cac-fr-2",
+      entityId: "cac-entity-4",
+      name: "CAC Growth Fund — First Close",
+      targetAmount: 150_000_000,
+      raisedAmount: 75_000_000,
+      status: "OPEN",
+      openDate: new Date("2025-09-01"),
+      closeDate: new Date("2026-12-31"),
+      prospects: {
+        create: [
+          { id: "cac-fp-7", investorName: "Blackstone Secondaries", investorType: "FUND_OF_FUNDS", targetAmount: 25_000_000, hardCommitAmount: 25_000_000, status: "HARD_COMMIT" },
+          { id: "cac-fp-8", investorName: "StepStone Group", investorType: "FUND_OF_FUNDS", targetAmount: 15_000_000, softCommitAmount: 15_000_000, status: "SOFT_COMMIT" },
+          { id: "cac-fp-9", investorName: "Massachusetts PRIM", investorType: "PENSION", targetAmount: 20_000_000, status: "TERM_SHEET_SENT" },
+          { id: "cac-fp-10", investorName: "Duke Endowment", investorType: "ENDOWMENT", targetAmount: 10_000_000, status: "DD_IN_PROGRESS" },
+        ],
+      },
+    },
+  });
+
+  // Fund I is fully closed
+  await prisma.fundraisingRound.create({
+    data: {
+      id: "cac-fr-3",
+      entityId: "cac-entity-1",
+      name: "CAC Fund I — Final Close",
+      targetAmount: 350_000_000,
+      raisedAmount: 300_000_000,
+      status: "CLOSED",
+      openDate: new Date("2018-06-01"),
+      closeDate: new Date("2019-03-15"),
+    },
+  });
+
+  // Fund II at final close
+  await prisma.fundraisingRound.create({
+    data: {
+      id: "cac-fr-4",
+      entityId: "cac-entity-2",
+      name: "CAC Fund II — Final Close",
+      targetAmount: 600_000_000,
+      raisedAmount: 500_000_000,
+      status: "FINAL_CLOSE",
+      openDate: new Date("2021-09-01"),
+      closeDate: new Date("2022-06-30"),
+    },
+  });
 
   // ============================================================
   // INVESTORS (6)
@@ -435,8 +518,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 45_000_000,
       fairValue: 112_000_000,
-      moic: 2.49,
-      irr: 0.38,
+      moic: 2.00,
+      irr: 0.25,
       incomeType: "Dividends",
       hasBoardSeat: true,
       entryDate: new Date("2020-03-01"),
@@ -453,8 +536,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 32_000_000,
       fairValue: 56_000_000,
-      moic: 1.75,
-      irr: 0.22,
+      moic: 1.60,
+      irr: 0.17,
       incomeType: "None",
       hasBoardSeat: false,
       entryDate: new Date("2021-06-01"),
@@ -471,8 +554,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 15_000_000,
       fairValue: 15_000_000,
-      moic: 1.0,
-      irr: 0.11,
+      moic: 1.05,
+      irr: 0.06,
       incomeType: "SOFR+450bps",
       hasBoardSeat: false,
       entryDate: new Date("2023-06-01"),
@@ -489,8 +572,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 22_000_000,
       fairValue: 28_500_000,
-      moic: 1.30,
-      irr: 0.14,
+      moic: 1.18,
+      irr: 0.08,
       incomeType: "Rental NOI",
       hasBoardSeat: false,
       entryDate: new Date("2021-01-01"),
@@ -507,8 +590,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 10_000_000,
       fairValue: 14_200_000,
-      moic: 1.42,
-      irr: 0.18,
+      moic: 1.28,
+      irr: 0.13,
       incomeType: "Distributions",
       hasBoardSeat: false,
       entryDate: new Date("2022-09-01"),
@@ -525,8 +608,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 25_000_000,
       fairValue: 27_800_000,
-      moic: 1.11,
-      irr: 0.09,
+      moic: 1.09,
+      irr: 0.07,
       incomeType: "Distributions",
       hasBoardSeat: false,
       entryDate: new Date("2023-01-01"),
@@ -543,8 +626,8 @@ async function main() {
       status: "EXITED",
       costBasis: 20_000_000,
       fairValue: 58_000_000,
-      moic: 2.90,
-      irr: 0.41,
+      moic: 1.85,
+      irr: 0.22,
       incomeType: null,
       hasBoardSeat: false,
       entryDate: new Date("2019-06-01"),
@@ -561,8 +644,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 8_000_000,
       fairValue: 11_500_000,
-      moic: 1.44,
-      irr: 0.21,
+      moic: 1.32,
+      irr: 0.15,
       incomeType: null,
       hasBoardSeat: false,
       entryDate: new Date("2022-11-01"),
@@ -579,8 +662,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 5_000_000,
       fairValue: 5_000_000,
-      moic: 1.0,
-      irr: 0.13,
+      moic: 1.08,
+      irr: 0.09,
       incomeType: "12% fixed",
       hasBoardSeat: false,
       entryDate: new Date("2024-01-01"),
@@ -597,8 +680,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 5_000_000,
       fairValue: 5_800_000,
-      moic: 1.16,
-      irr: 0.10,
+      moic: 0.88,
+      irr: -0.04,
       incomeType: "Distributions",
       hasBoardSeat: false,
       entryDate: new Date("2024-03-01"),
@@ -615,8 +698,8 @@ async function main() {
       status: "ACTIVE",
       costBasis: 7_000_000,
       fairValue: 7_400_000,
-      moic: 1.06,
-      irr: 0.07,
+      moic: 1.03,
+      irr: 0.03,
       incomeType: "Distributions",
       hasBoardSeat: false,
       entryDate: new Date("2024-06-01"),
@@ -977,6 +1060,27 @@ async function main() {
         approvedBy: userJK.name,
         approvedAt: new Date("2024-07-15"),
       },
+      // ── Helix Therapeutics valuations (asset2) ──
+      { id: "cac-val-h1", assetId: asset2.id, valuationDate: new Date("2024-12-31"), method: "LAST_ROUND", fairValue: 42_000_000, moic: 1.53, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-20") },
+      { id: "cac-val-h2", assetId: asset2.id, valuationDate: new Date("2024-09-30"), method: "LAST_ROUND", fairValue: 38_000_000, moic: 1.38, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-10-20") },
+      // ── 123 Industrial Blvd valuations (asset4) ──
+      { id: "cac-val-h3", assetId: asset4.id, valuationDate: new Date("2024-12-31"), method: "DCF", fairValue: 18_500_000, moic: 1.12, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-15") },
+      { id: "cac-val-h4", assetId: asset4.id, valuationDate: new Date("2024-06-30"), method: "DCF", fairValue: 17_200_000, moic: 1.04, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-07-15") },
+      // ── CloudBase Systems valuations (asset8) ──
+      { id: "cac-val-h5", assetId: asset8.id, valuationDate: new Date("2024-12-31"), method: "COMPARABLE_MULTIPLES", fairValue: 28_000_000, moic: 1.28, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-10") },
+      { id: "cac-val-h6", assetId: asset8.id, valuationDate: new Date("2024-09-30"), method: "COMPARABLE_MULTIPLES", fairValue: 24_500_000, moic: 1.13, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-10-15") },
+      // ── Sequoia Capital Fund XVI valuations (asset5) ──
+      { id: "cac-val-h9", assetId: asset5.id, valuationDate: new Date("2024-12-31"), method: "GP_REPORTED_NAV", fairValue: 22_000_000, moic: 0.99, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-25") },
+      { id: "cac-val-h10", assetId: asset5.id, valuationDate: new Date("2024-06-30"), method: "GP_REPORTED_NAV", fairValue: 20_500_000, moic: 0.93, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-07-20") },
+      // ── FreshRoute Logistics valuations (asset9) ──
+      { id: "cac-val-h11", assetId: asset9.id, valuationDate: new Date("2024-12-31"), method: "DCF", fairValue: 35_000_000, moic: 1.50, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-12") },
+      { id: "cac-val-h12", assetId: asset9.id, valuationDate: new Date("2024-09-30"), method: "DCF", fairValue: 31_000_000, moic: 1.33, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-10-18") },
+      // ── Midwest Sports Fund II valuations (asset10) ──
+      { id: "cac-val-h13", assetId: asset10.id, valuationDate: new Date("2024-12-31"), method: "COMPARABLE_MULTIPLES", fairValue: 15_500_000, moic: 0.78, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-18") },
+      { id: "cac-val-h14", assetId: asset10.id, valuationDate: new Date("2024-09-30"), method: "COMPARABLE_MULTIPLES", fairValue: 16_200_000, moic: 0.82, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-10-22") },
+      // ── LifeBridge Insurance Fund valuations (asset11) ──
+      { id: "cac-val-h15", assetId: asset11.id, valuationDate: new Date("2024-12-31"), method: "GP_REPORTED_NAV", fairValue: 12_800_000, moic: 1.24, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2025-01-20") },
+      { id: "cac-val-h16", assetId: asset11.id, valuationDate: new Date("2024-06-30"), method: "GP_REPORTED_NAV", fairValue: 11_500_000, moic: 1.12, status: "APPROVED", approvedBy: userJK.name, approvedAt: new Date("2024-07-18") },
     ],
   });
 
@@ -1005,6 +1109,9 @@ async function main() {
       thesisNotes: "Strong recurring revenue from long-term contracts; margin expansion opportunity through operational improvements.",
       investmentRationale: "Niche industrial manufacturer with defensible market position and margin expansion potential through operational improvements. Long-term DoD contracts provide revenue visibility.",
       additionalContext: "Seller is motivated — founder retirement. Exclusive negotiation window through mid-March. Management team willing to roll 30% equity.",
+      nextDeadline: new Date("2026-03-21"),
+      nextDeadlineLabel: "IC Meeting",
+      projectedExitTimeframe: "3-5 years",
     },
   });
 
@@ -1027,6 +1134,9 @@ async function main() {
       thesisNotes: "De novo expansion model with strong same-store revenue growth; regulatory risk around reimbursement changes.",
       investmentRationale: "Healthcare services platform play with proven unit economics. Opportunity to consolidate fragmented outpatient market with de novo expansion model showing 15% SSS growth.",
       additionalContext: "Co-invest opportunity alongside Lead GP. Management team has 20+ year healthcare ops experience. CMS reimbursement review expected Q2 2026.",
+      nextDeadline: new Date("2026-04-01"),
+      nextDeadlineLabel: "DD completion target",
+      projectedExitTimeframe: "5-7 years",
     },
   });
 
@@ -1050,6 +1160,9 @@ async function main() {
       thesisNotes: "Series A stage with $4M ARR growing 120% YoY. Capital efficient model with 80% gross margins.",
       investmentRationale: "PropTech platform with strong ARR growth. Opportunity to invest at attractive valuation before Series B. Technology enables 30% cost reduction for commercial property managers with measurable ROI.",
       additionalContext: "Founder previously exited a SaaS company to Oracle for $180M. Strong technical team of 25. Competing term sheets expected by end of month. Board seat available.",
+      nextDeadline: new Date("2026-03-25"),
+      nextDeadlineLabel: "Competing term sheets close",
+      projectedExitTimeframe: "4-6 years",
     },
   });
 
@@ -1073,6 +1186,9 @@ async function main() {
       thesisNotes: "Low LTV, strong DSCR coverage, experienced sponsor with track record.",
       investmentRationale: "Low-risk credit opportunity with strong collateral coverage. Sponsor has 15-year track record with zero defaults. Portfolio is 95% leased to credit tenants.",
       additionalContext: "Existing relationship with sponsor from prior deal. Refinancing existing bank facility at better terms for borrower. 24-month term with 6-month extension option.",
+      nextDeadline: new Date("2026-03-20"),
+      nextDeadlineLabel: "Exclusivity expires",
+      projectedExitTimeframe: "3 years (maturity)",
     },
   });
 
@@ -1094,6 +1210,33 @@ async function main() {
       aiFlag: null,
       description: "LP commitment to Nordic Wind Fund III focused on Northern European onshore wind assets.",
       investmentRationale: "Infrastructure fund with strong GP track record (Fund I: 1.9x, Fund II: on pace for 1.7x). Contracted cash flows with 90%+ revenue visibility. ESG-aligned strategy.",
+      projectedExitTimeframe: "7-10 years",
+    },
+  });
+
+  // Deal 11 — CLOSING stage
+  const deal11 = await prisma.deal.create({
+    data: {
+      id: "cac-deal-11",
+      firmId: firm.id,
+      name: "Summit Ridge Logistics Hub",
+      assetClass: "REAL_ESTATE", capitalInstrument: "EQUITY", participationStructure: "DIRECT_GP",
+      sector: "Industrial / Logistics",
+      stage: "CLOSING",
+      targetSize: "$42M",
+      targetCheckSize: "$12M",
+      targetReturn: "18% IRR / 2.2x",
+      dealLeadId: userJK.id,
+      gpName: "Summit Partners",
+      source: "Direct sourcing",
+      counterparty: "Ridge Capital",
+      aiScore: 89,
+      aiFlag: "Strong logistics fundamentals, below-replacement-cost basis",
+      description: "Class A logistics facility in Nashville metro area with 10-year NNN lease to investment-grade tenant.",
+      investmentRationale: "Strong logistics fundamentals in growing Southeast market with below-replacement-cost basis.",
+      projectedExitTimeframe: "5-7 years",
+      nextDeadline: new Date("2026-04-15"),
+      nextDeadlineLabel: "Wire deadline",
     },
   });
 
@@ -1149,6 +1292,7 @@ async function main() {
     { deal: deal3, prefix: "cac-ws-3" },
     { deal: deal4, prefix: "cac-ws-4" },
     { deal: deal5, prefix: "cac-ws-5" },
+    { deal: deal11, prefix: "cac-ws-11" },
   ];
 
   for (const { deal, prefix } of dealsToScaffold) {
@@ -1179,6 +1323,12 @@ async function main() {
     console.log(`  -> ${deal.name}: ${templates.length} workstreams`);
   }
 
+  // Mark some workstreams as COMPLETE for cac-deal-11 (CLOSING stage — DD is done)
+  await prisma.dDWorkstream.updateMany({
+    where: { dealId: deal11.id, name: { in: ["Financial DD", "Legal DD"] } },
+    data: { status: "COMPLETE", completedTasks: 5, totalTasks: 5 },
+  });
+
   // ============================================================
   // DEAL ACTIVITIES (timeline events)
   // ============================================================
@@ -1208,6 +1358,16 @@ async function main() {
       { dealId: deal4.id, activityType: "MEETING", description: "Sponsor meeting with Ridgeline Capital Partners principals", metadata: { meetingType: "Sponsor Meeting" }, createdAt: new Date("2026-02-14") },
       { dealId: deal4.id, activityType: "DOCUMENT_UPLOADED", description: "Appraisal report and Phase I ESA uploaded", createdAt: new Date("2026-02-16") },
       { dealId: deal4.id, activityType: "CALL", description: "Call with property management company on tenant relationships", createdAt: new Date("2026-02-21") },
+
+      // Deal 11 (Summit Ridge Logistics Hub) — CLOSING stage, full lifecycle through IC approval
+      { dealId: deal11.id, activityType: "SCREENING_RUN", description: "AI screening completed with score 89/100. Recommendation: STRONG_PROCEED.", metadata: { score: 89, recommendation: "STRONG_PROCEED" }, createdAt: new Date("2025-12-10") },
+      { dealId: deal11.id, activityType: "STAGE_CHANGE", description: "Deal advanced from Screening to Due Diligence", metadata: { fromStage: "SCREENING", toStage: "DUE_DILIGENCE" }, createdAt: new Date("2025-12-12") },
+      { dealId: deal11.id, activityType: "MEETING", description: "Site visit to Nashville logistics facility — 450K SF Class A warehouse", metadata: { meetingType: "Site Visit" }, createdAt: new Date("2025-12-20") },
+      { dealId: deal11.id, activityType: "DOCUMENT_UPLOADED", description: "Appraisal report and environmental assessment uploaded", createdAt: new Date("2026-01-08") },
+      { dealId: deal11.id, activityType: "CALL", description: "Call with tenant credit team to verify investment-grade rating", createdAt: new Date("2026-01-15") },
+      { dealId: deal11.id, activityType: "STAGE_CHANGE", description: "Deal advanced to IC Review", metadata: { fromStage: "DUE_DILIGENCE", toStage: "IC_REVIEW" }, createdAt: new Date("2026-02-01") },
+      { dealId: deal11.id, activityType: "STAGE_CHANGE", description: "IC approved — deal advanced to Closing", metadata: { fromStage: "IC_REVIEW", toStage: "CLOSING" }, createdAt: new Date("2026-02-20") },
+      { dealId: deal11.id, activityType: "DOCUMENT_UPLOADED", description: "Draft PSA and closing checklist uploaded", createdAt: new Date("2026-03-01") },
     ],
   });
 
@@ -1230,6 +1390,44 @@ async function main() {
     data: [
       { icProcessId: icProcess.id, userId: userJK.id, vote: "APPROVE", notes: "Strong fundamentals, manageable risks." },
       { icProcessId: icProcess.id, userId: userSM.id, vote: "APPROVE", notes: "Agree, but want customer concentration addressed in closing docs." },
+    ],
+  });
+
+  // IC PROCESS + VOTES (for cac-deal-11 in CLOSING — approved)
+  const icProcess11 = await prisma.iCProcess.create({
+    data: {
+      id: "cac-ic-11",
+      dealId: deal11.id,
+      status: "approved",
+      finalDecision: "APPROVED",
+      quorumType: "majority",
+      deadline: new Date("2026-02-15"),
+    },
+  });
+
+  await prisma.iCVoteRecord.createMany({
+    data: [
+      { icProcessId: icProcess11.id, userId: userJK.id, vote: "APPROVE", notes: "Excellent logistics asset at below-replacement cost. Strong tenant credit." },
+      { icProcessId: icProcess11.id, userId: userSM.id, vote: "APPROVE", notes: "Nashville market fundamentals are compelling. 10-year NNN lease de-risks significantly." },
+      { icProcessId: icProcess11.id, userId: userAL.id, vote: "APPROVE", notes: "Clean diligence. Proceed to closing." },
+    ],
+  });
+
+  // ============================================================
+  // CLOSING CHECKLIST (for cac-deal-11 in CLOSING stage)
+  // ============================================================
+  console.log("Creating closing checklist for cac-deal-11...");
+
+  await prisma.closingChecklist.createMany({
+    data: [
+      { dealId: deal11.id, title: "Execute Purchase / Sale Agreement", order: 1, status: "COMPLETE", assigneeId: userJK.id, assignee: "James Kim", isCustom: false },
+      { dealId: deal11.id, title: "Legal Opinion & Closing Deliverables", order: 2, status: "COMPLETE", assigneeId: userSM.id, assignee: "Sarah Mitchell", isCustom: false },
+      { dealId: deal11.id, title: "Regulatory / Compliance Approvals", order: 3, status: "COMPLETE", assigneeId: userAL.id, assignee: "Alex Lee", isCustom: false },
+      { dealId: deal11.id, title: "Transfer of Title / Ownership", order: 4, status: "IN_PROGRESS", assigneeId: userSM.id, assignee: "Sarah Mitchell", dueDate: new Date("2026-03-25"), isCustom: false },
+      { dealId: deal11.id, title: "Insurance Certificates & Binding", order: 5, status: "IN_PROGRESS", assigneeId: userAL.id, assignee: "Alex Lee", dueDate: new Date("2026-03-28"), isCustom: false },
+      { dealId: deal11.id, title: "Entity Operating Agreement Execution", order: 6, status: "NOT_STARTED", assigneeId: userJK.id, assignee: "James Kim", dueDate: new Date("2026-04-01"), isCustom: false },
+      { dealId: deal11.id, title: "Wire Transfer / Capital Deployment", order: 7, status: "NOT_STARTED", dueDate: new Date("2026-04-05"), isCustom: false },
+      { dealId: deal11.id, title: "Post-Closing Deliverables & Booking", order: 8, status: "NOT_STARTED", dueDate: new Date("2026-04-10"), isCustom: false },
     ],
   });
 
@@ -1334,6 +1532,27 @@ async function main() {
         status: "FUNDED",
         fundedPercent: 100,
       },
+      // ── Early capital calls (fund deployment history) ──
+      { id: "cac-cc-e1", entityId: entity1.id, callNumber: "CC-E01", callDate: new Date("2019-09-01"), dueDate: new Date("2019-09-15"), amount: 25_000_000, purpose: "Initial deployment — SolarGrid Energy + reserves", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e2", entityId: entity1.id, callNumber: "CC-E02", callDate: new Date("2020-03-01"), dueDate: new Date("2020-03-15"), amount: 30_000_000, purpose: "NovaTech AI Series B investment", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e3", entityId: entity1.id, callNumber: "CC-E03", callDate: new Date("2021-01-15"), dueDate: new Date("2021-02-01"), amount: 35_000_000, purpose: "Helix Therapeutics + 123 Industrial Blvd", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e4", entityId: entity1.id, callNumber: "CC-E04", callDate: new Date("2022-06-01"), dueDate: new Date("2022-06-15"), amount: 15_000_000, purpose: "Follow-on investments + management fees", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e5", entityId: entity2.id, callNumber: "CC-E05", callDate: new Date("2022-09-01"), dueDate: new Date("2022-09-15"), amount: 40_000_000, purpose: "Initial fund II deployment", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e6", entityId: entity2.id, callNumber: "CC-E06", callDate: new Date("2023-03-01"), dueDate: new Date("2023-03-15"), amount: 35_000_000, purpose: "Fund II follow-on investments", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e7", entityId: entity3.id, callNumber: "CC-E07", callDate: new Date("2023-09-01"), dueDate: new Date("2023-09-15"), amount: 30_000_000, purpose: "Sequoia + Blackstone initial commitments", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-e8", entityId: entity4.id, callNumber: "CC-E08", callDate: new Date("2024-06-01"), dueDate: new Date("2024-06-15"), amount: 10_000_000, purpose: "Growth Fund initial deployment", status: "FUNDED", fundedPercent: 100 },
+      // ── Historical capital calls (trailing 12 months) ──
+      { id: "cac-cc-h1", entityId: entity1.id, callNumber: "CC-001", callDate: new Date("2024-04-01"), dueDate: new Date("2024-04-15"), amount: 5_000_000, purpose: "Q2 mgmt fees + operating reserves", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h2", entityId: entity2.id, callNumber: "CC-004", callDate: new Date("2024-06-10"), dueDate: new Date("2024-06-25"), amount: 12_000_000, purpose: "Follow-on — Helix Therapeutics Series D", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h3", entityId: entity1.id, callNumber: "CC-002", callDate: new Date("2024-07-01"), dueDate: new Date("2024-07-15"), amount: 3_500_000, purpose: "Q3 mgmt fees", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h4", entityId: entity4.id, callNumber: "CC-RE-01", callDate: new Date("2025-08-15"), dueDate: new Date("2025-09-01"), amount: 8_500_000, purpose: "123 Industrial — tenant improvements", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h5", entityId: entity2.id, callNumber: "CC-006", callDate: new Date("2025-09-20"), dueDate: new Date("2025-10-05"), amount: 18_000_000, purpose: "New investment — UrbanNest Platform", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h6", entityId: entity8.id, callNumber: "CC-CR-01", callDate: new Date("2025-10-01"), dueDate: new Date("2025-10-15"), amount: 6_000_000, purpose: "Senior secured — logistics facility", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h7", entityId: entity1.id, callNumber: "CC-003A", callDate: new Date("2025-10-15"), dueDate: new Date("2025-11-01"), amount: 4_000_000, purpose: "Q4 mgmt fees + expenses", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h8", entityId: entity5.id, callNumber: "CC-CI-01", callDate: new Date("2025-11-01"), dueDate: new Date("2025-11-15"), amount: 15_000_000, purpose: "Fund II Co-Invest SPV draw", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h9", entityId: entity2.id, callNumber: "CC-009", callDate: new Date("2025-12-01"), dueDate: new Date("2025-12-15"), amount: 7_500_000, purpose: "Bridge loan — Cascade Timber", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h10", entityId: entity9.id, callNumber: "CC-GF-01", callDate: new Date("2026-01-10"), dueDate: new Date("2026-01-25"), amount: 20_000_000, purpose: "Atlas Growth Fund initial draw", status: "FUNDED", fundedPercent: 100 },
+      { id: "cac-cc-h11", entityId: entity1.id, callNumber: "CC-004A", callDate: new Date("2026-02-01"), dueDate: new Date("2026-02-15"), amount: 3_000_000, purpose: "Q1 2026 mgmt fees", status: "ISSUED", fundedPercent: 40 },
     ],
   });
 
@@ -1440,6 +1659,19 @@ async function main() {
         netToLPs: 3_000_000,
         status: "APPROVED",
       },
+      // ── Historical distributions (trailing 12 months) ──
+      { id: "cac-dist-h1", entityId: entity1.id, distributionDate: new Date("2025-04-30"), grossAmount: 2_400_000, source: "NovaTech AI — Q1 dividend", returnOfCapital: 0, income: 2_400_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_400_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h2", entityId: entity2.id, distributionDate: new Date("2025-05-15"), grossAmount: 8_000_000, source: "Helix Therapeutics — partial exit", returnOfCapital: 3_000_000, income: 0, longTermGain: 4_200_000, shortTermGain: 0, carriedInterest: 800_000, netToLPs: 7_200_000, status: "PAID", distributionType: "CAPITAL_GAIN" },
+      { id: "cac-dist-h3", entityId: entity8.id, distributionDate: new Date("2025-06-30"), grossAmount: 1_800_000, source: "Q2 interest income", returnOfCapital: 0, income: 1_800_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 1_800_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h4", entityId: entity1.id, distributionDate: new Date("2025-07-31"), grossAmount: 2_400_000, source: "NovaTech AI — Q2 dividend", returnOfCapital: 0, income: 2_400_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_400_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h5", entityId: entity4.id, distributionDate: new Date("2025-08-15"), grossAmount: 1_100_000, source: "123 Industrial — Q2 rental NOI", returnOfCapital: 0, income: 1_100_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 1_100_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h6", entityId: entity2.id, distributionDate: new Date("2025-09-30"), grossAmount: 3_500_000, source: "CloudBase — Q3 dividend", returnOfCapital: 0, income: 3_500_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 3_500_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h7", entityId: entity8.id, distributionDate: new Date("2025-09-30"), grossAmount: 2_200_000, source: "Q3 interest income", returnOfCapital: 0, income: 2_200_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_200_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h8", entityId: entity1.id, distributionDate: new Date("2025-10-31"), grossAmount: 2_400_000, source: "NovaTech AI — Q3 dividend", returnOfCapital: 0, income: 2_400_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_400_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h9", entityId: entity4.id, distributionDate: new Date("2025-11-15"), grossAmount: 1_200_000, source: "123 Industrial — Q3 rental NOI", returnOfCapital: 0, income: 1_200_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 1_200_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h10", entityId: entity8.id, distributionDate: new Date("2025-12-31"), grossAmount: 2_500_000, source: "Q4 interest income", returnOfCapital: 0, income: 2_500_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_500_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h11", entityId: entity1.id, distributionDate: new Date("2026-01-31"), grossAmount: 2_600_000, source: "NovaTech AI — Q4 dividend", returnOfCapital: 0, income: 2_600_000, longTermGain: 0, shortTermGain: 0, carriedInterest: 0, netToLPs: 2_600_000, status: "PAID", distributionType: "INCOME" },
+      { id: "cac-dist-h12", entityId: entity2.id, distributionDate: new Date("2026-02-28"), grossAmount: 15_000_000, source: "FreshRoute Logistics — full exit", returnOfCapital: 5_000_000, income: 0, longTermGain: 8_500_000, shortTermGain: 0, carriedInterest: 1_500_000, netToLPs: 13_500_000, status: "PAID", distributionType: "CAPITAL_GAIN" },
     ],
   });
 
@@ -1465,6 +1697,92 @@ async function main() {
       { id: "cac-ccli-4-2", capitalCallId: "cac-cc-4", investorId: investor2.id, amount: 3_440_000, status: "Funded", paidDate: new Date("2025-02-01") },
       { id: "cac-ccli-4-3", capitalCallId: "cac-cc-4", investorId: investor3.id, amount: 2_880_000, status: "Funded", paidDate: new Date("2025-02-01") },
       { id: "cac-ccli-4-4", capitalCallId: "cac-cc-4", investorId: investor4.id, amount: 1_680_000, status: "Funded", paidDate: new Date("2025-02-01") },
+      // ── Early capital call line items (fund deployment history) ──
+      // cc-e1 (entity1, $25M) — entity1 investors: investor1 37%, investor2 30%, investor4 22%, investor6 11%
+      { id: "cac-ccli-e1-1", capitalCallId: "cac-cc-e1", investorId: investor1.id, amount: 9_250_000, status: "Funded", paidDate: new Date("2019-09-15") },
+      { id: "cac-ccli-e1-2", capitalCallId: "cac-cc-e1", investorId: investor2.id, amount: 7_500_000, status: "Funded", paidDate: new Date("2019-09-15") },
+      { id: "cac-ccli-e1-4", capitalCallId: "cac-cc-e1", investorId: investor4.id, amount: 5_500_000, status: "Funded", paidDate: new Date("2019-09-15") },
+      { id: "cac-ccli-e1-6", capitalCallId: "cac-cc-e1", investorId: investor6.id, amount: 2_750_000, status: "Funded", paidDate: new Date("2019-09-15") },
+      // cc-e2 (entity1, $30M)
+      { id: "cac-ccli-e2-1", capitalCallId: "cac-cc-e2", investorId: investor1.id, amount: 11_100_000, status: "Funded", paidDate: new Date("2020-03-15") },
+      { id: "cac-ccli-e2-2", capitalCallId: "cac-cc-e2", investorId: investor2.id, amount: 9_000_000, status: "Funded", paidDate: new Date("2020-03-15") },
+      { id: "cac-ccli-e2-4", capitalCallId: "cac-cc-e2", investorId: investor4.id, amount: 6_600_000, status: "Funded", paidDate: new Date("2020-03-15") },
+      { id: "cac-ccli-e2-6", capitalCallId: "cac-cc-e2", investorId: investor6.id, amount: 3_300_000, status: "Funded", paidDate: new Date("2020-03-15") },
+      // cc-e3 (entity1, $35M)
+      { id: "cac-ccli-e3-1", capitalCallId: "cac-cc-e3", investorId: investor1.id, amount: 12_950_000, status: "Funded", paidDate: new Date("2021-02-01") },
+      { id: "cac-ccli-e3-2", capitalCallId: "cac-cc-e3", investorId: investor2.id, amount: 10_500_000, status: "Funded", paidDate: new Date("2021-02-01") },
+      { id: "cac-ccli-e3-4", capitalCallId: "cac-cc-e3", investorId: investor4.id, amount: 7_700_000, status: "Funded", paidDate: new Date("2021-02-01") },
+      { id: "cac-ccli-e3-6", capitalCallId: "cac-cc-e3", investorId: investor6.id, amount: 3_850_000, status: "Funded", paidDate: new Date("2021-02-01") },
+      // cc-e4 (entity1, $15M)
+      { id: "cac-ccli-e4-1", capitalCallId: "cac-cc-e4", investorId: investor1.id, amount: 5_550_000, status: "Funded", paidDate: new Date("2022-06-15") },
+      { id: "cac-ccli-e4-2", capitalCallId: "cac-cc-e4", investorId: investor2.id, amount: 4_500_000, status: "Funded", paidDate: new Date("2022-06-15") },
+      { id: "cac-ccli-e4-4", capitalCallId: "cac-cc-e4", investorId: investor4.id, amount: 3_300_000, status: "Funded", paidDate: new Date("2022-06-15") },
+      { id: "cac-ccli-e4-6", capitalCallId: "cac-cc-e4", investorId: investor6.id, amount: 1_650_000, status: "Funded", paidDate: new Date("2022-06-15") },
+      // cc-e5 (entity2, $40M) — entity2 investors: investor1 25%, investor2 16%, investor3 8%, investor4 17%, investor5 34%
+      { id: "cac-ccli-e5-1", capitalCallId: "cac-cc-e5", investorId: investor1.id, amount: 10_000_000, status: "Funded", paidDate: new Date("2022-09-15") },
+      { id: "cac-ccli-e5-2", capitalCallId: "cac-cc-e5", investorId: investor2.id, amount: 6_400_000, status: "Funded", paidDate: new Date("2022-09-15") },
+      { id: "cac-ccli-e5-4", capitalCallId: "cac-cc-e5", investorId: investor4.id, amount: 6_800_000, status: "Funded", paidDate: new Date("2022-09-15") },
+      { id: "cac-ccli-e5-5", capitalCallId: "cac-cc-e5", investorId: investor5.id, amount: 13_600_000, status: "Funded", paidDate: new Date("2022-09-15") },
+      { id: "cac-ccli-e5-3", capitalCallId: "cac-cc-e5", investorId: investor3.id, amount: 3_200_000, status: "Funded", paidDate: new Date("2022-09-15") },
+      // cc-e6 (entity2, $35M)
+      { id: "cac-ccli-e6-1", capitalCallId: "cac-cc-e6", investorId: investor1.id, amount: 8_750_000, status: "Funded", paidDate: new Date("2023-03-15") },
+      { id: "cac-ccli-e6-2", capitalCallId: "cac-cc-e6", investorId: investor2.id, amount: 5_600_000, status: "Funded", paidDate: new Date("2023-03-15") },
+      { id: "cac-ccli-e6-4", capitalCallId: "cac-cc-e6", investorId: investor4.id, amount: 5_950_000, status: "Funded", paidDate: new Date("2023-03-15") },
+      { id: "cac-ccli-e6-5", capitalCallId: "cac-cc-e6", investorId: investor5.id, amount: 11_900_000, status: "Funded", paidDate: new Date("2023-03-15") },
+      { id: "cac-ccli-e6-3", capitalCallId: "cac-cc-e6", investorId: investor3.id, amount: 2_800_000, status: "Funded", paidDate: new Date("2023-03-15") },
+      // cc-e7 (entity3, $30M) — entity3 investors: investor3 24%, investor5 76%
+      { id: "cac-ccli-e7-3", capitalCallId: "cac-cc-e7", investorId: investor3.id, amount: 7_200_000, status: "Funded", paidDate: new Date("2023-09-15") },
+      { id: "cac-ccli-e7-5", capitalCallId: "cac-cc-e7", investorId: investor5.id, amount: 22_800_000, status: "Funded", paidDate: new Date("2023-09-15") },
+      // cc-e8 (entity4, $10M) — entity4 investors: investor1 43%, investor4 57%
+      { id: "cac-ccli-e8-1", capitalCallId: "cac-cc-e8", investorId: investor1.id, amount: 4_300_000, status: "Funded", paidDate: new Date("2024-06-15") },
+      { id: "cac-ccli-e8-4", capitalCallId: "cac-cc-e8", investorId: investor4.id, amount: 5_700_000, status: "Funded", paidDate: new Date("2024-06-15") },
+      // ── Historical capital call line items (funded) ──
+      // cc-h1 (entity1, $5M)
+      { id: "cac-ccli-h1-1", capitalCallId: "cac-cc-h1", investorId: investor1.id, amount: 1_925_000, status: "Funded", paidDate: new Date("2024-04-15") },
+      { id: "cac-ccli-h1-3", capitalCallId: "cac-cc-h1", investorId: investor3.id, amount: 960_000, status: "Funded", paidDate: new Date("2024-04-15") },
+      { id: "cac-ccli-h1-4", capitalCallId: "cac-cc-h1", investorId: investor4.id, amount: 1_155_000, status: "Funded", paidDate: new Date("2024-04-15") },
+      { id: "cac-ccli-h1-6", capitalCallId: "cac-cc-h1", investorId: investor6.id, amount: 960_000, status: "Funded", paidDate: new Date("2024-04-15") },
+      // cc-h2 (entity2, $12M)
+      { id: "cac-ccli-h2-1", capitalCallId: "cac-cc-h2", investorId: investor1.id, amount: 6_000_000, status: "Funded", paidDate: new Date("2024-06-25") },
+      { id: "cac-ccli-h2-2", capitalCallId: "cac-cc-h2", investorId: investor2.id, amount: 4_000_000, status: "Funded", paidDate: new Date("2024-06-25") },
+      { id: "cac-ccli-h2-5", capitalCallId: "cac-cc-h2", investorId: investor5.id, amount: 2_000_000, status: "Funded", paidDate: new Date("2024-06-25") },
+      // cc-h3 (entity1, $3.5M)
+      { id: "cac-ccli-h3-1", capitalCallId: "cac-cc-h3", investorId: investor1.id, amount: 1_347_500, status: "Funded", paidDate: new Date("2024-07-15") },
+      { id: "cac-ccli-h3-3", capitalCallId: "cac-cc-h3", investorId: investor3.id, amount: 672_000, status: "Funded", paidDate: new Date("2024-07-15") },
+      { id: "cac-ccli-h3-4", capitalCallId: "cac-cc-h3", investorId: investor4.id, amount: 808_500, status: "Funded", paidDate: new Date("2024-07-15") },
+      { id: "cac-ccli-h3-6", capitalCallId: "cac-cc-h3", investorId: investor6.id, amount: 672_000, status: "Funded", paidDate: new Date("2024-07-15") },
+      // cc-h4 (entity4, $8.5M) — entity4 investors: investor1 40%, investor4 35%, investor6 25%
+      { id: "cac-ccli-h4-1", capitalCallId: "cac-cc-h4", investorId: investor1.id, amount: 3_400_000, status: "Funded", paidDate: new Date("2025-09-01") },
+      { id: "cac-ccli-h4-4", capitalCallId: "cac-cc-h4", investorId: investor4.id, amount: 2_975_000, status: "Funded", paidDate: new Date("2025-09-01") },
+      { id: "cac-ccli-h4-6", capitalCallId: "cac-cc-h4", investorId: investor6.id, amount: 2_125_000, status: "Funded", paidDate: new Date("2025-09-01") },
+      // cc-h5 (entity2, $18M)
+      { id: "cac-ccli-h5-1", capitalCallId: "cac-cc-h5", investorId: investor1.id, amount: 9_000_000, status: "Funded", paidDate: new Date("2025-10-05") },
+      { id: "cac-ccli-h5-2", capitalCallId: "cac-cc-h5", investorId: investor2.id, amount: 6_000_000, status: "Funded", paidDate: new Date("2025-10-05") },
+      { id: "cac-ccli-h5-5", capitalCallId: "cac-cc-h5", investorId: investor5.id, amount: 3_000_000, status: "Funded", paidDate: new Date("2025-10-05") },
+      // cc-h6 (entity8, $6M)
+      { id: "cac-ccli-h6-3", capitalCallId: "cac-cc-h6", investorId: investor3.id, amount: 2_400_000, status: "Funded", paidDate: new Date("2025-10-15") },
+      { id: "cac-ccli-h6-6", capitalCallId: "cac-cc-h6", investorId: investor6.id, amount: 3_600_000, status: "Funded", paidDate: new Date("2025-10-15") },
+      // cc-h7 (entity1, $4M)
+      { id: "cac-ccli-h7-1", capitalCallId: "cac-cc-h7", investorId: investor1.id, amount: 1_540_000, status: "Funded", paidDate: new Date("2025-11-01") },
+      { id: "cac-ccli-h7-3", capitalCallId: "cac-cc-h7", investorId: investor3.id, amount: 768_000, status: "Funded", paidDate: new Date("2025-11-01") },
+      { id: "cac-ccli-h7-4", capitalCallId: "cac-cc-h7", investorId: investor4.id, amount: 924_000, status: "Funded", paidDate: new Date("2025-11-01") },
+      { id: "cac-ccli-h7-6", capitalCallId: "cac-cc-h7", investorId: investor6.id, amount: 768_000, status: "Funded", paidDate: new Date("2025-11-01") },
+      // cc-h8 (entity5, $15M) — entity5 investors: investor1 60%, investor2 40%
+      { id: "cac-ccli-h8-1", capitalCallId: "cac-cc-h8", investorId: investor1.id, amount: 9_000_000, status: "Funded", paidDate: new Date("2025-11-15") },
+      { id: "cac-ccli-h8-2", capitalCallId: "cac-cc-h8", investorId: investor2.id, amount: 6_000_000, status: "Funded", paidDate: new Date("2025-11-15") },
+      // cc-h9 (entity2, $7.5M)
+      { id: "cac-ccli-h9-1", capitalCallId: "cac-cc-h9", investorId: investor1.id, amount: 3_750_000, status: "Funded", paidDate: new Date("2025-12-15") },
+      { id: "cac-ccli-h9-2", capitalCallId: "cac-cc-h9", investorId: investor2.id, amount: 2_500_000, status: "Funded", paidDate: new Date("2025-12-15") },
+      { id: "cac-ccli-h9-5", capitalCallId: "cac-cc-h9", investorId: investor5.id, amount: 1_250_000, status: "Funded", paidDate: new Date("2025-12-15") },
+      // cc-h10 (entity9, $20M)
+      { id: "cac-ccli-h10-1", capitalCallId: "cac-cc-h10", investorId: investor1.id, amount: 10_000_000, status: "Funded", paidDate: new Date("2026-01-25") },
+      { id: "cac-ccli-h10-2", capitalCallId: "cac-cc-h10", investorId: investor2.id, amount: 6_000_000, status: "Funded", paidDate: new Date("2026-01-25") },
+      { id: "cac-ccli-h10-5", capitalCallId: "cac-cc-h10", investorId: investor5.id, amount: 4_000_000, status: "Funded", paidDate: new Date("2026-01-25") },
+      // cc-h11 (entity1, $3M — partially funded)
+      { id: "cac-ccli-h11-1", capitalCallId: "cac-cc-h11", investorId: investor1.id, amount: 1_155_000, status: "Funded", paidDate: new Date("2026-02-10") },
+      { id: "cac-ccli-h11-3", capitalCallId: "cac-cc-h11", investorId: investor3.id, amount: 576_000, status: "Pending" },
+      { id: "cac-ccli-h11-4", capitalCallId: "cac-cc-h11", investorId: investor4.id, amount: 693_000, status: "Pending" },
+      { id: "cac-ccli-h11-6", capitalCallId: "cac-cc-h11", investorId: investor6.id, amount: 576_000, status: "Pending" },
     ],
   });
 
@@ -1601,6 +1919,18 @@ async function main() {
       },
     });
   }
+
+  // Deal-linked documents for screening deals
+  await prisma.document.createMany({
+    data: [
+      { id: "cac-doc-deal-3a", name: "CIM - UrbanNest PropTech.pdf", category: "FINANCIAL", dealId: "cac-deal-3", entityId: "cac-entity-3", uploadDate: new Date("2026-03-01"), fileSize: 2400000 },
+      { id: "cac-doc-deal-3b", name: "Financial Model v1.xlsx", category: "FINANCIAL", dealId: "cac-deal-3", entityId: "cac-entity-3", uploadDate: new Date("2026-03-02"), fileSize: 850000 },
+      { id: "cac-doc-deal-3c", name: "Pitch Deck.pdf", category: "OTHER", dealId: "cac-deal-3", entityId: "cac-entity-3", uploadDate: new Date("2026-03-01"), fileSize: 5200000 },
+      { id: "cac-doc-deal-5a", name: "Nordic Wind Fund III PPM.pdf", category: "FINANCIAL", dealId: "cac-deal-5", entityId: "cac-entity-3", uploadDate: new Date("2026-02-20"), fileSize: 3100000 },
+      { id: "cac-doc-deal-5b", name: "Track Record Summary.pdf", category: "REPORT", dealId: "cac-deal-5", entityId: "cac-entity-3", uploadDate: new Date("2026-02-20"), fileSize: 1200000 },
+    ],
+  });
+  console.log("✓ Deal-linked documents seeded");
 
   // ============================================================
   // WATERFALL TEMPLATES (5 templates with tiers)
@@ -1911,6 +2241,40 @@ async function main() {
       { id: "cac-txn-12", entityId: entity2.id, transactionType: "FEE", amount: 625_000, date: new Date("2025-01-01"), description: "Q1 2025 management fee", isPrincipal: false },
       { id: "cac-txn-13", entityId: entity1.id, transactionType: "EXIT", amount: 58_000_000, date: new Date("2025-01-31"), description: "SolarGrid Energy — full exit proceeds", isPrincipal: true, referenceId: "cac-asset-7", referenceType: "Asset" },
       { id: "cac-txn-14", entityId: entity2.id, transactionType: "INVESTMENT", amount: 8_000_000, date: new Date("2024-11-01"), description: "CloudBase Systems — follow-on Series C", isPrincipal: true, referenceId: "cac-asset-8", referenceType: "Asset" },
+      // Early deployment transactions
+      { id: "cac-txn-e1", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 25_000_000, date: new Date("2019-09-01"), description: "CC-E01 — Initial deployment", referenceId: "cac-cc-e1", referenceType: "CapitalCall" },
+      { id: "cac-txn-e2", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 30_000_000, date: new Date("2020-03-01"), description: "CC-E02 — NovaTech Series B", referenceId: "cac-cc-e2", referenceType: "CapitalCall" },
+      { id: "cac-txn-e3", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 35_000_000, date: new Date("2021-01-15"), description: "CC-E03 — Helix + 123 Industrial", referenceId: "cac-cc-e3", referenceType: "CapitalCall" },
+      { id: "cac-txn-e4", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 15_000_000, date: new Date("2022-06-01"), description: "CC-E04 — Follow-ons + fees", referenceId: "cac-cc-e4", referenceType: "CapitalCall" },
+      { id: "cac-txn-e5", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 40_000_000, date: new Date("2022-09-01"), description: "CC-E05 — Fund II initial deployment", referenceId: "cac-cc-e5", referenceType: "CapitalCall" },
+      { id: "cac-txn-e6", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 35_000_000, date: new Date("2023-03-01"), description: "CC-E06 — Fund II follow-on", referenceId: "cac-cc-e6", referenceType: "CapitalCall" },
+      { id: "cac-txn-e7", entityId: entity3.id, transactionType: "CAPITAL_CALL", amount: 30_000_000, date: new Date("2023-09-01"), description: "CC-E07 — Sequoia + Blackstone", referenceId: "cac-cc-e7", referenceType: "CapitalCall" },
+      { id: "cac-txn-e8", entityId: entity4.id, transactionType: "CAPITAL_CALL", amount: 10_000_000, date: new Date("2024-06-01"), description: "CC-E08 — Growth Fund initial", referenceId: "cac-cc-e8", referenceType: "CapitalCall" },
+      // ── Historical capital call transactions ──
+      { id: "cac-txn-h1", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 5_000_000, date: new Date("2024-04-01"), description: "CC-001 — Q2 mgmt fees", referenceId: "cac-cc-h1", referenceType: "CapitalCall" },
+      { id: "cac-txn-h2", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 12_000_000, date: new Date("2024-06-10"), description: "CC-004 — Helix follow-on", referenceId: "cac-cc-h2", referenceType: "CapitalCall" },
+      { id: "cac-txn-h3", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 3_500_000, date: new Date("2024-07-01"), description: "CC-002 — Q3 mgmt fees", referenceId: "cac-cc-h3", referenceType: "CapitalCall" },
+      { id: "cac-txn-h4", entityId: entity4.id, transactionType: "CAPITAL_CALL", amount: 8_500_000, date: new Date("2025-08-15"), description: "CC-RE-01 — 123 Industrial TI", referenceId: "cac-cc-h4", referenceType: "CapitalCall" },
+      { id: "cac-txn-h5", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 18_000_000, date: new Date("2025-09-20"), description: "CC-006 — UrbanNest investment", referenceId: "cac-cc-h5", referenceType: "CapitalCall" },
+      { id: "cac-txn-h6", entityId: entity8.id, transactionType: "CAPITAL_CALL", amount: 6_000_000, date: new Date("2025-10-01"), description: "CC-CR-01 — Logistics facility", referenceId: "cac-cc-h6", referenceType: "CapitalCall" },
+      { id: "cac-txn-h7", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 4_000_000, date: new Date("2025-10-15"), description: "CC-003A — Q4 mgmt fees", referenceId: "cac-cc-h7", referenceType: "CapitalCall" },
+      { id: "cac-txn-h8", entityId: entity5.id, transactionType: "CAPITAL_CALL", amount: 15_000_000, date: new Date("2025-11-01"), description: "CC-CI-01 — Co-Invest SPV", referenceId: "cac-cc-h8", referenceType: "CapitalCall" },
+      { id: "cac-txn-h9", entityId: entity2.id, transactionType: "CAPITAL_CALL", amount: 7_500_000, date: new Date("2025-12-01"), description: "CC-009 — Cascade Timber bridge", referenceId: "cac-cc-h9", referenceType: "CapitalCall" },
+      { id: "cac-txn-h10", entityId: entity9.id, transactionType: "CAPITAL_CALL", amount: 20_000_000, date: new Date("2026-01-10"), description: "CC-GF-01 — Growth Fund draw", referenceId: "cac-cc-h10", referenceType: "CapitalCall" },
+      { id: "cac-txn-h11", entityId: entity1.id, transactionType: "CAPITAL_CALL", amount: 3_000_000, date: new Date("2026-02-01"), description: "CC-004A — Q1 2026 mgmt fees", referenceId: "cac-cc-h11", referenceType: "CapitalCall" },
+      // ── Historical distribution transactions ──
+      { id: "cac-txn-hd1", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 2_400_000, date: new Date("2025-04-30"), description: "NovaTech Q1 dividend", referenceId: "cac-dist-h1", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd2", entityId: entity2.id, transactionType: "DISTRIBUTION", amount: 8_000_000, date: new Date("2025-05-15"), description: "Helix partial exit", referenceId: "cac-dist-h2", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd3", entityId: entity8.id, transactionType: "DISTRIBUTION", amount: 1_800_000, date: new Date("2025-06-30"), description: "Q2 interest income", referenceId: "cac-dist-h3", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd4", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 2_400_000, date: new Date("2025-07-31"), description: "NovaTech Q2 dividend", referenceId: "cac-dist-h4", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd5", entityId: entity4.id, transactionType: "DISTRIBUTION", amount: 1_100_000, date: new Date("2025-08-15"), description: "123 Industrial Q2 NOI", referenceId: "cac-dist-h5", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd6", entityId: entity2.id, transactionType: "DISTRIBUTION", amount: 3_500_000, date: new Date("2025-09-30"), description: "CloudBase Q3 dividend", referenceId: "cac-dist-h6", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd7", entityId: entity8.id, transactionType: "DISTRIBUTION", amount: 2_200_000, date: new Date("2025-09-30"), description: "Q3 interest income", referenceId: "cac-dist-h7", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd8", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 2_400_000, date: new Date("2025-10-31"), description: "NovaTech Q3 dividend", referenceId: "cac-dist-h8", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd9", entityId: entity4.id, transactionType: "DISTRIBUTION", amount: 1_200_000, date: new Date("2025-11-15"), description: "123 Industrial Q3 NOI", referenceId: "cac-dist-h9", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd10", entityId: entity8.id, transactionType: "DISTRIBUTION", amount: 2_500_000, date: new Date("2025-12-31"), description: "Q4 interest income", referenceId: "cac-dist-h10", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd11", entityId: entity1.id, transactionType: "DISTRIBUTION", amount: 2_600_000, date: new Date("2026-01-31"), description: "NovaTech Q4 dividend", referenceId: "cac-dist-h11", referenceType: "DistributionEvent" },
+      { id: "cac-txn-hd12", entityId: entity2.id, transactionType: "DISTRIBUTION", amount: 15_000_000, date: new Date("2026-02-28"), description: "FreshRoute full exit", referenceId: "cac-dist-h12", referenceType: "DistributionEvent" },
     ],
   });
   console.log("Transactions seeded");

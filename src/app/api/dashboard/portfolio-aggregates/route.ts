@@ -12,9 +12,8 @@ export async function GET() {
       ? { entityAllocations: { some: { entity: { firmId } } } }
       : {};
     const entityFilter = firmId ? { firmId } : {};
-    const entityRelFilter = firmId ? { entity: { firmId } } : {};
 
-    const [assets, entities, dealActivity, capitalCalls, distributions] =
+    const [assets, entities] =
       await Promise.all([
         // All active assets with IRR for top/bottom performers
         prisma.asset.findMany({
@@ -29,6 +28,7 @@ export async function GET() {
             costBasis: true,
             moic: true,
             irr: true,
+            entryDate: true,
             entityAllocations: {
               include: {
                 entity: { select: { name: true } },
@@ -52,44 +52,6 @@ export async function GET() {
                 },
               },
             },
-          },
-        }),
-        // Recent deal activity
-        prisma.dealActivity
-          .findMany({
-            where: firmId ? { deal: { firmId } } : {},
-            orderBy: { createdAt: "desc" },
-            take: 6,
-            include: {
-              deal: { select: { id: true, name: true } },
-            },
-          })
-          .catch(() => []),
-        // Recent capital calls
-        prisma.capitalCall.findMany({
-          where: entityRelFilter,
-          orderBy: { createdAt: "desc" },
-          take: 4,
-          select: {
-            id: true,
-            callNumber: true,
-            amount: true,
-            status: true,
-            createdAt: true,
-            entity: { select: { id: true, name: true } },
-          },
-        }),
-        // Recent distributions
-        prisma.distributionEvent.findMany({
-          where: entityRelFilter,
-          orderBy: { createdAt: "desc" },
-          take: 4,
-          select: {
-            id: true,
-            grossAmount: true,
-            status: true,
-            distributionDate: true,
-            entity: { select: { id: true, name: true } },
           },
         }),
       ]);
@@ -140,6 +102,7 @@ export async function GET() {
       moic: a.moic,
       fairValue: a.fairValue,
       entityName: a.entityAllocations[0]?.entity?.name ?? null,
+      entryDate: a.entryDate ? a.entryDate.toISOString() : null,
     });
 
     const topPerformers = sortedByIRR.slice(0, 5).map(formatPerformer);
@@ -172,7 +135,8 @@ export async function GET() {
           totalCommitted,
           totalCalled,
           totalDeployed,
-          dryPowder: Math.max(0, totalCommitted - totalDeployed),
+          dryPowder: Math.max(0, totalCalled - totalDeployed),
+          uncalled: Math.max(0, totalCommitted - totalCalled),
           deploymentPct:
             totalCommitted > 0
               ? Math.min(100, (totalDeployed / totalCommitted) * 100)
@@ -184,6 +148,7 @@ export async function GET() {
         totalCalled: 0,
         totalDeployed: 0,
         totalDryPowder: 0,
+        totalUncalled: 0,
       },
     };
 
@@ -193,67 +158,14 @@ export async function GET() {
       capitalDeployment.aggregate.totalCalled += e.totalCalled;
       capitalDeployment.aggregate.totalDeployed += e.totalDeployed;
       capitalDeployment.aggregate.totalDryPowder += e.dryPowder;
+      capitalDeployment.aggregate.totalUncalled += e.uncalled;
     }
-
-    // ── Recent activity: merge deal activity + capital calls + distributions ──
-    const activityItems: {
-      id: string;
-      type: "DEAL_ACTIVITY" | "CAPITAL_CALL" | "DISTRIBUTION";
-      description: string;
-      entityName: string | null;
-      linkId: string;
-      linkType: "deal" | "entity";
-      date: Date;
-    }[] = [];
-
-    for (const a of dealActivity) {
-      activityItems.push({
-        id: a.id,
-        type: "DEAL_ACTIVITY",
-        description: a.description || `${a.activityType} on ${a.deal?.name}`,
-        entityName: null,
-        linkId: a.deal?.id ?? a.id,
-        linkType: "deal",
-        date: new Date(a.createdAt),
-      });
-    }
-
-    for (const cc of capitalCalls) {
-      activityItems.push({
-        id: cc.id,
-        type: "CAPITAL_CALL",
-        description: `Capital call ${cc.callNumber} — ${cc.entity.name} (${cc.status})`,
-        entityName: cc.entity.name,
-        linkId: cc.entity.id,
-        linkType: "entity",
-        date: new Date(cc.createdAt),
-      });
-    }
-
-    for (const dist of distributions) {
-      activityItems.push({
-        id: dist.id,
-        type: "DISTRIBUTION",
-        description: `Distribution to LPs — ${dist.entity.name} (${dist.status})`,
-        entityName: dist.entity.name,
-        linkId: dist.entity.id,
-        linkType: "entity",
-        date: new Date(dist.distributionDate),
-      });
-    }
-
-    // Sort by date descending, take 10
-    const recentActivity = activityItems
-      .sort((a, b) => b.date.getTime() - a.date.getTime())
-      .slice(0, 10)
-      .map((a) => ({ ...a, date: a.date.toISOString() }));
 
     return NextResponse.json({
       assetAllocation,
       topPerformers,
       bottomPerformers,
       capitalDeployment,
-      recentActivity,
     });
   } catch (err) {
     logger.error("[dashboard/portfolio-aggregates] Error:", { error: err instanceof Error ? err.message : String(err) });

@@ -75,9 +75,35 @@ export async function GET(req: NextRequest) {
       (sum, d) => sum + (d.netToLPs ?? 0),
       0,
     );
+    const totalCommitted = entity.totalCommitments ?? entity.commitments.reduce(
+      (sum, c) => sum + (c.amount ?? 0),
+      0,
+    );
+
+    // Capital deployed = sum of allocation cost bases (or entity share of asset cost basis)
+    const capitalDeployed = entity.assetAllocations.reduce(
+      (sum, a) => sum + (a.costBasis ?? ((a.asset?.costBasis ?? 0) * ((a.allocationPercent ?? 100) / 100))),
+      0,
+    );
+    const totalFairValue = entity.assetAllocations.reduce(
+      (sum, a) => sum + ((a.asset?.fairValue ?? 0) * ((a.allocationPercent ?? 100) / 100)),
+      0,
+    );
+
+    const dryPowder = Math.max(0, totalCalled - capitalDeployed);
+    const uncalledCapital = Math.max(0, totalCommitted - totalCalled);
+    const deploymentPct = totalCommitted > 0 ? (capitalDeployed / totalCommitted) * 100 : 0;
+    const dpi = totalCalled > 0 ? totalDistributed / totalCalled : 0;
+    const assetCount = entity.assetAllocations.length;
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { distributions, ...rest } = entity;
-    return { ...rest, totalCalled, totalDistributed };
+    return {
+      ...rest,
+      totalCalled, totalDistributed, totalCommitted,
+      capitalDeployed, totalFairValue,
+      dryPowder, uncalledCapital, deploymentPct, dpi, assetCount,
+    };
   });
 
   const paginated = buildPaginatedResult(enriched, params.limit, total);

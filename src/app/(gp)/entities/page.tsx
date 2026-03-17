@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fmt, cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
-import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { useFirm } from "@/components/providers/firm-provider";
-import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Building } from "lucide-react";
@@ -17,9 +15,9 @@ import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { ExportButton } from "@/components/ui/export-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionPanel } from "@/components/ui/section-panel";
-import { VehicleTreeView } from "@/components/features/entities/vehicle-tree-view";
 import { VehicleOrgChart } from "@/components/features/entities/vehicle-org-chart";
 import { VehicleCardsView } from "@/components/features/entities/vehicle-cards-view";
+import { ChevronRight, ChevronDown } from "lucide-react";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -29,58 +27,29 @@ const fetcher = (url: string) =>
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-type ViewMode = "flat" | "tree" | "orgchart" | "cards";
+type ViewMode = "flat" | "orgchart" | "cards";
 
 const VIEW_MODES: { key: ViewMode; label: string }[] = [
   { key: "flat", label: "Flat" },
-  { key: "tree", label: "Tree" },
   { key: "orgchart", label: "Org Chart" },
   { key: "cards", label: "Cards" },
 ];
 
-const ENTITY_FILTERS = [
-  {
-    key: "entityType",
-    label: "Type",
-    options: [
-      { value: "MAIN_FUND", label: "Main Fund" },
-      { value: "SIDECAR", label: "Sidecar" },
-      { value: "SPV", label: "SPV" },
-      { value: "CO_INVEST", label: "Co-Invest" },
-    ],
-  },
-  {
-    key: "status",
-    label: "Status",
-    options: [
-      { value: "ACTIVE", label: "Active" },
-      { value: "WINDING_DOWN", label: "Winding Down" },
-      { value: "DISSOLVED", label: "Dissolved" },
-    ],
-  },
-];
-
 export default function EntitiesPage() {
   const { firmId } = useFirm();
-  const [showCreate, setShowCreate] = useState(false);
-  const [search, setSearch] = useState("");
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [cursor, setCursor] = useState<string | null>(null);
   const [allEntities, setAllEntities] = useState<any[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("flat");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
       const params = new URLSearchParams({ firmId, limit: "50" });
-      if (search) params.set("search", search);
-      for (const [k, v] of Object.entries(activeFilters)) {
-        if (v) params.set(k, v);
-      }
       if (currentCursor) params.set("cursor", currentCursor);
       return `/api/entities?${params.toString()}`;
     },
-    [firmId, search, activeFilters],
+    [firmId],
   );
 
   const { isLoading } = useSWR(buildUrl(null), fetcher, {
@@ -90,12 +59,6 @@ export default function EntitiesPage() {
     },
     revalidateOnFocus: false,
   });
-
-  const handleFilterChange = useCallback((key: string, value: string) => {
-    setActiveFilters((prev) => ({ ...prev, [key]: value }));
-    setAllEntities([]);
-    setCursor(null);
-  }, []);
 
   const handleLoadMore = useCallback(async () => {
     if (!cursor || loadingMore) return;
@@ -113,14 +76,6 @@ export default function EntitiesPage() {
   }, [cursor, loadingMore, buildUrl]);
 
   const hasMore = !!cursor;
-  const hasFilters = !!(search || Object.values(activeFilters).some(Boolean));
-
-  const handleClearFilters = () => {
-    setSearch("");
-    setActiveFilters({});
-    setAllEntities([]);
-    setCursor(null);
-  };
 
   return (
     <div className="space-y-4">
@@ -128,27 +83,21 @@ export default function EntitiesPage() {
         title="Vehicles"
         subtitle={`${allEntities.length} vehicles`}
         actions={
-          <>
-            <SearchFilterBar
-              filters={ENTITY_FILTERS}
-              onFilterChange={handleFilterChange}
-              activeFilters={activeFilters}
-            >
-              <ExportButton
-                data={allEntities.map((e: any) => ({
-                  id: e.id,
-                  name: e.name,
-                  type: e.entityType,
-                  vintageYear: e.vintageYear ?? "",
-                  totalCommitted: e.totalCommitments ?? 0,
-                  totalCalled: e.totalCalled ?? 0,
-                  nav: e.nav ?? "",
-                  irr: e.irr ?? "",
-                  tvpi: e.tvpi ?? "",
-                }))}
-                fileName="Vehicles_Export"
-              />
-            </SearchFilterBar>
+          <div className="flex items-center gap-2">
+            <ExportButton
+              data={allEntities.map((e: any) => ({
+                id: e.id,
+                name: e.name,
+                type: e.entityType,
+                vintageYear: e.vintageYear ?? "",
+                totalCommitted: e.totalCommitments ?? 0,
+                totalCalled: e.totalCalled ?? 0,
+                nav: e.nav ?? "",
+                irr: e.irr ?? "",
+                tvpi: e.tvpi ?? "",
+              }))}
+              fileName="Vehicles_Export"
+            />
 
             {/* View mode toggle */}
             <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
@@ -167,9 +116,7 @@ export default function EntitiesPage() {
                 </button>
               ))}
             </div>
-
-            <Button onClick={() => setShowCreate(true)}>+ Create Vehicle</Button>
-          </>
+          </div>
         }
       />
 
@@ -191,60 +138,98 @@ export default function EntitiesPage() {
                 <tr><td colSpan={9}>
                   <EmptyState
                     icon={<Building className="h-10 w-10" />}
-                    title={hasFilters ? "No results match your filters" : "No vehicles yet"}
-                    description={!hasFilters ? "Create your first vehicle to get started" : undefined}
-                    action={!hasFilters ? { label: "+ Create Vehicle", onClick: () => setShowCreate(true) } : undefined}
-                    filtered={hasFilters}
-                    onClearFilters={hasFilters ? handleClearFilters : undefined}
+                    title="No vehicles yet"
+                    description="Use the command bar (Cmd+K) to create your first vehicle"
                   />
                 </td></tr>
               ) : (
-                allEntities.map((e: any) => (
-                  <tr key={e.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <td className="px-3 py-2.5">
-                      <Link href={`/entities/${e.id}`} className="font-medium text-indigo-700 hover:underline">{e.name}</Link>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <Badge color={e.entityType === "MAIN_FUND" ? "indigo" : e.entityType === "SIDECAR" ? "purple" : "blue"}>
-                        {e.entityType?.replace(/_/g, " ")}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2.5">{e.vintageYear}</td>
-                    <td className="px-3 py-2.5">{fmt(e.totalCommitments || 0)}</td>
-                    <td className="px-3 py-2.5">{fmt(e.totalCalled)}</td>
-                    <td className="px-3 py-2.5">{fmt(e.totalDistributed)}</td>
-                    <td className="px-3 py-2.5">
-                      {e.formationStatus === "FORMING" && <Badge color="yellow">Forming</Badge>}
-                      {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
-                      {e.formationStatus === "REGISTERED" && <Badge color="blue">Registered</Badge>}
-                      {(!e.formationStatus || e.formationStatus === "NOT_STARTED") && <span className="text-gray-400">—</span>}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <Badge color={e.accountingConnection?.syncStatus === "CONNECTED" ? "green" : e.accountingConnection?.syncStatus === "ERROR" ? "red" : "gray"}>
-                        {e.accountingConnection?.syncStatus || "—"}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <Link href={`/entities/${e.id}`}>
-                        <Button variant="secondary" size="sm">View</Button>
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                (() => {
+                  // Build hierarchy for expand/collapse
+                  const childrenMap = new Map<string, any[]>();
+                  allEntities.forEach((e: any) => {
+                    if (e.parentEntityId) {
+                      const siblings = childrenMap.get(e.parentEntityId) || [];
+                      siblings.push(e);
+                      childrenMap.set(e.parentEntityId, siblings);
+                    }
+                  });
+                  const entityIds = new Set(allEntities.map((e: any) => e.id));
+                  const roots = allEntities.filter((e: any) => !e.parentEntityId || !entityIds.has(e.parentEntityId));
+
+                  const toggleExpand = (id: string) => {
+                    setExpanded((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(id)) next.delete(id); else next.add(id);
+                      return next;
+                    });
+                  };
+
+                  const renderRow = (e: any, depth: number) => {
+                    const hasChildren = childrenMap.has(e.id);
+                    const isExpanded = expanded.has(e.id);
+                    return (
+                      <tr key={e.id} className={cn("border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800", depth > 0 && "bg-gray-50/50 dark:bg-gray-800/30")}>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center" style={{ paddingLeft: depth * 24 }}>
+                            {hasChildren ? (
+                              <button onClick={() => toggleExpand(e.id)} className="mr-1.5 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                {isExpanded ? <ChevronDown className="h-3.5 w-3.5 text-gray-400" /> : <ChevronRight className="h-3.5 w-3.5 text-gray-400" />}
+                              </button>
+                            ) : (
+                              <span className="mr-1.5 w-[18px]" />
+                            )}
+                            <Link href={`/entities/${e.id}`} className="font-medium text-indigo-700 hover:underline dark:text-indigo-400">{e.name}</Link>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Badge color={e.entityType === "MAIN_FUND" ? "indigo" : e.entityType === "SIDECAR" ? "purple" : e.entityType === "SPV" ? "blue" : e.entityType === "CO_INVEST_VEHICLE" || e.entityType === "CO_INVEST" ? "teal" : "gray"}>
+                            {e.entityType?.replace(/_/g, " ")}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2.5">{e.vintageYear}</td>
+                        <td className="px-3 py-2.5">{fmt(e.totalCommitments || e.totalCommitted || 0)}</td>
+                        <td className="px-3 py-2.5">{fmt(e.totalCalled)}</td>
+                        <td className="px-3 py-2.5">{fmt(e.totalDistributed)}</td>
+                        <td className="px-3 py-2.5">
+                          {e.formationStatus === "FORMING" && <Badge color="yellow">Forming</Badge>}
+                          {e.formationStatus === "FORMED" && <Badge color="green">Formed</Badge>}
+                          {e.formationStatus === "REGISTERED" && <Badge color="blue">Registered</Badge>}
+                          {(!e.formationStatus || e.formationStatus === "NOT_STARTED") && <span className="text-gray-400">—</span>}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Badge color={e.accountingConnection?.syncStatus === "CONNECTED" ? "green" : e.accountingConnection?.syncStatus === "ERROR" ? "red" : "gray"}>
+                            {e.accountingConnection?.syncStatus || "—"}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Link href={`/entities/${e.id}`}>
+                            <Button variant="secondary" size="sm">View</Button>
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  };
+
+                  const rows: React.ReactNode[] = [];
+                  for (const root of roots) {
+                    rows.push(renderRow(root, 0));
+                    if (expanded.has(root.id)) {
+                      for (const child of (childrenMap.get(root.id) || [])) {
+                        rows.push(renderRow(child, 1));
+                        // Support nested children (depth 2)
+                        if (expanded.has(child.id)) {
+                          for (const grandchild of (childrenMap.get(child.id) || [])) {
+                            rows.push(renderRow(grandchild, 2));
+                          }
+                        }
+                      }
+                    }
+                  }
+                  return rows;
+                })()
               )}
             </tbody>
           </table>
-        </SectionPanel>
-      )}
-
-      {/* Tree view */}
-      {viewMode === "tree" && (
-        <SectionPanel noPadding className="overflow-hidden">
-          {isLoading && allEntities.length === 0 ? (
-            <table className="w-full text-xs"><tbody><TableSkeleton columns={6} /></tbody></table>
-          ) : (
-            <VehicleTreeView entities={allEntities} />
-          )}
         </SectionPanel>
       )}
 
@@ -274,12 +259,10 @@ export default function EntitiesPage() {
         </>
       )}
 
-      {/* Load more (only visible in flat/tree modes where pagination matters) */}
-      {(viewMode === "flat" || viewMode === "tree") && (
+      {/* Load more (only visible in flat mode where pagination matters) */}
+      {viewMode === "flat" && (
         <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />
       )}
-
-      <CreateEntityForm open={showCreate} onClose={() => setShowCreate(false)} />
     </div>
   );
 }

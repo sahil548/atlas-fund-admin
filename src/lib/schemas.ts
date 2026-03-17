@@ -79,6 +79,7 @@ export const UpdateDealSchema = z.object({
   thesisNotes: z.string().nullable().optional(),
   investmentRationale: z.string().nullable().optional(),
   additionalContext: z.string().nullable().optional(),
+  projectedExitTimeframe: z.string().nullable().optional(),
   dealMetadata: DealMetadataSchema.optional(),
 });
 
@@ -233,6 +234,21 @@ export const CreateDealActivitySchema = z.object({
 export const CreateNoteSchema = z.object({
   content: z.string().min(1, "Note content is required"),
   authorId: z.string().optional(),
+  dealId: z.string().optional(),
+  assetId: z.string().optional(),
+  entityId: z.string().optional(),
+  investorId: z.string().optional(),
+});
+
+export const CreateSavedConversationSchema = z.object({
+  title: z.string().min(1),
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string(),
+    timestamp: z.string(),
+  })),
+  summary: z.string().optional(),
+  authorId: z.string(),
   dealId: z.string().optional(),
   assetId: z.string().optional(),
   entityId: z.string().optional(),
@@ -946,6 +962,16 @@ export const CreateFundraisingRoundSchema = z.object({
   closingDate: z.string().optional(),
 });
 
+export const CreateFundraisingProspectSchema = z.object({
+  roundId: z.string().min(1, "Round ID is required"),
+  investorName: z.string().min(1, "Investor name is required"),
+  investorType: z.string().optional(),
+  contactName: z.string().optional(),
+  contactEmail: z.string().email().optional().or(z.literal("")),
+  targetAmount: z.number().nonnegative().optional(),
+  notes: z.string().optional(),
+});
+
 // ── Fireflies API Key ─────────────────────────────────────────
 
 export const PutFirefliesSchema = z.object({
@@ -1070,4 +1096,44 @@ export const CreateESignatureSchema = z.object({
   entityId: z.string().optional().nullable(),
   signers: z.array(z.object({ name: z.string().min(1), email: z.string().email() })).min(1),
   subject: z.string().optional(),
+});
+
+// ── Unit Classes & Ownership Units ──────────────────────────────────────────
+
+export const CreateUnitClassSchema = z.object({
+  entityId: z.string().min(1, "Entity is required"),
+  name: z.string().min(1, "Class name is required"),
+  classType: z.enum(["LP_UNIT", "GP_UNIT", "CARRIED_INTEREST", "MANAGEMENT"]).default("LP_UNIT"),
+  description: z.string().optional(),
+  unitPrice: z.coerce.number().positive("Unit price must be positive"),
+  totalAuthorized: z.coerce.number().positive().optional().nullable(),
+  preferredReturnRate: z.coerce.number().min(0).max(1).optional().nullable(),
+  managementFeeRate: z.coerce.number().min(0).max(1).optional().nullable(),
+  votingRights: z.boolean().default(true),
+});
+
+export const UpdateUnitClassSchema = z.object({
+  name: z.string().min(1).optional(),
+  classType: z.enum(["LP_UNIT", "GP_UNIT", "CARRIED_INTEREST", "MANAGEMENT"]).optional(),
+  description: z.string().nullable().optional(),
+  unitPrice: z.coerce.number().positive().optional(),
+  totalAuthorized: z.coerce.number().positive().nullable().optional(),
+  preferredReturnRate: z.coerce.number().min(0).max(1).nullable().optional(),
+  managementFeeRate: z.coerce.number().min(0).max(1).nullable().optional(),
+  votingRights: z.boolean().optional(),
+  status: z.enum(["ACTIVE", "FROZEN", "RETIRED"]).optional(),
+});
+
+export const IssueUnitsSchema = z.object({
+  unitClassId: z.string().min(1, "Unit class is required"),
+  investorId: z.string().min(1, "Investor is required"),
+  unitsIssued: z.coerce.number().positive("Units must be positive"),
+  unitCost: z.coerce.number().nonnegative("Unit cost must be non-negative"),
+  acquisitionDate: z.string().min(1, "Acquisition date is required"),
+  notes: z.string().optional(),
+});
+
+export const UpdateOwnershipUnitSchema = z.object({
+  status: z.enum(["ACTIVE", "REDEEMED", "TRANSFERRED", "CANCELLED"]).optional(),
+  notes: z.string().nullable().optional(),
 });

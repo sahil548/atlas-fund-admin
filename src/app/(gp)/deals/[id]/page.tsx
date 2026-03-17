@@ -69,7 +69,7 @@ const NAME_TO_TYPE: Record<string, string> = {
 
 /* ── Stage-dependent tab visibility ──────────────── */
 const stageTabs: Record<string, string[]> = {
-  SCREENING: ["Overview", "Due Diligence", "Documents", "Notes", "Activity", "Tasks", "Co-Investors"],
+  SCREENING: ["Overview", "Documents", "Notes", "Activity", "Tasks", "Co-Investors"],
   DUE_DILIGENCE: [
     "Overview",
     "Due Diligence",
@@ -213,6 +213,8 @@ export default function DealDetailPage({
   const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgress | null>(null);
   const [ddStarting, setDDStarting] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  const [triggerDDAnalysis, setTriggerDDAnalysis] = useState(false);
+  const [ddAnalyzing, setDdAnalyzing] = useState(false);
   const autoStartedRef = useRef(false);
 
   // ── Auto-trigger for "Create & Screen" path ──
@@ -408,6 +410,9 @@ export default function DealDetailPage({
     : stageOrder.indexOf(deal.stage);
   const isDead = deal.stage === "DEAD";
   const isClosed = deal.stage === "CLOSED";
+  const workstreamsCount = ((deal.workstreams || []) as any[]).filter(
+    (w: any) => w.analysisType !== "IC_MEMO"
+  ).length;
   const visibleTabs = isDead
     ? getDeadTabs(deal)
     : stageTabs[deal.stage] || stageTabs.SCREENING;
@@ -562,10 +567,7 @@ export default function DealDetailPage({
         return (
           <DealOverviewTab
             deal={deal}
-            analysisProgress={analysisProgress}
-            ddStarting={ddStarting}
             regenerating={regenerating}
-            startScreening={startScreening}
             regenerateMemo={regenerateMemo}
           />
         );
@@ -574,7 +576,7 @@ export default function DealDetailPage({
       case "Notes":
         return <DealNotesTab deal={deal} />;
       case "Due Diligence":
-        return <DealDDTab deal={deal} />;
+        return <DealDDTab deal={deal} triggerRunAll={triggerDDAnalysis} onRunAllComplete={() => { setTriggerDDAnalysis(false); setDdAnalyzing(false); }} onProgressUpdate={setAnalysisProgress} />;
       case "Activity":
         return <DealActivityTab deal={deal} />;
       case "IC Review":
@@ -631,6 +633,13 @@ export default function DealDetailPage({
                 >
                   {deal.sourcedByContact.firstName} {deal.sourcedByContact.lastName}
                 </Link>
+              </span>
+            )}
+            {deal.daysInStage != null && !isDead && !isClosed && (
+              <span className={`font-medium ${
+                deal.daysInStage > 30 ? "text-red-500" : deal.daysInStage >= 14 ? "text-amber-500" : "text-gray-400"
+              }`}>
+                {" "}· {deal.daysInStage}d in stage
               </span>
             )}
           </div>
@@ -702,6 +711,97 @@ export default function DealDetailPage({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Process Bar — universal stage indicators visible across all tabs */}
+      {!isDead && !isClosed && !analysisProgress && (
+        <>
+          {deal.stage === "SCREENING" && !deal.screeningResult?.memo && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-800 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-purple-900 dark:text-purple-100">Ready to screen</span>
+                  <span className="text-xs text-purple-600 dark:text-purple-400 ml-2">
+                    {deal.documents?.length ?? 0} docs · {workstreamsCount} workstreams
+                  </span>
+                </div>
+              </div>
+              <Button loading={ddStarting} onClick={startScreening} size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                Run AI Screening
+              </Button>
+            </div>
+          )}
+
+          {deal.stage === "DUE_DILIGENCE" && (() => {
+            const ws = ((deal.workstreams || []) as any[]).filter((w: any) => w.analysisType !== "IC_MEMO");
+            const complete = ws.filter((w: any) => w.status === "COMPLETE").length;
+            const pctDone = ws.length > 0 ? Math.round((complete / ws.length) * 100) : 0;
+            return (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    {complete}/{ws.length} workstreams complete
+                  </span>
+                  <div className="w-24 bg-blue-200 dark:bg-blue-800 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-blue-600 transition-all" style={{ width: `${pctDone}%` }} />
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => { setTriggerDDAnalysis(true); setDdAnalyzing(true); setTab("Due Diligence"); }}
+                  disabled={ddAnalyzing}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {ddAnalyzing ? "Analyzing..." : "Run All Analysis"}
+                </Button>
+              </div>
+            );
+          })()}
+
+          {deal.stage === "IC_REVIEW" && deal.icProcess && (() => {
+            const votes = deal.icProcess.votes || [];
+            const approve = votes.filter((v: any) => v.vote === "APPROVE").length;
+            const reject = votes.filter((v: any) => v.vote === "REJECT").length;
+            const structure = deal.targetEntity?.decisionStructure;
+            const voterCount = structure?.members?.filter((m: any) => m.role === "VOTER" || !m.role).length || votes.length;
+            return (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3 flex items-center justify-between">
+                <span className="text-sm font-medium text-purple-900 dark:text-purple-100">
+                  {votes.length}/{voterCount} voted · {approve} approve{reject > 0 ? ` · ${reject} reject` : ""}
+                </span>
+                {deal.icProcess.finalDecision && (
+                  <Badge color={deal.icProcess.finalDecision === "APPROVED" ? "green" : "red"}>
+                    {deal.icProcess.finalDecision}
+                  </Badge>
+                )}
+              </div>
+            );
+          })()}
+
+          {deal.stage === "CLOSING" && (() => {
+            const items = (deal.closingChecklist || []) as any[];
+            const total = items.length;
+            const complete = items.filter((i: any) => i.completed || i.status === "COMPLETE").length;
+            const pctDone = total > 0 ? Math.round((complete / total) * 100) : 0;
+            return total > 0 ? (
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-indigo-900 dark:text-indigo-100">
+                    {complete}/{total} closing items complete
+                  </span>
+                  <div className="w-24 bg-indigo-200 dark:bg-indigo-800 rounded-full h-1.5">
+                    <div className="h-1.5 rounded-full bg-indigo-600 transition-all" style={{ width: `${pctDone}%` }} />
+                  </div>
+                </div>
+              </div>
+            ) : null;
+          })()}
+        </>
       )}
 
       {deal.stage === "IC_REVIEW" && !isDead && (
@@ -864,6 +964,7 @@ export default function DealDetailPage({
           source: deal.source,
           counterparty: deal.counterparty,
           sourcedByContactId: deal.sourcedByContactId,
+          projectedExitTimeframe: deal.projectedExitTimeframe,
           description: deal.description,
           thesisNotes: deal.thesisNotes,
           investmentRationale: deal.investmentRationale,

@@ -35,12 +35,20 @@ export function SummaryBar() {
   const irr: number | null =
     stats?.performanceMetrics?.weightedIRR ?? null;
   const tvpi: number | null = stats?.performanceMetrics?.tvpi ?? null;
-  const dealCount: number = stats?.pipelineCount ?? 0;
+  const dpi: number | null = stats?.performanceMetrics?.dpi ?? null;
+  // Compute deployed % from entity cards
+  const totalCommitted: number = Array.isArray(entityCards)
+    ? entityCards.reduce((sum: number, e: any) => sum + (e.totalCommitted ?? 0), 0)
+    : 0;
+  const totalDeployed: number = Array.isArray(entityCards)
+    ? entityCards.reduce((sum: number, e: any) => sum + (e.capitalDeployed ?? 0), 0)
+    : 0;
+  const deployedPct = totalCommitted > 0 ? totalDeployed / totalCommitted : 0;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-6 py-4 gap-4">
-        {[...Array(5)].map((_, i) => (
+      <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2.5 gap-4">
+        {[...Array(6)].map((_, i) => (
           <div key={i} className="flex-1 space-y-2">
             <div className="h-2.5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-16" />
             <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-20" />
@@ -73,19 +81,25 @@ export function SummaryBar() {
         tvpi == null ? "text-gray-400" : "text-gray-900 dark:text-gray-100",
     },
     {
-      label: "Active Deals",
-      value: String(dealCount),
-      colorClass: "text-gray-900 dark:text-gray-100",
+      label: "DPI",
+      value: dpi != null ? `${dpi.toFixed(2)}x` : "N/A",
+      colorClass:
+        dpi == null ? "text-gray-400" : "text-gray-900 dark:text-gray-100",
+    },
+    {
+      label: "Deployed",
+      value: pct(deployedPct),
+      colorClass: "text-indigo-600 dark:text-indigo-400",
     },
     {
       label: "Dry Powder",
       value: fmt(dryPowder),
-      colorClass: "text-amber-600 dark:text-amber-400",
+      colorClass: "text-emerald-600 dark:text-emerald-400",
     },
   ];
 
   return (
-    <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-6 py-4 gap-4">
+    <div className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2.5 gap-4">
       {metrics.map((metric, i) => (
         <div key={i} className="flex-1 min-w-0">
           <div className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">

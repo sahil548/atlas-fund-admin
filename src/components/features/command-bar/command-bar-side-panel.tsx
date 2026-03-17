@@ -10,7 +10,11 @@ import {
   ArrowRight,
   Send,
   Trash2,
+  Bookmark,
+  Check,
 } from "lucide-react";
+import { useUser } from "@/components/providers/user-provider";
+import { mutate } from "swr";
 import { useCommandBar } from "./command-bar-provider";
 import { useFirm } from "@/components/providers/firm-provider";
 import { classifyIntent } from "@/lib/ai-nl-intent";
@@ -183,10 +187,14 @@ export function CommandBarSidePanel() {
     pageContext,
   } = useCommandBar();
 
+  const { userId } = useUser();
+  const toast = useToast();
   const [input, setInput] = useState("");
   const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
   const [pendingAction, setPendingAction] = useState<string>("");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [savingConversation, setSavingConversation] = useState(false);
+  const [conversationSaved, setConversationSaved] = useState(false);
   const conversationRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -201,6 +209,80 @@ export function CommandBarSidePanel() {
   useEffect(() => {
     setTimeout(() => inputRef.current?.focus(), 100);
   }, []);
+
+  // Reset saved state when conversation changes
+  useEffect(() => {
+    setConversationSaved(false);
+  }, [conversation.length]);
+
+  // ── Save conversation to current object ──────────────
+  const canSaveConversation =
+    conversation.length > 0 &&
+    pageContext &&
+    ["deal", "asset", "entity"].includes(pageContext.pageType) &&
+    pageContext.entityId;
+
+  const saveConversationLabel = pageContext
+    ? `Save to ${pageContext.pageType.charAt(0).toUpperCase() + pageContext.pageType.slice(1)}`
+    : "Save";
+
+  const handleSaveConversation = async () => {
+    if (!canSaveConversation || savingConversation || conversationSaved) return;
+    setSavingConversation(true);
+
+    const firstUserMsg = conversation.find((m) => m.role === "user");
+    const title = firstUserMsg
+      ? firstUserMsg.content.slice(0, 60) + (firstUserMsg.content.length > 60 ? "…" : "")
+      : "AI Conversation";
+
+    const messages = conversation.map((m) => ({
+      role: m.role,
+      content: m.content,
+      timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+    }));
+
+    // Build the last assistant message as summary
+    const lastAssistant = [...conversation].reverse().find((m) => m.role === "assistant");
+    const summary = lastAssistant
+      ? lastAssistant.content.slice(0, 200) + (lastAssistant.content.length > 200 ? "…" : "")
+      : undefined;
+
+    const fkField =
+      pageContext!.pageType === "deal"
+        ? "dealId"
+        : pageContext!.pageType === "asset"
+          ? "assetId"
+          : "entityId";
+
+    try {
+      const res = await fetch("/api/saved-conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          messages,
+          summary,
+          authorId: userId,
+          [fkField]: pageContext!.entityId,
+        }),
+      });
+      if (res.ok) {
+        setConversationSaved(true);
+        toast.success("Conversation saved");
+        // Revalidate timeline so the saved conversation appears immediately
+        if (pageContext!.pageType === "deal") {
+          mutate(`/api/deals/${pageContext!.entityId}/timeline`);
+          mutate(`/api/deals/${pageContext!.entityId}`);
+        }
+      } else {
+        toast.error("Failed to save conversation");
+      }
+    } catch {
+      toast.error("Failed to save conversation");
+    } finally {
+      setSavingConversation(false);
+    }
+  };
 
   // ── Submit query ─────────────────────────────────────
 
@@ -485,6 +567,26 @@ export function CommandBarSidePanel() {
           )}
         </div>
         <div className="flex items-center gap-1">
+          {canSaveConversation && (
+            <button
+              onClick={handleSaveConversation}
+              disabled={savingConversation || conversationSaved}
+              className={`flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-lg transition-colors ${
+                conversationSaved
+                  ? "bg-green-50 text-green-600 border border-green-200"
+                  : "bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50"
+              }`}
+              title={saveConversationLabel}
+            >
+              {conversationSaved ? (
+                <><Check className="w-3 h-3" /> Saved</>
+              ) : savingConversation ? (
+                <><Loader2 className="w-3 h-3 animate-spin" /> Saving…</>
+              ) : (
+                <><Bookmark className="w-3 h-3" /> {saveConversationLabel}</>
+              )}
+            </button>
+          )}
           {conversation.length > 0 && (
             <button
               onClick={clearConversation}

@@ -50,6 +50,14 @@ export async function GET(
       waterfallTemplate: { include: { tiers: { orderBy: { tierOrder: "asc" } } } },
       feeCalculations: true,
       sideLetters: { include: { investor: true, entity: true } },
+      unitClasses: {
+        include: {
+          ownershipUnits: {
+            include: { investor: { select: { id: true, name: true, investorType: true, kycStatus: true } } },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      },
       capitalAccounts: { orderBy: { periodDate: "desc" } },
       meetings: { orderBy: { meetingDate: "desc" } },
       documents: { orderBy: { uploadDate: "desc" } },

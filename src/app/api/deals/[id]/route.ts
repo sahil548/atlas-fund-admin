@@ -62,7 +62,7 @@ export async function GET(
       meetings: { orderBy: { meetingDate: "desc" } },
       notes: { orderBy: { createdAt: "desc" } },
       activities: { orderBy: { createdAt: "desc" } },
-      sourceAssets: { select: { id: true, name: true } },
+      sourceAssets: { select: { id: true, name: true, costBasis: true, fairValue: true, moic: true, irr: true } },
       dealLead: { select: { id: true, name: true, initials: true } },
       sourcedByContact: { select: { id: true, firstName: true, lastName: true } },
       coInvestors: {
@@ -104,11 +104,28 @@ export async function GET(
   });
   if (!deal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  // Compute daysInStage (same logic as list API)
+  const now = new Date();
+  const stageEntry = (deal.activities as any[]).find(
+    (a) =>
+      a.activityType.includes("STAGE") &&
+      ((a.metadata as any)?.toStage === deal.stage ||
+        (a.metadata as any)?.newStage === deal.stage),
+  );
+  const enteredAt = stageEntry
+    ? new Date(stageEntry.createdAt)
+    : new Date(deal.createdAt);
+  const daysInStage = Math.max(
+    0,
+    Math.floor((now.getTime() - enteredAt.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+
   // Sanitize high-risk JSON blob field: dealMetadata
   const safeMeta = DealMetadataSchema.safeParse(deal.dealMetadata);
   const sanitizedDeal = {
     ...deal,
     dealMetadata: safeMeta.success ? safeMeta.data : null,
+    daysInStage,
   };
 
   return NextResponse.json(sanitizedDeal);
