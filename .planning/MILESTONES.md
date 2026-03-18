@@ -1,5 +1,35 @@
 # Atlas — Milestones
 
+## v2.0 Intelligence Platform (Shipped: 2026-03-18)
+
+**Phases:** 10 | **Plans:** 58
+**Timeline:** 10 days (2026-03-08 → 2026-03-18)
+**Stats:** 264 commits, 545 files changed, ~91K LOC TypeScript
+**Requirements:** 99/99 satisfied
+
+### Key Accomplishments
+
+1. **AI command bar & intelligence layer** — Natural language queries, action execution, CIM extraction, DD summaries, IC memos, LP update drafting, task suggestions — all from the command bar
+2. **Document intake engine** — Upload CIMs/leases/credit docs anywhere in the app, AI auto-extracts structured data and links to deals/assets/entities
+3. **Deal desk & CRM** — Full pipeline with days-in-stage, IC memo PDF export, bulk actions, contact directory with interaction history, relationship tags, co-investor network
+4. **Capital activity workflows** — Status advancement buttons (Draft→Issued→Funded / Draft→Approved→Paid), waterfall scenario preview, asset-level transaction ledgers, entity financial summaries
+5. **GP dashboard as morning briefing** — 7-section dashboard with pipeline funnel, needs-attention alerts, filterable activity feed, asset allocation, capital deployment tracker
+6. **Schema & UI hardening** — Structured logging across 99 files, Zod validation on all API routes, custom Select/Modal/Tabs components, full dark mode audit, SectionErrorBoundary wiring
+
+### Known Gaps (Tech Debt)
+
+- Plan 20-10 (final human verification checkpoint) not formally executed as separate pass
+- 6 phases missing formal VERIFICATION.md files (12, 13, 14, 15, 18, 20)
+- Meeting detail page (/meetings/[id]) not built — activity feed links to meetings list instead
+
+### Archive
+
+- [v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
+- [v2.0-REQUIREMENTS.md](milestones/v2.0-REQUIREMENTS.md)
+- [v2.0-MILESTONE-AUDIT.md](milestones/v2.0-MILESTONE-AUDIT.md)
+
+---
+
 ## v1.0 GP Production Ready
 
 **Shipped:** 2026-03-08
