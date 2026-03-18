@@ -115,8 +115,12 @@ async function main() {
   await prisma.sideLetterRule.deleteMany({ where: { sideLetter: { id: cac } } });
   await prisma.sideLetter.deleteMany({ where: { id: cac } });
   await prisma.commitment.deleteMany({ where: { id: cac } });
+  await prisma.ownershipUnit.deleteMany({ where: { unitClass: { entity: { id: cac } } } });
+  await prisma.unitClass.deleteMany({ where: { entity: { id: cac } } });
   await prisma.investorNotificationPreference.deleteMany({ where: { investor: { id: cac } } });
   await prisma.investor.deleteMany({ where: { id: cac } });
+  await prisma.fundraisingProspect.deleteMany({ where: { round: { entity: { id: cac } } } });
+  await prisma.fundraisingRound.deleteMany({ where: { entity: { id: cac } } });
   await prisma.trialBalanceSnapshot.deleteMany({ where: { connection: { id: cac } } });
   await prisma.accountMapping.deleteMany({ where: { connection: { id: cac } } });
   await prisma.accountingConnection.deleteMany({ where: { id: cac } });
@@ -2278,6 +2282,146 @@ async function main() {
     ],
   });
   console.log("Transactions seeded");
+
+  // ============================================================
+  // NAV COMPUTATIONS (quarterly snapshots for Overview charts)
+  // ============================================================
+  console.log("Creating NAV computations...");
+
+  await prisma.nAVComputation.createMany({
+    data: [
+      // CAC Fund I — 7 quarterly snapshots
+      { entityId: entity1.id, periodDate: new Date("2023-09-30"), economicNAV: 145_000_000, costBasisNAV: 105_000_000, unrealizedGain: 40_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2023-12-31"), economicNAV: 152_000_000, costBasisNAV: 105_000_000, unrealizedGain: 47_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2024-03-31"), economicNAV: 160_000_000, costBasisNAV: 108_000_000, unrealizedGain: 52_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2024-06-30"), economicNAV: 172_000_000, costBasisNAV: 108_000_000, unrealizedGain: 64_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2024-09-30"), economicNAV: 183_000_000, costBasisNAV: 110_000_000, unrealizedGain: 73_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2024-12-31"), economicNAV: 195_000_000, costBasisNAV: 110_000_000, unrealizedGain: 85_000_000 },
+      { entityId: entity1.id, periodDate: new Date("2025-03-31"), economicNAV: 210_000_000, costBasisNAV: 112_000_000, unrealizedGain: 98_000_000 },
+      // CAC Fund II — 5 quarterly snapshots
+      { entityId: entity2.id, periodDate: new Date("2024-03-31"), economicNAV: 98_000_000, costBasisNAV: 82_000_000, unrealizedGain: 16_000_000 },
+      { entityId: entity2.id, periodDate: new Date("2024-06-30"), economicNAV: 115_000_000, costBasisNAV: 95_000_000, unrealizedGain: 20_000_000 },
+      { entityId: entity2.id, periodDate: new Date("2024-09-30"), economicNAV: 132_000_000, costBasisNAV: 107_000_000, unrealizedGain: 25_000_000 },
+      { entityId: entity2.id, periodDate: new Date("2024-12-31"), economicNAV: 148_000_000, costBasisNAV: 118_000_000, unrealizedGain: 30_000_000 },
+      { entityId: entity2.id, periodDate: new Date("2025-03-31"), economicNAV: 165_000_000, costBasisNAV: 125_000_000, unrealizedGain: 40_000_000 },
+      // Credit Opportunity I — 4 quarterly snapshots
+      { entityId: entity8.id, periodDate: new Date("2024-06-30"), economicNAV: 28_000_000, costBasisNAV: 26_000_000, unrealizedGain: 2_000_000 },
+      { entityId: entity8.id, periodDate: new Date("2024-09-30"), economicNAV: 34_000_000, costBasisNAV: 32_000_000, unrealizedGain: 2_000_000 },
+      { entityId: entity8.id, periodDate: new Date("2024-12-31"), economicNAV: 41_000_000, costBasisNAV: 38_000_000, unrealizedGain: 3_000_000 },
+      { entityId: entity8.id, periodDate: new Date("2025-03-31"), economicNAV: 49_000_000, costBasisNAV: 44_000_000, unrealizedGain: 5_000_000 },
+    ],
+  });
+  console.log("NAV computations seeded");
+
+  // ============================================================
+  // UNIT CLASSES + OWNERSHIP UNITS (Cap Table)
+  // ============================================================
+  console.log("Creating unit classes and ownership units...");
+
+  // CAC Fund I — Class A LP + GP Interest
+  const ucFund1A = await prisma.unitClass.create({
+    data: {
+      id: "cac-uc-1a",
+      entityId: entity1.id,
+      name: "Class A LP Units",
+      classType: "LP_UNIT",
+      unitPrice: 1000,
+      totalAuthorized: 300_000,
+      totalIssued: 180_000,
+      preferredReturnRate: 0.08,
+      managementFeeRate: 0.015,
+      votingRights: false,
+      status: "ACTIVE",
+    },
+  });
+
+  const ucFund1GP = await prisma.unitClass.create({
+    data: {
+      id: "cac-uc-1gp",
+      entityId: entity1.id,
+      name: "GP Interest",
+      classType: "GP_UNIT",
+      unitPrice: 1000,
+      totalAuthorized: 10_000,
+      totalIssued: 5_000,
+      votingRights: true,
+      status: "ACTIVE",
+    },
+  });
+
+  // CAC Fund II — Class A LP
+  const ucFund2A = await prisma.unitClass.create({
+    data: {
+      id: "cac-uc-2a",
+      entityId: entity2.id,
+      name: "Class A LP Units",
+      classType: "LP_UNIT",
+      unitPrice: 1000,
+      totalAuthorized: 600_000,
+      totalIssued: 340_000,
+      preferredReturnRate: 0.08,
+      managementFeeRate: 0.015,
+      votingRights: false,
+      status: "ACTIVE",
+    },
+  });
+
+  // CAC Fund III — Class A LP (actively fundraising)
+  const ucFund3A = await prisma.unitClass.create({
+    data: {
+      id: "cac-uc-3a",
+      entityId: entity3.id,
+      name: "Class A LP Units",
+      classType: "LP_UNIT",
+      unitPrice: 1000,
+      totalAuthorized: 250_000,
+      totalIssued: 120_000,
+      preferredReturnRate: 0.08,
+      managementFeeRate: 0.02,
+      votingRights: false,
+      status: "ACTIVE",
+    },
+  });
+
+  // Ownership units for Fund I Class A
+  await prisma.ownershipUnit.createMany({
+    data: [
+      { id: "cac-ou-1a-1", unitClassId: ucFund1A.id, investorId: investor1.id, unitsIssued: 50_000, unitCost: 1000, acquisitionDate: new Date("2019-10-01"), status: "ACTIVE" },
+      { id: "cac-ou-1a-2", unitClassId: ucFund1A.id, investorId: investor2.id, unitsIssued: 40_000, unitCost: 1000, acquisitionDate: new Date("2019-10-01"), status: "ACTIVE" },
+      { id: "cac-ou-1a-3", unitClassId: ucFund1A.id, investorId: investor4.id, unitsIssued: 50_000, unitCost: 1000, acquisitionDate: new Date("2019-10-01"), status: "ACTIVE" },
+      { id: "cac-ou-1a-4", unitClassId: ucFund1A.id, investorId: investor5.id, unitsIssued: 30_000, unitCost: 1000, acquisitionDate: new Date("2020-03-15"), status: "ACTIVE" },
+      { id: "cac-ou-1a-5", unitClassId: ucFund1A.id, investorId: investor3.id, unitsIssued: 10_000, unitCost: 1000, acquisitionDate: new Date("2020-03-15"), status: "ACTIVE" },
+    ],
+  });
+
+  // Ownership units for Fund I GP Interest
+  await prisma.ownershipUnit.createMany({
+    data: [
+      { id: "cac-ou-1gp-1", unitClassId: ucFund1GP.id, investorId: investor6.id, unitsIssued: 5_000, unitCost: 1000, acquisitionDate: new Date("2019-09-01"), status: "ACTIVE" },
+    ],
+  });
+
+  // Ownership units for Fund II Class A
+  await prisma.ownershipUnit.createMany({
+    data: [
+      { id: "cac-ou-2a-1", unitClassId: ucFund2A.id, investorId: investor1.id, unitsIssued: 75_000, unitCost: 1000, acquisitionDate: new Date("2022-09-01"), status: "ACTIVE" },
+      { id: "cac-ou-2a-2", unitClassId: ucFund2A.id, investorId: investor4.id, unitsIssued: 100_000, unitCost: 1000, acquisitionDate: new Date("2022-09-01"), status: "ACTIVE" },
+      { id: "cac-ou-2a-3", unitClassId: ucFund2A.id, investorId: investor5.id, unitsIssued: 80_000, unitCost: 1000, acquisitionDate: new Date("2022-09-01"), status: "ACTIVE" },
+      { id: "cac-ou-2a-4", unitClassId: ucFund2A.id, investorId: investor2.id, unitsIssued: 55_000, unitCost: 1000, acquisitionDate: new Date("2022-12-01"), status: "ACTIVE" },
+      { id: "cac-ou-2a-5", unitClassId: ucFund2A.id, investorId: investor6.id, unitsIssued: 30_000, unitCost: 1000, acquisitionDate: new Date("2022-12-01"), status: "ACTIVE" },
+    ],
+  });
+
+  // Ownership units for Fund III Class A (partial — still fundraising)
+  await prisma.ownershipUnit.createMany({
+    data: [
+      { id: "cac-ou-3a-1", unitClassId: ucFund3A.id, investorId: investor1.id, unitsIssued: 50_000, unitCost: 1000, acquisitionDate: new Date("2025-09-15"), status: "ACTIVE" },
+      { id: "cac-ou-3a-2", unitClassId: ucFund3A.id, investorId: investor4.id, unitsIssued: 40_000, unitCost: 1000, acquisitionDate: new Date("2025-09-15"), status: "ACTIVE" },
+      { id: "cac-ou-3a-3", unitClassId: ucFund3A.id, investorId: investor2.id, unitsIssued: 30_000, unitCost: 1000, acquisitionDate: new Date("2025-12-01"), status: "ACTIVE" },
+    ],
+  });
+
+  console.log("Unit classes and ownership units seeded");
 
   console.log("Seeding complete for Core Asset Credit!");
 }
