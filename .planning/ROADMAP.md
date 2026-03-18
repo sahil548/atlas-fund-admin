@@ -27,13 +27,13 @@ Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScr
 - [x] **Phase 11: Foundation** - Shared component standardization that ripples across all 30 pages
 - [x] **Phase 12: AI Configuration & Document Intake** - Infrastructure for all AI features: key management, access control, document processing engine
 - [x] **Phase 13: Deal Desk & CRM** - Pipeline completeness and contact/relationship intelligence (completed 2026-03-09)
-- [ ] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
+- [x] **Phase 14: Asset Management & Task Management** - Asset exit workflow, holding type–adaptive UI, and task context linking
 - [x] **Phase 15: Entity Management & Meeting Intelligence** - Entity structure clarity and Fireflies per-user OAuth integration (completed 2026-03-10)
 - [x] **Phase 16: Capital Activity** - Status advancement workflows, waterfall scenario analysis, asset transaction ledgers, entity financial metrics (completed 2026-03-10)
 - [x] **Phase 17: LP Portal** - Accuracy verification and LP self-service access improvements (completed 2026-03-10)
 - [x] **Phase 18: AI Features** - Command bar natural language, AI-assisted deal analysis, and portfolio monitoring (completed 2026-03-10)
 - [x] **Phase 19: Dashboard & Supporting Modules** - Aggregated intelligence surface, report polish, and settings cleanup (completed 2026-03-10)
-- [ ] **Phase 20: Schema Cleanup & UI Polish** - Full reconciliation of Phases 11-19, exhaustive schema audit, and UI overhaul — zero accumulated debt, airtight database, $50K SaaS-grade interface
+- [x] **Phase 20: Schema Cleanup & UI Polish** - Full reconciliation of Phases 11-19, exhaustive schema audit, and UI overhaul — zero accumulated debt, airtight database, $50K SaaS-grade interface
 
 ---
 
@@ -87,11 +87,11 @@ Plans:
   5. A contact's detail page shows their full activity timeline, all linked deals/entities/assets, interaction history, relationship tags, deal sourcing attribution, and co-investment participation history
 **Plans:** 5/5 plans complete
 Plans:
-- [ ] 13-01-PLAN.md — Kanban pipeline enhancements (days-in-stage, column totals, View Asset link)
-- [ ] 13-02-PLAN.md — IC memo PDF export + dead deal analytics charts
-- [ ] 13-03-PLAN.md — Bulk deal actions (checkbox selection, floating action bar, bulk API)
-- [ ] 13-04-PLAN.md — CRM foundation (schema, contact detail page, interaction timeline, relationship tags)
-- [ ] 13-05-PLAN.md — Deal sourcing attribution + co-investor network tracking
+- [x] 13-01-PLAN.md — Kanban pipeline enhancements (days-in-stage, column totals, View Asset link)
+- [x] 13-02-PLAN.md — IC memo PDF export + dead deal analytics charts
+- [x] 13-03-PLAN.md — Bulk deal actions (checkbox selection, floating action bar, bulk API)
+- [x] 13-04-PLAN.md — CRM foundation (schema, contact detail page, interaction timeline, relationship tags)
+- [x] 13-05-PLAN.md — Deal sourcing attribution + co-investor network tracking
 
 ### Phase 14: Asset Management & Task Management
 **Goal**: GPs can record asset exits, each asset type shows controls appropriate to its holding structure, and tasks are linked to their source context with drag-and-drop management
@@ -103,15 +103,15 @@ Plans:
   3. The asset list can be sorted by any column (name, type, NAV, IRR, cost basis) with a single click
   4. A portfolio-level covenant breach monitor shows all breached covenants across all assets in one view, and lease expirations within 90 and 180 days are surfaced in a forward-looking calendar view
   5. Tasks created from within a deal, asset, or entity detail page are linked to that context — the task shows which deal/asset/entity it belongs to and clicking navigates back; tasks auto-created on deal stage transitions appear automatically
-**Plans:** 4/7 plans executed
+**Plans:** 7/7 plans complete
 Plans:
 - [x] 14-01-PLAN.md — Schema migration (Asset exit/ownership/review fields + TaskChecklistItem model), Wave 0 tests, asset exit API endpoint
 - [x] 14-02-PLAN.md — Asset list column sorting + portfolio monitoring panel (covenant breaches, lease expirations, overdue reviews)
 - [x] 14-03-PLAN.md — Exit modal UI + asset detail page tab restructure (6 unified tabs, overview sidebar, Stessa-style contracts, valuation chart)
 - [x] 14-04-PLAN.md — Holding-type adaptive management panels (RE lease roll, Fund LP GP reporting, Credit covenant dashboard, Equity milestones) + review schedule
 - [x] 14-05-PLAN.md — @dnd-kit installation + tasks kanban board + list view drag-and-drop reordering + context filter
-- [ ] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
-- [ ] 14-07-PLAN.md — Task subtasks (checklist items) + task assignment email notification
+- [x] 14-06-PLAN.md — Task context linking on detail pages + inline quick-add + deal stage auto-task creation
+- [x] 14-07-PLAN.md — Task subtasks (checklist items) + task assignment email notification
 
 ### Phase 15: Entity Management & Meeting Intelligence
 **Goal**: The entity list shows parent-child fund structure clearly with multiple view modes, formation workflows guide GPs to next steps, the regulatory tab provides CSC-style structured compliance tracking, all user-facing "Entities" labels are renamed to "Vehicles", and each GP team member can connect their own Fireflies account so meeting transcripts flow into Atlas with AI-generated summaries and auto-created tasks
@@ -128,11 +128,11 @@ Plans:
 - [x] 15-00-PLAN.md — Wave 0 test scaffold (phase15-entity-hierarchy + phase15-fireflies-sync test stubs)
 - [x] 15-01-PLAN.md — Schema migration (Fireflies fields on User, externalId on Meeting), "Vehicles" rename sweep, entity status transitions
 - [x] 15-02-PLAN.md — Vehicle list 4 view modes (Flat | Tree | Org Chart | Cards) with hierarchy visualization
-- [ ] 15-03-PLAN.md — Post-formation "What's Next" checklist + CSC-style structured regulatory filings tab
+- [x] 15-03-PLAN.md — Post-formation "What's Next" checklist + CSC-style structured regulatory filings tab
 - [x] 15-04-PLAN.md — Fireflies per-user API key connection, encrypted storage, meeting sync route, profile UI, meetings sync button
-- [ ] 15-05-PLAN.md — Side letter management end-to-end verification
+- [x] 15-05-PLAN.md — Side letter management end-to-end verification
 - [x] 15-06-PLAN.md — Rich meeting cards with AI summaries, action item task creation, context linking
-- [ ] 15-07-PLAN.md — End-to-end verification checkpoint
+- [x] 15-07-PLAN.md — End-to-end verification checkpoint
 
 ### Phase 16: Capital Activity
 **Goal**: GPs can advance capital calls and distributions through their full status lifecycle via UI buttons, see which investors have paid, attach documents, run waterfall scenarios without committing them, record asset-level income/expenses that feed real IRR/MOIC metrics, and view entity-level financial performance from real transaction data
@@ -149,12 +149,12 @@ Plans:
   8. Entity detail page shows a financial summary card with dual metric view (realized vs unrealized) computed from real transaction data
 **Plans:** 6/6 plans complete
 Plans:
-- [ ] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card + unit tests, per-investor badge, clickable rows
-- [ ] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
-- [ ] 16-03-PLAN.md — Distribution detail page with status buttons (Approve, Mark as Paid), line items breakdown, document attachment panel
-- [ ] 16-04-PLAN.md — Waterfall preview with scenario comparison (up to 3 side-by-side), LP/GP split Recharts chart, no-save preview mode, distribution creation preview step
-- [ ] 16-05-PLAN.md — Asset-level transaction ledgers (Income/Expenses tabs on asset detail, transaction API, auto-recalculate IRR/MOIC)
-- [ ] 16-06-PLAN.md — Entity financial summary card with dual metric view (realized vs unrealized), period-based income breakdown by asset
+- [x] 16-01-PLAN.md — Schema migration (Document FKs, Distribution default fix), page rename to Capital Activity, overdue detection + stat card + unit tests, per-investor badge, clickable rows
+- [x] 16-02-PLAN.md — Capital call detail page with status buttons (Mark as Issued), per-investor line items table (Mark Funded), document attachment panel
+- [x] 16-03-PLAN.md — Distribution detail page with status buttons (Approve, Mark as Paid), line items breakdown, document attachment panel
+- [x] 16-04-PLAN.md — Waterfall preview with scenario comparison (up to 3 side-by-side), LP/GP split Recharts chart, no-save preview mode, distribution creation preview step
+- [x] 16-05-PLAN.md — Asset-level transaction ledgers (Income/Expenses tabs on asset detail, transaction API, auto-recalculate IRR/MOIC)
+- [x] 16-06-PLAN.md — Entity financial summary card with dual metric view (realized vs unrealized), period-based income breakdown by asset
 
 ### Phase 17: LP Portal
 **Goal**: LP portal metrics are verified to come from real computed data, LPs have full self-service access to their statements and documents, and the K-1 acknowledgment workflow is complete
@@ -168,9 +168,9 @@ Plans:
   5. LPs can acknowledge receipt of their K-1 through the portal, and LPs can view and verify their own contact information
 **Plans:** 3/3 plans complete
 Plans:
-- [ ] 17-01-PLAN.md — Schema migration (Document + Investor fields), LP-06 metrics verification tests, document center tab filtering (LP-05)
-- [ ] 17-02-PLAN.md — Capital account date range picker with metric recalculation (LP-04), per-entity performance metrics on dashboard + portfolio (LP-07)
-- [ ] 17-03-PLAN.md — K-1 acknowledgment workflow with GP tracking (LP-08), LP profile page with contact info management (LP-09)
+- [x] 17-01-PLAN.md — Schema migration (Document + Investor fields), LP-06 metrics verification tests, document center tab filtering (LP-05)
+- [x] 17-02-PLAN.md — Capital account date range picker with metric recalculation (LP-04), per-entity performance metrics on dashboard + portfolio (LP-07)
+- [x] 17-03-PLAN.md — K-1 acknowledgment workflow with GP tracking (LP-08), LP profile page with contact info management (LP-09)
 
 ### Phase 18: AI Features
 **Goal**: The command bar understands natural language queries and can execute actions, AI assists with deal analysis and document extraction across the deal lifecycle, and the portfolio is monitored for covenant breaches automatically
@@ -201,11 +201,11 @@ Plans:
   5. A unified integrations status page shows all integrations with their connection status (green/red), and the AI config page has a test connection button that validates the API key works
 **Plans:** 5/5 plans complete
 Plans:
-- [ ] 19-01-PLAN.md -- Dashboard API endpoints (pipeline-summary + alerts) with Wave 0 tests
-- [ ] 19-02-PLAN.md -- Supporting modules polish (report preview/history, integrations status, notifications, SUPP-05/06 verification)
-- [ ] 19-03-PLAN.md -- Dashboard restructure top half (summary bar, alerts panel, pipeline funnel, compact entity cards)
-- [ ] 19-04-PLAN.md -- Activity feed API + full-width filterable activity feed component
-- [ ] 19-05-PLAN.md -- Dashboard final assembly (chart redesign, activity feed wiring) + human verification checkpoint
+- [x] 19-01-PLAN.md -- Dashboard API endpoints (pipeline-summary + alerts) with Wave 0 tests
+- [x] 19-02-PLAN.md -- Supporting modules polish (report preview/history, integrations status, notifications, SUPP-05/06 verification)
+- [x] 19-03-PLAN.md -- Dashboard restructure top half (summary bar, alerts panel, pipeline funnel, compact entity cards)
+- [x] 19-04-PLAN.md -- Activity feed API + full-width filterable activity feed component
+- [x] 19-05-PLAN.md -- Dashboard final assembly (chart redesign, activity feed wiring) + human verification checkpoint
 
 
 ### Phase 20: Schema Cleanup & UI Polish
@@ -213,19 +213,19 @@ Plans:
 **Goal:** Exhaustive three-track hardening pass that earns the v2.0 moniker. Track 1 (Integration Audit): Reconcile all changes from Phases 11-19 — find and fix conflicts, regressions, dead code, inconsistencies, and broken cross-module interactions that accumulated across 9 phases of rapid feature development. Track 2 (Schema): Audit every Prisma model, relation, and JSON field — fix broken nested lists, ensure all dynamic content is properly wired, verify relational integrity across the full data model, and eliminate any orphaned or mistyped fields. Track 3 (UI): Systematically review every page and component against best-in-class references (21st.dev, shadcn/ui, Radix primitives, premium dashboard templates) — replace or upgrade components with more professional, cleaner, and visually stronger alternatives. The end state is a codebase with zero accumulated tech debt from v2.0 development, an airtight database, and a UI that looks like a $50K SaaS product.
 **Requirements**: INTEG-01, INTEG-02, INTEG-03, INTEG-04, INTEG-05, INTEG-06, INTEG-07, INTEG-08, INTEG-09, SCHEMA-01, SCHEMA-02, SCHEMA-03, SCHEMA-04, UIPOL-01, UIPOL-02, UIPOL-03, UIPOL-04, UIPOL-05, UIPOL-06
 **Depends on:** Phase 19
-**Plans:** 9/10 plans executed
+**Plans:** 10/10 plans complete
 
 Plans:
-- [ ] 20-01-PLAN.md — Wave 0 foundation: logger utility, JSON blob Zod schemas, LP dashboard test fix, bug-03 timeout test
-- [ ] 20-02-PLAN.md — Fix all 3 known bugs (BUG-01 DD progress, BUG-02 conversion rate, BUG-03 IC memo timeout)
-- [ ] 20-03-PLAN.md — Structured logging migration (src/lib/ + API routes): replace console.* with logger.*
+- [x] 20-01-PLAN.md — Wave 0 foundation: logger utility, JSON blob Zod schemas, LP dashboard test fix, bug-03 timeout test
+- [x] 20-02-PLAN.md — Fix all 3 known bugs (BUG-01 DD progress, BUG-02 conversion rate, BUG-03 IC memo timeout)
+- [x] 20-03-PLAN.md — Structured logging migration (src/lib/ + API routes): replace console.* with logger.*
 - [x] 20-04-PLAN.md — Database indexes on high-query columns + orphaned field audit + schema migration
-- [ ] 20-05-PLAN.md — Zod validation on all API routes (raw req.json() -> parseBody) + JSON blob read validation
-- [ ] 20-06-PLAN.md — Console migration (pages/components) + dead code cleanup (unused imports, commented-out code)
-- [ ] 20-07-PLAN.md — End-to-end workflow verification (4 workflows) + pdf-parse typing + as any reduction
-- [ ] 20-08-PLAN.md — UI component upgrades: modal animation, custom select dropdown, tabs dark mode, button ghost
-- [ ] 20-09-PLAN.md — Full dark mode audit (LP + GP pages) + SectionErrorBoundary wiring
-- [ ] 20-10-PLAN.md — Final human verification checkpoint (all 3 tracks)
+- [x] 20-05-PLAN.md — Zod validation on all API routes (raw req.json() -> parseBody) + JSON blob read validation
+- [x] 20-06-PLAN.md — Console migration (pages/components) + dead code cleanup (unused imports, commented-out code)
+- [x] 20-07-PLAN.md — End-to-end workflow verification (4 workflows) + pdf-parse typing + as any reduction
+- [x] 20-08-PLAN.md — UI component upgrades: modal animation, custom select dropdown, tabs dark mode, button ghost
+- [x] 20-09-PLAN.md — Full dark mode audit (LP + GP pages) + SectionErrorBoundary wiring
+- [x] 20-10-PLAN.md — Final human verification checkpoint (all 3 tracks)
 
 ---
 
@@ -233,16 +233,16 @@ Plans:
 
 **Execution Order:** 11 → 12 → 13 → 14 → 15 → 16 → 17 → 18 → 19 → 20
 
-| Phase | Milestone | Plans Complete | Status | Completed |
-|-------|-----------|----------------|--------|-----------|
+| Phase | Milestone | Plans | Status | Completed |
+|-------|-----------|-------|--------|-----------|
 | 1-10. v1.0 Phases | v1.0 | 36/36 | Complete | 2026-03-08 |
-| 11. Foundation | v2.0 | Complete    | 2026-03-09 | 2026-03-09 |
+| 11. Foundation | v2.0 | 5/5 | Complete | 2026-03-09 |
 | 12. AI Configuration & Document Intake | v2.0 | 5/5 | Complete | 2026-03-09 |
-| 13. Deal Desk & CRM | 5/5 | Complete   | 2026-03-09 | - |
-| 14. Asset Management & Task Management | 4/7 | In Progress|  | - |
-| 15. Entity Management & Meeting Intelligence | 8/8 | Complete   | 2026-03-10 | - |
-| 16. Capital Activity | 6/6 | Complete    | 2026-03-10 | - |
-| 17. LP Portal | 3/3 | Complete    | 2026-03-10 | - |
+| 13. Deal Desk & CRM | v2.0 | 5/5 | Complete | 2026-03-09 |
+| 14. Asset Management & Task Management | v2.0 | 7/7 | Complete | 2026-03-10 |
+| 15. Entity Management & Meeting Intelligence | v2.0 | 8/8 | Complete | 2026-03-10 |
+| 16. Capital Activity | v2.0 | 6/6 | Complete | 2026-03-10 |
+| 17. LP Portal | v2.0 | 3/3 | Complete | 2026-03-10 |
 | 18. AI Features | v2.0 | 4/4 | Complete | 2026-03-10 |
-| 19. Dashboard & Supporting Modules | 5/5 | Complete    | 2026-03-10 | - |
-| 20. Schema Cleanup & UI Polish | 9/10 | In Progress|  | - |
+| 19. Dashboard & Supporting Modules | v2.0 | 5/5 | Complete | 2026-03-10 |
+| 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |

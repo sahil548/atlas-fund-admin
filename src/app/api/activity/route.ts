@@ -178,7 +178,7 @@ export async function GET(req: NextRequest) {
       : `Capital call #${cc.callNumber} issued`,
     entityId: cc.entityId,
     entityName: cc.entity.name,
-    linkPath: `/capital-calls/${cc.id}`,
+    linkPath: `/transactions/capital-calls/${cc.id}`,
     date: cc.callDate.toISOString(),
   }));
 
@@ -190,7 +190,7 @@ export async function GET(req: NextRequest) {
       : `Distribution from ${de.entity.name}`,
     entityId: de.entityId,
     entityName: de.entity.name,
-    linkPath: `/distributions/${de.id}`,
+    linkPath: `/transactions/distributions/${de.id}`,
     date: de.distributionDate.toISOString(),
   }));
 
@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
     description: m.title,
     entityId: m.entityId ?? undefined,
     entityName: m.entity?.name ?? m.deal?.name ?? undefined,
-    linkPath: `/meetings/${m.id}`,
+    linkPath: `/meetings`,
     date: m.meetingDate.toISOString(),
   }));
 

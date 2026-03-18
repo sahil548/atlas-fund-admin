@@ -105,11 +105,11 @@ Requirements for v2.0 Module Deep Pass. Each maps to roadmap phases.
 
 ### Task Management
 
-- [ ] **TASK-01**: Tasks linked to their context (deal, asset, entity, fundraising) with navigation back to source
-- [ ] **TASK-02**: Tasks can be created from within deal, asset, and entity detail pages
-- [ ] **TASK-03**: Tasks have drag-and-drop reordering and status changes
-- [ ] **TASK-04**: Tasks filterable by context (show me all tasks for Fund III, all tasks for Deal X)
-- [ ] **TASK-05**: Tasks auto-created from deal stage transitions (e.g., moving to DD creates DD tasks)
+- [x] **TASK-01**: Tasks linked to their context (deal, asset, entity, fundraising) with navigation back to source
+- [x] **TASK-02**: Tasks can be created from within deal, asset, and entity detail pages
+- [x] **TASK-03**: Tasks have drag-and-drop reordering and status changes
+- [x] **TASK-04**: Tasks filterable by context (show me all tasks for Fund III, all tasks for Deal X)
+- [x] **TASK-05**: Tasks auto-created from deal stage transitions (e.g., moving to DD creates DD tasks)
 
 ### Meeting Intelligence
 
@@ -207,11 +207,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ASSET-07 | Phase 14 | Complete |
 | ASSET-08 | Phase 14 | Complete |
 | ASSET-09 | Phase 14 | Complete |
-| TASK-01 | Phase 14 | Pending |
-| TASK-02 | Phase 14 | Pending |
-| TASK-03 | Phase 14 | Pending |
-| TASK-04 | Phase 14 | Pending |
-| TASK-05 | Phase 14 | Pending |
+| TASK-01 | Phase 14 | Complete |
+| TASK-02 | Phase 14 | Complete |
+| TASK-03 | Phase 14 | Complete |
+| TASK-04 | Phase 14 | Complete |
+| TASK-05 | Phase 14 | Complete |
 | ENTITY-01 | Phase 15 | Complete |
 | ENTITY-02 | Phase 15 | Complete |
 | ENTITY-03 | Phase 15 | Complete |
@@ -252,10 +252,29 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SUPP-04 | Phase 19 | Complete |
 | SUPP-05 | Phase 19 | Complete |
 | SUPP-06 | Phase 19 | Complete |
+| INTEG-01 | Phase 20 | Complete |
+| INTEG-02 | Phase 20 | Complete |
+| INTEG-03 | Phase 20 | Complete |
+| INTEG-04 | Phase 20 | Complete |
+| INTEG-05 | Phase 20 | Complete |
+| INTEG-06 | Phase 20 | Complete |
+| INTEG-07 | Phase 20 | Complete |
+| INTEG-08 | Phase 20 | Complete |
+| INTEG-09 | Phase 20 | Complete |
+| SCHEMA-01 | Phase 20 | Complete |
+| SCHEMA-02 | Phase 20 | Complete |
+| SCHEMA-03 | Phase 20 | Complete |
+| SCHEMA-04 | Phase 20 | Complete |
+| UIPOL-01 | Phase 20 | Complete |
+| UIPOL-02 | Phase 20 | Complete |
+| UIPOL-03 | Phase 20 | Complete |
+| UIPOL-04 | Phase 20 | Complete |
+| UIPOL-05 | Phase 20 | Complete |
+| UIPOL-06 | Phase 20 | Complete |
 
 **Coverage:**
-- v2.0 requirements: 79 total (8 FOUND + 6 DEAL + 6 ASSET + 5 ENTITY + 6 CAP + 6 LP + 4 DASH + 8 AI + 3 DOC + 5 AICONF + 6 CRM + 5 TASK + 5 MTG + 6 SUPP)
-- Mapped to phases: 79
+- v2.0 requirements: 99 total (8 FOUND + 6 DEAL + 6 ASSET + 5 ENTITY + 6 CAP + 6 LP + 4 DASH + 8 AI + 3 DOC + 5 AICONF + 6 CRM + 5 TASK + 5 MTG + 6 SUPP + 9 INTEG + 4 SCHEMA + 6 UIPOL)
+- Mapped to phases: 99
 - Unmapped: 0 ✓
 
 **Note:** REQUIREMENTS.md header listed 73 requirements. Actual count from requirement IDs is 79. The discrepancy of 6 is confirmed by listing all IDs — 79 is the correct count.
