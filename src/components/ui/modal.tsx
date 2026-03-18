@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 const sizes: Record<string, string> = {
@@ -33,34 +33,40 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
     }
   }, [open]);
 
-  // Escape key handler
-  const handleEscape = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
+  // Stable ref for onClose so effects don't re-run on every parent render
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
-  // Auto-focus first focusable element + Escape key + body scroll lock
+  // Escape key + body scroll lock
   useEffect(() => {
     if (!open) return;
-    document.addEventListener("keydown", handleEscape);
-    document.body.style.overflow = "hidden";
-
-    // Auto-focus first focusable element
-    const timer = setTimeout(() => {
-      const focusable = panelRef.current?.querySelector<HTMLElement>(
-        "input, button, textarea, select, [tabindex]:not([tabindex='-1'])"
-      );
-      focusable?.focus();
-    }, 50);
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-      clearTimeout(timer);
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
     };
-  }, [open, handleEscape]);
+    document.addEventListener("keydown", handler);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handler);
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
+  // Auto-focus first input on open — but only if nothing inside the panel
+  // already has focus (prevents stealing focus from inputs during re-renders)
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      const panel = panelRef.current;
+      if (!panel) return;
+      // If an element inside the modal already has focus, don't steal it
+      if (panel.contains(document.activeElement) && document.activeElement !== panel) return;
+      const input = panel.querySelector<HTMLElement>(
+        "input:not([type='hidden']), textarea, select"
+      );
+      input?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [open]);
 
   if (!open) return null;
 
@@ -85,6 +91,7 @@ export function Modal({ open, onClose, title, size = "md", children, footer }: M
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
           <button
+            type="button"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-1 transition-colors text-lg leading-none"
           >
