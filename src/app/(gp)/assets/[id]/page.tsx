@@ -19,8 +19,11 @@ import { AssetContractsTab } from "@/components/features/assets/asset-contracts-
 import { ValuationHistoryChart } from "@/components/features/assets/valuation-history-chart";
 import { AssetIncomeTab } from "@/components/features/assets/asset-income-tab";
 import { AssetExpensesTab } from "@/components/features/assets/asset-expenses-tab";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/ui/toast";
 import { fmt, pct, cn, formatDate } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SectionErrorBoundary } from "@/components/ui/error-boundary";
 
 const fetcher = (url: string) =>
@@ -124,12 +127,16 @@ export default function AssetDetailPage({
   const { id } = use(params);
   const { data: a, isLoading } = useSWR(`/api/assets/${id}`, fetcher);
   const [tab, setTab] = useState<Tab>("overview");
+  const router = useRouter();
+  const toast = useToast();
   const [showEditAsset, setShowEditAsset] = useState(false);
   const [showLogValuation, setShowLogValuation] = useState(false);
   const [showCreateTask, setShowCreateTask] = useState(false);
   const [showUploadDoc, setShowUploadDoc] = useState(false);
   const [showLogIncome, setShowLogIncome] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   if (isLoading || !a) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -199,6 +206,13 @@ export default function AssetDetailPage({
               onClick={() => setShowEditAsset(true)}
             >
               Edit Asset
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete
             </Button>
           </div>
         </div>
@@ -430,6 +444,30 @@ export default function AssetDetailPage({
 
       {/* Modals */}
       <EditAssetForm open={showEditAsset} onClose={() => setShowEditAsset(false)} asset={a} />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          setDeleteLoading(true);
+          try {
+            const res = await fetch(`/api/assets/${id}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Failed to delete");
+            toast.success("Asset deleted");
+            router.push("/assets");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete asset");
+          } finally {
+            setDeleteLoading(false);
+            setShowDeleteConfirm(false);
+          }
+        }}
+        title="Delete Asset"
+        message={`Are you sure you want to delete "${a.name}"? This action cannot be undone. Note: assets with valuations, leases, income events, or other records must have those removed first.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLoading}
+      />
       <LogValuationForm
         open={showLogValuation}
         onClose={() => setShowLogValuation(false)}

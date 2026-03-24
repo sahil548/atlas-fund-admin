@@ -140,6 +140,8 @@ export async function PATCH(
       "netToLPs",
       "distributionType",
       "memo",
+      "distributionDate",
+      "source",
     ] as const;
 
     const hasFieldUpdates = fieldsToUpdate.some(
@@ -166,6 +168,8 @@ export async function PATCH(
         ...(data!.netToLPs !== undefined && { netToLPs: data!.netToLPs }),
         ...(data!.distributionType !== undefined && { distributionType: data!.distributionType }),
         ...(data!.memo !== undefined && { memo: data!.memo }),
+        ...(data!.distributionDate && { distributionDate: new Date(data!.distributionDate) }),
+        ...(data!.source !== undefined && { source: data!.source }),
       },
       include: {
         entity: { select: { id: true, name: true } },
@@ -187,5 +191,47 @@ export async function PATCH(
       { error: "Failed to update distribution" },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const authUser = await getAuthUser();
+    const firmId = authUser?.firmId;
+
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "capital_activity", "full")) return forbidden();
+    }
+
+    const distribution = await prisma.distributionEvent.findFirst({
+      where: firmId ? { id, entity: { firmId } } : { id },
+    });
+
+    if (!distribution) {
+      return NextResponse.json({ error: "Distribution not found" }, { status: 404 });
+    }
+
+    if (distribution.status !== "DRAFT") {
+      return NextResponse.json(
+        { error: "Cannot delete: distribution is not in DRAFT status. Only draft distributions can be deleted." },
+        { status: 400 },
+      );
+    }
+
+    await prisma.$transaction([
+      prisma.document.updateMany({ where: { distributionEventId: id }, data: { distributionEventId: null } }),
+      prisma.distributionLineItem.deleteMany({ where: { distributionId: id } }),
+      prisma.distributionEvent.delete({ where: { id } }),
+    ]);
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    logger.error("[distributions/[id]] DELETE error:", { error: err instanceof Error ? err.message : String(err) });
+    return NextResponse.json({ error: "Failed to delete distribution" }, { status: 500 });
   }
 }

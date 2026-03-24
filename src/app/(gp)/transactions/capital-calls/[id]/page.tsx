@@ -1,15 +1,20 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import useSWR from "swr";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SectionPanel } from "@/components/ui/section-panel";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CapitalCallStatusButtons } from "@/components/features/capital/capital-call-status-buttons";
 import { CapitalCallLineItemsTable } from "@/components/features/capital/capital-call-line-items-table";
 import { CapitalCallDocumentPanel } from "@/components/features/capital/capital-call-document-panel";
+import { EditCapitalCallForm } from "@/components/features/capital/edit-capital-call-form";
+import { useToast } from "@/components/ui/toast";
 import { fmt, formatDate, pct } from "@/lib/utils";
 import { isOverdue } from "@/lib/computations/overdue-detection";
 
@@ -77,6 +82,11 @@ interface CapitalCallDetail {
 export default function CapitalCallDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const router = useRouter();
+  const toast = useToast();
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const {
     data,
@@ -113,6 +123,22 @@ export default function CapitalCallDetailPage() {
 
   const overdue = isOverdue(data);
 
+  async function handleDelete() {
+    setDeleteLoading(true);
+    try {
+      const res = await fetch(`/api/capital-calls/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to delete");
+      toast.success("Capital call deleted");
+      router.push("/transactions");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete capital call");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteOpen(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Back link */}
@@ -125,17 +151,48 @@ export default function CapitalCallDetailPage() {
       </Link>
 
       {/* Header */}
-      <div className="flex items-start gap-3 flex-wrap">
-        <PageHeader title={`Call #${data.callNumber}`} />
-        <div className="flex items-center gap-2 flex-wrap pt-0.5">
-          <Badge color={CC_STATUS_COLORS[data.status] || "gray"}>
-            {data.status.replace(/_/g, " ")}
-          </Badge>
-          {overdue && data.status !== "OVERDUE" && (
-            <Badge color="red">OVERDUE</Badge>
+      <div className="flex items-start gap-3 flex-wrap justify-between">
+        <div className="flex items-start gap-3 flex-wrap">
+          <PageHeader title={`Call #${data.callNumber}`} />
+          <div className="flex items-center gap-2 flex-wrap pt-0.5">
+            <Badge color={CC_STATUS_COLORS[data.status] || "gray"}>
+              {data.status.replace(/_/g, " ")}
+            </Badge>
+            {overdue && data.status !== "OVERDUE" && (
+              <Badge color="red">OVERDUE</Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+          </Button>
+          {data.status === "DRAFT" && (
+            <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />Delete
+            </Button>
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <EditCapitalCallForm
+        open={editOpen}
+        onClose={() => { setEditOpen(false); mutate(); }}
+        capitalCall={data}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Capital Call"
+        message="Are you sure you want to delete this capital call? This will also remove all line items. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLoading}
+      />
 
       {/* Call Details */}
       <SectionPanel title="Call Details">

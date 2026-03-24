@@ -199,6 +199,8 @@ export default function DealDetailPage({
   const [tab, setTab] = useState("Overview");
   const [showEdit, setShowEdit] = useState(false);
   const [showKillConfirm, setShowKillConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingDeal, setDeletingDeal] = useState(false);
   const [showSendToIC, setShowSendToIC] = useState(false);
   const [sendToICWarning, setSendToICWarning] = useState<string | null>(null);
   const [killingDeal, setKillingDeal] = useState(false);
@@ -680,6 +682,15 @@ export default function DealDetailPage({
           >
             Edit
           </Button>
+          {(deal.stage === "SCREENING" || isDead) && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -977,6 +988,30 @@ export default function DealDetailPage({
         onConfirm={handleKillDeal}
         dealName={deal.name}
         loading={killingDeal}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={async () => {
+          setDeletingDeal(true);
+          try {
+            const res = await fetch(`/api/deals/${id}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Failed to delete");
+            toast.success("Deal deleted");
+            router.push("/deals");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete deal");
+          } finally {
+            setDeletingDeal(false);
+            setShowDeleteConfirm(false);
+          }
+        }}
+        title="Delete Deal"
+        message={`Are you sure you want to delete "${deal.name}"? This will permanently remove the deal and all associated data (workstreams, tasks, notes, IC records). This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deletingDeal}
       />
       <ConfirmDialog
         open={showSendToIC}

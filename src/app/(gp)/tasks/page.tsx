@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { useUser } from "@/components/providers/user-provider";
 import { useFirm } from "@/components/providers/firm-provider";
@@ -58,6 +59,8 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", priority: "MEDIUM", assigneeId: "", dueDate: "" });
 
   // Context filter state
@@ -362,6 +365,7 @@ export default function TasksPage() {
           onStatusToggle={toggleStatus}
           onClearFilters={handleClearFilters}
           onNewTask={() => setShowCreate(true)}
+          onDeleteTask={(task: any) => setDeleteTarget(task)}
         />
       ) : (
         <TasksKanbanView
@@ -411,6 +415,33 @@ export default function TasksPage() {
           <Button onClick={handleCreate} loading={creating}>Create Task</Button>
         </div>
       </Modal>
+
+      {/* Delete task confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleteLoading(true);
+          try {
+            const res = await fetch(`/api/tasks/${deleteTarget.id}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Failed to delete");
+            toast.success("Task deleted");
+            mutate((key: string) => typeof key === "string" && key.startsWith("/api/tasks"), undefined, { revalidate: true });
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete task");
+          } finally {
+            setDeleteLoading(false);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${deleteTarget?.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLoading}
+      />
     </div>
   );
 }

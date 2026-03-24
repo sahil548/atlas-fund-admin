@@ -5,8 +5,10 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
 import { DocumentPreviewModal } from "@/components/ui/document-preview-modal";
@@ -18,7 +20,7 @@ import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { SectionPanel } from "@/components/ui/section-panel";
-import { FileText } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { DocumentStatusBadge } from "@/components/features/documents/document-status-badge";
@@ -87,6 +89,9 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<Doc | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Doc | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const toast = useToast();
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -284,14 +289,23 @@ export default function DocumentsPage() {
                     <td className="px-3 py-2.5 text-gray-500">{formatDate(d.uploadDate)}</td>
                     <td className="px-3 py-2.5 text-gray-500">{d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : "\u2014"}</td>
                     <td className="px-3 py-2.5">
-                      {d.fileUrl && (
-                        <DocuSignSend
-                          documentId={d.id}
-                          documentName={d.name}
-                          dealId={d.deal?.id}
-                          entityId={d.entity?.id}
-                        />
-                      )}
+                      <div className="flex items-center gap-1">
+                        {d.fileUrl && (
+                          <DocuSignSend
+                            documentId={d.id}
+                            documentName={d.name}
+                            dealId={d.deal?.id}
+                            entityId={d.entity?.id}
+                          />
+                        )}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setDeleteTarget(d); }}
+                          className="text-gray-300 hover:text-red-500 p-1 rounded"
+                          title="Delete document"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -391,6 +405,35 @@ export default function DocumentsPage() {
           }}
         />
       )}
+
+      {/* Delete document confirmation */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleteLoading(true);
+          try {
+            const res = await fetch(`/api/documents/${deleteTarget.id}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Failed to delete");
+            toast.success("Document deleted");
+            setAllDocs([]);
+            setCursor(null);
+            mutate(buildUrl(null));
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete document");
+          } finally {
+            setDeleteLoading(false);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Delete Document"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? The file will be permanently removed. This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLoading}
+      />
     </div>
   );
 }

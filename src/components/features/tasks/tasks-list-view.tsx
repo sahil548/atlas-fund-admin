@@ -22,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import Link from "next/link";
-import { CheckSquare, GripVertical } from "lucide-react";
+import { CheckSquare, GripVertical, Trash2 } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
 import { ChecklistProgressBadge } from "@/components/features/tasks/task-checklist-items";
 
@@ -35,9 +35,10 @@ const PRIORITY_COLORS: Record<string, string> = { LOW: "gray", MEDIUM: "blue", H
 interface SortableTaskRowProps {
   task: any;
   onStatusToggle: (task: any) => void;
+  onDelete?: (task: any) => void;
 }
 
-function SortableTaskRow({ task, onStatusToggle }: SortableTaskRowProps) {
+function SortableTaskRow({ task, onStatusToggle, onDelete }: SortableTaskRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
@@ -115,6 +116,17 @@ function SortableTaskRow({ task, onStatusToggle }: SortableTaskRowProps) {
           <span className="text-gray-300">—</span>
         )}
       </td>
+      <td className="px-2 py-2.5 w-8">
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(task); }}
+            className="text-gray-300 hover:text-red-500 p-1 rounded"
+            title="Delete task"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </td>
     </tr>
   );
 }
@@ -129,6 +141,7 @@ interface TasksListViewProps {
   onStatusToggle: (task: any) => void;
   onClearFilters: () => void;
   onNewTask: () => void;
+  onDeleteTask?: (task: any) => void;
 }
 
 export function TasksListView({
@@ -140,6 +153,7 @@ export function TasksListView({
   onStatusToggle,
   onClearFilters,
   onNewTask,
+  onDeleteTask,
 }: TasksListViewProps) {
   const [localTasks, setLocalTasks] = useState<any[]>(tasks);
 
@@ -184,6 +198,7 @@ export function TasksListView({
               <th className="px-3 py-2.5 font-medium">Context</th>
               <th className="px-3 py-2.5 font-medium">Assignee</th>
               <th className="px-3 py-2.5 font-medium">Due Date</th>
+              <th className="px-2 py-2.5 w-8"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -225,6 +240,7 @@ export function TasksListView({
                     key={task.id}
                     task={task}
                     onStatusToggle={onStatusToggle}
+                    onDelete={onDeleteTask}
                   />
                 ))}
               </SortableContext>

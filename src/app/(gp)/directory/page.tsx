@@ -16,6 +16,7 @@ import { EditContactForm } from "@/components/features/contacts/edit-contact-for
 import { CreateCompanyForm } from "@/components/features/companies/create-company-form";
 import { CreateContactForm } from "@/components/features/contacts/create-contact-form";
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
+import { EditSideLetterForm } from "@/components/features/side-letters/edit-side-letter-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt, formatDate } from "@/lib/utils";
 import { logger } from "@/lib/logger";
@@ -119,6 +120,7 @@ export default function DirectoryPage() {
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [showCreateContact, setShowCreateContact] = useState(false);
   const [showCreateSideLetter, setShowCreateSideLetter] = useState(false);
+  const [editingSideLetter, setEditingSideLetter] = useState<any>(null);
   const [companyTypeFilter, setCompanyTypeFilter] = useState("");
 
   // Delete confirmation
@@ -509,7 +511,10 @@ export default function DirectoryPage() {
                   <td className="px-4 py-3 text-indigo-600">{sl.entity.name}</td>
                   <td className="px-4 py-3 text-gray-600 max-w-[300px] truncate">{sl.terms}</td>
                   <td className="px-4 py-3">
-                    <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeleteTarget({ type: "sideLetter", id: sl.id, name: `${sl.investor.name} — ${sl.entity.name}` })}>Delete</button>
+                    <div className="flex items-center gap-2">
+                      <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={() => setEditingSideLetter(sl)}>Edit</button>
+                      <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeleteTarget({ type: "sideLetter", id: sl.id, name: `${sl.investor.name} — ${sl.entity.name}` })}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -537,6 +542,7 @@ export default function DirectoryPage() {
       <CreateCompanyForm open={showCreateCompany} onClose={() => setShowCreateCompany(false)} />
       <CreateContactForm open={showCreateContact} onClose={() => setShowCreateContact(false)} />
       <CreateSideLetterForm open={showCreateSideLetter} onClose={() => setShowCreateSideLetter(false)} />
+      {editingSideLetter && <EditSideLetterForm open={!!editingSideLetter} onClose={() => setEditingSideLetter(null)} sideLetter={editingSideLetter} />}
 
       {/* Delete Confirmation */}
       <ConfirmDialog
