@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 export type AuditAction =
   | "CREATE_DEAL"
   | "UPDATE_DEAL"
+  | "DELETE_DEAL"
   | "KILL_DEAL"
   | "CLOSE_DEAL"
   | "REVIVE_DEAL"
