@@ -313,7 +313,7 @@ export async function DELETE(
       prisma.dDTask.deleteMany({ where: { workstream: { dealId: id } } }),
       prisma.dDWorkstream.deleteMany({ where: { dealId: id } }),
       // IC process
-      prisma.iCVoteRecord.deleteMany({ where: { process: { dealId: id } } }),
+      prisma.iCVoteRecord.deleteMany({ where: { icProcess: { dealId: id } } }),
       prisma.iCProcess.deleteMany({ where: { dealId: id } }),
       prisma.iCReply.deleteMany({ where: { question: { dealId: id } } }),
       prisma.iCQuestion.deleteMany({ where: { dealId: id } }),
