@@ -315,7 +315,7 @@ export async function DELETE(
       // IC process
       prisma.iCVoteRecord.deleteMany({ where: { icProcess: { dealId: id } } }),
       prisma.iCProcess.deleteMany({ where: { dealId: id } }),
-      prisma.iCReply.deleteMany({ where: { question: { dealId: id } } }),
+      prisma.iCQuestionReply.deleteMany({ where: { question: { dealId: id } } }),
       prisma.iCQuestion.deleteMany({ where: { dealId: id } }),
       // Closing & screening
       prisma.closingChecklist.deleteMany({ where: { dealId: id } }),
