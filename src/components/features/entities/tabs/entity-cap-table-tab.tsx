@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { mutate } from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { fmt, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
 import { SideLetterRulesPanel } from "@/components/features/side-letters/side-letter-rules-panel";
 import { CreateUnitClassForm } from "@/components/features/entities/create-unit-class-form";
@@ -28,11 +33,21 @@ const CLASS_TYPE_COLORS: Record<string, string> = {
   MANAGEMENT: "blue",
 };
 
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
+
 export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId: string }) {
   const toast = useToast();
+  const { firmId } = useFirm();
   const e = entity;
 
+  // Fetch all investors for the add commitment dropdown
+  const { data: investorsData } = useSWR(`/api/investors?firmId=${firmId}&limit=100`, fetcher);
+  const allInvestors: any[] = investorsData?.data ?? [];
+
   const [showCreateClass, setShowCreateClass] = useState(false);
+  const [showAddCommitment, setShowAddCommitment] = useState(false);
+  const [commitForm, setCommitForm] = useState({ investorId: "", amount: "" });
+  const [commitSaving, setCommitSaving] = useState(false);
   const [issueTarget, setIssueTarget] = useState<{ id: string; name: string; unitPrice: number } | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
   const [showCreateSideLetter, setShowCreateSideLetter] = useState(false);
@@ -105,6 +120,35 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
     }
     toast.success("Unit class deleted");
     mutate(`/api/entities/${entityId}`);
+  }
+
+  async function handleAddCommitment() {
+    if (!commitForm.investorId || !commitForm.amount) { toast.error("Investor and amount are required"); return; }
+    setCommitSaving(true);
+    try {
+      const res = await fetch("/api/commitments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          investorId: commitForm.investorId,
+          entityId,
+          amount: Number(commitForm.amount),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to add commitment");
+        return;
+      }
+      toast.success("Commitment added");
+      mutate(`/api/entities/${entityId}`);
+      setShowAddCommitment(false);
+      setCommitForm({ investorId: "", amount: "" });
+    } catch {
+      toast.error("Failed to add commitment");
+    } finally {
+      setCommitSaving(false);
+    }
   }
 
   return (
@@ -347,8 +391,9 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
 
       {/* Commitments Section */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <h3 className="text-sm font-semibold">Commitments ({commitments.length})</h3>
+          <Button size="sm" onClick={() => setShowAddCommitment(true)}>+ Add Commitment</Button>
         </div>
         <table className="w-full text-xs">
           <thead className="bg-gray-50 dark:bg-gray-800">
@@ -440,6 +485,42 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
         onClose={() => setShowCreateSideLetter(false)}
         onCreated={() => mutate(`/api/entities/${entityId}`)}
       />
+
+      {/* Add Commitment Modal */}
+      <Modal
+        open={showAddCommitment}
+        onClose={() => setShowAddCommitment(false)}
+        title="Add Commitment"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAddCommitment(false)}>Cancel</Button>
+            <Button loading={commitSaving} onClick={handleAddCommitment}>Add Commitment</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label="Investor" required>
+            <Select
+              value={commitForm.investorId}
+              onChange={(ev) => setCommitForm((p) => ({ ...p, investorId: ev.target.value }))}
+              options={[
+                { value: "", label: "\u2014 Select an investor \u2014" },
+                ...allInvestors.map((inv: any) => ({
+                  value: inv.id,
+                  label: `${inv.name} (${inv.investorType})`,
+                })),
+              ]}
+            />
+          </FormField>
+          <FormField label="Commitment Amount ($)" required>
+            <CurrencyInput
+              value={commitForm.amount}
+              onChange={(v) => setCommitForm((p) => ({ ...p, amount: v }))}
+              placeholder="e.g. 500,000"
+            />
+          </FormField>
+        </div>
+      </Modal>
     </div>
   );
 }
