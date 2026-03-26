@@ -24,7 +24,12 @@ export async function GET(req: NextRequest) {
 
     const baseWhere: Record<string, unknown> = {};
     if (firmId) {
-      baseWhere.commitments = { some: { entity: { firmId } } };
+      // Include investors linked to the firm via commitments, contact, or company
+      baseWhere.OR = [
+        { commitments: { some: { entity: { firmId } } } },
+        { contact: { firmId } },
+        { company: { firmId } },
+      ];
     }
     if (params.filters?.type) baseWhere.investorType = params.filters.type;
 
