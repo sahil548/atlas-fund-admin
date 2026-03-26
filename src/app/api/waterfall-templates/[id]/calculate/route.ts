@@ -77,10 +77,10 @@ export async function POST(
       ? commitments.map((c) => {
           const investorType = (c.investor.investorType ?? "").toLowerCase();
           const investorName = (c.investor.name ?? "").toLowerCase();
-          const isGP = investorType.includes("gp") ||
+          const isGP: boolean = investorType.includes("gp") ||
             investorType === "general partner" ||
-            (gpEntityName && investorName.includes(gpEntityName)) ||
-            (gpEntityName && gpEntityName.includes(investorName));
+            (gpEntityName !== "" && investorName.includes(gpEntityName)) ||
+            (gpEntityName !== "" && gpEntityName.includes(investorName));
           return {
             investorId: c.investorId,
             investorName: c.investor.name,
