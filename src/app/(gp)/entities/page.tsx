@@ -292,6 +292,12 @@ export default function EntitiesPage() {
                               >
                                 Cancel
                               </button>
+                              <button
+                                onClick={() => { setEditingId(null); setDeleteTarget(e); }}
+                                className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -333,21 +339,15 @@ export default function EntitiesPage() {
                           </Badge>
                         </td>
                         <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1">
                             <Link href={`/entities/${e.id}`}>
                               <Button variant="secondary" size="sm">View</Button>
                             </Link>
                             <button
                               onClick={() => startEdit(e)}
-                              className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50"
+                              className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
                             >
                               Edit
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(e)}
-                              className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
-                            >
-                              Delete
                             </button>
                           </div>
                         </td>
