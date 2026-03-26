@@ -142,7 +142,7 @@ export default function DirectoryPage() {
         return;
       }
       toast.success(`${name} deleted`);
-      mutate(`/api/investors?firmId=${firmId}`);
+      mutate(buildInvestorUrl(null));
       mutate(`/api/companies?firmId=${firmId}`);
       mutate(`/api/contacts?firmId=${firmId}`);
       mutate("/api/side-letters");
@@ -166,7 +166,7 @@ export default function DirectoryPage() {
         }),
       });
       toast.success(`Investor profile created for ${name}`);
-      mutate(`/api/investors?firmId=${firmId}`);
+      mutate(buildInvestorUrl(null));
       mutate(`/api/${type === "contact" ? "contacts" : "companies"}?firmId=${firmId}`);
     } catch {
       toast.error("Failed to create investor profile");

@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { FormField } from "@/components/ui/form-field";
+import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
 import { fmt, formatDate } from "@/lib/utils";
@@ -37,9 +39,23 @@ export default function InvestorDetailPage() {
   const [tab, setTab] = useState("overview");
   const toast = useToast();
 
+  // Entities list (for commitment/contribution dropdowns)
+  const { data: entities } = useSWR(`/api/entities?firmId=${firmId}&limit=100`, fetcher);
+  const entityList: any[] = entities?.data ?? [];
+
   // Grant access modal
   const [showGrantAccess, setShowGrantAccess] = useState(false);
   const [grantForm, setGrantForm] = useState({ userId: "", role: "viewer" });
+
+  // Add commitment modal
+  const [showAddCommitment, setShowAddCommitment] = useState(false);
+  const [commitForm, setCommitForm] = useState({ entityId: "", amount: "" });
+  const [commitSaving, setCommitSaving] = useState(false);
+
+  // Add contribution modal
+  const [showAddContribution, setShowAddContribution] = useState(false);
+  const [contribForm, setContribForm] = useState({ entityId: "", amount: "", date: new Date().toISOString().slice(0, 10), description: "", type: "capital_call" });
+  const [contribSaving, setContribSaving] = useState(false);
 
   if (isLoading || !investor) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -99,6 +115,82 @@ export default function InvestorDetailPage() {
     }
     toast.success(`Granted access to ${granted} LP user${granted !== 1 ? "s" : ""}`);
     mutate(`/api/investors/${id}/access`);
+  }
+
+  async function handleAddCommitment() {
+    if (!commitForm.entityId || !commitForm.amount) { toast.error("Entity and amount are required"); return; }
+    setCommitSaving(true);
+    try {
+      const res = await fetch("/api/commitments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          investorId: id,
+          entityId: commitForm.entityId,
+          amount: Number(commitForm.amount),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to add commitment");
+        return;
+      }
+      toast.success("Commitment added");
+      mutate(`/api/investors/${id}`);
+      setShowAddCommitment(false);
+      setCommitForm({ entityId: "", amount: "" });
+    } catch {
+      toast.error("Failed to add commitment");
+    } finally {
+      setCommitSaving(false);
+    }
+  }
+
+  async function handleAddContribution() {
+    if (!contribForm.entityId || !contribForm.amount || !contribForm.date) {
+      toast.error("Vehicle, amount, and date are required");
+      return;
+    }
+    setContribSaving(true);
+    try {
+      // Create a capital call or distribution line item depending on type
+      const endpoint = contribForm.type === "capital_call" ? "/api/capital-calls" : "/api/distributions";
+      const body = contribForm.type === "capital_call"
+        ? {
+            entityId: contribForm.entityId,
+            callDate: contribForm.date,
+            dueDate: contribForm.date,
+            totalAmount: Number(contribForm.amount),
+            purpose: contribForm.description || "Capital contribution",
+            lineItems: [{ investorId: id, amount: Number(contribForm.amount) }],
+          }
+        : {
+            entityId: contribForm.entityId,
+            distributionDate: contribForm.date,
+            totalAmount: Number(contribForm.amount),
+            source: contribForm.description || "Distribution",
+            lineItems: [{ investorId: id, netAmount: Number(contribForm.amount), income: 0, returnOfCapital: 0 }],
+          };
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to add contribution");
+        return;
+      }
+      toast.success(contribForm.type === "capital_call" ? "Capital call recorded" : "Distribution recorded");
+      mutate(`/api/investors/${id}`);
+      setShowAddContribution(false);
+      setContribForm({ entityId: "", amount: "", date: new Date().toISOString().slice(0, 10), description: "", type: "capital_call" });
+    } catch {
+      toast.error("Failed to add contribution");
+    } finally {
+      setContribSaving(false);
+    }
   }
 
   return (
@@ -196,7 +288,10 @@ export default function InvestorDetailPage() {
       {tab === "commitments" && (
         <div className="space-y-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Commitments</h3></div>
+            <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Commitments</h3>
+              <Button size="sm" onClick={() => setShowAddCommitment(true)}>+ Add Commitment</Button>
+            </div>
             <table className="w-full text-xs">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>{["Entity", "Committed", "Called", "Uncalled", "% Called"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
@@ -237,6 +332,9 @@ export default function InvestorDetailPage() {
       {/* Activity Tab */}
       {tab === "activity" && (
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => setShowAddContribution(true)}>+ Add Contribution</Button>
+          </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Capital Calls</h3></div>
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
@@ -377,6 +475,106 @@ export default function InvestorDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Add Commitment Modal */}
+      <Modal
+        open={showAddCommitment}
+        onClose={() => setShowAddCommitment(false)}
+        title="Add Commitment"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAddCommitment(false)}>Cancel</Button>
+            <Button loading={commitSaving} onClick={handleAddCommitment}>Add Commitment</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label="Vehicle" required>
+            <Select
+              value={commitForm.entityId}
+              onChange={(e) => setCommitForm((p) => ({ ...p, entityId: e.target.value }))}
+              options={[
+                { value: "", label: "\u2014 Select a vehicle \u2014" },
+                ...entityList.map((ent: any) => ({
+                  value: ent.id,
+                  label: ent.name,
+                })),
+              ]}
+            />
+          </FormField>
+          <FormField label="Commitment Amount ($)" required>
+            <CurrencyInput
+              value={commitForm.amount}
+              onChange={(v) => setCommitForm((p) => ({ ...p, amount: v }))}
+              placeholder="e.g. 500,000"
+            />
+          </FormField>
+        </div>
+      </Modal>
+
+      {/* Add Contribution Modal */}
+      <Modal
+        open={showAddContribution}
+        onClose={() => setShowAddContribution(false)}
+        title="Add Contribution"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAddContribution(false)}>Cancel</Button>
+            <Button loading={contribSaving} onClick={handleAddContribution}>
+              {contribForm.type === "capital_call" ? "Record Capital Call" : "Record Distribution"}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label="Type">
+            <Select
+              value={contribForm.type}
+              onChange={(e) => setContribForm((p) => ({ ...p, type: e.target.value }))}
+              options={[
+                { value: "capital_call", label: "Capital Call (money in)" },
+                { value: "distribution", label: "Distribution (money out)" },
+              ]}
+            />
+          </FormField>
+          <FormField label="Vehicle" required>
+            <Select
+              value={contribForm.entityId}
+              onChange={(e) => setContribForm((p) => ({ ...p, entityId: e.target.value }))}
+              options={[
+                { value: "", label: "\u2014 Select a vehicle \u2014" },
+                ...entityList.map((ent: any) => ({
+                  value: ent.id,
+                  label: ent.name,
+                })),
+              ]}
+            />
+          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Amount ($)" required>
+              <CurrencyInput
+                value={contribForm.amount}
+                onChange={(v) => setContribForm((p) => ({ ...p, amount: v }))}
+                placeholder="e.g. 100,000"
+              />
+            </FormField>
+            <FormField label="Date" required>
+              <Input
+                type="date"
+                value={contribForm.date}
+                onChange={(e) => setContribForm((p) => ({ ...p, date: e.target.value }))}
+              />
+            </FormField>
+          </div>
+          <FormField label="Description">
+            <Input
+              value={contribForm.description}
+              onChange={(e) => setContribForm((p) => ({ ...p, description: e.target.value }))}
+              placeholder={contribForm.type === "capital_call" ? "e.g. Q1 capital call" : "e.g. Q4 distribution"}
+            />
+          </FormField>
+        </div>
+      </Modal>
 
       {/* Grant Access Modal */}
       <Modal
