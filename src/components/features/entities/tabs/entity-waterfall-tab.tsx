@@ -5,8 +5,8 @@ import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
-import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { WaterfallPreviewPanel } from "@/components/features/waterfall/waterfall-preview-panel";
@@ -34,69 +34,107 @@ const tierBorderColors = [
   "border-l-purple-500",
 ];
 
+function cleanDescription(desc: string | null | undefined) {
+  if (!desc) return "";
+  return desc.replace(/\[entity:[^\]]+\]\s*—?\s*/g, "").trim();
+}
+
 export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId: string }) {
   const toast = useToast();
   const e = entity;
 
-  // Fetch ALL firm templates — find ones belonging to this entity
+  // Fetch ALL firm templates
   const { data: allTemplates } = useSWR("/api/waterfall-templates", fetcher);
   const entityTag = `[entity:${entityId}]`;
-  const entityTemplates: any[] = (allTemplates || []).filter(
+
+  // Templates assigned to this vehicle
+  const assignedTemplates: any[] = (allTemplates || []).filter(
     (t: any) =>
-      // Linked via FK
       t.entities?.some((ent: any) => ent.id === entityId) ||
-      // Or is the entity's current primary template
       t.id === e.waterfallTemplateId ||
-      // Or tagged with this entity ID in the description
       (t.description && t.description.includes(entityTag))
   );
-
-  // Also include the entity's primary template from the entity data if not already in the list
-  if (e.waterfallTemplate && !entityTemplates.find((t: any) => t.id === e.waterfallTemplate.id)) {
-    entityTemplates.unshift(e.waterfallTemplate);
+  if (e.waterfallTemplate && !assignedTemplates.find((t: any) => t.id === e.waterfallTemplate.id)) {
+    assignedTemplates.unshift(e.waterfallTemplate);
   }
 
-  const [showTemplate, setShowTemplate] = useState(false);
+  // Templates NOT assigned to this vehicle (available to add)
+  const assignedIds = new Set(assignedTemplates.map((t: any) => t.id));
+  const availableTemplates: any[] = (allTemplates || []).filter((t: any) => !assignedIds.has(t.id));
+
+  const [showAddTemplate, setShowAddTemplate] = useState(false);
+  const [assignSaving, setAssignSaving] = useState<string | null>(null);
   const [addTierTarget, setAddTierTarget] = useState<any | null>(null);
   const [editTier, setEditTier] = useState<{ tier: Tier; templateId: string } | null>(null);
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(
-    e.waterfallTemplate?.id || null
+    e.waterfallTemplate?.id || assignedTemplates[0]?.id || null
   );
 
-  // Edit/delete template state
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
-  const [editTemplateName, setEditTemplateName] = useState("");
-  const [editTemplateSaving, setEditTemplateSaving] = useState(false);
-  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState<any | null>(null);
-  const [deleteTemplateLoading, setDeleteTemplateLoading] = useState(false);
+  // Remove template from vehicle
+  const [removeTarget, setRemoveTarget] = useState<any | null>(null);
+  const [removeLoading, setRemoveLoading] = useState(false);
 
-  async function handleSaveTemplateName() {
-    if (!editingTemplateId || !editTemplateName.trim()) return;
-    setEditTemplateSaving(true);
+  async function handleAssignTemplate(templateId: string) {
+    setAssignSaving(templateId);
     try {
-      const res = await fetch(`/api/waterfall-templates/${editingTemplateId}`, {
+      const template = availableTemplates.find((t: any) => t.id === templateId);
+      const currentDesc = template?.description || "";
+      const newDesc = currentDesc.includes(entityTag) ? currentDesc : (currentDesc ? `${entityTag} — ${currentDesc}` : entityTag);
+
+      const res = await fetch(`/api/waterfall-templates/${templateId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editTemplateName }),
+        body: JSON.stringify({ description: newDesc }),
       });
-      if (!res.ok) { toast.error("Failed to update"); return; }
-      toast.success("Template updated");
+      if (!res.ok) { toast.error("Failed to assign template"); return; }
+
+      if (!e.waterfallTemplateId) {
+        await fetch(`/api/entities/${entityId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ waterfallTemplateId: templateId }),
+        });
+      }
+
+      toast.success("Waterfall added to vehicle");
       mutate("/api/waterfall-templates");
       mutate(`/api/entities/${entityId}`);
-      setEditingTemplateId(null);
-    } finally { setEditTemplateSaving(false); }
+      setShowAddTemplate(false);
+    } finally {
+      setAssignSaving(null);
+    }
   }
 
-  async function handleDeleteTemplate() {
-    if (!deleteTemplateTarget) return;
-    setDeleteTemplateLoading(true);
+  async function handleRemoveTemplate() {
+    if (!removeTarget) return;
+    setRemoveLoading(true);
     try {
-      const res = await fetch(`/api/waterfall-templates/${deleteTemplateTarget.id}`, { method: "DELETE" });
-      if (!res.ok) { const d = await res.json(); toast.error(typeof d.error === "string" ? d.error : "Failed to delete"); return; }
-      toast.success("Template deleted");
+      // Remove entity tag from description
+      const currentDesc = removeTarget.description || "";
+      const newDesc = currentDesc.replace(entityTag, "").replace(/^\s*—\s*/, "").replace(/\s*—\s*$/, "").trim();
+
+      await fetch(`/api/waterfall-templates/${removeTarget.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: newDesc || " " }),
+      });
+
+      // If this was the FK-linked template, clear the FK
+      if (e.waterfallTemplateId === removeTarget.id) {
+        await fetch(`/api/entities/${entityId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ waterfallTemplateId: null }),
+        });
+      }
+
+      toast.success("Waterfall removed from vehicle");
       mutate("/api/waterfall-templates");
       mutate(`/api/entities/${entityId}`);
-    } finally { setDeleteTemplateLoading(false); setDeleteTemplateTarget(null); }
+    } finally {
+      setRemoveLoading(false);
+      setRemoveTarget(null);
+    }
   }
 
   function renderTemplate(template: any) {
@@ -105,7 +143,6 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
 
     return (
       <div key={template.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        {/* Template header - always visible */}
         <div
           className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
           onClick={() => setExpandedTemplate(isExpanded ? null : template.id)}
@@ -116,34 +153,20 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
             </svg>
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{template.name}</h3>
-              {template.description && <p className="text-xs text-gray-500 mt-0.5">{template.description.replace(/\[entity:[^\]]+\]\s*—?\s*/g, "").trim()}</p>}
+              {cleanDescription(template.description) && <p className="text-xs text-gray-500 mt-0.5">{cleanDescription(template.description)}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge color="indigo">{tiers.length} tier{tiers.length !== 1 ? "s" : ""}</Badge>
-            {editingTemplateId === template.id ? (
-              <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
-                <input
-                  value={editTemplateName}
-                  onChange={(ev) => setEditTemplateName(ev.target.value)}
-                  className="border border-gray-200 rounded px-2 py-1 text-xs w-36 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-                />
-                <button onClick={handleSaveTemplateName} disabled={editTemplateSaving} className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50">{editTemplateSaving ? "…" : "Save"}</button>
-                <button onClick={() => setEditingTemplateId(null)} className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1">Cancel</button>
-                <button onClick={() => { setEditingTemplateId(null); setDeleteTemplateTarget(template); }} className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50">Delete</button>
-              </div>
-            ) : (
-              <button
-                onClick={(ev) => { ev.stopPropagation(); setEditingTemplateId(template.id); setEditTemplateName(template.name); }}
-                className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
-              >
-                Edit
-              </button>
-            )}
+            <button
+              onClick={(ev) => { ev.stopPropagation(); setRemoveTarget(template); }}
+              className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+            >
+              Remove
+            </button>
           </div>
         </div>
 
-        {/* Expanded: tiers + preview */}
         {isExpanded && (
           <div className="border-t border-gray-100 dark:border-gray-700">
             <div className="p-4">
@@ -180,9 +203,7 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
                             )}
                           </div>
                         </div>
-                        {t.description && (
-                          <p className="text-xs text-gray-500 mt-1">{t.description}</p>
-                        )}
+                        {t.description && <p className="text-xs text-gray-500 mt-1">{t.description}</p>}
                       </div>
                       {i < tiers.length - 1 && (
                         <div className="flex justify-center py-1">
@@ -201,7 +222,6 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
               )}
             </div>
 
-            {/* Scenario Preview */}
             {tiers.length > 0 && (
               <div className="border-t border-gray-100 dark:border-gray-700 p-4">
                 <WaterfallPreviewPanel
@@ -221,30 +241,69 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
 
   return (
     <div className="space-y-4">
-      {/* Header with create button */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Waterfall Templates</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            {entityTemplates.length} template{entityTemplates.length !== 1 ? "s" : ""} — create separate waterfalls for income, return of capital, gains, etc.
+            {assignedTemplates.length} template{assignedTemplates.length !== 1 ? "s" : ""} assigned — manage all waterfalls in Capital Activity, then assign them here.
           </p>
         </div>
-        <Button size="sm" onClick={() => setShowTemplate(true)}>+ New Waterfall</Button>
+        <Button size="sm" onClick={() => setShowAddTemplate(true)}>+ Add Waterfall</Button>
       </div>
 
-      {/* Template list */}
-      {entityTemplates.length > 0 ? (
-        entityTemplates.map((template: any) => renderTemplate(template))
+      {/* Assigned template list */}
+      {assignedTemplates.length > 0 ? (
+        assignedTemplates.map((template: any) => renderTemplate(template))
       ) : (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
-          <div className="text-sm text-gray-500 mb-3">No waterfall templates for this vehicle yet.</div>
-          <p className="text-xs text-gray-400 mb-4">Create waterfalls for different distribution types — income, return of capital, capital gains, etc.</p>
-          <Button size="sm" onClick={() => setShowTemplate(true)}>+ Create First Waterfall</Button>
+          <div className="text-sm text-gray-500 mb-3">No waterfall templates assigned to this vehicle.</div>
+          <p className="text-xs text-gray-400 mb-4">Create waterfalls in the Capital Activity section, then add them here for income distributions, return of capital, etc.</p>
+          <Button size="sm" onClick={() => setShowAddTemplate(true)}>+ Add Waterfall</Button>
         </div>
       )}
 
-      {/* Modals */}
-      <CreateTemplateForm open={showTemplate} onClose={() => setShowTemplate(false)} entityId={entityId} />
+      {/* Add Waterfall Modal — pick from Capital Activity templates */}
+      <Modal
+        open={showAddTemplate}
+        onClose={() => setShowAddTemplate(false)}
+        title="Add Waterfall to Vehicle"
+        size="md"
+      >
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500 mb-3">Select a waterfall template from Capital Activity to use with this vehicle. Create new templates in the <strong>Transactions → Waterfall Templates</strong> tab.</p>
+          {availableTemplates.length === 0 ? (
+            <div className="text-center py-6">
+              <div className="text-sm text-gray-400 mb-2">No available templates.</div>
+              <p className="text-xs text-gray-400">Create waterfall templates in <strong>Transactions → Waterfall Templates</strong> first, then assign them here.</p>
+            </div>
+          ) : (
+            availableTemplates.map((t: any) => (
+              <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <div className="flex-1 min-w-0 mr-3">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.name}</div>
+                  {cleanDescription(t.description) && (
+                    <div className="text-xs text-gray-500 truncate">{cleanDescription(t.description)}</div>
+                  )}
+                  <div className="flex items-center gap-1 mt-1">
+                    <Badge color="indigo">{t.tiers?.length || 0} tiers</Badge>
+                    {t.entities?.map((ent: any) => <Badge key={ent.id} color="blue">{ent.name}</Badge>)}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => handleAssignTemplate(t.id)}
+                  disabled={assignSaving === t.id}
+                >
+                  {assignSaving === t.id ? "Adding…" : "Add"}
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </Modal>
+
+      {/* Tier modals */}
       {addTierTarget && (
         <AddTierForm
           open={!!addTierTarget}
@@ -264,20 +323,20 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
         />
       )}
 
-      {/* Delete Template Confirmation */}
+      {/* Remove Template Confirmation */}
       <ConfirmDialog
-        open={!!deleteTemplateTarget}
-        onClose={() => setDeleteTemplateTarget(null)}
-        onConfirm={handleDeleteTemplate}
-        title="Delete Waterfall Template"
+        open={!!removeTarget}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={handleRemoveTemplate}
+        title="Remove Waterfall from Vehicle"
         message={
-          deleteTemplateTarget
-            ? `Delete "${deleteTemplateTarget.name}" and all its tiers? This cannot be undone.`
+          removeTarget
+            ? `Remove "${removeTarget.name}" from this vehicle? The template will still exist in Capital Activity and can be re-added later.`
             : ""
         }
-        confirmLabel="Delete"
+        confirmLabel="Remove"
         variant="danger"
-        loading={deleteTemplateLoading}
+        loading={removeLoading}
       />
     </div>
   );
