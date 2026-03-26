@@ -90,13 +90,6 @@ export function CreateInvestorForm({ open, onClose }: Props) {
   ];
 
   async function handleSubmit() {
-    // Client-side validation: at least one of companyId or contactId
-    if (!form.companyId && !form.contactId) {
-      setErrors({ companyId: "Select a company or contact" });
-      toast.error("An investor must be linked to a company or a contact");
-      return;
-    }
-
     const payload = {
       ...form,
       totalCommitted: Number(form.totalCommitted) || 0,

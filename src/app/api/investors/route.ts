@@ -93,8 +93,28 @@ export async function POST(req: Request) {
 
     const { data, error } = await parseBody(req, CreateInvestorSchema);
     if (error) return error;
-    const investor = await prisma.investor.create({ data: data! });
-    return NextResponse.json(investor, { status: 201 });
+
+    try {
+      const investor = await prisma.investor.create({ data: data! });
+      return NextResponse.json(investor, { status: 201 });
+    } catch (createErr: any) {
+      // Handle unique constraint violation on contactId/companyId
+      // This happens when a contact/company already has an investor profile
+      if (createErr?.code === "P2002") {
+        const target = createErr?.meta?.target as string[] | undefined;
+        const isContactDup = target?.includes("contactId");
+        const isCompanyDup = target?.includes("companyId");
+
+        // Retry without the duplicate FK — create as standalone investor
+        const retryData = { ...data! };
+        if (isContactDup) delete (retryData as any).contactId;
+        if (isCompanyDup) delete (retryData as any).companyId;
+
+        const investor = await prisma.investor.create({ data: retryData });
+        return NextResponse.json(investor, { status: 201 });
+      }
+      throw createErr;
+    }
   } catch (err) {
     logger.error("[investors] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create investor" }, { status: 500 });

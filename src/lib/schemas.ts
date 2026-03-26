@@ -480,10 +480,7 @@ export const CreateInvestorSchema = z.object({
   contactPreference: z.string().default("Email"),
   contactId: z.string().optional(),
   companyId: z.string().optional(),
-}).refine(
-  (data) => data.contactId || data.companyId,
-  { message: "Must link to a company or contact", path: ["companyId"] }
-);
+});
 
 export const UpdateInvestorSchema = z.object({
   name: z.string().min(1).optional(),
