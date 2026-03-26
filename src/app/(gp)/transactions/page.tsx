@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useFirm } from "@/components/providers/firm-provider";
 import { StatCard } from "@/components/ui/stat-card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { CreateTemplateForm } from "@/components/features/waterfall/create-templ
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
 import { EditTierForm } from "@/components/features/waterfall/edit-tier-form";
 import { WaterfallPreviewPanel } from "@/components/features/waterfall/waterfall-preview-panel";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { fmt, formatDate, cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { ExportButton } from "@/components/ui/export-button";
@@ -90,6 +91,64 @@ export default function TransactionsPage() {
   const [calcResults, setCalcResults] = useState<Record<string, any>>({}); // templateId -> results
   const [calcLoading, setCalcLoading] = useState(false);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null); // for scenario preview panel
+
+  // Edit/delete template state
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateDesc, setEditTemplateDesc] = useState("");
+  const [editTemplateSaving, setEditTemplateSaving] = useState(false);
+  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState<WaterfallTemplate | null>(null);
+  const [deleteTemplateLoading, setDeleteTemplateLoading] = useState(false);
+
+  function startEditTemplate(t: WaterfallTemplate) {
+    setEditingTemplateId(t.id);
+    setEditTemplateName(t.name);
+    setEditTemplateDesc(t.description || "");
+  }
+
+  async function handleSaveTemplate() {
+    if (!editingTemplateId) return;
+    setEditTemplateSaving(true);
+    try {
+      const res = await fetch(`/api/waterfall-templates/${editingTemplateId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editTemplateName, description: editTemplateDesc || undefined }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to update");
+        return;
+      }
+      toast.success("Template updated");
+      mutate("/api/waterfall-templates");
+      setEditingTemplateId(null);
+    } finally {
+      setEditTemplateSaving(false);
+    }
+  }
+
+  async function handleDeleteTemplate() {
+    if (!deleteTemplateTarget) return;
+    setDeleteTemplateLoading(true);
+    try {
+      const res = await fetch(`/api/waterfall-templates/${deleteTemplateTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to delete");
+        return;
+      }
+      toast.success("Template deleted");
+      mutate("/api/waterfall-templates");
+      // Also revalidate any linked entities
+      for (const ent of deleteTemplateTarget.entities) {
+        mutate(`/api/entities/${ent.id}`);
+      }
+    } finally {
+      setDeleteTemplateLoading(false);
+      setDeleteTemplateTarget(null);
+    }
+  }
 
   async function handleCalculateWaterfall(templateId: string) {
     if (!calcForm.entityId || !calcForm.distributableAmount) return;
@@ -415,7 +474,44 @@ export default function TransactionsPage() {
                       {t.entities.map((e) => <Badge key={e.id} color="blue">{e.name}</Badge>)}
                     </div>
                   </div>
-                  <span className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                  <div className="flex items-center gap-2">
+                    {editingTemplateId === t.id ? (
+                      <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
+                        <input
+                          value={editTemplateName}
+                          onChange={(ev) => setEditTemplateName(ev.target.value)}
+                          className="border border-gray-200 rounded px-2 py-1 text-xs w-40 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                        <button
+                          onClick={handleSaveTemplate}
+                          disabled={editTemplateSaving}
+                          className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50"
+                        >
+                          {editTemplateSaving ? "Saving…" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setEditingTemplateId(null)}
+                          className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => { setEditingTemplateId(null); setDeleteTemplateTarget(t); }}
+                          className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={(ev) => { ev.stopPropagation(); startEditTemplate(t); }}
+                        className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+                      >
+                        Edit
+                      </button>
+                    )}
+                    <span className={`text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                  </div>
                 </div>
 
                 {isExpanded && (
@@ -656,6 +752,22 @@ export default function TransactionsPage() {
           }}
         />
       )}
+
+      {/* Delete Template Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTemplateTarget}
+        onClose={() => setDeleteTemplateTarget(null)}
+        onConfirm={handleDeleteTemplate}
+        title="Delete Waterfall Template"
+        message={
+          deleteTemplateTarget
+            ? `Delete "${deleteTemplateTarget.name}" and all its tiers? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteTemplateLoading}
+      />
 
       {/* Waterfall Calculate Modal */}
       {showCalcModal && (

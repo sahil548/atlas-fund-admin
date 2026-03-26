@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/components/ui/toast";
 import { CreateTemplateForm } from "@/components/features/waterfall/create-template-form";
 import { AddTierForm } from "@/components/features/waterfall/add-tier-form";
@@ -59,6 +60,42 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
     e.waterfallTemplate?.id || null
   );
 
+  // Edit/delete template state
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateSaving, setEditTemplateSaving] = useState(false);
+  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState<any | null>(null);
+  const [deleteTemplateLoading, setDeleteTemplateLoading] = useState(false);
+
+  async function handleSaveTemplateName() {
+    if (!editingTemplateId || !editTemplateName.trim()) return;
+    setEditTemplateSaving(true);
+    try {
+      const res = await fetch(`/api/waterfall-templates/${editingTemplateId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editTemplateName }),
+      });
+      if (!res.ok) { toast.error("Failed to update"); return; }
+      toast.success("Template updated");
+      mutate("/api/waterfall-templates");
+      mutate(`/api/entities/${entityId}`);
+      setEditingTemplateId(null);
+    } finally { setEditTemplateSaving(false); }
+  }
+
+  async function handleDeleteTemplate() {
+    if (!deleteTemplateTarget) return;
+    setDeleteTemplateLoading(true);
+    try {
+      const res = await fetch(`/api/waterfall-templates/${deleteTemplateTarget.id}`, { method: "DELETE" });
+      if (!res.ok) { const d = await res.json(); toast.error(typeof d.error === "string" ? d.error : "Failed to delete"); return; }
+      toast.success("Template deleted");
+      mutate("/api/waterfall-templates");
+      mutate(`/api/entities/${entityId}`);
+    } finally { setDeleteTemplateLoading(false); setDeleteTemplateTarget(null); }
+  }
+
   function renderTemplate(template: any) {
     const isExpanded = expandedTemplate === template.id;
     const tiers: Tier[] = template.tiers || [];
@@ -81,6 +118,25 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
           </div>
           <div className="flex items-center gap-2">
             <Badge color="indigo">{tiers.length} tier{tiers.length !== 1 ? "s" : ""}</Badge>
+            {editingTemplateId === template.id ? (
+              <div className="flex items-center gap-1" onClick={(ev) => ev.stopPropagation()}>
+                <input
+                  value={editTemplateName}
+                  onChange={(ev) => setEditTemplateName(ev.target.value)}
+                  className="border border-gray-200 rounded px-2 py-1 text-xs w-36 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                />
+                <button onClick={handleSaveTemplateName} disabled={editTemplateSaving} className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50">{editTemplateSaving ? "…" : "Save"}</button>
+                <button onClick={() => setEditingTemplateId(null)} className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1">Cancel</button>
+                <button onClick={() => { setEditingTemplateId(null); setDeleteTemplateTarget(template); }} className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50">Delete</button>
+              </div>
+            ) : (
+              <button
+                onClick={(ev) => { ev.stopPropagation(); setEditingTemplateId(template.id); setEditTemplateName(template.name); }}
+                className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+              >
+                Edit
+              </button>
+            )}
           </div>
         </div>
 
@@ -204,6 +260,22 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
           entityId={entityId}
         />
       )}
+
+      {/* Delete Template Confirmation */}
+      <ConfirmDialog
+        open={!!deleteTemplateTarget}
+        onClose={() => setDeleteTemplateTarget(null)}
+        onConfirm={handleDeleteTemplate}
+        title="Delete Waterfall Template"
+        message={
+          deleteTemplateTarget
+            ? `Delete "${deleteTemplateTarget.name}" and all its tiers? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteTemplateLoading}
+      />
     </div>
   );
 }
