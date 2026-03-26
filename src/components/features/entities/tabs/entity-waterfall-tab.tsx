@@ -38,14 +38,17 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
   const toast = useToast();
   const e = entity;
 
-  // Fetch ALL firm templates — show ones linked to this entity OR orphaned ones
+  // Fetch ALL firm templates — find ones belonging to this entity
   const { data: allTemplates } = useSWR("/api/waterfall-templates", fetcher);
+  const entityTag = `[entity:${entityId}]`;
   const entityTemplates: any[] = (allTemplates || []).filter(
     (t: any) =>
-      // Linked to this entity
+      // Linked via FK
       t.entities?.some((ent: any) => ent.id === entityId) ||
       // Or is the entity's current primary template
-      t.id === e.waterfallTemplateId
+      t.id === e.waterfallTemplateId ||
+      // Or tagged with this entity ID in the description
+      (t.description && t.description.includes(entityTag))
   );
 
   // Also include the entity's primary template from the entity data if not already in the list
@@ -113,7 +116,7 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
             </svg>
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{template.name}</h3>
-              {template.description && <p className="text-xs text-gray-500 mt-0.5">{template.description}</p>}
+              {template.description && <p className="text-xs text-gray-500 mt-0.5">{template.description.replace(/\[entity:[^\]]+\]\s*—?\s*/g, "").trim()}</p>}
             </div>
           </div>
           <div className="flex items-center gap-2">

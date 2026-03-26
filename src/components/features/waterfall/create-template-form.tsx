@@ -45,7 +45,12 @@ export function CreateTemplateForm({ open, onClose, entityId }: Props) {
     if (!form.name.trim()) { setError("Name is required"); return; }
     setIsLoading(true);
     try {
-      const description = [form.distType ? `Type: ${form.distType}` : "", form.description].filter(Boolean).join(" — ");
+      // Build description with entity tag for multi-template association
+      const descParts = [];
+      if (entityId) descParts.push(`[entity:${entityId}]`);
+      if (form.distType) descParts.push(`Type: ${form.distType}`);
+      if (form.description) descParts.push(form.description);
+      const description = descParts.join(" — ");
 
       // Create the template
       const res = await fetch("/api/waterfall-templates", {
@@ -60,17 +65,19 @@ export function CreateTemplateForm({ open, onClose, entityId }: Props) {
       }
       const template = await res.json();
 
-      // If we have an entityId, link the template to the entity
-      // Always set the FK — each new template becomes the "active" one
-      // The waterfall tab fetches all templates linked to the entity
+      // If we have an entityId, link the template via FK only if entity doesn't already have one
+      // This preserves existing template links when creating additional templates
       if (entityId) {
-        const linkRes = await fetch(`/api/entities/${entityId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ waterfallTemplateId: template.id }),
-        });
-        if (!linkRes.ok) {
-          toast.error("Template created but failed to link to vehicle.");
+        const entityRes = await fetch(`/api/entities/${entityId}`);
+        const entityData = entityRes.ok ? await entityRes.json() : null;
+
+        if (!entityData?.waterfallTemplateId) {
+          // First template — set the FK
+          await fetch(`/api/entities/${entityId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ waterfallTemplateId: template.id }),
+          });
         }
         mutate(`/api/entities/${entityId}`);
       }
