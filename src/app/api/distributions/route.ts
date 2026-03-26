@@ -55,7 +55,10 @@ export async function POST(req: Request) {
     const { data, error } = await parseBody(req, CreateDistributionSchema);
     if (error) return error;
 
-    const { autoGenerateLineItems, entityId, distributionDate, grossAmount, ...rest } = data!;
+    const {
+      autoGenerateLineItems, entityId, distributionDate, grossAmount,
+      waterfallTemplateId, perInvestorOverrides, ...rest
+    } = data!;
 
     const dist = await prisma.distributionEvent.create({
       data: {
@@ -66,11 +69,11 @@ export async function POST(req: Request) {
       },
     });
 
-    // Auto-generate pro-rata line items from entity commitments
+    // Auto-generate line items from entity commitments
     if (autoGenerateLineItems) {
       const commitments = await prisma.commitment.findMany({
         where: { entityId },
-        select: { investorId: true, amount: true },
+        include: { investor: { select: { id: true, name: true, investorType: true } } },
       });
 
       const totalCommitments = commitments.reduce(
@@ -79,30 +82,64 @@ export async function POST(req: Request) {
       );
 
       if (commitments.length > 0 && totalCommitments > 0) {
-        // Pro-rata by commitment amount
-        const lineItemsData = commitments.map((c) => {
-          const share = c.amount / totalCommitments;
-          const investorGross = grossAmount * share;
-          const returnOfCapital = (rest.returnOfCapital ?? 0) * share;
-          const income = (rest.income ?? 0) * share;
-          const longTermGain = (rest.longTermGain ?? 0) * share;
-          const carriedInterest = (rest.carriedInterest ?? 0) * share;
-          const netAmount = (rest.netToLPs ?? 0) * share;
+        // If per-investor overrides provided (from waterfall UI), use those
+        if (perInvestorOverrides && perInvestorOverrides.length > 0) {
+          const overrideMap = new Map(
+            perInvestorOverrides.map((o) => [o.investorId, o])
+          );
 
-          return {
-            distributionId: dist.id,
-            investorId: c.investorId,
-            grossAmount: investorGross,
-            returnOfCapital,
-            income,
-            longTermGain,
-            carriedInterest,
-            netAmount,
-            distributionType: rest.distributionType,
-          };
-        });
+          const lineItemsData = commitments.map((c) => {
+            const override = overrideMap.get(c.investorId);
+            const investorTotal = override?.amount ?? (grossAmount * (c.amount / totalCommitments));
+            const gpCarry = override?.gpCarryAmount ?? 0;
+            const lpPortion = investorTotal - gpCarry;
 
-        await prisma.distributionLineItem.createMany({ data: lineItemsData });
+            // Decompose proportionally based on total vs gross
+            const shareOfGross = investorTotal / grossAmount;
+            const returnOfCapital = (rest.returnOfCapital ?? 0) * shareOfGross;
+            const income = (rest.income ?? 0) * shareOfGross;
+            const longTermGain = (rest.longTermGain ?? 0) * shareOfGross;
+
+            return {
+              distributionId: dist.id,
+              investorId: c.investorId,
+              grossAmount: investorTotal,
+              returnOfCapital,
+              income,
+              longTermGain,
+              carriedInterest: gpCarry,
+              netAmount: lpPortion,
+              distributionType: rest.distributionType,
+            };
+          });
+
+          await prisma.distributionLineItem.createMany({ data: lineItemsData });
+        } else {
+          // Simple pro-rata by commitment amount (no waterfall)
+          const lineItemsData = commitments.map((c) => {
+            const share = c.amount / totalCommitments;
+            const investorGross = grossAmount * share;
+            const returnOfCapital = (rest.returnOfCapital ?? 0) * share;
+            const income = (rest.income ?? 0) * share;
+            const longTermGain = (rest.longTermGain ?? 0) * share;
+            const carriedInterest = (rest.carriedInterest ?? 0) * share;
+            const netAmount = (rest.netToLPs ?? 0) * share;
+
+            return {
+              distributionId: dist.id,
+              investorId: c.investorId,
+              grossAmount: investorGross,
+              returnOfCapital,
+              income,
+              longTermGain,
+              carriedInterest,
+              netAmount,
+              distributionType: rest.distributionType,
+            };
+          });
+
+          await prisma.distributionLineItem.createMany({ data: lineItemsData });
+        }
       }
     }
 

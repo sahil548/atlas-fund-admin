@@ -59,18 +59,35 @@ export async function POST(
     // Fetch commitments for total contributed + per-investor breakdown
     const commitments = await prisma.commitment.findMany({
       where: { entityId },
-      include: { investor: { select: { id: true, name: true } } },
+      include: { investor: { select: { id: true, name: true, investorType: true } } },
     });
     const totalContributed = commitments.reduce((s, c) => s + c.calledAmount, 0);
 
+    // Check if entity has a GP entity parent or is itself a GP entity
+    const gpEntity = await prisma.entity.findFirst({
+      where: { firmId, entityType: "GP_ENTITY" },
+      select: { name: true },
+    });
+    const gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
+
     // Build per-investor shares (pro-rata of committed capital)
+    // Identify GP investors by: investorType containing "GP", or name matching the GP entity
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
     const investorShares: InvestorShare[] = totalCommitted > 0
-      ? commitments.map((c) => ({
-          investorId: c.investorId,
-          investorName: c.investor.name,
-          proRataShare: c.amount / totalCommitted,
-        }))
+      ? commitments.map((c) => {
+          const investorType = (c.investor.investorType ?? "").toLowerCase();
+          const investorName = (c.investor.name ?? "").toLowerCase();
+          const isGP = investorType.includes("gp") ||
+            investorType === "general partner" ||
+            (gpEntityName && investorName.includes(gpEntityName)) ||
+            (gpEntityName && gpEntityName.includes(investorName));
+          return {
+            investorId: c.investorId,
+            investorName: c.investor.name,
+            proRataShare: c.amount / totalCommitted,
+            isGP,
+          };
+        })
       : [];
 
     // Get total prior distributions for this entity

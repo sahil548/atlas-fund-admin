@@ -542,6 +542,13 @@ export const CreateDistributionSchema = z.object({
   distributionType: z.string().optional(),
   memo: z.string().optional(),
   autoGenerateLineItems: z.boolean().default(true),
+  waterfallTemplateId: z.string().optional(),
+  // Per-investor overrides from the waterfall UI (investorId -> amount)
+  perInvestorOverrides: z.array(z.object({
+    investorId: z.string(),
+    amount: z.number(),
+    gpCarryAmount: z.number().default(0),
+  })).optional(),
 });
 
 export const UpdateDistributionSchema = z.object({
