@@ -2,9 +2,10 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { fmt, cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { useFirm } from "@/components/providers/firm-provider";
@@ -17,6 +18,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SectionPanel } from "@/components/ui/section-panel";
 import { VehicleOrgChart } from "@/components/features/entities/vehicle-org-chart";
 import { VehicleCardsView } from "@/components/features/entities/vehicle-cards-view";
+import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { ChevronRight, ChevronDown } from "lucide-react";
 
 const fetcher = (url: string) =>
@@ -42,6 +44,16 @@ export default function EntitiesPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("flat");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", entityType: "", vintageYear: "" });
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -75,6 +87,61 @@ export default function EntitiesPage() {
     }
   }, [cursor, loadingMore, buildUrl]);
 
+  function revalidateEntities() {
+    mutate(buildUrl(null));
+  }
+
+  function startEdit(e: any) {
+    setEditingId(e.id);
+    setEditForm({
+      name: e.name || "",
+      entityType: e.entityType || "MAIN_FUND",
+      vintageYear: e.vintageYear ? String(e.vintageYear) : "",
+    });
+  }
+
+  async function handleEditSave() {
+    if (!editingId || !editForm.name.trim()) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/entities/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editForm.name,
+          entityType: editForm.entityType,
+          ...(editForm.vintageYear ? { vintageYear: Number(editForm.vintageYear) } : {}),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(typeof d.error === "string" ? d.error : "Failed to update");
+        return;
+      }
+      revalidateEntities();
+      setEditingId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/entities/${deleteTarget.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(typeof d.error === "string" ? d.error : "Failed to delete");
+        return;
+      }
+      revalidateEntities();
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
+
   const hasMore = !!cursor;
 
   return (
@@ -84,6 +151,7 @@ export default function EntitiesPage() {
         subtitle={`${allEntities.length} vehicles`}
         actions={
           <div className="flex items-center gap-2">
+            <Button size="sm" onClick={() => setShowCreateForm(true)}>+ New Vehicle</Button>
             <ExportButton
               data={allEntities.map((e: any) => ({
                 id: e.id,
@@ -126,7 +194,7 @@ export default function EntitiesPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {["Vehicle", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", ""].map((h) => (
+                {["Vehicle", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -164,11 +232,74 @@ export default function EntitiesPage() {
                     });
                   };
 
+                  const ENTITY_TYPES = [
+                    { value: "MAIN_FUND", label: "Main Fund" },
+                    { value: "SIDECAR", label: "Sidecar" },
+                    { value: "SPV", label: "SPV" },
+                    { value: "CO_INVEST_VEHICLE", label: "Co-Invest Vehicle" },
+                    { value: "GP_ENTITY", label: "GP Entity" },
+                    { value: "HOLDING_COMPANY", label: "Holding Company" },
+                  ];
+
                   const renderRow = (e: any, depth: number) => {
                     const hasChildren = childrenMap.has(e.id);
                     const isExpanded = expanded.has(e.id);
+                    const isEditing = editingId === e.id;
+
+                    if (isEditing) {
+                      return (
+                        <tr key={e.id} className="border-t border-gray-50 bg-indigo-50/40 dark:bg-indigo-900/10">
+                          <td className="px-3 py-2">
+                            <input
+                              value={editForm.name}
+                              onChange={(ev) => setEditForm((f) => ({ ...f, name: ev.target.value }))}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <select
+                              value={editForm.entityType}
+                              onChange={(ev) => setEditForm((f) => ({ ...f, entityType: ev.target.value }))}
+                              className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                            >
+                              {ENTITY_TYPES.map((t) => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              type="number"
+                              value={editForm.vintageYear}
+                              onChange={(ev) => setEditForm((f) => ({ ...f, vintageYear: ev.target.value }))}
+                              placeholder="Year"
+                              className="w-20 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5" colSpan={5}></td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={handleEditSave}
+                                disabled={editSaving}
+                                className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50"
+                              >
+                                {editSaving ? "Saving…" : "Save"}
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+
                     return (
-                      <tr key={e.id} className={cn("border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800", depth > 0 && "bg-gray-50/50 dark:bg-gray-800/30")}>
+                      <tr key={e.id} className={cn("border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 group", depth > 0 && "bg-gray-50/50 dark:bg-gray-800/30")}>
                         <td className="px-3 py-2.5">
                           <div className="flex items-center" style={{ paddingLeft: depth * 24 }}>
                             {hasChildren ? (
@@ -202,9 +333,23 @@ export default function EntitiesPage() {
                           </Badge>
                         </td>
                         <td className="px-3 py-2.5">
-                          <Link href={`/entities/${e.id}`}>
-                            <Button variant="secondary" size="sm">View</Button>
-                          </Link>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Link href={`/entities/${e.id}`}>
+                              <Button variant="secondary" size="sm">View</Button>
+                            </Link>
+                            <button
+                              onClick={() => startEdit(e)}
+                              className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(e)}
+                              className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -263,6 +408,25 @@ export default function EntitiesPage() {
       {viewMode === "flat" && (
         <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />
       )}
+
+      {/* Create vehicle modal */}
+      <CreateEntityForm open={showCreateForm} onClose={() => setShowCreateForm(false)} />
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Vehicle"
+        message={
+          deleteTarget
+            ? `Delete "${deleteTarget.name}"? This will remove the vehicle and all associated data. This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

@@ -17,6 +17,7 @@ export type AuditAction =
   | "REVIVE_DEAL"
   | "CREATE_ENTITY"
   | "UPDATE_ENTITY"
+  | "DELETE_ENTITY"
   | "CREATE_ASSET"
   | "UPDATE_ASSET"
   | "CREATE_CAPITAL_CALL"
