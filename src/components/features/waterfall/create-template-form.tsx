@@ -6,8 +6,17 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+
+const DISTRIBUTION_TYPES = [
+  { value: "", label: "Custom" },
+  { value: "Income", label: "Income Distribution" },
+  { value: "Return of Capital", label: "Return of Capital" },
+  { value: "Capital Gains", label: "Capital Gains" },
+  { value: "Liquidation", label: "Liquidation / Wind-Down" },
+];
 
 interface Props {
   open: boolean;
@@ -17,19 +26,32 @@ interface Props {
 
 export function CreateTemplateForm({ open, onClose, entityId }: Props) {
   const toast = useToast();
-  const [form, setForm] = useState({ name: "", description: "" });
+  const [form, setForm] = useState({ name: "", description: "", distType: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  function handleDistTypeChange(value: string) {
+    setForm(p => ({
+      ...p,
+      distType: value,
+      // Auto-fill name if empty or was previously auto-filled
+      name: !p.name || DISTRIBUTION_TYPES.some(dt => dt.value && p.name === `${dt.value} Waterfall`)
+        ? (value ? `${value} Waterfall` : p.name)
+        : p.name,
+    }));
+  }
 
   async function handleSubmit() {
     if (!form.name.trim()) { setError("Name is required"); return; }
     setIsLoading(true);
     try {
+      const description = [form.distType ? `Type: ${form.distType}` : "", form.description].filter(Boolean).join(" — ");
+
       // Create the template
       const res = await fetch("/api/waterfall-templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ name: form.name, description: description || undefined }),
       });
       if (!res.ok) {
         const d = await res.json();
@@ -39,6 +61,8 @@ export function CreateTemplateForm({ open, onClose, entityId }: Props) {
       const template = await res.json();
 
       // If we have an entityId, link the template to the entity
+      // Always set the FK — each new template becomes the "active" one
+      // The waterfall tab fetches all templates linked to the entity
       if (entityId) {
         const linkRes = await fetch(`/api/entities/${entityId}`, {
           method: "PUT",
@@ -46,15 +70,14 @@ export function CreateTemplateForm({ open, onClose, entityId }: Props) {
           body: JSON.stringify({ waterfallTemplateId: template.id }),
         });
         if (!linkRes.ok) {
-          toast.error("Template created but failed to link to vehicle. Try assigning it manually.");
+          toast.error("Template created but failed to link to vehicle.");
         }
-        // Revalidate entity data so the waterfall tab updates
         mutate(`/api/entities/${entityId}`);
       }
 
       mutate("/api/waterfall-templates");
-      toast.success("Template created");
-      setForm({ name: "", description: "" });
+      toast.success("Waterfall template created");
+      setForm({ name: "", description: "", distType: "" });
       setError("");
       onClose();
     } catch {
@@ -67,11 +90,18 @@ export function CreateTemplateForm({ open, onClose, entityId }: Props) {
   return (
     <Modal open={open} onClose={onClose} title="New Waterfall Template" size="sm" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button loading={isLoading} onClick={handleSubmit}>Create Template</Button></>}>
       <div className="space-y-3">
+        <FormField label="Distribution Type">
+          <Select
+            value={form.distType}
+            onChange={(e) => handleDistTypeChange(e.target.value)}
+            options={DISTRIBUTION_TYPES}
+          />
+        </FormField>
         <FormField label="Template Name" required error={error}>
-          <Input value={form.name} onChange={(e) => { setForm(p => ({ ...p, name: e.target.value })); setError(""); }} error={!!error} placeholder="e.g. European 8/20" />
+          <Input value={form.name} onChange={(e) => { setForm(p => ({ ...p, name: e.target.value })); setError(""); }} error={!!error} placeholder="e.g. Income Waterfall" />
         </FormField>
         <FormField label="Description">
-          <Textarea value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. ROC → 8% Pref → 100% GP Catch-Up → 80/20 Split" />
+          <Textarea value={form.description} onChange={(e) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="e.g. 8% Pref → 100% GP Catch-Up → 80/20 Split" />
         </FormField>
       </div>
     </Modal>
