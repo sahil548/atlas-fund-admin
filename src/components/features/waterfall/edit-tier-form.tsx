@@ -43,12 +43,12 @@ export function EditTierForm({ open, onClose, templateId, tier, entityId }: Prop
     try {
       await trigger({
         id: tier.id,
-        name: form.name || undefined,
-        description: form.description || undefined,
+        name: form.name || tier.name,
+        description: form.description || null,
         appliesTo: proRata ? "PRO_RATA" : null,
-        splitLP: proRata ? null : (form.splitLP ? Number(form.splitLP) : undefined),
-        splitGP: proRata ? null : (form.splitGP ? Number(form.splitGP) : undefined),
-        hurdleRate: proRata ? null : (form.hurdleRate ? Number(form.hurdleRate) : undefined),
+        splitLP: proRata ? null : (form.splitLP ? Number(form.splitLP) : null),
+        splitGP: proRata ? null : (form.splitGP ? Number(form.splitGP) : null),
+        hurdleRate: proRata ? null : (form.hurdleRate ? Number(form.hurdleRate) : null),
       });
       toast.success("Tier updated");
       onClose();

@@ -613,11 +613,11 @@ export const CreateWaterfallTierSchema = z.object({
 export const UpdateWaterfallTierSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  splitLP: z.number().min(0).max(100).optional(),
-  splitGP: z.number().min(0).max(100).optional(),
-  hurdleRate: z.number().min(0).optional(),
-  appliesTo: z.string().optional(),
+  description: z.string().nullable().optional(),
+  splitLP: z.number().min(0).max(100).nullable().optional(),
+  splitGP: z.number().min(0).max(100).nullable().optional(),
+  hurdleRate: z.number().min(0).nullable().optional(),
+  appliesTo: z.string().nullable().optional(),
 });
 
 // ── Accounting ─────────────────────────────────────────
