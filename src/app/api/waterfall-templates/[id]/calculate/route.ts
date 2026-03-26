@@ -63,24 +63,56 @@ export async function POST(
     });
     const totalContributed = commitments.reduce((s, c) => s + c.calledAmount, 0);
 
-    // Check if entity has a GP entity parent or is itself a GP entity
-    const gpEntity = await prisma.entity.findFirst({
-      where: { firmId, entityType: "GP_ENTITY" },
-      select: { name: true },
+    // Fetch unit class assignments to determine GP vs LP status
+    // An investor with units in a GP_UNIT class is considered GP
+    const unitClasses = await prisma.unitClass.findMany({
+      where: { entityId },
+      include: {
+        ownershipUnits: {
+          where: { status: "ACTIVE" },
+          select: { investorId: true },
+        },
+      },
     });
-    const gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
+
+    // Build set of investor IDs that hold GP_UNIT class units
+    const gpInvestorIds = new Set<string>();
+    for (const uc of unitClasses) {
+      if (uc.classType === "GP_UNIT" || uc.classType === "CARRIED_INTEREST") {
+        for (const ou of uc.ownershipUnits) {
+          gpInvestorIds.add(ou.investorId);
+        }
+      }
+    }
+
+    // Fallback: if no unit classes exist, detect GP by investor type or entity name
+    let useNameFallback = gpInvestorIds.size === 0;
+    let gpEntityName = "";
+    if (useNameFallback) {
+      const gpEntity = await prisma.entity.findFirst({
+        where: { firmId, entityType: "GP_ENTITY" },
+        select: { name: true },
+      });
+      gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
+    }
 
     // Build per-investor shares (pro-rata of committed capital)
-    // Identify GP investors by: investorType containing "GP", or name matching the GP entity
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
     const investorShares: InvestorShare[] = totalCommitted > 0
       ? commitments.map((c) => {
-          const investorType = (c.investor.investorType ?? "").toLowerCase();
-          const investorName = (c.investor.name ?? "").toLowerCase();
-          const isGP: boolean = investorType.includes("gp") ||
-            investorType === "general partner" ||
-            (gpEntityName !== "" && investorName.includes(gpEntityName)) ||
-            (gpEntityName !== "" && gpEntityName.includes(investorName));
+          let isGP: boolean;
+          if (!useNameFallback) {
+            // Primary: use unit class assignment
+            isGP = gpInvestorIds.has(c.investorId);
+          } else {
+            // Fallback: use investor type or GP entity name matching
+            const investorType = (c.investor.investorType ?? "").toLowerCase();
+            const investorName = (c.investor.name ?? "").toLowerCase();
+            isGP = investorType.includes("gp") ||
+              investorType === "general partner" ||
+              (gpEntityName !== "" && investorName.includes(gpEntityName)) ||
+              (gpEntityName !== "" && gpEntityName.includes(investorName));
+          }
           return {
             investorId: c.investorId,
             investorName: c.investor.name,
