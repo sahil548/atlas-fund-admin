@@ -1,31 +1,67 @@
 "use client";
 
 import { useState } from "react";
+import { mutate } from "swr";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import { useMutation } from "@/hooks/use-mutation";
 
-interface Props { open: boolean; onClose: () => void }
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  entityId?: string;
+}
 
-export function CreateTemplateForm({ open, onClose }: Props) {
+export function CreateTemplateForm({ open, onClose, entityId }: Props) {
   const toast = useToast();
-  const { trigger, isLoading } = useMutation("/api/waterfall-templates", { revalidateKeys: ["/api/waterfall-templates"] });
   const [form, setForm] = useState({ name: "", description: "" });
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit() {
     if (!form.name.trim()) { setError("Name is required"); return; }
+    setIsLoading(true);
     try {
-      await trigger(form);
+      // Create the template
+      const res = await fetch("/api/waterfall-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to create template");
+        return;
+      }
+      const template = await res.json();
+
+      // If we have an entityId, link the template to the entity
+      if (entityId) {
+        const linkRes = await fetch(`/api/entities/${entityId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ waterfallTemplateId: template.id }),
+        });
+        if (!linkRes.ok) {
+          toast.error("Template created but failed to link to vehicle. Try assigning it manually.");
+        }
+        // Revalidate entity data so the waterfall tab updates
+        mutate(`/api/entities/${entityId}`);
+      }
+
+      mutate("/api/waterfall-templates");
       toast.success("Template created");
       setForm({ name: "", description: "" });
       setError("");
       onClose();
-    } catch { toast.error("Failed to create template"); }
+    } catch {
+      toast.error("Failed to create template");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (

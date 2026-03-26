@@ -118,7 +118,7 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
       )}
 
       {/* Modals */}
-      <CreateTemplateForm open={showTemplate} onClose={() => setShowTemplate(false)} />
+      <CreateTemplateForm open={showTemplate} onClose={() => setShowTemplate(false)} entityId={entityId} />
       {e.waterfallTemplate && (
         <AddTierForm
           open={showAddTier}
