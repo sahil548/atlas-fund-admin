@@ -125,6 +125,7 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
           onClose={() => setShowAddTier(false)}
           templateId={e.waterfallTemplate.id}
           nextOrder={(e.waterfallTemplate.tiers?.length || 0) + 1}
+          entityId={entityId}
         />
       )}
       {editTier && e.waterfallTemplate && (
@@ -133,6 +134,7 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
           onClose={() => setEditTier(null)}
           templateId={e.waterfallTemplate.id}
           tier={editTier}
+          entityId={entityId}
         />
       )}
     </div>

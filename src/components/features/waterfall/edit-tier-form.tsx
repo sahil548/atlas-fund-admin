@@ -14,11 +14,12 @@ interface Props {
   onClose: () => void;
   templateId: string;
   tier: { id: string; name: string; description?: string; splitLP?: number; splitGP?: number; hurdleRate?: number };
+  entityId?: string;
 }
 
-export function EditTierForm({ open, onClose, templateId, tier }: Props) {
+export function EditTierForm({ open, onClose, templateId, tier, entityId }: Props) {
   const toast = useToast();
-  const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { method: "PUT", revalidateKeys: ["/api/waterfall-templates"] });
+  const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { method: "PUT", revalidateKeys: ["/api/waterfall-templates", ...(entityId ? [`/api/entities/${entityId}`] : [])] });
   const [form, setForm] = useState({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "" });
 
   useEffect(() => {

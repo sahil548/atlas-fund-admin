@@ -9,11 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { useMutation } from "@/hooks/use-mutation";
 
-interface Props { open: boolean; onClose: () => void; templateId: string; nextOrder: number }
+interface Props { open: boolean; onClose: () => void; templateId: string; nextOrder: number; entityId?: string }
 
-export function AddTierForm({ open, onClose, templateId, nextOrder }: Props) {
+export function AddTierForm({ open, onClose, templateId, nextOrder, entityId }: Props) {
   const toast = useToast();
-  const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { revalidateKeys: ["/api/waterfall-templates"] });
+  const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { revalidateKeys: ["/api/waterfall-templates", ...(entityId ? [`/api/entities/${entityId}`] : [])] });
   const [form, setForm] = useState({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "" });
   const [error, setError] = useState("");
 
