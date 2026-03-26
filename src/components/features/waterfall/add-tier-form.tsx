@@ -14,7 +14,8 @@ interface Props { open: boolean; onClose: () => void; templateId: string; nextOr
 export function AddTierForm({ open, onClose, templateId, nextOrder, entityId }: Props) {
   const toast = useToast();
   const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { revalidateKeys: ["/api/waterfall-templates", ...(entityId ? [`/api/entities/${entityId}`] : [])] });
-  const [form, setForm] = useState({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "" });
+  const [form, setForm] = useState({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "", appliesTo: "" });
+  const [proRata, setProRata] = useState(false);
   const [error, setError] = useState("");
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -25,12 +26,14 @@ export function AddTierForm({ open, onClose, templateId, nextOrder, entityId }: 
       await trigger({
         templateId, tierOrder: nextOrder, name: form.name,
         description: form.description || undefined,
-        splitLP: form.splitLP ? Number(form.splitLP) : undefined,
-        splitGP: form.splitGP ? Number(form.splitGP) : undefined,
-        hurdleRate: form.hurdleRate ? Number(form.hurdleRate) : undefined,
+        appliesTo: proRata ? "PRO_RATA" : (form.appliesTo || undefined),
+        splitLP: proRata ? undefined : (form.splitLP ? Number(form.splitLP) : undefined),
+        splitGP: proRata ? undefined : (form.splitGP ? Number(form.splitGP) : undefined),
+        hurdleRate: proRata ? undefined : (form.hurdleRate ? Number(form.hurdleRate) : undefined),
       });
       toast.success("Tier added");
-      setForm({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "" });
+      setForm({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "", appliesTo: "" });
+      setProRata(false);
       setError("");
       onClose();
     } catch { toast.error("Failed to add tier"); }
@@ -45,11 +48,23 @@ export function AddTierForm({ open, onClose, templateId, nextOrder, entityId }: 
         <FormField label="Description">
           <Textarea value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. 8% preferred return to LPs" />
         </FormField>
-        <div className="grid grid-cols-3 gap-3">
-          <FormField label="LP Split %"><Input type="number" value={form.splitLP} onChange={(e) => set("splitLP", e.target.value)} placeholder="80" /></FormField>
-          <FormField label="GP Split %"><Input type="number" value={form.splitGP} onChange={(e) => set("splitGP", e.target.value)} placeholder="20" /></FormField>
-          <FormField label="Hurdle %"><Input type="number" step="0.1" value={form.hurdleRate} onChange={(e) => set("hurdleRate", e.target.value)} placeholder="8.0" /></FormField>
+        <div className="flex items-center gap-2 py-1">
+          <input
+            type="checkbox"
+            id="proRata"
+            checked={proRata}
+            onChange={(e) => setProRata(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label htmlFor="proRata" className="text-xs font-medium text-gray-700">Pro-rata distribution (allocate proportionally by commitment size, no LP/GP split)</label>
         </div>
+        {!proRata && (
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="LP Split %"><Input type="number" value={form.splitLP} onChange={(e) => set("splitLP", e.target.value)} placeholder="80" /></FormField>
+            <FormField label="GP Split %"><Input type="number" value={form.splitGP} onChange={(e) => set("splitGP", e.target.value)} placeholder="20" /></FormField>
+            <FormField label="Hurdle %"><Input type="number" step="0.1" value={form.hurdleRate} onChange={(e) => set("hurdleRate", e.target.value)} placeholder="8.0" /></FormField>
+          </div>
+        )}
       </div>
     </Modal>
   );

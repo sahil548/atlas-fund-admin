@@ -13,7 +13,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   templateId: string;
-  tier: { id: string; name: string; description?: string; splitLP?: number; splitGP?: number; hurdleRate?: number };
+  tier: { id: string; name: string; description?: string; splitLP?: number; splitGP?: number; hurdleRate?: number; appliesTo?: string };
   entityId?: string;
 }
 
@@ -21,15 +21,20 @@ export function EditTierForm({ open, onClose, templateId, tier, entityId }: Prop
   const toast = useToast();
   const { trigger, isLoading } = useMutation(`/api/waterfall-templates/${templateId}/tiers`, { method: "PUT", revalidateKeys: ["/api/waterfall-templates", ...(entityId ? [`/api/entities/${entityId}`] : [])] });
   const [form, setForm] = useState({ name: "", description: "", splitLP: "", splitGP: "", hurdleRate: "" });
+  const [proRata, setProRata] = useState(false);
 
   useEffect(() => {
-    if (open) setForm({
-      name: tier.name,
-      description: tier.description || "",
-      splitLP: tier.splitLP != null ? String(tier.splitLP) : "",
-      splitGP: tier.splitGP != null ? String(tier.splitGP) : "",
-      hurdleRate: tier.hurdleRate != null ? String(tier.hurdleRate) : "",
-    });
+    if (open) {
+      const isProRata = tier.appliesTo === "PRO_RATA";
+      setProRata(isProRata);
+      setForm({
+        name: tier.name,
+        description: tier.description || "",
+        splitLP: tier.splitLP != null ? String(tier.splitLP) : "",
+        splitGP: tier.splitGP != null ? String(tier.splitGP) : "",
+        hurdleRate: tier.hurdleRate != null ? String(tier.hurdleRate) : "",
+      });
+    }
   }, [open, tier]);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -40,9 +45,10 @@ export function EditTierForm({ open, onClose, templateId, tier, entityId }: Prop
         id: tier.id,
         name: form.name || undefined,
         description: form.description || undefined,
-        splitLP: form.splitLP ? Number(form.splitLP) : undefined,
-        splitGP: form.splitGP ? Number(form.splitGP) : undefined,
-        hurdleRate: form.hurdleRate ? Number(form.hurdleRate) : undefined,
+        appliesTo: proRata ? "PRO_RATA" : null,
+        splitLP: proRata ? null : (form.splitLP ? Number(form.splitLP) : undefined),
+        splitGP: proRata ? null : (form.splitGP ? Number(form.splitGP) : undefined),
+        hurdleRate: proRata ? null : (form.hurdleRate ? Number(form.hurdleRate) : undefined),
       });
       toast.success("Tier updated");
       onClose();
@@ -54,11 +60,23 @@ export function EditTierForm({ open, onClose, templateId, tier, entityId }: Prop
       <div className="space-y-3">
         <FormField label="Tier Name"><Input value={form.name} onChange={(e) => set("name", e.target.value)} /></FormField>
         <FormField label="Description"><Textarea value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField>
-        <div className="grid grid-cols-3 gap-3">
-          <FormField label="LP Split %"><Input type="number" value={form.splitLP} onChange={(e) => set("splitLP", e.target.value)} /></FormField>
-          <FormField label="GP Split %"><Input type="number" value={form.splitGP} onChange={(e) => set("splitGP", e.target.value)} /></FormField>
-          <FormField label="Hurdle %"><Input type="number" step="0.1" value={form.hurdleRate} onChange={(e) => set("hurdleRate", e.target.value)} /></FormField>
+        <div className="flex items-center gap-2 py-1">
+          <input
+            type="checkbox"
+            id="proRataEdit"
+            checked={proRata}
+            onChange={(e) => setProRata(e.target.checked)}
+            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <label htmlFor="proRataEdit" className="text-xs font-medium text-gray-700">Pro-rata distribution (allocate proportionally by commitment size, no LP/GP split)</label>
         </div>
+        {!proRata && (
+          <div className="grid grid-cols-3 gap-3">
+            <FormField label="LP Split %"><Input type="number" value={form.splitLP} onChange={(e) => set("splitLP", e.target.value)} /></FormField>
+            <FormField label="GP Split %"><Input type="number" value={form.splitGP} onChange={(e) => set("splitGP", e.target.value)} /></FormField>
+            <FormField label="Hurdle %"><Input type="number" step="0.1" value={form.hurdleRate} onChange={(e) => set("hurdleRate", e.target.value)} /></FormField>
+          </div>
+        )}
       </div>
     </Modal>
   );

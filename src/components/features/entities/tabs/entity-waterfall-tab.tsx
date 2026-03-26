@@ -68,11 +68,17 @@ export function EntityWaterfallTab({ entity, entityId }: { entity: any; entityId
                           <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t.name}</span>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-gray-500">
-                          {t.splitLP != null && t.splitGP != null && (
-                            <span>LP: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.splitLP}%</span> &middot; GP: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.splitGP}%</span></span>
-                          )}
-                          {t.hurdleRate != null && (
-                            <span>Hurdle: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.hurdleRate}%</span></span>
+                          {t.appliesTo === "PRO_RATA" ? (
+                            <span className="font-semibold text-indigo-600">Pro-Rata</span>
+                          ) : (
+                            <>
+                              {t.splitLP != null && t.splitGP != null && (
+                                <span>LP: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.splitLP}%</span> &middot; GP: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.splitGP}%</span></span>
+                              )}
+                              {t.hurdleRate != null && (
+                                <span>Hurdle: <span className="font-semibold text-gray-700 dark:text-gray-300">{t.hurdleRate}%</span></span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
