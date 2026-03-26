@@ -392,8 +392,8 @@ export function AssetIncomeTab({
                         />
                       </td>
                       <td className="py-2 text-right">
+                        {editError && <div className="text-[10px] text-red-500 mb-1">{editError}</div>}
                         <div className="flex items-center justify-end gap-1">
-                          {editError && <span className="text-[10px] text-red-500 mr-1">{editError}</span>}
                           <button
                             onClick={handleEditSave}
                             disabled={editSaving}
@@ -407,12 +407,18 @@ export function AssetIncomeTab({
                           >
                             Cancel
                           </button>
+                          <button
+                            onClick={() => { cancelEdit(); setDeleteTarget(incomeEvents.find((ev: any) => ev.id === editingId)); }}
+                            className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
                   ) : (
                     /* ---- Normal display row ---- */
-                    <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50 group">
+                    <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="py-2.5 pr-4 text-gray-600">
                         {formatDate(e.date)}
                       </td>
@@ -428,20 +434,12 @@ export function AssetIncomeTab({
                         {e.description || "—"}
                       </td>
                       <td className="py-2.5 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => startEdit(e)}
-                            className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setDeleteTarget(e)}
-                            className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => startEdit(e)}
+                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+                        >
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   )
