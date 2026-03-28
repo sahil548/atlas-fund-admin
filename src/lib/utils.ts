@@ -1,4 +1,15 @@
 export function fmt(n: number): string {
+  if (n === 0) return "$0.00";
+  return n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+/** Compact format for dashboards/cards — e.g. $5.2M, $350K */
+export function fmtCompact(n: number): string {
   if (n === 0) return "$0";
   if (Math.abs(n) >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
   if (Math.abs(n) >= 1e6) return `$${(n / 1e6).toFixed(1)}M`;

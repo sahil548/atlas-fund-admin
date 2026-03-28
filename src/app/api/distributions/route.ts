@@ -90,12 +90,13 @@ export async function POST(req: Request) {
 
           const lineItemsData = commitments.map((c) => {
             const override = overrideMap.get(c.investorId);
-            const investorTotal = override?.amount ?? (grossAmount * (c.amount / totalCommitments));
+            // If overrides exist, non-overridden investors get $0 (user explicitly chose allocations)
+            const investorTotal = override?.amount ?? 0;
             const gpCarry = override?.gpCarryAmount ?? 0;
             const lpPortion = investorTotal - gpCarry;
 
-            // Decompose proportionally based on total vs gross
-            const shareOfGross = investorTotal / grossAmount;
+            // Decompose proportionally based on investor's share of total gross
+            const shareOfGross = grossAmount > 0 ? investorTotal / grossAmount : 0;
             const returnOfCapital = (rest.returnOfCapital ?? 0) * shareOfGross;
             const income = (rest.income ?? 0) * shareOfGross;
             const longTermGain = (rest.longTermGain ?? 0) * shareOfGross;
