@@ -19,9 +19,10 @@ export function DistributionStatusButtons({ distribution, onStatusChange }: Prop
   const toast = useToast();
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showPaidDialog, setShowPaidDialog] = useState(false);
+  const [showRevertDialog, setShowRevertDialog] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  async function handleTransition(newStatus: "APPROVED" | "PAID") {
+  async function handleTransition(newStatus: "APPROVED" | "PAID" | "DRAFT") {
     setLoading(true);
     try {
       const res = await fetch(`/api/distributions/${distribution.id}`, {
@@ -35,7 +36,11 @@ export function DistributionStatusButtons({ distribution, onStatusChange }: Prop
         toast.error(msg);
         return;
       }
-      toast.success(newStatus === "APPROVED" ? "Distribution approved" : "Distribution marked as paid");
+      toast.success(
+        newStatus === "APPROVED" ? "Distribution approved"
+          : newStatus === "PAID" ? "Distribution marked as paid"
+          : "Distribution reverted to draft"
+      );
       onStatusChange();
     } catch {
       toast.error("Failed to update distribution status");
@@ -43,6 +48,7 @@ export function DistributionStatusButtons({ distribution, onStatusChange }: Prop
       setLoading(false);
       setShowApproveDialog(false);
       setShowPaidDialog(false);
+      setShowRevertDialog(false);
     }
   }
 
@@ -78,6 +84,12 @@ export function DistributionStatusButtons({ distribution, onStatusChange }: Prop
         >
           Mark as Paid
         </button>
+        <button
+          onClick={() => setShowRevertDialog(true)}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        >
+          Revert to Draft
+        </button>
         <ConfirmDialog
           open={showPaidDialog}
           onClose={() => setShowPaidDialog(false)}
@@ -88,16 +100,44 @@ export function DistributionStatusButtons({ distribution, onStatusChange }: Prop
           variant="primary"
           loading={loading}
         />
+        <ConfirmDialog
+          open={showRevertDialog}
+          onClose={() => setShowRevertDialog(false)}
+          onConfirm={() => handleTransition("DRAFT")}
+          title="Revert to Draft"
+          message="This will revert the distribution back to draft status, allowing you to edit or delete it."
+          confirmLabel="Revert to Draft"
+          variant="danger"
+          loading={loading}
+        />
       </>
     );
   }
 
   if (distribution.status === "PAID") {
     return (
-      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-sm font-medium">
-        <CheckCircle className="h-4 w-4" />
-        Distribution paid
-      </div>
+      <>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-sm font-medium">
+          <CheckCircle className="h-4 w-4" />
+          Distribution paid
+        </div>
+        <button
+          onClick={() => setShowRevertDialog(true)}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+        >
+          Revert to Draft
+        </button>
+        <ConfirmDialog
+          open={showRevertDialog}
+          onClose={() => setShowRevertDialog(false)}
+          onConfirm={() => handleTransition("DRAFT")}
+          title="Revert to Draft"
+          message="This will revert the distribution back to draft status, allowing you to edit or delete it. If capital accounts were updated when marked paid, they will need to be recalculated."
+          confirmLabel="Revert to Draft"
+          variant="danger"
+          loading={loading}
+        />
+      </>
     );
   }
 

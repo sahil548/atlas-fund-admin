@@ -8,11 +8,11 @@ import { recomputeAllInvestorCapitalAccounts } from "@/lib/capital-activity-engi
 import { notifyInvestorsOnDistribution } from "@/lib/notification-delivery";
 import { logger } from "@/lib/logger";
 
-// Valid forward-only status transitions
+// Valid status transitions (includes revert to DRAFT)
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["APPROVED"],
-  APPROVED: ["PAID"],
-  PAID: [],
+  APPROVED: ["PAID", "DRAFT"],
+  PAID: ["DRAFT"],
 };
 
 export async function GET(
