@@ -186,11 +186,16 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   async function handleSubmit() {
     // Always send per-investor overrides when allocations exist (manual or waterfall)
     const overrides = perInvestorAllocations.length > 0
-      ? perInvestorAllocations.map((a) => ({
-          investorId: a.investorId,
-          amount: Number(a.overrideAmount) || a.totalAllocation,
-          gpCarryAmount: a.gpCarryAllocation,
-        }))
+      ? perInvestorAllocations.map((a) => {
+          const amt = a.overrideAmount !== undefined && a.overrideAmount !== ""
+            ? Number(a.overrideAmount)
+            : a.totalAllocation;
+          return {
+            investorId: a.investorId,
+            amount: amt,
+            gpCarryAmount: amt === 0 ? 0 : a.gpCarryAllocation,
+          };
+        })
       : undefined;
 
     const payload = {
