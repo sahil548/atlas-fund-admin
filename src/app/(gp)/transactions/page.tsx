@@ -281,13 +281,14 @@ export default function TransactionsPage() {
                 <th className="text-left px-3 py-2 font-semibold text-gray-600">Due Date</th>
                 <th className="text-left px-3 py-2 font-semibold text-gray-600">Status</th>
                 <th className="text-left px-3 py-2 font-semibold text-gray-600">Funded</th>
+                <th className="text-right px-3 py-2 font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody>
               {callsLoading && capitalCalls.length === 0 ? (
-                <TableSkeleton columns={7} />
+                <TableSkeleton columns={8} />
               ) : filteredCalls.length === 0 ? (
-                <tr><td colSpan={7}>
+                <tr><td colSpan={8}>
                   <EmptyState
                     icon={<ArrowLeftRight className="h-10 w-10" />}
                     title={hasFilters ? "No results match your filters" : "No capital calls yet"}
@@ -332,6 +333,34 @@ export default function TransactionsPage() {
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
+                      </td>
+                      <td className="px-3 py-2 text-right" onClick={(ev) => ev.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => router.push(`/transactions/capital-calls/${c.id}`)}
+                            className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+                          >
+                            Edit
+                          </button>
+                          {c.status === "DRAFT" && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Delete capital call ${c.callNumber}? This cannot be undone.`)) return;
+                                const res = await fetch(`/api/capital-calls/${c.id}`, { method: "DELETE" });
+                                if (res.ok) {
+                                  toast.success("Capital call deleted");
+                                  mutate("/api/capital-calls");
+                                } else {
+                                  const json = await res.json();
+                                  toast.error(json.error || "Failed to delete");
+                                }
+                              }}
+                              className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50 border border-red-200"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -387,13 +416,14 @@ export default function TransactionsPage() {
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">Carry</th>
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">Net to LPs</th>
                   <th className="text-left px-3 py-2 font-semibold text-gray-600">Status</th>
+                  <th className="text-right px-3 py-2 font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {distsLoading && distributions.length === 0 ? (
                   <TableSkeleton columns={10} />
                 ) : filteredDists.length === 0 ? (
-                  <tr><td colSpan={10}>
+                  <tr><td colSpan={11}>
                     <EmptyState
                       icon={<ArrowLeftRight className="h-10 w-10" />}
                       title={hasFilters ? "No results match your filters" : "No distributions yet"}
@@ -420,6 +450,34 @@ export default function TransactionsPage() {
                       <td className="px-3 py-2 text-right text-gray-500">{d.carriedInterest ? fmt(d.carriedInterest) : "—"}</td>
                       <td className="px-3 py-2 text-right font-semibold text-emerald-700">{fmt(d.netToLPs)}</td>
                       <td className="px-3 py-2"><Badge color={DIST_STATUS_COLORS[d.status] || "gray"}>{d.status}</Badge></td>
+                      <td className="px-3 py-2 text-right" onClick={(ev) => ev.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => router.push(`/transactions/distributions/${d.id}`)}
+                            className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+                          >
+                            Edit
+                          </button>
+                          {d.status === "DRAFT" && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm(`Delete this ${fmt(d.grossAmount)} distribution? This cannot be undone.`)) return;
+                                const res = await fetch(`/api/distributions/${d.id}`, { method: "DELETE" });
+                                if (res.ok) {
+                                  toast.success("Distribution deleted");
+                                  mutate(`/api/distributions?firmId=${firmId}`);
+                                } else {
+                                  const json = await res.json();
+                                  toast.error(json.error || "Failed to delete");
+                                }
+                              }}
+                              className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50 border border-red-200"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}
