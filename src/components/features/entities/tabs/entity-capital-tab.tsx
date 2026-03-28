@@ -354,6 +354,29 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       {d.status === "APPROVED" && (
                         <button onClick={() => setDistributionToConfirm(d.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Mark Paid</button>
                       )}
+                      {d.status !== "DRAFT" && (
+                        <button onClick={() => handleDistStatusTransition(d.id, "DRAFT")} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Revert</button>
+                      )}
+                      <button
+                        onClick={() => window.location.href = `/transactions/distributions/${d.id}`}
+                        className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                      >Edit</button>
+                      {d.status === "DRAFT" && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete this ${fmt(d.grossAmount)} distribution? This cannot be undone.`)) return;
+                            const res = await fetch(`/api/distributions/${d.id}`, { method: "DELETE" });
+                            if (res.ok) {
+                              toast.success("Distribution deleted");
+                              mutate(`/api/entities/${entityId}`);
+                            } else {
+                              const json = await res.json();
+                              toast.error(json.error || "Failed to delete");
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[10px] bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                        >Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>
