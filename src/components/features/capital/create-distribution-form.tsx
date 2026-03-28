@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,35 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
     form.entityId ? "/api/waterfall-templates" : null,
     fetcher
   );
+
+  // Fetch commitments for selected entity (for manual per-investor allocation)
+  const { data: commitments = [] } = useSWR<{ investorId: string; investor: { id: string; name: string }; amount: number }[]>(
+    form.entityId ? `/api/commitments?entityId=${form.entityId}` : null,
+    fetcher
+  );
+
+  // When entity/commitments load, pre-populate per-investor allocations (pro-rata)
+  // User can then override individual amounts before submitting
+  useEffect(() => {
+    if (!form.entityId || commitments.length === 0 || waterfallRan) return;
+    const totalCommit = commitments.reduce((s, c) => s + c.amount, 0);
+    const gross = Number(form.grossAmount) || 0;
+    const allocs: PerInvestorAllocation[] = commitments.map((c) => {
+      const share = totalCommit > 0 ? c.amount / totalCommit : 0;
+      const amt = gross * share;
+      return {
+        investorId: c.investorId,
+        investorName: c.investor?.name || c.investorId,
+        proRataShare: share,
+        lpAllocation: amt,
+        gpCarryAllocation: 0,
+        totalAllocation: amt,
+        overrideAmount: amt.toFixed(2),
+      };
+    });
+    setPerInvestorAllocations(allocs);
+    setShowPerInvestor(true);
+  }, [form.entityId, commitments, waterfallRan]); // intentionally excludes grossAmount to avoid overwriting user edits
 
   async function handleRunWaterfall() {
     if (!form.entityId || !form.grossAmount) {
@@ -155,8 +184,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   }
 
   async function handleSubmit() {
-    // Build per-investor overrides from waterfall allocations if available
-    const overrides = waterfallRan && perInvestorAllocations.length > 0
+    // Always send per-investor overrides when allocations exist (manual or waterfall)
+    const overrides = perInvestorAllocations.length > 0
       ? perInvestorAllocations.map((a) => ({
           investorId: a.investorId,
           amount: Number(a.overrideAmount) || a.totalAllocation,
@@ -299,8 +328,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         {/* Per-Investor Allocation Preview (editable) */}
         {showPerInvestor && perInvestorAllocations.length > 0 && (
           <div className="border-t border-gray-100 pt-3 space-y-2">
-            <div className="text-xs font-medium text-gray-700">Per-Investor Allocation Preview</div>
-            <p className="text-[10px] text-gray-500">Override individual amounts below for side letter arrangements.</p>
+            <div className="text-xs font-medium text-gray-700">Per-Investor Allocations</div>
+            <p className="text-[10px] text-gray-500">Edit the Override ($) column to assign specific amounts to each investor. Set to 0 for investors not receiving this distribution.</p>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200">
@@ -331,7 +360,24 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-300">
+                  <td className="py-1.5 font-semibold text-gray-900">Total</td>
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right font-semibold text-gray-900">
+                    {fmt(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0))}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
+            {Math.abs(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0) - (Number(form.grossAmount) || 0)) > 0.01 && (
+              <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mt-2">
+                Override total ({fmt(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0))}) does not match gross amount ({fmt(Number(form.grossAmount) || 0)}).
+              </div>
+            )}
           </div>
         )}
 
