@@ -458,6 +458,28 @@ export default function TransactionsPage() {
                           >
                             Edit
                           </button>
+                          {d.status !== "DRAFT" && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm("Revert this distribution to draft? You can then edit or delete it.")) return;
+                                const res = await fetch(`/api/distributions/${d.id}`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ status: "DRAFT" }),
+                                });
+                                if (res.ok) {
+                                  toast.success("Distribution reverted to draft");
+                                  mutate("/api/distributions");
+                                } else {
+                                  const json = await res.json();
+                                  toast.error(json.error || "Failed to revert");
+                                }
+                              }}
+                              className="text-[10px] font-medium text-amber-600 hover:text-amber-800 rounded px-2 py-1 hover:bg-amber-50 border border-amber-200"
+                            >
+                              Revert
+                            </button>
+                          )}
                           {d.status === "DRAFT" && (
                             <button
                               onClick={async () => {
@@ -465,7 +487,7 @@ export default function TransactionsPage() {
                                 const res = await fetch(`/api/distributions/${d.id}`, { method: "DELETE" });
                                 if (res.ok) {
                                   toast.success("Distribution deleted");
-                                  mutate(`/api/distributions?firmId=${firmId}`);
+                                  mutate("/api/distributions");
                                 } else {
                                   const json = await res.json();
                                   toast.error(json.error || "Failed to delete");
