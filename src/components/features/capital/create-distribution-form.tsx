@@ -105,17 +105,31 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       toast.error("Select an entity and enter amount first");
       return;
     }
+    if (!form.distributionType) {
+      toast.error("Select a distribution type first so the correct waterfall is used");
+      return;
+    }
     setWaterfallLoading(true);
     try {
-      // Find the template associated with this entity
-      const entityTemplates = templates.filter(() => true); // all templates, will try first one
-      if (entityTemplates.length === 0) {
+      // Match template to distribution type by name
+      // e.g. "RETURN_OF_CAPITAL" → look for template with "return of capital" in name
+      // "INCOME" → look for template with "income" in name
+      const distTypeNormalized = form.distributionType.toLowerCase().replace(/_/g, " ");
+      let template = templates.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
+      // Fallback: try matching common aliases
+      if (!template && distTypeNormalized.includes("capital gain")) {
+        template = templates.find((t) => t.name.toLowerCase().includes("gain"));
+      }
+      // Final fallback: use first template
+      if (!template && templates.length > 0) {
+        template = templates[0];
+        toast.info?.(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
+      }
+      if (!template) {
         toast.error("No waterfall template found. Create a template first.");
         setWaterfallLoading(false);
         return;
       }
-      // Use the first template (entity may have one linked)
-      const template = entityTemplates[0];
 
       const res = await fetch(`/api/waterfall-templates/${template.id}/calculate`, {
         method: "POST",

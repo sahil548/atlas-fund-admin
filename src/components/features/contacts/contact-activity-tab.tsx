@@ -64,6 +64,7 @@ export function ContactActivityTab({ contactId, userId }: ContactActivityTabProp
   const grouped: Record<string, any[]> = {};
   for (const item of filtered) {
     const dateKey = new Date(item.date).toLocaleDateString("en-US", {
+      timeZone: "UTC",
       weekday: undefined,
       year: "numeric",
       month: "long",

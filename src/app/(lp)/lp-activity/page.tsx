@@ -41,7 +41,7 @@ export default function LPActivityPage() {
           </div>
           <ExportButton
             data={(capitalAccount?.ledger ?? []).map((entry: any) => ({
-              date: new Date(entry.date).toLocaleDateString(),
+              date: new Date(entry.date).toLocaleDateString("en-US", { timeZone: "UTC" }),
               type: entry.type,
               entity: entry.entityName,
               description: entry.description,
@@ -103,7 +103,7 @@ export default function LPActivityPage() {
                 runningBalance: number;
               }, idx: number) => (
                 <tr key={idx} className="border-t border-gray-50 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{new Date(entry.date).toLocaleDateString()}</td>
+                  <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400">{new Date(entry.date).toLocaleDateString("en-US", { timeZone: "UTC" })}</td>
                   <td className="px-4 py-2.5">
                     <span className={LEDGER_TYPE_COLORS[entry.type] || "text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400"}>
                       {entry.type}
@@ -174,13 +174,13 @@ export default function LPActivityPage() {
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Call Date:</span>{" "}
                   <span className="font-medium dark:text-gray-200">
-                    {new Date(item.capitalCall.callDate).toLocaleDateString()}
+                    {new Date(item.capitalCall.callDate).toLocaleDateString("en-US", { timeZone: "UTC" })}
                   </span>
                 </div>
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Due:</span>{" "}
                   <span className="font-medium dark:text-gray-200">
-                    {new Date(item.capitalCall.dueDate).toLocaleDateString()}
+                    {new Date(item.capitalCall.dueDate).toLocaleDateString("en-US", { timeZone: "UTC" })}
                   </span>
                 </div>
                 <div>
@@ -233,7 +233,7 @@ export default function LPActivityPage() {
                 <div>
                   <span className="text-gray-500 dark:text-gray-400">Date:</span>{" "}
                   <span className="font-medium dark:text-gray-200">
-                    {new Date(item.distribution.distributionDate).toLocaleDateString()}
+                    {new Date(item.distribution.distributionDate).toLocaleDateString("en-US", { timeZone: "UTC" })}
                   </span>
                 </div>
                 <div>

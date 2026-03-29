@@ -122,6 +122,7 @@ export function NeedsAttentionPanel() {
               {alert.date && (
                 <div className="flex-shrink-0 text-[10px] text-gray-400 dark:text-gray-500">
                   {new Date(alert.date).toLocaleDateString("en-US", {
+                    timeZone: "UTC",
                     month: "short",
                     day: "numeric",
                   })}

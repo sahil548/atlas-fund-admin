@@ -180,6 +180,7 @@ export default function AssetDetailPage({
               {a.sector} · Entered{" "}
               {a.entryDate
                 ? new Date(a.entryDate).toLocaleDateString("en-US", {
+                    timeZone: "UTC",
                     month: "short",
                     year: "numeric",
                   })

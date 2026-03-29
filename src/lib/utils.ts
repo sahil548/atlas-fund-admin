@@ -32,6 +32,7 @@ export function formatDate(d: string | Date | null | undefined): string {
     const date = new Date(d as string | number);
     if (isNaN(date.getTime())) return "\u2014";
     return date.toLocaleDateString("en-US", {
+      timeZone: "UTC",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -48,6 +49,7 @@ export function formatDateShort(d: string | Date | null | undefined): string {
     const date = new Date(d as string | number);
     if (isNaN(date.getTime())) return "\u2014";
     return date.toLocaleDateString("en-US", {
+      timeZone: "UTC",
       month: "short",
       day: "numeric",
     });
