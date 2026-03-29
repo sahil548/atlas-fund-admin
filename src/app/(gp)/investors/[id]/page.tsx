@@ -340,6 +340,7 @@ export default function InvestorDetailPage() {
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {(inv.capitalCallLineItems || [])
                 .filter((item: { amount: number }) => item.amount !== 0)
+                .sort((a: { capitalCall: { callDate: string } }, b: { capitalCall: { callDate: string } }) => new Date(a.capitalCall.callDate).getTime() - new Date(b.capitalCall.callDate).getTime())
                 .map((item: { id: string; amount: number; status: string; capitalCall: { callNumber: string; callDate: string; dueDate: string; purpose?: string; status: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
@@ -364,6 +365,7 @@ export default function InvestorDetailPage() {
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {(inv.distributionLineItems || [])
                 .filter((item: { grossAmount?: number; netAmount: number; carriedInterest?: number }) => (item.grossAmount ?? item.netAmount) !== 0)
+                .sort((a: { distribution: { distributionDate: string } }, b: { distribution: { distributionDate: string } }) => new Date(a.distribution.distributionDate).getTime() - new Date(b.distribution.distributionDate).getTime())
                 .map((item: { id: string; grossAmount?: number; netAmount: number; income: number; returnOfCapital: number; carriedInterest?: number; distribution: { distributionDate: string; distributionType?: string; source?: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
