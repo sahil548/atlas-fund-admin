@@ -62,7 +62,7 @@ export default function InvestorDetailPage() {
   const inv = investor;
   const totalCommitted = (inv.commitments || []).reduce((s: number, c: { amount: number }) => s + c.amount, 0);
   const totalCalled = (inv.commitments || []).reduce((s: number, c: { calledAmount: number }) => s + c.calledAmount, 0);
-  const totalDistributed = (inv.distributionLineItems || []).reduce((s: number, d: { netAmount: number }) => s + d.netAmount, 0);
+  const totalDistributed = (inv.distributionLineItems || []).reduce((s: number, d: { grossAmount?: number; netAmount: number }) => s + (d.grossAmount ?? d.netAmount), 0);
 
   // Users who already have access (for filtering the grant dropdown)
   const accessUserIds = new Set((access || []).map((a: any) => a.userId));
@@ -360,23 +360,27 @@ export default function InvestorDetailPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Distributions</h3></div>
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
-              {(inv.distributionLineItems || []).map((item: { id: string; netAmount: number; income: number; returnOfCapital: number; distribution: { distributionDate: string; source?: string; entity: { name: string } } }) => (
+              {(inv.distributionLineItems || [])
+                .filter((item: { grossAmount?: number; netAmount: number; carriedInterest?: number }) => (item.grossAmount ?? item.netAmount) !== 0)
+                .map((item: { id: string; grossAmount?: number; netAmount: number; income: number; returnOfCapital: number; carriedInterest?: number; distribution: { distributionDate: string; distributionType?: string; source?: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{item.distribution.source || "Distribution"}</span>
+                      <span className="text-sm font-medium">{item.distribution.distributionType || item.distribution.source || "Distribution"}</span>
                       <Badge color="green">Received</Badge>
                     </div>
-                    <span className="text-sm font-bold">{fmt(item.netAmount)}</span>
+                    <span className="text-sm font-bold">{fmt(item.grossAmount ?? item.netAmount)}</span>
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
                     {item.distribution.entity.name} &middot; {formatDate(item.distribution.distributionDate)}
                     {item.income > 0 && <span className="text-emerald-600 ml-2">Income: {fmt(item.income)}</span>}
                     {item.returnOfCapital > 0 && <span className="text-blue-600 ml-2">ROC: {fmt(item.returnOfCapital)}</span>}
+                    {(item.carriedInterest ?? 0) > 0 && <span className="text-red-500 ml-2">Carry: {fmt(item.carriedInterest!)}</span>}
+                    {(item.carriedInterest ?? 0) > 0 && <span className="text-gray-400 ml-2">Net: {fmt(item.netAmount)}</span>}
                   </div>
                 </div>
               ))}
-              {(!inv.distributionLineItems || inv.distributionLineItems.length === 0) && <div className="p-6 text-center text-sm text-gray-400">No distributions.</div>}
+              {(!inv.distributionLineItems || inv.distributionLineItems.filter((item: { grossAmount?: number; netAmount: number }) => (item.grossAmount ?? item.netAmount) !== 0).length === 0) && <div className="p-6 text-center text-sm text-gray-400">No distributions.</div>}
             </div>
           </div>
         </div>

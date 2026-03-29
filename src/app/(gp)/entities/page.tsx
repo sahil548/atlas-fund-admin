@@ -410,7 +410,7 @@ export default function EntitiesPage() {
       )}
 
       {/* Create vehicle modal */}
-      <CreateEntityForm open={showCreateForm} onClose={() => setShowCreateForm(false)} />
+      <CreateEntityForm open={showCreateForm} onClose={() => { setShowCreateForm(false); revalidateEntities(); }} />
 
       {/* Delete confirmation dialog */}
       <ConfirmDialog

@@ -793,22 +793,22 @@ export default function TransactionsPage() {
       {/* Modals */}
       <CreateCapitalCallForm
         open={showCreateCC}
-        onClose={() => setShowCreateCC(false)}
+        onClose={() => { setShowCreateCC(false); mutate("/api/capital-calls"); }}
         entities={entities}
       />
       <CreateDistributionForm
         open={showCreateDist}
-        onClose={() => setShowCreateDist(false)}
+        onClose={() => { setShowCreateDist(false); mutate("/api/distributions"); }}
         entities={entities}
       />
       <CreateTemplateForm
         open={showCreateTemplate}
-        onClose={() => setShowCreateTemplate(false)}
+        onClose={() => { setShowCreateTemplate(false); mutate("/api/waterfall-templates"); }}
       />
       {addTierFor && (
         <AddTierForm
           open={true}
-          onClose={() => setAddTierFor(null)}
+          onClose={() => { setAddTierFor(null); mutate("/api/waterfall-templates"); }}
           templateId={addTierFor.templateId}
           nextOrder={addTierFor.nextOrder}
         />
@@ -816,7 +816,7 @@ export default function TransactionsPage() {
       {editTier && (
         <EditTierForm
           open={true}
-          onClose={() => setEditTier(null)}
+          onClose={() => { setEditTier(null); mutate("/api/waterfall-templates"); }}
           templateId={editTier.templateId}
           tier={{
             id: editTier.tier.id,

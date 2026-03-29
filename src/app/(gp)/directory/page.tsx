@@ -534,15 +534,15 @@ export default function DirectoryPage() {
       )}
 
       {/* Modals */}
-      <CreateInvestorForm open={showCreateInvestor} onClose={() => setShowCreateInvestor(false)} />
-      {editingInvestor && <EditInvestorForm open={showEditInvestor} onClose={() => { setShowEditInvestor(false); setEditingInvestor(null); }} investor={editingInvestor} />}
-      <CreateUserForm open={showCreateUser} onClose={() => setShowCreateUser(false)} />
-      {editingUser && <EditUserForm open={showEditUser} onClose={() => { setShowEditUser(false); setEditingUser(null); }} user={editingUser} />}
-      {editingContact && <EditContactForm open={showEditContact} onClose={() => { setShowEditContact(false); setEditingContact(null); }} contact={editingContact} />}
-      <CreateCompanyForm open={showCreateCompany} onClose={() => setShowCreateCompany(false)} />
-      <CreateContactForm open={showCreateContact} onClose={() => setShowCreateContact(false)} />
-      <CreateSideLetterForm open={showCreateSideLetter} onClose={() => setShowCreateSideLetter(false)} />
-      {editingSideLetter && <EditSideLetterForm open={!!editingSideLetter} onClose={() => setEditingSideLetter(null)} sideLetter={editingSideLetter} />}
+      <CreateInvestorForm open={showCreateInvestor} onClose={() => { setShowCreateInvestor(false); mutate(buildInvestorUrl(null)); }} />
+      {editingInvestor && <EditInvestorForm open={showEditInvestor} onClose={() => { setShowEditInvestor(false); setEditingInvestor(null); mutate(buildInvestorUrl(null)); }} investor={editingInvestor} />}
+      <CreateUserForm open={showCreateUser} onClose={() => { setShowCreateUser(false); mutate(`/api/users?firmId=${firmId}`); }} />
+      {editingUser && <EditUserForm open={showEditUser} onClose={() => { setShowEditUser(false); setEditingUser(null); mutate(`/api/users?firmId=${firmId}`); }} user={editingUser} />}
+      {editingContact && <EditContactForm open={showEditContact} onClose={() => { setShowEditContact(false); setEditingContact(null); mutate(`/api/contacts?firmId=${firmId}`); }} contact={editingContact} />}
+      <CreateCompanyForm open={showCreateCompany} onClose={() => { setShowCreateCompany(false); mutate(`/api/companies?firmId=${firmId}`); }} />
+      <CreateContactForm open={showCreateContact} onClose={() => { setShowCreateContact(false); mutate(`/api/contacts?firmId=${firmId}`); }} />
+      <CreateSideLetterForm open={showCreateSideLetter} onClose={() => { setShowCreateSideLetter(false); mutate("/api/side-letters"); }} />
+      {editingSideLetter && <EditSideLetterForm open={!!editingSideLetter} onClose={() => { setEditingSideLetter(null); mutate("/api/side-letters"); }} sideLetter={editingSideLetter} />}
 
       {/* Delete Confirmation */}
       <ConfirmDialog

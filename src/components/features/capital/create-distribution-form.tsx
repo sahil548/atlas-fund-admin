@@ -123,7 +123,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       // Final fallback: use first template
       if (!template && templates.length > 0) {
         template = templates[0];
-        toast.info?.(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
+        toast.success(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
       }
       if (!template) {
         toast.error("No waterfall template found. Create a template first.");

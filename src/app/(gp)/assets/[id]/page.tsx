@@ -444,7 +444,7 @@ export default function AssetDetailPage({
       )}
 
       {/* Modals */}
-      <EditAssetForm open={showEditAsset} onClose={() => setShowEditAsset(false)} asset={a} />
+      <EditAssetForm open={showEditAsset} onClose={() => { setShowEditAsset(false); mutate(`/api/assets/${id}`); }} asset={a} />
       <ConfirmDialog
         open={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -471,22 +471,22 @@ export default function AssetDetailPage({
       />
       <LogValuationForm
         open={showLogValuation}
-        onClose={() => setShowLogValuation(false)}
+        onClose={() => { setShowLogValuation(false); mutate(`/api/assets/${id}`); }}
         assetId={a.id}
       />
       <CreateTaskForm
         open={showCreateTask}
-        onClose={() => setShowCreateTask(false)}
+        onClose={() => { setShowCreateTask(false); mutate(`/api/assets/${id}`); }}
         assetId={a.id}
       />
       <UploadDocumentForm
         open={showUploadDoc}
-        onClose={() => setShowUploadDoc(false)}
+        onClose={() => { setShowUploadDoc(false); mutate(`/api/assets/${id}`); }}
         assetId={a.id}
       />
       <LogIncomeForm
         open={showLogIncome}
-        onClose={() => setShowLogIncome(false)}
+        onClose={() => { setShowLogIncome(false); mutate(`/api/assets/${id}`); }}
         assetId={a.id}
         entityId={a.entityAllocations?.[0]?.entity?.id || ""}
       />
