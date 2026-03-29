@@ -82,20 +82,19 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
 
   // Chart data: distribution composition by quarter
   const compositionData = useMemo(() => {
-    const qMap = new Map<string, { roc: number; income: number; ltGain: number; carry: number; sortKey: number }>();
+    const qMap = new Map<string, { roc: number; income: number; carry: number; sortKey: number }>();
     for (const d of e.distributions || []) {
       if (!d.distributionDate) continue;
       const q = toQuarter(d.distributionDate);
-      const ex = qMap.get(q) || { roc: 0, income: 0, ltGain: 0, carry: 0, sortKey: new Date(d.distributionDate).getTime() };
+      const ex = qMap.get(q) || { roc: 0, income: 0, carry: 0, sortKey: new Date(d.distributionDate).getTime() };
       ex.roc += d.returnOfCapital || 0;
-      ex.income += d.income || 0;
-      ex.ltGain += d.longTermGain || 0;
+      ex.income += (d.income || 0) + (d.longTermGain || 0);
       ex.carry += d.carriedInterest || 0;
       qMap.set(q, ex);
     }
     return [...qMap.entries()]
       .sort((a, b) => a[1].sortKey - b[1].sortKey)
-      .map(([label, { roc, income, ltGain, carry }]) => ({ label, roc, income, ltGain, carry }));
+      .map(([label, { roc, income, carry }]) => ({ label, roc, income, carry }));
   }, [e.distributions]);
 
   async function handleCallStatusTransition(callId: string, newStatus: string) {
@@ -244,12 +243,11 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                     contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e5e7eb", backgroundColor: "#fff" }}
                     formatter={(value: any, name: any) => [
                       fmt(Number(value)),
-                      name === "roc" ? "Return of Capital" : name === "income" ? "Income" : name === "ltGain" ? "LT Gain" : "Carried Interest",
+                      name === "roc" ? "Return of Capital" : name === "income" ? "Income" : "Carried Interest",
                     ]}
                   />
                   <Bar dataKey="roc" stackId="comp" fill="#3b82f6" name="roc" />
                   <Bar dataKey="income" stackId="comp" fill="#10b981" name="income" />
-                  <Bar dataKey="ltGain" stackId="comp" fill="#8b5cf6" name="ltGain" />
                   <Bar dataKey="carry" stackId="comp" fill="#ef4444" name="carry" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -384,7 +382,7 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                   <tr key={`${d.id}-exp`}>
                     <td colSpan={6} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
                       {/* Breakdown details */}
-                      <div className="grid grid-cols-4 gap-3 mb-3">
+                      <div className="grid grid-cols-3 gap-3 mb-3">
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Return of Capital</div>
                           <div className="text-sm font-medium text-blue-600 mt-0.5">{fmt(d.returnOfCapital)}</div>
@@ -392,10 +390,6 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Income</div>
                           <div className="text-sm font-medium text-emerald-600 mt-0.5">{fmt(d.income)}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-gray-500 uppercase font-semibold">LT Gain</div>
-                          <div className="text-sm font-medium text-purple-600 mt-0.5">{fmt(d.longTermGain)}</div>
                         </div>
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Carried Interest</div>
@@ -508,8 +502,8 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
       </div>
 
       {/* Modals */}
-      <CreateCapitalCallForm open={showCapCall} onClose={() => setShowCapCall(false)} entities={[{ id: entityId, name: e.name }]} />
-      <CreateDistributionForm open={showDist} onClose={() => setShowDist(false)} entities={[{ id: entityId, name: e.name }]} />
+      <CreateCapitalCallForm open={showCapCall} onClose={() => { setShowCapCall(false); mutate(`/api/entities/${entityId}`); }} entities={[{ id: entityId, name: e.name }]} />
+      <CreateDistributionForm open={showDist} onClose={() => { setShowDist(false); mutate(`/api/entities/${entityId}`); }} entities={[{ id: entityId, name: e.name }]} />
 
       {/* Distribution paid confirmation dialog */}
       <ConfirmDialog

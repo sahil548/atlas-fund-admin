@@ -393,8 +393,6 @@ export default function TransactionsPage() {
                 source: d.source ?? "",
                 returnOfCapital: d.returnOfCapital,
                 income: d.income,
-                longTermGain: d.longTermGain,
-                shortTermGain: d.shortTermGain,
                 carriedInterest: d.carriedInterest,
                 netToLPs: d.netToLPs,
                 status: d.status,
@@ -412,7 +410,6 @@ export default function TransactionsPage() {
                   <th className="text-left px-3 py-2 font-semibold text-gray-600">Source</th>
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">ROC</th>
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">Income</th>
-                  <th className="text-right px-3 py-2 font-semibold text-gray-600">LT Gain</th>
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">Carry</th>
                   <th className="text-right px-3 py-2 font-semibold text-gray-600">Net to LPs</th>
                   <th className="text-left px-3 py-2 font-semibold text-gray-600">Status</th>
@@ -446,7 +443,6 @@ export default function TransactionsPage() {
                       <td className="px-3 py-2 text-gray-600 max-w-[140px] truncate">{d.source || "—"}</td>
                       <td className="px-3 py-2 text-right text-gray-500">{d.returnOfCapital ? fmt(d.returnOfCapital) : "—"}</td>
                       <td className="px-3 py-2 text-right text-gray-500">{d.income ? fmt(d.income) : "—"}</td>
-                      <td className="px-3 py-2 text-right text-gray-500">{d.longTermGain ? fmt(d.longTermGain) : "—"}</td>
                       <td className="px-3 py-2 text-right text-gray-500">{d.carriedInterest ? fmt(d.carriedInterest) : "—"}</td>
                       <td className="px-3 py-2 text-right font-semibold text-emerald-700">{fmt(d.netToLPs)}</td>
                       <td className="px-3 py-2"><Badge color={DIST_STATUS_COLORS[d.status] || "gray"}>{d.status}</Badge></td>

@@ -136,21 +136,16 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       const data = await res.json();
 
       // Auto-populate decomposition fields from waterfall results
-      // GP carry = totalGP, ROC from ROC tier, remainder is gain/income
+      // GP carry = totalGP, ROC from ROC tier, remainder is income
       const totalGP = data.totalGP ?? 0;
       const totalLP = data.totalLP ?? 0;
       const rocTier = data.tiers?.find((t: any) => t.name?.toLowerCase().includes("return of capital"));
       const roc = rocTier?.allocatedLP ?? 0;
-      const lpProfits = totalLP - roc;
-      // Split LP profits into income and LT gain roughly (income = pref, gain = rest)
-      const prefTier = data.tiers?.find((t: any) => t.name?.toLowerCase().includes("preferred"));
-      const prefAmount = prefTier?.allocatedLP ?? 0;
-      const income = prefAmount;
-      const ltGain = Math.max(0, lpProfits - prefAmount);
+      const income = totalLP - roc;
 
       set("returnOfCapital", roc.toFixed(2));
       set("income", income.toFixed(2));
-      set("longTermGain", ltGain.toFixed(2));
+      set("longTermGain", "0");
       set("shortTermGain", "0");
       set("carriedInterest", totalGP.toFixed(2));
       set("netToLPs", totalLP.toFixed(2));
@@ -240,7 +235,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   }
 
   const grossNum = Number(form.grossAmount) || 0;
-  const totalDecomposed = (Number(form.returnOfCapital) || 0) + (Number(form.income) || 0) + (Number(form.longTermGain) || 0) + (Number(form.shortTermGain) || 0) + (Number(form.carriedInterest) || 0);
+  const totalDecomposed = (Number(form.returnOfCapital) || 0) + (Number(form.income) || 0) + (Number(form.carriedInterest) || 0);
   const decompositionDiff = Math.abs(grossNum - totalDecomposed);
 
   return (
@@ -322,11 +317,9 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         <div className="grid grid-cols-3 gap-3">
           <FormField label="Return of Capital"><CurrencyInput value={form.returnOfCapital} onChange={(v) => set("returnOfCapital", v)} /></FormField>
           <FormField label="Income"><CurrencyInput value={form.income} onChange={(v) => set("income", v)} /></FormField>
-          <FormField label="LT Gains"><CurrencyInput value={form.longTermGain} onChange={(v) => set("longTermGain", v)} /></FormField>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <FormField label="ST Gains"><CurrencyInput value={form.shortTermGain} onChange={(v) => set("shortTermGain", v)} /></FormField>
           <FormField label="Carry"><CurrencyInput value={form.carriedInterest} onChange={(v) => set("carriedInterest", v)} /></FormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Net to LPs"><CurrencyInput value={form.netToLPs} onChange={(v) => set("netToLPs", v)} /></FormField>
         </div>
 

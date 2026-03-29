@@ -88,18 +88,25 @@ export async function POST(req: Request) {
             perInvestorOverrides.map((o) => [o.investorId, o])
           );
 
+          // Decompose each investor's non-carry portion into ROC/income/gains
+          // based on the event-level proportions of the non-carry total
+          const eventCarry = rest.carriedInterest ?? 0;
+          const eventNonCarry = grossAmount - eventCarry;
+          const rocProportion = eventNonCarry > 0 ? (rest.returnOfCapital ?? 0) / eventNonCarry : 0;
+          const incomeProportion = eventNonCarry > 0 ? (rest.income ?? 0) / eventNonCarry : 0;
+          const ltGainProportion = eventNonCarry > 0 ? (rest.longTermGain ?? 0) / eventNonCarry : 0;
+
           const lineItemsData = commitments.map((c) => {
             const override = overrideMap.get(c.investorId);
             // If overrides exist, non-overridden investors get $0 (user explicitly chose allocations)
             const investorTotal = override?.amount ?? 0;
             const gpCarry = override?.gpCarryAmount ?? 0;
-            const lpPortion = investorTotal - gpCarry;
+            const nonCarryPortion = investorTotal - gpCarry;
 
-            // Decompose proportionally based on investor's share of total gross
-            const shareOfGross = grossAmount > 0 ? investorTotal / grossAmount : 0;
-            const returnOfCapital = (rest.returnOfCapital ?? 0) * shareOfGross;
-            const income = (rest.income ?? 0) * shareOfGross;
-            const longTermGain = (rest.longTermGain ?? 0) * shareOfGross;
+            // Each investor's decomposition is based on their non-carry portion
+            const returnOfCapital = nonCarryPortion * rocProportion;
+            const income = nonCarryPortion * incomeProportion;
+            const longTermGain = nonCarryPortion * ltGainProportion;
 
             return {
               distributionId: dist.id,
@@ -109,7 +116,7 @@ export async function POST(req: Request) {
               income,
               longTermGain,
               carriedInterest: gpCarry,
-              netAmount: lpPortion,
+              netAmount: nonCarryPortion,
               distributionType: rest.distributionType,
             };
           });
