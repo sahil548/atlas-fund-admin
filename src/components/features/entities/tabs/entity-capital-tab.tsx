@@ -352,10 +352,42 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                     </div>
                   </td>
                 </tr>
-                {expandedCall === c.id && (
+                {expandedCall === c.id && (() => {
+                  const lineItems = c.lineItems || [];
+                  const lineItemTotal = lineItems.reduce((sum: number, li: any) => {
+                    if (editingLineItem === li.id) {
+                      const edited = Number(editLineItemAmount);
+                      return sum + (isNaN(edited) ? 0 : edited);
+                    }
+                    return sum + (li.amount || 0);
+                  }, 0);
+                  const diff = lineItemTotal - (c.amount || 0);
+                  const isBalanced = Math.abs(diff) < 0.01;
+                  return (
                   <tr key={`${c.id}-exp`}>
                     <td colSpan={8} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
-                      <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[10px] font-semibold text-gray-500 uppercase">Line Items</div>
+                        {lineItems.length > 0 && (
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold ${
+                            isBalanced
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {isBalanced ? (
+                              <>
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                                Balanced — Line items total {fmt(lineItemTotal)} = Call amount {fmt(c.amount)}
+                              </>
+                            ) : (
+                              <>
+                                <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                {diff > 0 ? "Over" : "Under"} by {fmt(Math.abs(diff))} — Line items total {fmt(lineItemTotal)} vs Call amount {fmt(c.amount)}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {(c.lineItems || []).length === 0 ? (
                         <div className="text-xs text-gray-400">No line items.</div>
                       ) : (
@@ -435,7 +467,8 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       )}
                     </td>
                   </tr>
-                )}
+                  );
+                })()}
               </Fragment>
             ))}
             {(!e.capitalCalls || e.capitalCalls.length === 0) && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No capital calls.</td></tr>}

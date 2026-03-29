@@ -522,7 +522,7 @@ export const CreateCapitalCallLineItemSchema = z.object({
 export const UpdateCapitalCallLineItemSchema = z.object({
   status: z.enum(["Pending", "Funded"]).optional(),
   paidDate: z.string().optional(),
-  amount: z.number().positive().optional(),
+  amount: z.number().min(0).optional(),
 });
 
 // ── Distributions ──────────────────────────────────────
