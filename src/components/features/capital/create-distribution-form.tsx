@@ -19,6 +19,7 @@ interface Props { open: boolean; onClose: () => void; entities: { id: string; na
 
 interface WaterfallTemplate {
   id: string; name: string;
+  entities?: { id: string; name: string }[];
 }
 
 interface PerInvestorAllocation {
@@ -111,25 +112,34 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
     }
     setWaterfallLoading(true);
     try {
-      // Match template to distribution type by name
-      // e.g. "RETURN_OF_CAPITAL" → look for template with "return of capital" or "roc" in name
-      // "INCOME" → look for template with "income" in name
+      // Match template to distribution type by name, prioritizing templates linked to this entity
+      // 1. First look among templates assigned to the selected entity
+      // 2. Fall back to all templates only if no entity-specific match
+      const entityTemplates = templates.filter((t) =>
+        t.entities?.some((e) => e.id === form.entityId)
+      );
+      const searchPool = entityTemplates.length > 0 ? entityTemplates : templates;
+
       const distTypeNormalized = form.distributionType.toLowerCase().replace(/_/g, " ");
-      let template = templates.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
+      let template = searchPool.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
       // Fallback: try matching common aliases
       if (!template && distTypeNormalized.includes("return of capital")) {
-        template = templates.find((t) => {
+        template = searchPool.find((t) => {
           const n = t.name.toLowerCase();
           return n.includes("roc") || n.includes("return") || n.includes("capital return");
         });
       }
       if (!template && distTypeNormalized.includes("capital gain")) {
-        template = templates.find((t) => {
+        template = searchPool.find((t) => {
           const n = t.name.toLowerCase();
           return n.includes("gain") || n.includes("appreciation");
         });
       }
-      // Final fallback: use first template
+      // Final fallback: use first entity template, then first any template
+      if (!template && entityTemplates.length > 0) {
+        template = entityTemplates[0];
+        toast.success(`No "${form.distributionType}" waterfall found for this entity — using "${template.name}" template`);
+      }
       if (!template && templates.length > 0) {
         template = templates[0];
         toast.success(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
