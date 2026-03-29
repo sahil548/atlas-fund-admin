@@ -342,6 +342,28 @@ export default function TransactionsPage() {
                           >
                             Edit
                           </button>
+                          {c.status !== "DRAFT" && (
+                            <button
+                              onClick={async () => {
+                                if (!confirm("Revert this capital call to draft? You can then edit or delete it.")) return;
+                                const res = await fetch(`/api/capital-calls/${c.id}`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ status: "DRAFT" }),
+                                });
+                                if (res.ok) {
+                                  toast.success("Capital call reverted to draft");
+                                  mutate("/api/capital-calls");
+                                } else {
+                                  const json = await res.json();
+                                  toast.error(json.error || "Failed to revert");
+                                }
+                              }}
+                              className="text-[10px] font-medium text-gray-600 hover:text-gray-800 rounded px-2 py-1 hover:bg-gray-100 border border-gray-200"
+                            >
+                              Revert
+                            </button>
+                          )}
                           {c.status === "DRAFT" && (
                             <button
                               onClick={async () => {

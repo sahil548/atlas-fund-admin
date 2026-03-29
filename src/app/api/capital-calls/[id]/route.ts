@@ -7,13 +7,13 @@ import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { notifyInvestorsOnCapitalCall } from "@/lib/notification-delivery";
 import { logger } from "@/lib/logger";
 
-// Valid forward-only status transitions
+// Valid status transitions (includes revert to DRAFT)
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ["ISSUED", "OVERDUE"],
-  ISSUED: ["OVERDUE"],
-  PARTIALLY_FUNDED: ["OVERDUE"],
-  FUNDED: [],
-  OVERDUE: [],
+  ISSUED: ["OVERDUE", "DRAFT"],
+  PARTIALLY_FUNDED: ["OVERDUE", "DRAFT"],
+  FUNDED: ["DRAFT"],
+  OVERDUE: ["DRAFT"],
 };
 
 export async function GET(

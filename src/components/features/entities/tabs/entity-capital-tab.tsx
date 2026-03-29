@@ -39,6 +39,10 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
   const [expandedDist, setExpandedDist] = useState<string | null>(null);
   const [distributionToConfirm, setDistributionToConfirm] = useState<string | null>(null);
 
+  // Capital call line item editing state
+  const [editingLineItem, setEditingLineItem] = useState<string | null>(null);
+  const [editLineItemAmount, setEditLineItemAmount] = useState("");
+
   // Fee calculation state
   const [calculatingFees, setCalculatingFees] = useState(false);
   const [feeResult, setFeeResult] = useState<{
@@ -132,6 +136,42 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
       mutate(`/api/entities/${entityId}`);
     } catch {
       toast.error("Failed to fund line item");
+    }
+  }
+
+  async function handleSaveLineItemAmount(callId: string, lineItemId: string) {
+    const amount = Number(editLineItemAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/capital-calls/${callId}/line-items/${lineItemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to update amount");
+        return;
+      }
+      toast.success("Line item amount updated");
+      setEditingLineItem(null);
+      mutate(`/api/entities/${entityId}`);
+    } catch {
+      toast.error("Failed to update line item");
+    }
+  }
+
+  async function handleDeleteCapitalCall(callId: string) {
+    const res = await fetch(`/api/capital-calls/${callId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Capital call deleted");
+      mutate(`/api/entities/${entityId}`);
+    } else {
+      const json = await res.json();
+      toast.error(json.error || "Failed to delete");
     }
   }
 
@@ -284,6 +324,22 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       {c.status === "DRAFT" && (
                         <button onClick={() => handleCallStatusTransition(c.id, "ISSUED")} className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Issue</button>
                       )}
+                      {c.status !== "DRAFT" && (
+                        <button onClick={() => handleCallStatusTransition(c.id, "DRAFT")} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Revert</button>
+                      )}
+                      <button
+                        onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}
+                        className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                      >Edit</button>
+                      {c.status === "DRAFT" && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete this ${fmt(c.amount)} capital call? This cannot be undone.`)) return;
+                            await handleDeleteCapitalCall(c.id);
+                          }}
+                          className="px-2 py-0.5 text-[10px] bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                        >Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -302,13 +358,44 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                             {(c.lineItems || []).map((li: any) => (
                               <tr key={li.id} className="border-t border-gray-100 dark:border-gray-700">
                                 <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
-                                <td className="py-1.5 pr-3 font-medium">{fmt(li.amount)}</td>
+                                <td className="py-1.5 pr-3 font-medium">
+                                  {editingLineItem === li.id ? (
+                                    <input
+                                      type="number"
+                                      value={editLineItemAmount}
+                                      onChange={(ev) => setEditLineItemAmount(ev.target.value)}
+                                      className="w-28 border border-gray-300 rounded px-2 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      autoFocus
+                                      onKeyDown={(ev) => {
+                                        if (ev.key === "Enter") handleSaveLineItemAmount(c.id, li.id);
+                                        if (ev.key === "Escape") setEditingLineItem(null);
+                                      }}
+                                    />
+                                  ) : (
+                                    fmt(li.amount)
+                                  )}
+                                </td>
                                 <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
                                 <td className="py-1.5 pr-3">{formatDate(li.paidDate)}</td>
                                 <td className="py-1.5">
-                                  {li.status !== "Funded" && (
-                                    <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
-                                  )}
+                                  <div className="flex gap-1">
+                                    {editingLineItem === li.id ? (
+                                      <>
+                                        <button onClick={() => handleSaveLineItemAmount(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200">Save</button>
+                                        <button onClick={() => setEditingLineItem(null)} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Cancel</button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => { setEditingLineItem(li.id); setEditLineItemAmount(String(li.amount)); }}
+                                          className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                                        >Edit</button>
+                                        {li.status !== "Funded" && (
+                                          <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             ))}
