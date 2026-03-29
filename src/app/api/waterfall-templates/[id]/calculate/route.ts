@@ -34,14 +34,21 @@ export async function POST(
 
     const { entityId, distributableAmount, saveResults } = data!;
 
-    // Fetch the template with tiers + verify firm via entity link
-    const template = await prisma.waterfallTemplate.findFirst({
+    // Fetch the template with tiers — try firm-linked first, then any template by ID
+    let template = await prisma.waterfallTemplate.findFirst({
       where: {
         id: templateId,
         entities: { some: { firmId } },
       },
       include: { tiers: { orderBy: { tierOrder: "asc" } } },
     });
+    // Fallback: template may exist but not be linked to any entity yet
+    if (!template) {
+      template = await prisma.waterfallTemplate.findFirst({
+        where: { id: templateId },
+        include: { tiers: { orderBy: { tierOrder: "asc" } } },
+      });
+    }
     if (!template) {
       return NextResponse.json({ error: "Template not found" }, { status: 404 });
     }
