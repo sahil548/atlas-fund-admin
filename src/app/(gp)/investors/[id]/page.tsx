@@ -338,7 +338,9 @@ export default function InvestorDetailPage() {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Capital Calls</h3></div>
             <div className="divide-y divide-gray-50 dark:divide-gray-700">
-              {(inv.capitalCallLineItems || []).map((item: { id: string; amount: number; status: string; capitalCall: { callNumber: string; callDate: string; dueDate: string; purpose?: string; status: string; entity: { name: string } } }) => (
+              {(inv.capitalCallLineItems || [])
+                .filter((item: { amount: number }) => item.amount !== 0)
+                .map((item: { id: string; amount: number; status: string; capitalCall: { callNumber: string; callDate: string; dueDate: string; purpose?: string; status: string; entity: { name: string } } }) => (
                 <div key={item.id} className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -353,7 +355,7 @@ export default function InvestorDetailPage() {
                   </div>
                 </div>
               ))}
-              {(!inv.capitalCallLineItems || inv.capitalCallLineItems.length === 0) && <div className="p-6 text-center text-sm text-gray-400">No capital calls.</div>}
+              {(!inv.capitalCallLineItems || inv.capitalCallLineItems.filter((item: { amount: number }) => item.amount !== 0).length === 0) && <div className="p-6 text-center text-sm text-gray-400">No capital calls.</div>}
             </div>
           </div>
 
