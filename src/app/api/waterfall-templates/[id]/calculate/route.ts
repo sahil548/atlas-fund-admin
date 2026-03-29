@@ -34,14 +34,21 @@ export async function POST(
 
     const { entityId, distributableAmount, saveResults } = data!;
 
-    // Fetch the template with tiers + verify firm via entity link
-    const template = await prisma.waterfallTemplate.findFirst({
+    // Fetch the template with tiers — try firm-linked first, then any template by ID
+    let template = await prisma.waterfallTemplate.findFirst({
       where: {
         id: templateId,
         entities: { some: { firmId } },
       },
       include: { tiers: { orderBy: { tierOrder: "asc" } } },
     });
+    // Fallback: template may exist but not be linked to any entity yet
+    if (!template) {
+      template = await prisma.waterfallTemplate.findFirst({
+        where: { id: templateId },
+        include: { tiers: { orderBy: { tierOrder: "asc" } } },
+      });
+    }
     if (!template) {
       return NextResponse.json({ error: "Template not found" }, { status: 404 });
     }
@@ -59,18 +66,67 @@ export async function POST(
     // Fetch commitments for total contributed + per-investor breakdown
     const commitments = await prisma.commitment.findMany({
       where: { entityId },
-      include: { investor: { select: { id: true, name: true } } },
+      include: { investor: { select: { id: true, name: true, investorType: true } } },
     });
     const totalContributed = commitments.reduce((s, c) => s + c.calledAmount, 0);
+
+    // Fetch unit class assignments to determine GP vs LP status
+    // An investor with units in a GP_UNIT class is considered GP
+    const unitClasses = await prisma.unitClass.findMany({
+      where: { entityId },
+      include: {
+        ownershipUnits: {
+          where: { status: "ACTIVE" },
+          select: { investorId: true },
+        },
+      },
+    });
+
+    // Build set of investor IDs that hold GP_UNIT class units
+    const gpInvestorIds = new Set<string>();
+    for (const uc of unitClasses) {
+      if (uc.classType === "GP_UNIT" || uc.classType === "CARRIED_INTEREST") {
+        for (const ou of uc.ownershipUnits) {
+          gpInvestorIds.add(ou.investorId);
+        }
+      }
+    }
+
+    // Fallback: if no unit classes exist, detect GP by investor type or entity name
+    let useNameFallback = gpInvestorIds.size === 0;
+    let gpEntityName = "";
+    if (useNameFallback) {
+      const gpEntity = await prisma.entity.findFirst({
+        where: { firmId, entityType: "GP_ENTITY" },
+        select: { name: true },
+      });
+      gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
+    }
 
     // Build per-investor shares (pro-rata of committed capital)
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
     const investorShares: InvestorShare[] = totalCommitted > 0
-      ? commitments.map((c) => ({
-          investorId: c.investorId,
-          investorName: c.investor.name,
-          proRataShare: c.amount / totalCommitted,
-        }))
+      ? commitments.map((c) => {
+          let isGP: boolean;
+          if (!useNameFallback) {
+            // Primary: use unit class assignment
+            isGP = gpInvestorIds.has(c.investorId);
+          } else {
+            // Fallback: use investor type or GP entity name matching
+            const investorType = (c.investor.investorType ?? "").toLowerCase();
+            const investorName = (c.investor.name ?? "").toLowerCase();
+            isGP = investorType.includes("gp") ||
+              investorType === "general partner" ||
+              (gpEntityName !== "" && investorName.includes(gpEntityName)) ||
+              (gpEntityName !== "" && gpEntityName.includes(investorName));
+          }
+          return {
+            investorId: c.investorId,
+            investorName: c.investor.name,
+            proRataShare: c.amount / totalCommitted,
+            isGP,
+          };
+        })
       : [];
 
     // Get total prior distributions for this entity

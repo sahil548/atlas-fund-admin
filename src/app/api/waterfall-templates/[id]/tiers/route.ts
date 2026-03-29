@@ -13,11 +13,23 @@ export async function POST(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const { data, error } = await parseBody(req, UpdateWaterfallTierSchema);
-  if (error) return error;
-  const { id, ...updates } = data!;
-  const tier = await prisma.waterfallTier.update({ where: { id }, data: updates });
-  return NextResponse.json(tier);
+  try {
+    const { data, error } = await parseBody(req, UpdateWaterfallTierSchema);
+    if (error) return error;
+    const { id, ...updates } = data!;
+
+    // Convert null values to Prisma-compatible form
+    const prismaData: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) prismaData[key] = value;
+    }
+
+    const tier = await prisma.waterfallTier.update({ where: { id }, data: prismaData });
+    return NextResponse.json(tier);
+  } catch (err) {
+    logger.error("[waterfall-templates/tiers] PUT", { error: err instanceof Error ? err.message : String(err) });
+    return NextResponse.json({ error: "Failed to update tier" }, { status: 500 });
+  }
 }
 
 const DeleteTierSchema = z.object({

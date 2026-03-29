@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ interface Props { open: boolean; onClose: () => void; entities: { id: string; na
 
 interface WaterfallTemplate {
   id: string; name: string;
+  entities?: { id: string; name: string }[];
 }
 
 interface PerInvestorAllocation {
@@ -26,6 +27,8 @@ interface PerInvestorAllocation {
   investorName: string;
   proRataShare: number;
   lpAllocation: number;
+  gpCarryAllocation: number;
+  totalAllocation: number;
   overrideAmount?: string; // editable override
 }
 
@@ -69,22 +72,87 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
     fetcher
   );
 
+  // Fetch commitments for selected entity (for manual per-investor allocation)
+  const { data: commitments = [] } = useSWR<{ investorId: string; investor: { id: string; name: string }; amount: number }[]>(
+    form.entityId ? `/api/commitments?entityId=${form.entityId}` : null,
+    fetcher
+  );
+
+  // When entity/commitments load, pre-populate per-investor allocations (pro-rata)
+  // User can then override individual amounts before submitting
+  useEffect(() => {
+    if (!form.entityId || commitments.length === 0 || waterfallRan) return;
+    const totalCommit = commitments.reduce((s, c) => s + c.amount, 0);
+    const gross = Number(form.grossAmount) || 0;
+    const allocs: PerInvestorAllocation[] = commitments.map((c) => {
+      const share = totalCommit > 0 ? c.amount / totalCommit : 0;
+      const amt = gross * share;
+      return {
+        investorId: c.investorId,
+        investorName: c.investor?.name || c.investorId,
+        proRataShare: share,
+        lpAllocation: amt,
+        gpCarryAllocation: 0,
+        totalAllocation: amt,
+        overrideAmount: amt.toFixed(2),
+      };
+    });
+    setPerInvestorAllocations(allocs);
+    setShowPerInvestor(true);
+  }, [form.entityId, commitments, waterfallRan]); // intentionally excludes grossAmount to avoid overwriting user edits
+
   async function handleRunWaterfall() {
     if (!form.entityId || !form.grossAmount) {
       toast.error("Select an entity and enter amount first");
       return;
     }
+    if (!form.distributionType) {
+      toast.error("Select a distribution type first so the correct waterfall is used");
+      return;
+    }
     setWaterfallLoading(true);
     try {
-      // Find the template associated with this entity
-      const entityTemplates = templates.filter(() => true); // all templates, will try first one
-      if (entityTemplates.length === 0) {
-        toast.error("No waterfall template found. Create a template first.");
+      // Match template to distribution type by name, prioritizing templates linked to this entity
+      // 1. First look among templates assigned to the selected entity
+      // 2. Fall back to all templates only if no entity-specific match
+      const entityTemplates = templates.filter((t) =>
+        t.entities?.some((e) => e.id === form.entityId)
+      );
+      const searchPool = entityTemplates.length > 0 ? entityTemplates : templates;
+
+      const distTypeNormalized = form.distributionType.toLowerCase().replace(/_/g, " ");
+      let template = searchPool.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
+      // Fallback: try matching common aliases
+      if (!template && distTypeNormalized.includes("return of capital")) {
+        template = searchPool.find((t) => {
+          const n = t.name.toLowerCase();
+          return n.includes("roc") || n.includes("return") || n.includes("capital return");
+        });
+      }
+      if (!template && distTypeNormalized.includes("capital gain")) {
+        template = searchPool.find((t) => {
+          const n = t.name.toLowerCase();
+          return n.includes("gain") || n.includes("appreciation");
+        });
+      }
+      // Final fallback: use first entity template, then first any template
+      if (!template && entityTemplates.length > 0) {
+        template = entityTemplates[0];
+        toast.success(`No "${form.distributionType}" waterfall found for this entity — using "${template.name}" template`);
+      }
+      if (!template && templates.length > 0) {
+        template = templates[0];
+        toast.success(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
+      }
+      if (!template) {
+        const available = templates.map((t) => t.name).join(", ");
+        toast.error(available
+          ? `No waterfall matching "${form.distributionType}" found. Available: ${available}`
+          : "No waterfall templates found. Create a template first."
+        );
         setWaterfallLoading(false);
         return;
       }
-      // Use the first template (entity may have one linked)
-      const template = entityTemplates[0];
 
       const res = await fetch(`/api/waterfall-templates/${template.id}/calculate`, {
         method: "POST",
@@ -105,32 +173,29 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       const data = await res.json();
 
       // Auto-populate decomposition fields from waterfall results
-      // GP carry = totalGP, ROC from ROC tier, remainder is gain/income
+      // GP carry = totalGP, ROC from ROC tier, remainder is income
       const totalGP = data.totalGP ?? 0;
       const totalLP = data.totalLP ?? 0;
       const rocTier = data.tiers?.find((t: any) => t.name?.toLowerCase().includes("return of capital"));
       const roc = rocTier?.allocatedLP ?? 0;
-      const lpProfits = totalLP - roc;
-      // Split LP profits into income and LT gain roughly (income = pref, gain = rest)
-      const prefTier = data.tiers?.find((t: any) => t.name?.toLowerCase().includes("preferred"));
-      const prefAmount = prefTier?.allocatedLP ?? 0;
-      const income = prefAmount;
-      const ltGain = Math.max(0, lpProfits - prefAmount);
+      const income = totalLP - roc;
 
       set("returnOfCapital", roc.toFixed(2));
       set("income", income.toFixed(2));
-      set("longTermGain", ltGain.toFixed(2));
+      set("longTermGain", "0");
       set("shortTermGain", "0");
       set("carriedInterest", totalGP.toFixed(2));
       set("netToLPs", totalLP.toFixed(2));
 
-      // Build per-investor allocation list
+      // Build per-investor allocation list (includes GP carry for GP investors)
       const breakdown: PerInvestorAllocation[] = (data.perInvestorBreakdown ?? []).map((b: any) => ({
         investorId: b.investorId,
         investorName: b.investorName,
         proRataShare: b.proRataShare,
-        lpAllocation: b.lpAllocation,
-        overrideAmount: b.lpAllocation.toFixed(2),
+        lpAllocation: b.lpAllocation ?? 0,
+        gpCarryAllocation: b.gpCarryAllocation ?? 0,
+        totalAllocation: b.totalAllocation ?? b.lpAllocation ?? 0,
+        overrideAmount: (b.totalAllocation ?? b.lpAllocation ?? 0).toFixed(2),
       }));
       setPerInvestorAllocations(breakdown);
       setShowPerInvestor(breakdown.length > 0);
@@ -151,6 +216,20 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   }
 
   async function handleSubmit() {
+    // Always send per-investor overrides when allocations exist (manual or waterfall)
+    const overrides = perInvestorAllocations.length > 0
+      ? perInvestorAllocations.map((a) => {
+          const amt = a.overrideAmount !== undefined && a.overrideAmount !== ""
+            ? Number(a.overrideAmount)
+            : a.totalAllocation;
+          return {
+            investorId: a.investorId,
+            amount: amt,
+            gpCarryAmount: amt === 0 ? 0 : a.gpCarryAllocation,
+          };
+        })
+      : undefined;
+
     const payload = {
       entityId: form.entityId,
       distributionDate: form.distributionDate,
@@ -164,6 +243,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       shortTermGain: Number(form.shortTermGain) || 0,
       carriedInterest: Number(form.carriedInterest) || 0,
       netToLPs: Number(form.netToLPs) || 0,
+      ...(overrides ? { perInvestorOverrides: overrides } : {}),
+      ...(previewTemplateId ? { waterfallTemplateId: previewTemplateId } : {}),
     };
     if (!payload.entityId || !payload.distributionDate || !payload.grossAmount) {
       setErrors({
@@ -191,7 +272,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   }
 
   const grossNum = Number(form.grossAmount) || 0;
-  const totalDecomposed = (Number(form.returnOfCapital) || 0) + (Number(form.income) || 0) + (Number(form.longTermGain) || 0) + (Number(form.shortTermGain) || 0) + (Number(form.carriedInterest) || 0);
+  const totalDecomposed = (Number(form.returnOfCapital) || 0) + (Number(form.income) || 0) + (Number(form.carriedInterest) || 0);
   const decompositionDiff = Math.abs(grossNum - totalDecomposed);
 
   return (
@@ -273,25 +354,25 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         <div className="grid grid-cols-3 gap-3">
           <FormField label="Return of Capital"><CurrencyInput value={form.returnOfCapital} onChange={(v) => set("returnOfCapital", v)} /></FormField>
           <FormField label="Income"><CurrencyInput value={form.income} onChange={(v) => set("income", v)} /></FormField>
-          <FormField label="LT Gains"><CurrencyInput value={form.longTermGain} onChange={(v) => set("longTermGain", v)} /></FormField>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <FormField label="ST Gains"><CurrencyInput value={form.shortTermGain} onChange={(v) => set("shortTermGain", v)} /></FormField>
           <FormField label="Carry"><CurrencyInput value={form.carriedInterest} onChange={(v) => set("carriedInterest", v)} /></FormField>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Net to LPs"><CurrencyInput value={form.netToLPs} onChange={(v) => set("netToLPs", v)} /></FormField>
         </div>
 
         {/* Per-Investor Allocation Preview (editable) */}
         {showPerInvestor && perInvestorAllocations.length > 0 && (
           <div className="border-t border-gray-100 pt-3 space-y-2">
-            <div className="text-xs font-medium text-gray-700">Per-Investor LP Allocation Preview</div>
-            <p className="text-[10px] text-gray-500">Override individual amounts below for side letter arrangements.</p>
+            <div className="text-xs font-medium text-gray-700">Per-Investor Allocations</div>
+            <p className="text-[10px] text-gray-500">Edit the Override ($) column to assign specific amounts to each investor. Set to 0 for investors not receiving this distribution.</p>
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="text-left py-1 font-medium text-gray-600">Investor</th>
                   <th className="text-right py-1 font-medium text-gray-600">Pro-Rata</th>
-                  <th className="text-right py-1 font-medium text-gray-600">Calculated</th>
+                  <th className="text-right py-1 font-medium text-gray-600">LP Share</th>
+                  <th className="text-right py-1 font-medium text-gray-600">GP Carry</th>
+                  <th className="text-right py-1 font-medium text-gray-600">Total</th>
                   <th className="text-right py-1 font-medium text-gray-600">Override ($)</th>
                 </tr>
               </thead>
@@ -301,10 +382,12 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
                     <td className="py-1.5 text-gray-900">{a.investorName}</td>
                     <td className="py-1.5 text-right text-gray-500">{(a.proRataShare * 100).toFixed(1)}%</td>
                     <td className="py-1.5 text-right text-gray-600">{fmt(a.lpAllocation)}</td>
+                    <td className="py-1.5 text-right text-indigo-600">{a.gpCarryAllocation > 0 ? fmt(a.gpCarryAllocation) : "—"}</td>
+                    <td className="py-1.5 text-right font-medium text-gray-900">{fmt(a.totalAllocation)}</td>
                     <td className="py-1.5 text-right">
                       <input
                         type="number"
-                        value={a.overrideAmount ?? a.lpAllocation.toFixed(2)}
+                        value={a.overrideAmount ?? a.totalAllocation.toFixed(2)}
                         onChange={(e) => handleOverrideChange(a.investorId, e.target.value)}
                         className="w-24 border border-gray-200 rounded px-2 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500"
                       />
@@ -312,7 +395,24 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-300">
+                  <td className="py-1.5 font-semibold text-gray-900">Total</td>
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right text-gray-500" />
+                  <td className="py-1.5 text-right font-semibold text-gray-900">
+                    {fmt(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0))}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
+            {Math.abs(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0) - (Number(form.grossAmount) || 0)) > 0.01 && (
+              <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 mt-2">
+                Override total ({fmt(perInvestorAllocations.reduce((s, a) => s + (Number(a.overrideAmount) || 0), 0))}) does not match gross amount ({fmt(Number(form.grossAmount) || 0)}).
+              </div>
+            )}
           </div>
         )}
 

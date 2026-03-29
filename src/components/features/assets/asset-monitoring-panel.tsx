@@ -222,7 +222,7 @@ export function AssetMonitoringPanel() {
                   key={r.id}
                   severity="upcoming"
                   icon={<Calendar className="h-3.5 w-3.5" />}
-                  description={`Review overdue${r.nextReview ? ` since ${new Date(r.nextReview).toLocaleDateString()}` : ""}`}
+                  description={`Review overdue${r.nextReview ? ` since ${new Date(r.nextReview).toLocaleDateString("en-US", { timeZone: "UTC" })}` : ""}`}
                   assetId={r.id}
                   assetName={r.name}
                 />

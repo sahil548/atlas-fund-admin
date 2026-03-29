@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EditAssetForm } from "@/components/features/assets/edit-asset-form";
@@ -316,10 +316,10 @@ export default function AssetsPage() {
       <LoadMoreButton hasMore={hasMore} loading={loadingMore} onLoadMore={handleLoadMore} />
 
       {editingAsset && (
-        <EditAssetForm open={showEdit} onClose={() => { setShowEdit(false); setEditingAsset(null); }} asset={editingAsset} />
+        <EditAssetForm open={showEdit} onClose={() => { setShowEdit(false); setEditingAsset(null); mutate(buildUrl(null)); }} asset={editingAsset} />
       )}
 
-      <CreateAssetForm open={showCreate} onClose={() => setShowCreate(false)} />
+      <CreateAssetForm open={showCreate} onClose={() => { setShowCreate(false); mutate(buildUrl(null)); }} />
     </div>
   );
 }

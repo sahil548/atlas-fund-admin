@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { mutate } from "swr";
+import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
+import { FormField } from "@/components/ui/form-field";
+import { Select } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { fmt, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { useFirm } from "@/components/providers/firm-provider";
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
 import { SideLetterRulesPanel } from "@/components/features/side-letters/side-letter-rules-panel";
 import { CreateUnitClassForm } from "@/components/features/entities/create-unit-class-form";
@@ -28,11 +33,26 @@ const CLASS_TYPE_COLORS: Record<string, string> = {
   MANAGEMENT: "blue",
 };
 
+const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
+
 export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId: string }) {
   const toast = useToast();
+  const { firmId } = useFirm();
   const e = entity;
 
+  // Fetch all investors for the add commitment dropdown
+  const { data: investorsData } = useSWR(`/api/investors?firmId=${firmId}&limit=100`, fetcher);
+  const allInvestors: any[] = investorsData?.data ?? [];
+
   const [showCreateClass, setShowCreateClass] = useState(false);
+  const [showAddCommitment, setShowAddCommitment] = useState(false);
+  const [commitForm, setCommitForm] = useState({ investorId: "", amount: "", unitClassId: "" });
+  const [commitSaving, setCommitSaving] = useState(false);
+
+  // Edit commitment state
+  const [editingCommitId, setEditingCommitId] = useState<string | null>(null);
+  const [editCommitForm, setEditCommitForm] = useState({ amount: "", calledAmount: "", unitClassId: "" });
+  const [editCommitSaving, setEditCommitSaving] = useState(false);
   const [issueTarget, setIssueTarget] = useState<{ id: string; name: string; unitPrice: number } | null>(null);
   const [expandedClass, setExpandedClass] = useState<string | null>(null);
   const [showCreateSideLetter, setShowCreateSideLetter] = useState(false);
@@ -104,6 +124,146 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
       return;
     }
     toast.success("Unit class deleted");
+    mutate(`/api/entities/${entityId}`);
+  }
+
+  async function handleAddCommitment() {
+    if (!commitForm.investorId || !commitForm.amount) { toast.error("Investor and amount are required"); return; }
+    setCommitSaving(true);
+    try {
+      const res = await fetch("/api/commitments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          investorId: commitForm.investorId,
+          entityId,
+          amount: Number(commitForm.amount),
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to add commitment");
+        return;
+      }
+
+      // If a unit class was selected, auto-issue units for this commitment
+      if (commitForm.unitClassId) {
+        const selectedClass = unitClasses.find((uc: any) => uc.id === commitForm.unitClassId);
+        const unitPrice = selectedClass?.unitPrice || 1000;
+        const unitsToIssue = Math.floor(Number(commitForm.amount) / unitPrice);
+        if (unitsToIssue > 0) {
+          await fetch("/api/ownership-units", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              unitClassId: commitForm.unitClassId,
+              investorId: commitForm.investorId,
+              unitsIssued: unitsToIssue,
+              unitCost: unitPrice,
+            }),
+          });
+        }
+      }
+
+      toast.success("Commitment added");
+      mutate(`/api/entities/${entityId}`);
+      setShowAddCommitment(false);
+      setCommitForm({ investorId: "", amount: "", unitClassId: "" });
+    } catch {
+      toast.error("Failed to add commitment");
+    } finally {
+      setCommitSaving(false);
+    }
+  }
+
+  function startEditCommitment(c: any) {
+    // Find current unit class for this investor
+    const currentUnits = unitClasses.flatMap((uc: any) =>
+      (uc.ownershipUnits || []).filter((ou: any) => ou.investorId === c.investor.id && ou.status === "ACTIVE")
+        .map((ou: any) => ({ classId: uc.id, unitId: ou.id }))
+    );
+    setEditingCommitId(c.id);
+    setEditCommitForm({
+      amount: String(c.amount),
+      calledAmount: String(c.calledAmount ?? 0),
+      unitClassId: currentUnits.length > 0 ? currentUnits[0].classId : "",
+    });
+  }
+
+  async function handleEditCommitmentSave() {
+    if (!editingCommitId) return;
+    setEditCommitSaving(true);
+    try {
+      // Find the commitment to get investorId
+      const commitment = commitments.find((c: any) => c.id === editingCommitId);
+      if (!commitment) return;
+
+      // Update commitment amount
+      const res = await fetch(`/api/commitments/${editingCommitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(editCommitForm.amount) || 0,
+          calledAmount: Number(editCommitForm.calledAmount) || 0,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to update");
+        return;
+      }
+
+      // Handle unit class reassignment
+      // Find current ownership units for this investor across all classes in this entity
+      const currentUnits = unitClasses.flatMap((uc: any) =>
+        (uc.ownershipUnits || []).filter((ou: any) => ou.investorId === commitment.investor.id && ou.status === "ACTIVE")
+          .map((ou: any) => ({ classId: uc.id, unitId: ou.id }))
+      );
+      const currentClassId = currentUnits.length > 0 ? currentUnits[0].classId : "";
+
+      if (editCommitForm.unitClassId !== currentClassId) {
+        // Delete old ownership units for this investor in old class
+        for (const ou of currentUnits) {
+          await fetch(`/api/ownership-units/${ou.unitId}`, { method: "DELETE" });
+        }
+
+        // Create new ownership unit in new class (if a class was selected)
+        if (editCommitForm.unitClassId) {
+          const selectedClass = unitClasses.find((uc: any) => uc.id === editCommitForm.unitClassId);
+          const unitPrice = selectedClass?.unitPrice || 1000;
+          const newAmount = Number(editCommitForm.amount) || 0;
+          const unitsToIssue = Math.floor(newAmount / unitPrice);
+          if (unitsToIssue > 0) {
+            await fetch("/api/ownership-units", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                unitClassId: editCommitForm.unitClassId,
+                investorId: commitment.investor.id,
+                unitsIssued: unitsToIssue,
+                unitCost: unitPrice,
+              }),
+            });
+          }
+        }
+      }
+
+      toast.success("Commitment updated");
+      mutate(`/api/entities/${entityId}`);
+      setEditingCommitId(null);
+    } finally {
+      setEditCommitSaving(false);
+    }
+  }
+
+  async function handleDeleteCommitment(commitId: string) {
+    const res = await fetch(`/api/commitments/${commitId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json();
+      toast.error(typeof d.error === "string" ? d.error : "Failed to delete");
+      return;
+    }
+    toast.success("Commitment deleted");
     mutate(`/api/entities/${entityId}`);
   }
 
@@ -347,25 +507,91 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
 
       {/* Commitments Section */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <h3 className="text-sm font-semibold">Commitments ({commitments.length})</h3>
+          <Button size="sm" onClick={() => setShowAddCommitment(true)}>+ Add Commitment</Button>
         </div>
         <table className="w-full text-xs">
           <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>{["Investor", "Type", "Commitment", "Called", "Uncalled", "KYC"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
+            <tr>{["Investor", "Type", "Class", "Commitment", "Called", "Uncalled", "KYC", "Actions"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {commitments.map((c: any) => (
-              <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-3 py-2.5"><Link href={`/investors/${c.investor.id}`} className="text-indigo-700 hover:underline font-medium">{c.investor.name}</Link></td>
-                <td className="px-3 py-2.5"><Badge color="blue">{c.investor.investorType}</Badge></td>
-                <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
-                <td className="px-3 py-2.5">{fmt(c.calledAmount)}</td>
-                <td className="px-3 py-2.5">{fmt(c.amount - c.calledAmount)}</td>
-                <td className="px-3 py-2.5"><Badge color={c.investor.kycStatus === "Verified" ? "green" : "red"}>{c.investor.kycStatus}</Badge></td>
-              </tr>
-            ))}
-            {commitments.length === 0 && <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">No committed investors.</td></tr>}
+            {commitments.map((c: any) => {
+              // Find unit class for this investor
+              const investorUnits = unitClasses.flatMap((uc: any) =>
+                (uc.ownershipUnits || []).filter((ou: any) => ou.investorId === c.investor.id && ou.status === "ACTIVE")
+                  .map((ou: any) => ({ classId: uc.id, className: uc.name, classType: uc.classType }))
+              );
+              const assignedClass = investorUnits.length > 0 ? investorUnits[0] : null;
+
+              if (editingCommitId === c.id) {
+                return (
+                  <tr key={c.id} className="border-t border-gray-50 bg-indigo-50/40">
+                    <td className="px-3 py-2"><span className="font-medium">{c.investor.name}</span></td>
+                    <td className="px-3 py-2"><Badge color="blue">{c.investor.investorType}</Badge></td>
+                    <td className="px-3 py-2">
+                      {unitClasses.length > 0 ? (
+                        <select
+                          value={editCommitForm.unitClassId}
+                          onChange={(ev) => setEditCommitForm((f) => ({ ...f, unitClassId: ev.target.value }))}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        >
+                          <option value="">— None —</option>
+                          {unitClasses.map((uc: any) => (
+                            <option key={uc.id} value={uc.id}>{uc.name} ({CLASS_TYPE_LABELS[uc.classType] || uc.classType})</option>
+                          ))}
+                        </select>
+                      ) : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={editCommitForm.amount}
+                        onChange={(ev) => setEditCommitForm((f) => ({ ...f, amount: ev.target.value }))}
+                        className="w-28 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="number"
+                        value={editCommitForm.calledAmount}
+                        onChange={(ev) => setEditCommitForm((f) => ({ ...f, calledAmount: ev.target.value }))}
+                        className="w-28 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                      />
+                    </td>
+                    <td className="px-3 py-2">{fmt(Number(editCommitForm.amount) - Number(editCommitForm.calledAmount))}</td>
+                    <td className="px-3 py-2"><Badge color={c.investor.kycStatus === "Verified" ? "green" : "red"}>{c.investor.kycStatus}</Badge></td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <button onClick={handleEditCommitmentSave} disabled={editCommitSaving} className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50">
+                          {editCommitSaving ? "Saving…" : "Save"}
+                        </button>
+                        <button onClick={() => setEditingCommitId(null)} className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1">Cancel</button>
+                        <button onClick={() => { setEditingCommitId(null); handleDeleteCommitment(c.id); }} className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50">Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              return (
+                <tr key={c.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-3 py-2.5"><Link href={`/investors/${c.investor.id}`} className="text-indigo-700 hover:underline font-medium">{c.investor.name}</Link></td>
+                  <td className="px-3 py-2.5"><Badge color="blue">{c.investor.investorType}</Badge></td>
+                  <td className="px-3 py-2.5">{assignedClass ? <Badge color={CLASS_TYPE_COLORS[assignedClass.classType] || "gray"}>{assignedClass.className}</Badge> : <span className="text-gray-400">—</span>}</td>
+                  <td className="px-3 py-2.5 font-medium">{fmt(c.amount)}</td>
+                  <td className="px-3 py-2.5">{fmt(c.calledAmount)}</td>
+                  <td className="px-3 py-2.5">{fmt(c.amount - c.calledAmount)}</td>
+                  <td className="px-3 py-2.5"><Badge color={c.investor.kycStatus === "Verified" ? "green" : "red"}>{c.investor.kycStatus}</Badge></td>
+                  <td className="px-3 py-2.5">
+                    <button onClick={() => startEditCommitment(c)} className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {commitments.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No committed investors.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -440,6 +666,57 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
         onClose={() => setShowCreateSideLetter(false)}
         onCreated={() => mutate(`/api/entities/${entityId}`)}
       />
+
+      {/* Add Commitment Modal */}
+      <Modal
+        open={showAddCommitment}
+        onClose={() => setShowAddCommitment(false)}
+        title="Add Commitment"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAddCommitment(false)}>Cancel</Button>
+            <Button loading={commitSaving} onClick={handleAddCommitment}>Add Commitment</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <FormField label="Investor" required>
+            <Select
+              value={commitForm.investorId}
+              onChange={(ev) => setCommitForm((p) => ({ ...p, investorId: ev.target.value }))}
+              options={[
+                { value: "", label: "\u2014 Select an investor \u2014" },
+                ...allInvestors.map((inv: any) => ({
+                  value: inv.id,
+                  label: `${inv.name} (${inv.investorType})`,
+                })),
+              ]}
+            />
+          </FormField>
+          <FormField label="Commitment Amount ($)" required>
+            <CurrencyInput
+              value={commitForm.amount}
+              onChange={(v) => setCommitForm((p) => ({ ...p, amount: v }))}
+              placeholder="e.g. 500,000"
+            />
+          </FormField>
+          {unitClasses.length > 0 && (
+            <FormField label="Unit Class (optional)">
+              <Select
+                value={commitForm.unitClassId}
+                onChange={(ev) => setCommitForm((p) => ({ ...p, unitClassId: ev.target.value }))}
+                options={[
+                  { value: "", label: "— No class assignment —" },
+                  ...unitClasses.map((uc: any) => ({
+                    value: uc.id,
+                    label: `${uc.name} (${CLASS_TYPE_LABELS[uc.classType] || uc.classType})`,
+                  })),
+                ]}
+              />
+            </FormField>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

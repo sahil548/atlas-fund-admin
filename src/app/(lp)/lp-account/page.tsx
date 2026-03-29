@@ -329,7 +329,7 @@ export default function LPAccountPage() {
             <Badge color="indigo">Computed from ledger</Badge>
             <ExportButton
               data={data.ledger.map((entry) => ({
-                date: new Date(entry.date).toLocaleDateString(),
+                date: new Date(entry.date).toLocaleDateString("en-US", { timeZone: "UTC" }),
                 type: entry.type,
                 entity: entry.entityName,
                 description: entry.description,
@@ -440,7 +440,7 @@ export default function LPAccountPage() {
                       {fmtSigned(entry.amount)}
                     </span>
                     <span className="text-gray-400 dark:text-gray-500 w-16 text-right">
-                      {new Date(entry.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {new Date(entry.date).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })}
                     </span>
                   </div>
                 </div>

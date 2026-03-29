@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { fmt, cn, formatDate } from "@/lib/utils";
 import { useFirm } from "@/components/providers/firm-provider";
 
@@ -48,6 +49,7 @@ export function AssetExpensesTab({
   const { data, isLoading } = useSWR(transactionsKey, fetcher);
   const { firmId } = useFirm();
 
+  // Add new expense form state
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -59,6 +61,21 @@ export function AssetExpensesTab({
     description: "",
   });
 
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    category: "",
+    amount: "",
+    date: "",
+    description: "",
+  });
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   const expenses: any[] = data?.expenses ?? [];
   const totals = data?.totals ?? { totalExpenses: 0 };
 
@@ -69,6 +86,13 @@ export function AssetExpensesTab({
     byCategory[cat] = (byCategory[cat] ?? 0) + e.amount;
   }
 
+  function revalidate() {
+    mutate(transactionsKey);
+    mutate(`/api/assets/${assetId}`);
+    if (firmId) mutate(`/api/assets?firmId=${firmId}`);
+  }
+
+  // --- Add new expense ---
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError(null);
@@ -105,15 +129,86 @@ export function AssetExpensesTab({
         return;
       }
 
-      // Revalidate both transactions and asset (for IRR/MOIC)
-      mutate(transactionsKey);
-      mutate(`/api/assets/${assetId}`);
-      if (firmId) mutate(`/api/assets?firmId=${firmId}`);
-
+      revalidate();
       setForm({ category: "management_fee", amount: "", date: new Date().toISOString().slice(0, 10), description: "" });
       setShowForm(false);
     } finally {
       setSaving(false);
+    }
+  }
+
+  // --- Edit expense ---
+  function startEdit(ev: any) {
+    setEditingId(ev.id);
+    setEditForm({
+      category: ev.category || "other",
+      amount: String(ev.amount),
+      date: ev.date ? new Date(ev.date).toISOString().slice(0, 10) : "",
+      description: ev.description || "",
+    });
+    setEditError(null);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditError(null);
+  }
+
+  async function handleEditSave() {
+    setEditError(null);
+    const amount = parseFloat(editForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setEditError("Amount must be a positive number");
+      return;
+    }
+    if (!editForm.date) {
+      setEditError("Date is required");
+      return;
+    }
+
+    setEditSaving(true);
+    try {
+      const res = await fetch(`/api/assets/${assetId}/expenses/${editingId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: editForm.category,
+          amount,
+          date: editForm.date,
+          description: editForm.description || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const d = await res.json();
+        setEditError(typeof d.error === "string" ? d.error : "Failed to update");
+        return;
+      }
+
+      revalidate();
+      setEditingId(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  // --- Delete expense ---
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/assets/${assetId}/expenses/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        alert(typeof d.error === "string" ? d.error : "Failed to delete");
+        return;
+      }
+      revalidate();
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   }
 
@@ -248,33 +343,127 @@ export function AssetExpensesTab({
                   <th className="text-left py-2 pr-4 text-[10px] text-gray-400 uppercase font-semibold">Date</th>
                   <th className="text-left py-2 pr-4 text-[10px] text-gray-400 uppercase font-semibold">Category</th>
                   <th className="text-right py-2 pr-4 text-[10px] text-gray-400 uppercase font-semibold">Amount</th>
-                  <th className="text-left py-2 text-[10px] text-gray-400 uppercase font-semibold">Description</th>
+                  <th className="text-left py-2 pr-4 text-[10px] text-gray-400 uppercase font-semibold">Description</th>
+                  <th className="text-right py-2 text-[10px] text-gray-400 uppercase font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {expenses.map((e: any) => (
-                  <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-2.5 pr-4 text-gray-600">
-                      {formatDate(e.date)}
-                    </td>
-                    <td className="py-2.5 pr-4">
-                      <Badge color={CATEGORY_COLORS[e.category] ?? "gray"}>
-                        {categoryLabel(e.category)}
-                      </Badge>
-                    </td>
-                    <td className={cn("py-2.5 pr-4 text-right font-semibold text-red-600")}>
-                      -{fmt(e.amount)}
-                    </td>
-                    <td className="py-2.5 text-gray-400">
-                      {e.description || "—"}
-                    </td>
-                  </tr>
-                ))}
+                {expenses.map((e: any) =>
+                  editingId === e.id ? (
+                    /* ---- Inline edit row ---- */
+                    <tr key={e.id} className="border-b border-gray-50 bg-indigo-50/40">
+                      <td className="py-2 pr-3">
+                        <input
+                          type="date"
+                          value={editForm.date}
+                          onChange={(ev) => setEditForm((f) => ({ ...f, date: ev.target.value }))}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                      </td>
+                      <td className="py-2 pr-3">
+                        <select
+                          value={editForm.category}
+                          onChange={(ev) => setEditForm((f) => ({ ...f, category: ev.target.value }))}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        >
+                          {EXPENSE_CATEGORIES.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-2 pr-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={editForm.amount}
+                          onChange={(ev) => setEditForm((f) => ({ ...f, amount: ev.target.value }))}
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                      </td>
+                      <td className="py-2 pr-3">
+                        <input
+                          type="text"
+                          value={editForm.description}
+                          onChange={(ev) => setEditForm((f) => ({ ...f, description: ev.target.value }))}
+                          placeholder="Description"
+                          className="w-full border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                        />
+                      </td>
+                      <td className="py-2 text-right">
+                        {editError && <div className="text-[10px] text-red-500 mb-1">{editError}</div>}
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={handleEditSave}
+                            disabled={editSaving}
+                            className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50"
+                          >
+                            {editSaving ? "Saving…" : "Save"}
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => { cancelEdit(); setDeleteTarget(expenses.find((ev: any) => ev.id === editingId)); }}
+                            className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    /* ---- Normal display row ---- */
+                    <tr key={e.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-2.5 pr-4 text-gray-600">
+                        {formatDate(e.date)}
+                      </td>
+                      <td className="py-2.5 pr-4">
+                        <Badge color={CATEGORY_COLORS[e.category] ?? "gray"}>
+                          {categoryLabel(e.category)}
+                        </Badge>
+                      </td>
+                      <td className={cn("py-2.5 pr-4 text-right font-semibold text-red-600")}>
+                        -{fmt(e.amount)}
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-400">
+                        {e.description || "—"}
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <button
+                          onClick={() => startEdit(e)}
+                          className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Expense Entry"
+        message={
+          deleteTarget
+            ? `Delete the ${categoryLabel(deleteTarget.category)} expense for ${fmt(deleteTarget.amount)} on ${formatDate(deleteTarget.date)}? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

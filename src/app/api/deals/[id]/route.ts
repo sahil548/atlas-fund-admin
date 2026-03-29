@@ -8,6 +8,7 @@ import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { logAudit } from "@/lib/audit";
 import { z } from "zod";
 import { DealMetadataSchema } from "@/lib/json-schemas";
+import { logger } from "@/lib/logger";
 
 // Flexible top-level PATCH schema — each action branch does further validation
 const PatchDealBodySchema = z.object({
@@ -263,4 +264,81 @@ export async function PATCH(
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+}
+
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const authUser = await getAuthUser();
+
+    if (authUser && authUser.role === "GP_TEAM") {
+      const perms = await getEffectivePermissions(authUser.id);
+      if (!checkPermission(perms, "deals", "full")) return forbidden();
+    }
+
+    const deal = await prisma.deal.findUnique({
+      where: { id },
+      include: {
+        sourceAssets: { select: { id: true } },
+      },
+    });
+
+    if (!deal) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    // Only allow deletion of SCREENING or DEAD deals
+    if (deal.stage !== "SCREENING" && deal.stage !== "DEAD") {
+      return NextResponse.json(
+        { error: `Cannot delete: deal is in ${deal.stage} stage. Only SCREENING or DEAD deals can be deleted.` },
+        { status: 400 },
+      );
+    }
+
+    if (deal.sourceAssets.length > 0) {
+      return NextResponse.json(
+        { error: `Cannot delete: deal has ${deal.sourceAssets.length} closed asset(s) created from it.` },
+        { status: 400 },
+      );
+    }
+
+    // Cascade delete all related records
+    await prisma.$transaction([
+      // DD workstream nested data
+      prisma.dDWorkstreamAttachment.deleteMany({ where: { workstream: { dealId: id } } }),
+      prisma.dDWorkstreamComment.deleteMany({ where: { workstream: { dealId: id } } }),
+      prisma.dDTask.deleteMany({ where: { workstream: { dealId: id } } }),
+      prisma.dDWorkstream.deleteMany({ where: { dealId: id } }),
+      // IC process
+      prisma.iCVoteRecord.deleteMany({ where: { icProcess: { dealId: id } } }),
+      prisma.iCProcess.deleteMany({ where: { dealId: id } }),
+      prisma.iCQuestionReply.deleteMany({ where: { question: { dealId: id } } }),
+      prisma.iCQuestion.deleteMany({ where: { dealId: id } }),
+      // Closing & screening
+      prisma.closingChecklist.deleteMany({ where: { dealId: id } }),
+      prisma.aIScreeningResult.deleteMany({ where: { dealId: id } }),
+      // Related records
+      prisma.dealActivity.deleteMany({ where: { dealId: id } }),
+      prisma.dealEntity.deleteMany({ where: { dealId: id } }),
+      prisma.dealCoInvestor.deleteMany({ where: { dealId: id } }),
+      prisma.note.deleteMany({ where: { dealId: id } }),
+      prisma.task.updateMany({ where: { dealId: id }, data: { dealId: null } }),
+      prisma.document.updateMany({ where: { dealId: id }, data: { dealId: null } }),
+      prisma.meeting.updateMany({ where: { dealId: id }, data: { dealId: null } }),
+      prisma.savedConversation.deleteMany({ where: { dealId: id } }),
+      prisma.deal.delete({ where: { id } }),
+    ]);
+
+    if (authUser) {
+      logAudit(authUser.firmId, authUser.id, "DELETE_DEAL", "Deal", id, { name: deal.name });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    logger.error("[deals/[id]] DELETE error:", { error: err instanceof Error ? err.message : String(err) });
+    return NextResponse.json({ error: "Failed to delete deal" }, { status: 500 });
+  }
 }

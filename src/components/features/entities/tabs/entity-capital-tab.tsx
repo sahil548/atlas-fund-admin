@@ -39,6 +39,11 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
   const [expandedDist, setExpandedDist] = useState<string | null>(null);
   const [distributionToConfirm, setDistributionToConfirm] = useState<string | null>(null);
 
+  // Capital call line item editing state
+  const [editingLineItem, setEditingLineItem] = useState<string | null>(null);
+  const [editLineItemAmount, setEditLineItemAmount] = useState("");
+  const [editLineItemDate, setEditLineItemDate] = useState("");
+
   // Fee calculation state
   const [calculatingFees, setCalculatingFees] = useState(false);
   const [feeResult, setFeeResult] = useState<{
@@ -82,20 +87,19 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
 
   // Chart data: distribution composition by quarter
   const compositionData = useMemo(() => {
-    const qMap = new Map<string, { roc: number; income: number; ltGain: number; carry: number; sortKey: number }>();
+    const qMap = new Map<string, { roc: number; income: number; carry: number; sortKey: number }>();
     for (const d of e.distributions || []) {
       if (!d.distributionDate) continue;
       const q = toQuarter(d.distributionDate);
-      const ex = qMap.get(q) || { roc: 0, income: 0, ltGain: 0, carry: 0, sortKey: new Date(d.distributionDate).getTime() };
+      const ex = qMap.get(q) || { roc: 0, income: 0, carry: 0, sortKey: new Date(d.distributionDate).getTime() };
       ex.roc += d.returnOfCapital || 0;
-      ex.income += d.income || 0;
-      ex.ltGain += d.longTermGain || 0;
+      ex.income += (d.income || 0) + (d.longTermGain || 0);
       ex.carry += d.carriedInterest || 0;
       qMap.set(q, ex);
     }
     return [...qMap.entries()]
       .sort((a, b) => a[1].sortKey - b[1].sortKey)
-      .map(([label, { roc, income, ltGain, carry }]) => ({ label, roc, income, ltGain, carry }));
+      .map(([label, { roc, income, carry }]) => ({ label, roc, income, carry }));
   }, [e.distributions]);
 
   async function handleCallStatusTransition(callId: string, newStatus: string) {
@@ -133,6 +137,50 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
       mutate(`/api/entities/${entityId}`);
     } catch {
       toast.error("Failed to fund line item");
+    }
+  }
+
+  async function handleSaveLineItem(callId: string, lineItemId: string, currentStatus?: string) {
+    const amount = Number(editLineItemAmount);
+    if (isNaN(amount) || amount < 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    try {
+      const body: Record<string, unknown> = { amount };
+      if (editLineItemDate) {
+        body.paidDate = new Date(editLineItemDate + "T12:00:00").toISOString();
+        // If a paid date is set and item isn't yet funded, mark it as funded
+        if (currentStatus !== "Funded") {
+          body.status = "Funded";
+        }
+      }
+      const res = await fetch(`/api/capital-calls/${callId}/line-items/${lineItemId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(typeof data.error === "string" ? data.error : "Failed to update");
+        return;
+      }
+      toast.success("Line item updated");
+      setEditingLineItem(null);
+      mutate(`/api/entities/${entityId}`);
+    } catch {
+      toast.error("Failed to update line item");
+    }
+  }
+
+  async function handleDeleteCapitalCall(callId: string) {
+    const res = await fetch(`/api/capital-calls/${callId}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Capital call deleted");
+      mutate(`/api/entities/${entityId}`);
+    } else {
+      const json = await res.json();
+      toast.error(json.error || "Failed to delete");
     }
   }
 
@@ -244,12 +292,11 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                     contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e5e7eb", backgroundColor: "#fff" }}
                     formatter={(value: any, name: any) => [
                       fmt(Number(value)),
-                      name === "roc" ? "Return of Capital" : name === "income" ? "Income" : name === "ltGain" ? "LT Gain" : "Carried Interest",
+                      name === "roc" ? "Return of Capital" : name === "income" ? "Income" : "Carried Interest",
                     ]}
                   />
                   <Bar dataKey="roc" stackId="comp" fill="#3b82f6" name="roc" />
                   <Bar dataKey="income" stackId="comp" fill="#10b981" name="income" />
-                  <Bar dataKey="ltGain" stackId="comp" fill="#8b5cf6" name="ltGain" />
                   <Bar dataKey="carry" stackId="comp" fill="#ef4444" name="carry" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -286,13 +333,61 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       {c.status === "DRAFT" && (
                         <button onClick={() => handleCallStatusTransition(c.id, "ISSUED")} className="px-2 py-0.5 text-[10px] bg-amber-100 text-amber-700 rounded hover:bg-amber-200">Issue</button>
                       )}
+                      {c.status !== "DRAFT" && (
+                        <button onClick={() => handleCallStatusTransition(c.id, "DRAFT")} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Revert</button>
+                      )}
+                      <button
+                        onClick={() => setExpandedCall(expandedCall === c.id ? null : c.id)}
+                        className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                      >Edit</button>
+                      {c.status === "DRAFT" && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete this ${fmt(c.amount)} capital call? This cannot be undone.`)) return;
+                            await handleDeleteCapitalCall(c.id);
+                          }}
+                          className="px-2 py-0.5 text-[10px] bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                        >Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>
-                {expandedCall === c.id && (
+                {expandedCall === c.id && (() => {
+                  const lineItems = c.lineItems || [];
+                  const lineItemTotal = lineItems.reduce((sum: number, li: any) => {
+                    if (editingLineItem === li.id) {
+                      const edited = Number(editLineItemAmount);
+                      return sum + (isNaN(edited) ? 0 : edited);
+                    }
+                    return sum + (li.amount || 0);
+                  }, 0);
+                  const diff = lineItemTotal - (c.amount || 0);
+                  const isBalanced = Math.abs(diff) < 0.01;
+                  return (
                   <tr key={`${c.id}-exp`}>
                     <td colSpan={8} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
-                      <div className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Line Items</div>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-[10px] font-semibold text-gray-500 uppercase">Line Items</div>
+                        {lineItems.length > 0 && (
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-semibold ${
+                            isBalanced
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border border-amber-200"
+                          }`}>
+                            {isBalanced ? (
+                              <>
+                                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                                Balanced — Line items total {fmt(lineItemTotal)} = Call amount {fmt(c.amount)}
+                              </>
+                            ) : (
+                              <>
+                                <span className="inline-block w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                {diff > 0 ? "Over" : "Under"} by {fmt(Math.abs(diff))} — Line items total {fmt(lineItemTotal)} vs Call amount {fmt(c.amount)}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
                       {(c.lineItems || []).length === 0 ? (
                         <div className="text-xs text-gray-400">No line items.</div>
                       ) : (
@@ -304,13 +399,66 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                             {(c.lineItems || []).map((li: any) => (
                               <tr key={li.id} className="border-t border-gray-100 dark:border-gray-700">
                                 <td className="py-1.5 pr-3">{li.investor?.name || li.investorId}</td>
-                                <td className="py-1.5 pr-3 font-medium">{fmt(li.amount)}</td>
-                                <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
-                                <td className="py-1.5 pr-3">{formatDate(li.paidDate)}</td>
-                                <td className="py-1.5">
-                                  {li.status !== "Funded" && (
-                                    <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
+                                <td className="py-1.5 pr-3 font-medium">
+                                  {editingLineItem === li.id ? (
+                                    <input
+                                      type="number"
+                                      value={editLineItemAmount}
+                                      onChange={(ev) => setEditLineItemAmount(ev.target.value)}
+                                      className="w-28 border border-gray-300 rounded px-2 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      autoFocus
+                                      onKeyDown={(ev) => {
+                                        if (ev.key === "Enter") handleSaveLineItem(c.id, li.id, li.status);
+                                        if (ev.key === "Escape") setEditingLineItem(null);
+                                      }}
+                                    />
+                                  ) : (
+                                    fmt(li.amount)
                                   )}
+                                </td>
+                                <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
+                                <td className="py-1.5 pr-3">
+                                  {editingLineItem === li.id ? (
+                                    <input
+                                      type="date"
+                                      value={editLineItemDate}
+                                      onChange={(ev) => setEditLineItemDate(ev.target.value)}
+                                      className="w-32 border border-gray-300 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  ) : (
+                                    formatDate(li.paidDate)
+                                  )}
+                                </td>
+                                <td className="py-1.5">
+                                  <div className="flex gap-1">
+                                    {editingLineItem === li.id ? (
+                                      <>
+                                        <button onClick={() => handleSaveLineItem(c.id, li.id, li.status)} className="px-2 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200">Save</button>
+                                        <button onClick={() => setEditingLineItem(null)} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Cancel</button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => {
+                                            setEditingLineItem(li.id);
+                                            setEditLineItemAmount(String(li.amount));
+                                            setEditLineItemDate(li.paidDate ? new Date(li.paidDate).toISOString().slice(0, 10) : "");
+                                          }}
+                                          className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                                        >Edit</button>
+                                        {li.status !== "Funded" && (
+                                          <button
+                                            onClick={() => {
+                                              setEditingLineItem(li.id);
+                                              setEditLineItemAmount(String(li.amount));
+                                              setEditLineItemDate(new Date().toISOString().slice(0, 10));
+                                            }}
+                                            className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                          >Fund</button>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
                                 </td>
                               </tr>
                             ))}
@@ -319,7 +467,8 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       )}
                     </td>
                   </tr>
-                )}
+                  );
+                })()}
               </Fragment>
             ))}
             {(!e.capitalCalls || e.capitalCalls.length === 0) && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No capital calls.</td></tr>}
@@ -354,6 +503,29 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                       {d.status === "APPROVED" && (
                         <button onClick={() => setDistributionToConfirm(d.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Mark Paid</button>
                       )}
+                      {d.status !== "DRAFT" && (
+                        <button onClick={() => handleDistStatusTransition(d.id, "DRAFT")} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Revert</button>
+                      )}
+                      <button
+                        onClick={() => window.location.href = `/transactions/distributions/${d.id}`}
+                        className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
+                      >Edit</button>
+                      {d.status === "DRAFT" && (
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Delete this ${fmt(d.grossAmount)} distribution? This cannot be undone.`)) return;
+                            const res = await fetch(`/api/distributions/${d.id}`, { method: "DELETE" });
+                            if (res.ok) {
+                              toast.success("Distribution deleted");
+                              mutate(`/api/entities/${entityId}`);
+                            } else {
+                              const json = await res.json();
+                              toast.error(json.error || "Failed to delete");
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[10px] bg-red-50 text-red-600 rounded hover:bg-red-100 border border-red-200"
+                        >Delete</button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -361,7 +533,7 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                   <tr key={`${d.id}-exp`}>
                     <td colSpan={6} className="bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-4 py-3">
                       {/* Breakdown details */}
-                      <div className="grid grid-cols-4 gap-3 mb-3">
+                      <div className="grid grid-cols-3 gap-3 mb-3">
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Return of Capital</div>
                           <div className="text-sm font-medium text-blue-600 mt-0.5">{fmt(d.returnOfCapital)}</div>
@@ -369,10 +541,6 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Income</div>
                           <div className="text-sm font-medium text-emerald-600 mt-0.5">{fmt(d.income)}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] text-gray-500 uppercase font-semibold">LT Gain</div>
-                          <div className="text-sm font-medium text-purple-600 mt-0.5">{fmt(d.longTermGain)}</div>
                         </div>
                         <div>
                           <div className="text-[10px] text-gray-500 uppercase font-semibold">Carried Interest</div>
@@ -485,8 +653,8 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
       </div>
 
       {/* Modals */}
-      <CreateCapitalCallForm open={showCapCall} onClose={() => setShowCapCall(false)} entities={[{ id: entityId, name: e.name }]} />
-      <CreateDistributionForm open={showDist} onClose={() => setShowDist(false)} entities={[{ id: entityId, name: e.name }]} />
+      <CreateCapitalCallForm open={showCapCall} onClose={() => { setShowCapCall(false); mutate(`/api/entities/${entityId}`); }} entities={[{ id: entityId, name: e.name }]} />
+      <CreateDistributionForm open={showDist} onClose={() => { setShowDist(false); mutate(`/api/entities/${entityId}`); }} entities={[{ id: entityId, name: e.name }]} />
 
       {/* Distribution paid confirmation dialog */}
       <ConfirmDialog

@@ -16,6 +16,7 @@ import { EditContactForm } from "@/components/features/contacts/edit-contact-for
 import { CreateCompanyForm } from "@/components/features/companies/create-company-form";
 import { CreateContactForm } from "@/components/features/contacts/create-contact-form";
 import { CreateSideLetterForm } from "@/components/features/side-letters/create-side-letter-form";
+import { EditSideLetterForm } from "@/components/features/side-letters/edit-side-letter-form";
 import { useFirm } from "@/components/providers/firm-provider";
 import { fmt, formatDate } from "@/lib/utils";
 import { logger } from "@/lib/logger";
@@ -119,6 +120,7 @@ export default function DirectoryPage() {
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [showCreateContact, setShowCreateContact] = useState(false);
   const [showCreateSideLetter, setShowCreateSideLetter] = useState(false);
+  const [editingSideLetter, setEditingSideLetter] = useState<any>(null);
   const [companyTypeFilter, setCompanyTypeFilter] = useState("");
 
   // Delete confirmation
@@ -140,7 +142,7 @@ export default function DirectoryPage() {
         return;
       }
       toast.success(`${name} deleted`);
-      mutate(`/api/investors?firmId=${firmId}`);
+      mutate(buildInvestorUrl(null));
       mutate(`/api/companies?firmId=${firmId}`);
       mutate(`/api/contacts?firmId=${firmId}`);
       mutate("/api/side-letters");
@@ -164,7 +166,7 @@ export default function DirectoryPage() {
         }),
       });
       toast.success(`Investor profile created for ${name}`);
-      mutate(`/api/investors?firmId=${firmId}`);
+      mutate(buildInvestorUrl(null));
       mutate(`/api/${type === "contact" ? "contacts" : "companies"}?firmId=${firmId}`);
     } catch {
       toast.error("Failed to create investor profile");
@@ -509,7 +511,10 @@ export default function DirectoryPage() {
                   <td className="px-4 py-3 text-indigo-600">{sl.entity.name}</td>
                   <td className="px-4 py-3 text-gray-600 max-w-[300px] truncate">{sl.terms}</td>
                   <td className="px-4 py-3">
-                    <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeleteTarget({ type: "sideLetter", id: sl.id, name: `${sl.investor.name} — ${sl.entity.name}` })}>Delete</button>
+                    <div className="flex items-center gap-2">
+                      <button className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline" onClick={() => setEditingSideLetter(sl)}>Edit</button>
+                      <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeleteTarget({ type: "sideLetter", id: sl.id, name: `${sl.investor.name} — ${sl.entity.name}` })}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -529,14 +534,15 @@ export default function DirectoryPage() {
       )}
 
       {/* Modals */}
-      <CreateInvestorForm open={showCreateInvestor} onClose={() => setShowCreateInvestor(false)} />
-      {editingInvestor && <EditInvestorForm open={showEditInvestor} onClose={() => { setShowEditInvestor(false); setEditingInvestor(null); }} investor={editingInvestor} />}
-      <CreateUserForm open={showCreateUser} onClose={() => setShowCreateUser(false)} />
-      {editingUser && <EditUserForm open={showEditUser} onClose={() => { setShowEditUser(false); setEditingUser(null); }} user={editingUser} />}
-      {editingContact && <EditContactForm open={showEditContact} onClose={() => { setShowEditContact(false); setEditingContact(null); }} contact={editingContact} />}
-      <CreateCompanyForm open={showCreateCompany} onClose={() => setShowCreateCompany(false)} />
-      <CreateContactForm open={showCreateContact} onClose={() => setShowCreateContact(false)} />
-      <CreateSideLetterForm open={showCreateSideLetter} onClose={() => setShowCreateSideLetter(false)} />
+      <CreateInvestorForm open={showCreateInvestor} onClose={() => { setShowCreateInvestor(false); mutate(buildInvestorUrl(null)); }} />
+      {editingInvestor && <EditInvestorForm open={showEditInvestor} onClose={() => { setShowEditInvestor(false); setEditingInvestor(null); mutate(buildInvestorUrl(null)); }} investor={editingInvestor} />}
+      <CreateUserForm open={showCreateUser} onClose={() => { setShowCreateUser(false); mutate(`/api/users?firmId=${firmId}`); }} />
+      {editingUser && <EditUserForm open={showEditUser} onClose={() => { setShowEditUser(false); setEditingUser(null); mutate(`/api/users?firmId=${firmId}`); }} user={editingUser} />}
+      {editingContact && <EditContactForm open={showEditContact} onClose={() => { setShowEditContact(false); setEditingContact(null); mutate(`/api/contacts?firmId=${firmId}`); }} contact={editingContact} />}
+      <CreateCompanyForm open={showCreateCompany} onClose={() => { setShowCreateCompany(false); mutate(`/api/companies?firmId=${firmId}`); }} />
+      <CreateContactForm open={showCreateContact} onClose={() => { setShowCreateContact(false); mutate(`/api/contacts?firmId=${firmId}`); }} />
+      <CreateSideLetterForm open={showCreateSideLetter} onClose={() => { setShowCreateSideLetter(false); mutate("/api/side-letters"); }} />
+      {editingSideLetter && <EditSideLetterForm open={!!editingSideLetter} onClose={() => { setEditingSideLetter(null); mutate("/api/side-letters"); }} sideLetter={editingSideLetter} />}
 
       {/* Delete Confirmation */}
       <ConfirmDialog

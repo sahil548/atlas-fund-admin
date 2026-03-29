@@ -480,10 +480,7 @@ export const CreateInvestorSchema = z.object({
   contactPreference: z.string().default("Email"),
   contactId: z.string().optional(),
   companyId: z.string().optional(),
-}).refine(
-  (data) => data.contactId || data.companyId,
-  { message: "Must link to a company or contact", path: ["companyId"] }
-);
+});
 
 export const UpdateInvestorSchema = z.object({
   name: z.string().min(1).optional(),
@@ -511,6 +508,10 @@ export const UpdateCapitalCallSchema = z.object({
   status: z.enum(["DRAFT", "ISSUED", "FUNDED", "PARTIALLY_FUNDED", "OVERDUE"]).optional(),
   purpose: z.string().optional(),
   dueDate: z.string().optional(),
+  // Fields below only allowed when status is DRAFT (enforced at API layer)
+  amount: z.number().positive().optional(),
+  callNumber: z.string().min(1).optional(),
+  callDate: z.string().optional(),
 });
 
 export const CreateCapitalCallLineItemSchema = z.object({
@@ -521,7 +522,7 @@ export const CreateCapitalCallLineItemSchema = z.object({
 export const UpdateCapitalCallLineItemSchema = z.object({
   status: z.enum(["Pending", "Funded"]).optional(),
   paidDate: z.string().optional(),
-  amount: z.number().positive().optional(),
+  amount: z.number().min(0).optional(),
 });
 
 // ── Distributions ──────────────────────────────────────
@@ -541,6 +542,13 @@ export const CreateDistributionSchema = z.object({
   distributionType: z.string().optional(),
   memo: z.string().optional(),
   autoGenerateLineItems: z.boolean().default(true),
+  waterfallTemplateId: z.string().optional(),
+  // Per-investor overrides from the waterfall UI (investorId -> amount)
+  perInvestorOverrides: z.array(z.object({
+    investorId: z.string(),
+    amount: z.number(),
+    gpCarryAmount: z.number().default(0),
+  })).optional(),
 });
 
 export const UpdateDistributionSchema = z.object({
@@ -554,6 +562,9 @@ export const UpdateDistributionSchema = z.object({
   shortTermGain: z.number().optional(),
   carriedInterest: z.number().optional(),
   netToLPs: z.number().optional(),
+  // Fields below only allowed when status is DRAFT (enforced at API layer)
+  distributionDate: z.string().optional(),
+  source: z.string().optional(),
 });
 
 export const CreateDistributionLineItemSchema = z.object({
@@ -609,11 +620,11 @@ export const CreateWaterfallTierSchema = z.object({
 export const UpdateWaterfallTierSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  splitLP: z.number().min(0).max(100).optional(),
-  splitGP: z.number().min(0).max(100).optional(),
-  hurdleRate: z.number().min(0).optional(),
-  appliesTo: z.string().optional(),
+  description: z.string().nullable().optional(),
+  splitLP: z.number().min(0).max(100).nullable().optional(),
+  splitGP: z.number().min(0).max(100).nullable().optional(),
+  hurdleRate: z.number().min(0).nullable().optional(),
+  appliesTo: z.string().nullable().optional(),
 });
 
 // ── Accounting ─────────────────────────────────────────
@@ -1136,4 +1147,48 @@ export const IssueUnitsSchema = z.object({
 export const UpdateOwnershipUnitSchema = z.object({
   status: z.enum(["ACTIVE", "REDEEMED", "TRANSFERRED", "CANCELLED"]).optional(),
   notes: z.string().nullable().optional(),
+});
+
+// ── Valuations (Update) ─────────────────────────────────────────────────────
+
+export const UpdateValuationSchema = z.object({
+  valuationDate: z.string().optional(),
+  method: z.enum(["COMPARABLE_MULTIPLES", "LAST_ROUND", "DCF", "APPRAISAL", "GP_REPORTED_NAV", "COST"]).optional(),
+  fairValue: z.number().positive().optional(),
+  moic: z.number().optional(),
+  notes: z.string().optional(),
+  status: z.enum(["DRAFT", "APPROVED"]).optional(),
+});
+
+// ── Commitments (Create / Update) ───────────────────────────────────────────
+
+export const CreateCommitmentSchema = z.object({
+  investorId: z.string().min(1, "Investor is required"),
+  entityId: z.string().min(1, "Entity is required"),
+  amount: z.number().nonnegative("Amount must be non-negative"),
+});
+
+export const UpdateCommitmentSchema = z.object({
+  amount: z.number().nonnegative().optional(),
+  calledAmount: z.number().nonnegative().optional(),
+});
+
+// ── Income Events (Update) ──────────────────────────────────────────────────
+
+export const UpdateIncomeEventSchema = z.object({
+  incomeType: z.enum(["INTEREST", "DIVIDEND", "RENTAL", "ROYALTY", "FEE", "OTHER"]).optional(),
+  amount: z.number().positive().optional(),
+  date: z.string().optional(),
+  description: z.string().optional(),
+  isPrincipal: z.boolean().optional(),
+});
+
+// ── Documents (Update) ──────────────────────────────────────────────────────
+
+export const UpdateDocumentSchema = z.object({
+  name: z.string().min(1).optional(),
+  category: z.enum(["BOARD", "FINANCIAL", "LEGAL", "GOVERNANCE", "VALUATION", "STATEMENT", "TAX", "REPORT", "NOTICE", "OTHER"]).optional(),
+  assetId: z.string().nullable().optional(),
+  entityId: z.string().nullable().optional(),
+  dealId: z.string().nullable().optional(),
 });

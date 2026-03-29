@@ -255,6 +255,7 @@ export function formatDate(d: string | Date | null | undefined): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-US", {
+      timeZone: "UTC",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -268,6 +269,7 @@ export function formatDateShort(d: string | Date | null | undefined): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-US", {
+      timeZone: "UTC",
       month: "short",
       day: "numeric",
     });

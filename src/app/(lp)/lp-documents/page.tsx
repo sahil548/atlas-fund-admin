@@ -189,7 +189,7 @@ export default function LPDocumentsPage() {
             name: doc.name,
             category: doc.category,
             entity: doc.entity?.name ?? "General",
-            uploadDate: new Date(doc.uploadDate).toLocaleDateString(),
+            uploadDate: new Date(doc.uploadDate).toLocaleDateString("en-US", { timeZone: "UTC" }),
             fileSize: doc.fileSize ? `${(doc.fileSize / 1024).toFixed(0)} KB` : "",
           }))}
           fileName="LP_Documents_Export"
@@ -326,7 +326,7 @@ export default function LPDocumentsPage() {
                   </div>
                   <div className="text-[10px] text-gray-500 dark:text-gray-400">
                     {doc.entity?.name ?? "General"} &middot;{" "}
-                    {new Date(doc.uploadDate).toLocaleDateString()}
+                    {new Date(doc.uploadDate).toLocaleDateString("en-US", { timeZone: "UTC" })}
                   </div>
                 </div>
               </label>
@@ -358,7 +358,7 @@ export default function LPDocumentsPage() {
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
                   {doc.entity?.name || "General"} &middot;{" "}
-                  {new Date(doc.uploadDate).toLocaleDateString()}
+                  {new Date(doc.uploadDate).toLocaleDateString("en-US", { timeZone: "UTC" })}
                   {doc.fileSize
                     ? ` · ${(doc.fileSize / 1024).toFixed(0)} KB`
                     : ""}
@@ -372,7 +372,7 @@ export default function LPDocumentsPage() {
               {/* Acknowledged badge */}
               {doc.acknowledgedAt && (
                 <Badge color="green">
-                  Acknowledged {new Date(doc.acknowledgedAt).toLocaleDateString()}
+                  Acknowledged {new Date(doc.acknowledgedAt).toLocaleDateString("en-US", { timeZone: "UTC" })}
                 </Badge>
               )}
               {doc.fileUrl && (

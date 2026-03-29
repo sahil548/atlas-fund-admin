@@ -24,7 +24,14 @@ export async function GET(req: NextRequest) {
 
     const baseWhere: Record<string, unknown> = {};
     if (firmId) {
-      baseWhere.commitments = { some: { entity: { firmId } } };
+      // Include investors linked to the firm via commitments, contact, company,
+      // or standalone investors (no contact/company link — created when contact already had a profile)
+      baseWhere.OR = [
+        { commitments: { some: { entity: { firmId } } } },
+        { contact: { firmId } },
+        { company: { firmId } },
+        { contactId: null, companyId: null },
+      ];
     }
     if (params.filters?.type) baseWhere.investorType = params.filters.type;
 
@@ -88,8 +95,23 @@ export async function POST(req: Request) {
 
     const { data, error } = await parseBody(req, CreateInvestorSchema);
     if (error) return error;
-    const investor = await prisma.investor.create({ data: data! });
-    return NextResponse.json(investor, { status: 201 });
+
+    // Check if contactId or companyId already has an investor — strip if so
+    const createData = { ...data! };
+    if (createData.contactId) {
+      const existing = await prisma.investor.findUnique({ where: { contactId: createData.contactId } });
+      if (existing) {
+        delete (createData as any).contactId;
+      }
+    }
+    if (createData.companyId) {
+      const existing = await prisma.investor.findUnique({ where: { companyId: createData.companyId } });
+      if (existing) {
+        delete (createData as any).companyId;
+      }
+    }
+
+    const investor = await prisma.investor.create({ data: createData });
   } catch (err) {
     logger.error("[investors] POST Error:", { error: err instanceof Error ? err.message : String(err) });
     return NextResponse.json({ error: "Failed to create investor" }, { status: 500 });

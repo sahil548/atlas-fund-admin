@@ -1,15 +1,20 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SectionPanel } from "@/components/ui/section-panel";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DistributionStatusButtons } from "@/components/features/capital/distribution-status-buttons";
 import { DistributionDocumentPanel } from "@/components/features/capital/distribution-document-panel";
+import { EditDistributionForm } from "@/components/features/capital/edit-distribution-form";
+import { useToast } from "@/components/ui/toast";
 import { fmt, formatDate } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -69,6 +74,12 @@ interface Distribution {
 
 export default function DistributionDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const toast = useToast();
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const { data, isLoading, error, mutate } = useSWR<Distribution>(
     id ? `/api/distributions/${id}` : null,
     fetcher
@@ -120,8 +131,49 @@ export default function DistributionDetailPage() {
               distribution={data}
               onStatusChange={() => mutate()}
             />
+            <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1" />Edit
+            </Button>
+            {data.status === "DRAFT" && (
+              <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1" />Delete
+              </Button>
+            )}
           </div>
         }
+      />
+
+      {/* Edit Modal */}
+      <EditDistributionForm
+        open={editOpen}
+        onClose={() => { setEditOpen(false); mutate(); }}
+        distribution={data}
+      />
+
+      {/* Delete Confirmation */}
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setDeleteLoading(true);
+          try {
+            const res = await fetch(`/api/distributions/${id}`, { method: "DELETE" });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error || "Failed to delete");
+            toast.success("Distribution deleted");
+            router.push("/transactions");
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete distribution");
+          } finally {
+            setDeleteLoading(false);
+            setDeleteOpen(false);
+          }
+        }}
+        title="Delete Distribution"
+        message="Are you sure you want to delete this distribution? This will also remove all line items. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLoading}
       />
 
       {/* Distribution Details */}

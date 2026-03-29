@@ -1,17 +1,24 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { parseBody } from "@/lib/api-helpers";
 import { CreateWaterfallTemplateSchema } from "@/lib/schemas";
 import { getAuthUser } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser();
     const firmId = authUser?.firmId;
 
+    // Return all firm templates (linked to any firm entity OR orphaned)
     const templates = await prisma.waterfallTemplate.findMany({
-      where: firmId ? { entities: { some: { firmId } } } : {},
+      where: firmId ? {
+        OR: [
+          { entities: { some: { firmId } } },
+          // Also include templates with no entity links (orphaned from FK rotation)
+          { entities: { none: {} } },
+        ],
+      } : {},
       include: {
         tiers: { orderBy: { tierOrder: "asc" } },
         entities: { select: { id: true, name: true } },

@@ -155,6 +155,7 @@ export async function notifyInvestorsOnCapitalCall(
 
   const entityName = call.entity.name;
   const dueDate = call.dueDate.toLocaleDateString("en-US", {
+    timeZone: "UTC",
     year: "numeric",
     month: "long",
     day: "numeric",
@@ -226,7 +227,7 @@ export async function notifyInvestorsOnDistribution(
   const entityName = distribution.entity.name;
   const distributionDate = distribution.distributionDate.toLocaleDateString(
     "en-US",
-    { year: "numeric", month: "long", day: "numeric" },
+    { timeZone: "UTC", year: "numeric", month: "long", day: "numeric" },
   );
 
   // Notify GP team in-app

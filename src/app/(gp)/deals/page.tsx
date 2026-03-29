@@ -467,7 +467,7 @@ export default function DealsPage() {
                             {p.nextDeadlineLabel && deadlineDate && (
                               <div className={`mt-1.5 text-[10px] font-medium ${deadlineColor} flex items-center gap-1`}>
                                 <span>{deadlineDaysAway !== null && deadlineDaysAway < 0 ? "⚠" : "📅"}</span>
-                                <span>{p.nextDeadlineLabel}: {deadlineDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                                <span>{p.nextDeadlineLabel}: {deadlineDate.toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })}</span>
                                 {deadlineDaysAway !== null && deadlineDaysAway < 0 && <span className="text-red-600 font-semibold">(overdue)</span>}
                                 {deadlineDaysAway !== null && deadlineDaysAway >= 0 && deadlineDaysAway <= 7 && <span>({deadlineDaysAway}d)</span>}
                               </div>

@@ -25,14 +25,16 @@ export interface InvestorShare {
   investorId: string;
   investorName: string;
   proRataShare: number;  // fraction 0-1, e.g. 0.6 for 60%
+  isGP?: boolean;        // true if this investor is the GP entity
 }
 
 export interface InvestorBreakdown {
   investorId: string;
   investorName: string;
   proRataShare: number;
-  lpAllocation: number;
-  gpCarryAllocation?: number;
+  lpAllocation: number;       // pro-rata share of LP portion (ALL members get this)
+  gpCarryAllocation: number;  // GP carry assigned only to GP investors
+  totalAllocation: number;    // lpAllocation + gpCarryAllocation
 }
 
 export interface WaterfallConfig {
@@ -149,8 +151,17 @@ export function computeWaterfall(
       tierAmount = Math.min(remaining, gpNeeded);
     }
 
-    const lpShare = tierAmount * (tier.splitLP / 100);
-    const gpShare = tierAmount * (tier.splitGP / 100);
+    // PRO_RATA tiers: 100% goes to LP pool (distributed pro-rata to all members)
+    // This bypasses any GP/LP split percentage on the tier
+    let lpShare: number;
+    let gpShare: number;
+    if (tier.appliesTo === "PRO_RATA") {
+      lpShare = tierAmount;
+      gpShare = 0;
+    } else {
+      lpShare = tierAmount * (tier.splitLP / 100);
+      gpShare = tierAmount * (tier.splitGP / 100);
+    }
 
     totalLP += lpShare;
     totalGP += gpShare;
@@ -183,15 +194,34 @@ export function computeWaterfall(
   const entitledGP = distributableAmount * carryPercent;
   const clawbackLiability = Math.max(0, totalGP - entitledGP);
 
-  // Per-investor breakdown: allocate LP proceeds proportionally
+  // Per-investor breakdown:
+  // 1. LP portion (after GP carry) is distributed pro-rata to ALL members (including GP)
+  // 2. GP carry portion is allocated only to GP investors
   let perInvestorBreakdown: InvestorBreakdown[] | undefined;
   if (investorShares && investorShares.length > 0) {
-    perInvestorBreakdown = investorShares.map((inv) => ({
-      investorId: inv.investorId,
-      investorName: inv.investorName,
-      proRataShare: inv.proRataShare,
-      lpAllocation: totalLP * inv.proRataShare,
-    }));
+    // Determine GP investors and their share of the carry
+    const gpInvestors = investorShares.filter((inv) => inv.isGP);
+    const gpCount = gpInvestors.length;
+
+    perInvestorBreakdown = investorShares.map((inv) => {
+      // Every member gets their pro-rata share of the LP portion
+      const lpAllocation = totalLP * inv.proRataShare;
+
+      // GP carry is only allocated to GP investors
+      // If multiple GPs, split carry evenly among them (or could weight by commitment)
+      const gpCarryAllocation = inv.isGP && gpCount > 0
+        ? totalGP / gpCount
+        : 0;
+
+      return {
+        investorId: inv.investorId,
+        investorName: inv.investorName,
+        proRataShare: inv.proRataShare,
+        lpAllocation,
+        gpCarryAllocation,
+        totalAllocation: lpAllocation + gpCarryAllocation,
+      };
+    });
   }
 
   return {

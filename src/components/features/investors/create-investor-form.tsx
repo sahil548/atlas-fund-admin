@@ -18,6 +18,11 @@ import { CreateInvestorSchema } from "@/lib/schemas";
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error(`API error ${r.status}`); return r.json(); });
 
 const TYPES = [
+  { value: "Individual", label: "Individual" },
+  { value: "LLC", label: "LLC" },
+  { value: "Disregarded LLC", label: "Disregarded LLC" },
+  { value: "Partnership", label: "Partnership" },
+  { value: "Trust", label: "Trust" },
   { value: "Pension", label: "Pension" },
   { value: "Endowment", label: "Endowment" },
   { value: "Family Office", label: "Family Office" },
@@ -37,7 +42,7 @@ export function CreateInvestorForm({ open, onClose }: Props) {
   const { data: contacts } = useSWR(open ? `/api/contacts?firmId=${firmId}` : null, fetcher);
   const [form, setForm] = useState({
     name: "",
-    investorType: "Pension",
+    investorType: "Individual",
     totalCommitted: "",
     kycStatus: "Pending",
     advisoryBoard: false,
@@ -85,13 +90,6 @@ export function CreateInvestorForm({ open, onClose }: Props) {
   ];
 
   async function handleSubmit() {
-    // Client-side validation: at least one of companyId or contactId
-    if (!form.companyId && !form.contactId) {
-      setErrors({ companyId: "Select a company or contact" });
-      toast.error("An investor must be linked to a company or a contact");
-      return;
-    }
-
     const payload = {
       ...form,
       totalCommitted: Number(form.totalCommitted) || 0,
@@ -107,7 +105,7 @@ export function CreateInvestorForm({ open, onClose }: Props) {
     try {
       await trigger(result.data);
       toast.success("Investor added");
-      setForm({ name: "", investorType: "Pension", totalCommitted: "", kycStatus: "Pending", advisoryBoard: false, contactPreference: "Email", companyId: "", contactId: "" });
+      setForm({ name: "", investorType: "Individual", totalCommitted: "", kycStatus: "Pending", advisoryBoard: false, contactPreference: "Email", companyId: "", contactId: "" });
       setErrors({});
       onClose();
     } catch { toast.error("Failed to add investor"); }

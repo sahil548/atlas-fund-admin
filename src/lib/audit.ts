@@ -11,11 +11,13 @@ import { logger } from "@/lib/logger";
 export type AuditAction =
   | "CREATE_DEAL"
   | "UPDATE_DEAL"
+  | "DELETE_DEAL"
   | "KILL_DEAL"
   | "CLOSE_DEAL"
   | "REVIVE_DEAL"
   | "CREATE_ENTITY"
   | "UPDATE_ENTITY"
+  | "DELETE_ENTITY"
   | "CREATE_ASSET"
   | "UPDATE_ASSET"
   | "CREATE_CAPITAL_CALL"

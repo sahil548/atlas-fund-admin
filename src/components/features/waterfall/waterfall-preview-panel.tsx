@@ -84,7 +84,7 @@ export function WaterfallPreviewPanel({
   async function runScenario(index: number) {
     const s = scenarios[index];
     const entityId = mode === "inline" ? (initialEntityId || s.entityId) : s.entityId;
-    const amount = mode === "inline" ? (initialAmount?.toString() || s.amount) : s.amount;
+    const amount = s.amount || (initialAmount?.toString() || "");
 
     if (!entityId || !amount) return;
 
@@ -237,22 +237,35 @@ export function WaterfallPreviewPanel({
 
       {/* Inline mode header */}
       {mode === "inline" && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => runScenario(0)}
-            disabled={scenarios[0]?.loading}
-            className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
-          >
-            {scenarios[0]?.loading ? "Calculating…" : "Refresh Preview"}
-          </button>
-          {completedScenarios.length > 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-gray-700">Scenario Preview</div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <label className="text-[10px] text-gray-500 font-medium">Distribution Amount ($)</label>
+              <input
+                type="number"
+                value={scenarios[0]?.amount || ""}
+                onChange={(e) => updateScenario(0, "amount", e.target.value)}
+                placeholder="e.g. 1000000"
+                className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 w-40"
+              />
+            </div>
             <button
-              onClick={clearAll}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              onClick={() => runScenario(0)}
+              disabled={scenarios[0]?.loading || !scenarios[0]?.amount}
+              className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
             >
-              Clear
+              {scenarios[0]?.loading ? "Calculating…" : completedScenarios.length > 0 ? "Refresh Preview" : "Run Preview"}
             </button>
-          )}
+            {completedScenarios.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       )}
 
