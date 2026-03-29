@@ -42,6 +42,7 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
   // Capital call line item editing state
   const [editingLineItem, setEditingLineItem] = useState<string | null>(null);
   const [editLineItemAmount, setEditLineItemAmount] = useState("");
+  const [editLineItemDate, setEditLineItemDate] = useState("");
 
   // Fee calculation state
   const [calculatingFees, setCalculatingFees] = useState(false);
@@ -139,24 +140,32 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
     }
   }
 
-  async function handleSaveLineItemAmount(callId: string, lineItemId: string) {
+  async function handleSaveLineItem(callId: string, lineItemId: string, currentStatus?: string) {
     const amount = Number(editLineItemAmount);
     if (isNaN(amount) || amount < 0) {
       toast.error("Enter a valid amount");
       return;
     }
     try {
+      const body: Record<string, unknown> = { amount };
+      if (editLineItemDate) {
+        body.paidDate = new Date(editLineItemDate + "T12:00:00").toISOString();
+        // If a paid date is set and item isn't yet funded, mark it as funded
+        if (currentStatus !== "Funded") {
+          body.status = "Funded";
+        }
+      }
       const res = await fetch(`/api/capital-calls/${callId}/line-items/${lineItemId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const data = await res.json();
-        toast.error(typeof data.error === "string" ? data.error : "Failed to update amount");
+        toast.error(typeof data.error === "string" ? data.error : "Failed to update");
         return;
       }
-      toast.success("Line item amount updated");
+      toast.success("Line item updated");
       setEditingLineItem(null);
       mutate(`/api/entities/${entityId}`);
     } catch {
@@ -367,7 +376,7 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                                       className="w-28 border border-gray-300 rounded px-2 py-0.5 text-xs text-right focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                       autoFocus
                                       onKeyDown={(ev) => {
-                                        if (ev.key === "Enter") handleSaveLineItemAmount(c.id, li.id);
+                                        if (ev.key === "Enter") handleSaveLineItem(c.id, li.id, li.status);
                                         if (ev.key === "Escape") setEditingLineItem(null);
                                       }}
                                     />
@@ -376,22 +385,44 @@ export function EntityCapitalTab({ entity, entityId }: { entity: any; entityId: 
                                   )}
                                 </td>
                                 <td className="py-1.5 pr-3"><Badge color={li.status === "Funded" ? "green" : "gray"}>{li.status}</Badge></td>
-                                <td className="py-1.5 pr-3">{formatDate(li.paidDate)}</td>
+                                <td className="py-1.5 pr-3">
+                                  {editingLineItem === li.id ? (
+                                    <input
+                                      type="date"
+                                      value={editLineItemDate}
+                                      onChange={(ev) => setEditLineItemDate(ev.target.value)}
+                                      className="w-32 border border-gray-300 rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                  ) : (
+                                    formatDate(li.paidDate)
+                                  )}
+                                </td>
                                 <td className="py-1.5">
                                   <div className="flex gap-1">
                                     {editingLineItem === li.id ? (
                                       <>
-                                        <button onClick={() => handleSaveLineItemAmount(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200">Save</button>
+                                        <button onClick={() => handleSaveLineItem(c.id, li.id, li.status)} className="px-2 py-0.5 text-[10px] bg-emerald-100 text-emerald-700 rounded hover:bg-emerald-200">Save</button>
                                         <button onClick={() => setEditingLineItem(null)} className="px-2 py-0.5 text-[10px] bg-gray-100 text-gray-600 rounded hover:bg-gray-200">Cancel</button>
                                       </>
                                     ) : (
                                       <>
                                         <button
-                                          onClick={() => { setEditingLineItem(li.id); setEditLineItemAmount(String(li.amount)); }}
+                                          onClick={() => {
+                                            setEditingLineItem(li.id);
+                                            setEditLineItemAmount(String(li.amount));
+                                            setEditLineItemDate(li.paidDate ? new Date(li.paidDate).toISOString().slice(0, 10) : "");
+                                          }}
                                           className="px-2 py-0.5 text-[10px] bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-100 border border-indigo-200"
                                         >Edit</button>
                                         {li.status !== "Funded" && (
-                                          <button onClick={() => handleFundLineItem(c.id, li.id)} className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200">Fund</button>
+                                          <button
+                                            onClick={() => {
+                                              setEditingLineItem(li.id);
+                                              setEditLineItemAmount(String(li.amount));
+                                              setEditLineItemDate(new Date().toISOString().slice(0, 10));
+                                            }}
+                                            className="px-2 py-0.5 text-[10px] bg-green-100 text-green-700 rounded hover:bg-green-200"
+                                          >Fund</button>
                                         )}
                                       </>
                                     )}
