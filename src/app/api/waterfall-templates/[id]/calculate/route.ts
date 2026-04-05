@@ -227,6 +227,21 @@ export async function POST(
       distributableAmount,
       totalContributed,
       totalDistributedPrior,
+      // Debug: calculation inputs
+      _debug: {
+        yearsOutstanding,
+        completedMonths: Math.round(yearsOutstanding * 12),
+        prefBeforeOffset: totalContributed * (template.tiers.find(t => (t.hurdleRate ?? 0) > 0)?.hurdleRate ?? 8) / 100 * yearsOutstanding,
+        lpCommitments: commitments
+          .filter(c => !gpIds.has(c.investorId))
+          .map(c => ({ name: c.investor.name, committed: c.amount, called: c.calledAmount })),
+        gpCommitments: commitments
+          .filter(c => gpIds.has(c.investorId))
+          .map(c => ({ name: c.investor.name, committed: c.amount, called: c.calledAmount })),
+        gpDetectedIds: Array.from(gpIds),
+        priorDistCount: priorDistLineItems.length,
+        priorDistLPTotal: totalDistributedPrior,
+      },
       // Tier breakdown
       tiers: result.tiers,
       // Summary

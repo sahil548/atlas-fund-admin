@@ -63,6 +63,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   const [waterfallRan, setWaterfallRan] = useState(false);
   const [showWaterfallPreview, setShowWaterfallPreview] = useState(false);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
+  const [waterfallDebug, setWaterfallDebug] = useState<any>(null);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -232,6 +233,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       setWaterfallRan(true);
       setPreviewTemplateId(template.id);
       setShowWaterfallPreview(true);
+      setWaterfallDebug(data._debug ?? null);
       toast.success?.("Waterfall calculated — review decomposition below");
     } catch {
       toast.error("Waterfall calculation failed");
@@ -389,6 +391,22 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Net to LPs"><CurrencyInput value={form.netToLPs} onChange={(v) => set("netToLPs", v)} /></FormField>
         </div>
+
+        {/* Waterfall Calculation Debug */}
+        {waterfallDebug && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-[10px] text-gray-600 space-y-1">
+            <div className="font-semibold text-gray-700">Calculation Inputs</div>
+            <div>Months: {waterfallDebug.completedMonths}/12 = {waterfallDebug.yearsOutstanding?.toFixed(4)}</div>
+            <div>LP Committed Capital: {fmt(waterfallDebug.lpCommitments?.reduce((s: number, c: any) => s + c.committed, 0) ?? 0)}</div>
+            {waterfallDebug.lpCommitments?.map((c: any) => (
+              <div key={c.name} className="ml-3">• {c.name}: committed {fmt(c.committed)}, called {fmt(c.called)}</div>
+            ))}
+            <div>GP: {waterfallDebug.gpCommitments?.map((c: any) => `${c.name} (${fmt(c.committed)})`).join(", ") || "none detected"}</div>
+            <div>Pref Before Offset: {fmt(waterfallDebug.prefBeforeOffset ?? 0)}</div>
+            <div>Prior LP Distributions (YTD): {fmt(waterfallDebug.priorDistLPTotal ?? 0)} ({waterfallDebug.priorDistCount ?? 0} line items)</div>
+            <div>Remaining Pref: {fmt((waterfallDebug.prefBeforeOffset ?? 0) - (waterfallDebug.priorDistLPTotal ?? 0))}</div>
+          </div>
+        )}
 
         {/* Per-Investor Allocation Preview (editable) */}
         {showPerInvestor && perInvestorAllocations.length > 0 && (
