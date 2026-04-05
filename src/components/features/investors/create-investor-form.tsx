@@ -30,6 +30,7 @@ const TYPES = [
   { value: "Sovereign Wealth", label: "Sovereign Wealth" },
   { value: "Insurance", label: "Insurance" },
   { value: "Institutional", label: "Institutional" },
+  { value: "Fund Manager", label: "Fund Manager (GP)" },
 ];
 
 interface Props { open: boolean; onClose: () => void }

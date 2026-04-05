@@ -73,13 +73,22 @@ export async function POST(
     // totalContributed calculated below after GP detection (LP-only for pref calculation)
 
     // Detect GP investors using multiple methods:
-    // 1. Unit class assignments on THIS entity (GP_UNIT or CARRIED_INTEREST)
-    // 2. Unit class assignments on ANY entity in the firm (GP in one fund = GP everywhere)
-    // 3. Investor type field containing "gp" or "general partner"
-    // 4. Investor name matching the firm's GP entity name
+    // 1. Unit class assignments on ANY entity in the firm (GP in one fund = GP everywhere)
+    // 2. Investor type field containing "gp", "general partner", or "fund manager"
+    // 3. Investor name matching a GP_ENTITY or HOLDING_COMPANY entity name (normalized)
+    // 4. Investor name contains GP indicators like "(gp)"
     const gpInvestorIds = new Set<string>();
 
-    // Method 1 & 2: Check unit classes across ALL firm entities
+    // Helper: normalize entity/investor names for comparison
+    // Strips LLC, LP, Inc, commas, periods, extra spaces for fuzzy matching
+    const normalizeName = (name: string): string =>
+      name.toLowerCase()
+        .replace(/[,.\-()]/g, " ")
+        .replace(/\b(llc|lp|inc|corp|ltd|co|company|the)\b/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    // Method 1: Check unit classes across ALL firm entities
     const allGPUnitClasses = await prisma.unitClass.findMany({
       where: {
         entity: { firmId },
@@ -98,42 +107,63 @@ export async function POST(
       }
     }
 
-    // Method 3 & 4: Name/type fallback for investors not caught by unit classes
-    // Find the GP entity name for name matching
-    const gpEntity = await prisma.entity.findFirst({
-      where: { firmId, entityType: "GP_ENTITY" },
-      select: { name: true },
+    // Method 2 & 3: Name/type fallback for investors not caught by unit classes
+    // Find GP entities AND holding companies (GP may be stored as either type)
+    const gpCandidateEntities = await prisma.entity.findMany({
+      where: {
+        firmId,
+        entityType: { in: ["GP_ENTITY", "HOLDING_COMPANY"] },
+      },
+      select: { name: true, entityType: true },
     });
-    const gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
-
-    // Also find all entities that are GP-type for broader name matching
-    const gpEntities = await prisma.entity.findMany({
-      where: { firmId, entityType: "GP_ENTITY" },
-      select: { name: true },
-    });
-    const gpEntityNames = gpEntities.map((e) => e.name.toLowerCase()).filter(Boolean);
+    const gpEntityNames = gpCandidateEntities.map((e) => e.name.toLowerCase()).filter(Boolean);
+    const gpEntityNamesNormalized = gpCandidateEntities.map((e) => normalizeName(e.name)).filter(Boolean);
 
     // Build per-investor shares (pro-rata of committed capital)
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
+    const gpDetectionLog: Array<{ investor: string; method: string }> = [];
     const investorShares: InvestorShare[] = totalCommitted > 0
       ? commitments.map((c) => {
           // Already detected via unit classes?
           let isGP = gpInvestorIds.has(c.investorId);
+          if (isGP) gpDetectionLog.push({ investor: c.investor.name, method: "unit_class" });
 
           // Fallback: check investor type and name
           if (!isGP) {
             const investorType = (c.investor.investorType ?? "").toLowerCase();
             const investorName = (c.investor.name ?? "").toLowerCase();
-            isGP = investorType.includes("gp") ||
-              investorType === "general partner" ||
-              investorType === "fund_manager" ||
-              investorType === "fund manager" ||
-              // Match against GP entity names
-              gpEntityNames.some((gpName) =>
-                investorName.includes(gpName) || gpName.includes(investorName)
-              ) ||
-              // Direct GP indicators in investor name
-              investorName.includes("(gp)");
+            const investorNameNorm = normalizeName(c.investor.name ?? "");
+
+            // Check investor type field
+            if (investorType.includes("gp") ||
+                investorType === "general partner" ||
+                investorType === "fund_manager" ||
+                investorType === "fund manager") {
+              isGP = true;
+              gpDetectionLog.push({ investor: c.investor.name, method: "investor_type:" + investorType });
+            }
+
+            // Check exact substring match against GP entity names
+            if (!isGP && gpEntityNames.some((gpName) =>
+              investorName.includes(gpName) || gpName.includes(investorName)
+            )) {
+              isGP = true;
+              gpDetectionLog.push({ investor: c.investor.name, method: "name_exact_match" });
+            }
+
+            // Check normalized name match (strips LLC, LP, commas, etc.)
+            if (!isGP && investorNameNorm.length > 2 && gpEntityNamesNormalized.some((gpNorm) =>
+              investorNameNorm.includes(gpNorm) || gpNorm.includes(investorNameNorm)
+            )) {
+              isGP = true;
+              gpDetectionLog.push({ investor: c.investor.name, method: "name_normalized_match" });
+            }
+
+            // Direct GP indicators in investor name
+            if (!isGP && investorName.includes("(gp)")) {
+              isGP = true;
+              gpDetectionLog.push({ investor: c.investor.name, method: "name_gp_indicator" });
+            }
           }
 
           if (isGP) gpInvestorIds.add(c.investorId);
@@ -250,11 +280,14 @@ export async function POST(
         prefBeforeOffset: totalContributed * (template.tiers.find(t => (t.hurdleRate ?? 0) > 0)?.hurdleRate ?? 8) / 100 * yearsOutstanding,
         lpCommitments: commitments
           .filter(c => !gpIds.has(c.investorId))
-          .map(c => ({ name: c.investor.name, committed: c.amount, called: c.calledAmount })),
+          .map(c => ({ name: c.investor.name, type: c.investor.investorType, committed: c.amount, called: c.calledAmount })),
         gpCommitments: commitments
           .filter(c => gpIds.has(c.investorId))
-          .map(c => ({ name: c.investor.name, committed: c.amount, called: c.calledAmount })),
+          .map(c => ({ name: c.investor.name, type: c.investor.investorType, committed: c.amount, called: c.calledAmount })),
         gpDetectedIds: Array.from(gpIds),
+        gpDetectionLog,
+        gpCandidateEntities: gpCandidateEntities.map(e => ({ name: e.name, type: e.entityType, normalized: normalizeName(e.name) })),
+        allInvestorNames: commitments.map(c => ({ name: c.investor.name, type: c.investor.investorType, normalized: normalizeName(c.investor.name) })),
         priorDistCount: priorDistLineItems.length,
         priorDistLPTotal: totalDistributedPrior,
       },
