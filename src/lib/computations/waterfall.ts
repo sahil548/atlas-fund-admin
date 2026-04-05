@@ -195,17 +195,25 @@ export function computeWaterfall(
   const clawbackLiability = Math.max(0, totalGP - entitledGP);
 
   // Per-investor breakdown:
-  // 1. LP portion (after GP carry) is distributed pro-rata to ALL members (including GP)
+  // 1. LP portion is distributed pro-rata to LP investors ONLY (not GP)
   // 2. GP carry portion is allocated only to GP investors
   let perInvestorBreakdown: InvestorBreakdown[] | undefined;
   if (investorShares && investorShares.length > 0) {
     // Determine GP investors and their share of the carry
     const gpInvestors = investorShares.filter((inv) => inv.isGP);
+    const lpInvestors = investorShares.filter((inv) => !inv.isGP);
     const gpCount = gpInvestors.length;
 
+    // Recalculate pro-rata shares among LP investors only
+    const totalLPProRata = lpInvestors.reduce((s, inv) => s + inv.proRataShare, 0);
+
     perInvestorBreakdown = investorShares.map((inv) => {
-      // Every member gets their pro-rata share of the LP portion
-      const lpAllocation = totalLP * inv.proRataShare;
+      // LP portion goes only to LP investors, pro-rata among them
+      const lpAllocation = inv.isGP
+        ? 0
+        : totalLPProRata > 0
+          ? totalLP * (inv.proRataShare / totalLPProRata)
+          : 0;
 
       // GP carry is only allocated to GP investors
       // If multiple GPs, split carry evenly among them (or could weight by commitment)
