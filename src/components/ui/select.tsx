@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useId } from "react";
+import { useState, useRef, useEffect, useCallback, useId, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 
@@ -162,6 +163,59 @@ export function Select({
     item?.scrollIntoView({ block: "nearest" });
   }, [focusedIndex, open]);
 
+  // Compute dropdown position relative to the trigger button (portal renders at body level)
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const dropdownMaxH = 320; // matches max-h-80
+    const openAbove = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
+    setDropdownStyle({
+      position: "fixed",
+      left: rect.left,
+      width: rect.width,
+      ...(openAbove
+        ? { bottom: window.innerHeight - rect.top + 4 }
+        : { top: rect.bottom + 4 }),
+      zIndex: 9999,
+    });
+  }, [open]);
+
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const reposition = () => {
+      if (!triggerRef.current) return;
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const dropdownMaxH = 320;
+      const openAbove = spaceBelow < dropdownMaxH && rect.top > spaceBelow;
+      setDropdownStyle({
+        position: "fixed",
+        left: rect.left,
+        width: rect.width,
+        ...(openAbove
+          ? { bottom: window.innerHeight - rect.top + 4 }
+          : { top: rect.bottom + 4 }),
+        zIndex: 9999,
+      });
+    };
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [open]);
+
+  // Memoize portal target
+  const portalTarget = useMemo(() =>
+    typeof document !== "undefined" ? document.body : null,
+  []);
+
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
       {/* Hidden native select for form submission and synthetic event creation */}
@@ -185,6 +239,7 @@ export function Select({
 
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         type="button"
         role="combobox"
         aria-haspopup="listbox"
@@ -224,14 +279,15 @@ export function Select({
         />
       </button>
 
-      {/* Dropdown list */}
-      {open && (
+      {/* Dropdown list — rendered in a portal so it's never clipped by modal/parent overflow */}
+      {open && portalTarget && createPortal(
         <ul
           ref={listRef}
           id={`${selectId}-listbox`}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-1"
+          style={dropdownStyle}
+          className="max-h-80 overflow-auto rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg py-1"
         >
           {options.map((option, index) => {
             const isSelected = option.value === currentValue;
@@ -259,7 +315,8 @@ export function Select({
               </li>
             );
           })}
-        </ul>
+        </ul>,
+        portalTarget
       )}
     </div>
   );
