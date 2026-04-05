@@ -14,25 +14,31 @@ export async function PATCH(
   const existing = await prisma.ownershipUnit.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // If changing from ACTIVE to non-ACTIVE, decrement totalIssued
-  if (data!.status && data!.status !== "ACTIVE" && existing.status === "ACTIVE") {
-    const [unit] = await prisma.$transaction([
-      prisma.ownershipUnit.update({ where: { id }, data: data! }),
-      prisma.unitClass.update({
-        where: { id: existing.unitClassId },
-        data: { totalIssued: { decrement: existing.unitsIssued } },
-      }),
-    ]);
-    return NextResponse.json(unit);
+  // Calculate totalIssued adjustment on the unit class
+  const statusChanging = data!.status && data!.status !== existing.status;
+  const unitsChanging = data!.unitsIssued !== undefined && data!.unitsIssued !== existing.unitsIssued;
+  const goingInactive = statusChanging && data!.status !== "ACTIVE" && existing.status === "ACTIVE";
+  const goingActive = statusChanging && data!.status === "ACTIVE" && existing.status !== "ACTIVE";
+
+  // Determine the net change to totalIssued on the unit class
+  let totalIssuedDelta = 0;
+  if (goingInactive) {
+    // Removing active units: decrement by new count (or old if not changing)
+    totalIssuedDelta = -(data!.unitsIssued ?? existing.unitsIssued);
+  } else if (goingActive) {
+    // Reactivating units: increment by new count (or old if not changing)
+    totalIssuedDelta = data!.unitsIssued ?? existing.unitsIssued;
+  } else if (unitsChanging && existing.status === "ACTIVE") {
+    // Units changed while staying active: adjust by the difference
+    totalIssuedDelta = data!.unitsIssued! - existing.unitsIssued;
   }
 
-  // If changing from non-ACTIVE back to ACTIVE, increment totalIssued
-  if (data!.status === "ACTIVE" && existing.status !== "ACTIVE") {
+  if (totalIssuedDelta !== 0) {
     const [unit] = await prisma.$transaction([
       prisma.ownershipUnit.update({ where: { id }, data: data! }),
       prisma.unitClass.update({
         where: { id: existing.unitClassId },
-        data: { totalIssued: { increment: existing.unitsIssued } },
+        data: { totalIssued: { increment: totalIssuedDelta } },
       }),
     ]);
     return NextResponse.json(unit);

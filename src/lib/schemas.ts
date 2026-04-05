@@ -1146,6 +1146,8 @@ export const IssueUnitsSchema = z.object({
 
 export const UpdateOwnershipUnitSchema = z.object({
   status: z.enum(["ACTIVE", "REDEEMED", "TRANSFERRED", "CANCELLED"]).optional(),
+  unitsIssued: z.number().min(0).optional(),
+  unitCost: z.number().min(0).optional(),
   notes: z.string().nullable().optional(),
 });
 

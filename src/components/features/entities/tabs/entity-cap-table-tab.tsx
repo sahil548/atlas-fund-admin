@@ -58,6 +58,11 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
   const [showCreateSideLetter, setShowCreateSideLetter] = useState(false);
   const [selectedSideLetterId, setSelectedSideLetterId] = useState<string | null>(null);
 
+  // Edit ownership unit state
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [editUnitForm, setEditUnitForm] = useState({ unitsIssued: "", unitCost: "" });
+  const [editUnitSaving, setEditUnitSaving] = useState(false);
+
   const unitClasses: any[] = e.unitClasses || [];
   const commitments: any[] = e.commitments || [];
 
@@ -267,6 +272,49 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
     mutate(`/api/entities/${entityId}`);
   }
 
+  function startEditUnit(ou: any) {
+    setEditingUnitId(ou.id);
+    setEditUnitForm({ unitsIssued: String(ou.unitsIssued), unitCost: String(ou.unitCost) });
+  }
+
+  async function handleEditUnitSave() {
+    if (!editingUnitId) return;
+    setEditUnitSaving(true);
+    try {
+      const res = await fetch(`/api/ownership-units/${editingUnitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          unitsIssued: Number(editUnitForm.unitsIssued) || 0,
+          unitCost: Number(editUnitForm.unitCost) || 0,
+        }),
+      });
+      if (!res.ok) {
+        const d = await res.json();
+        toast.error(typeof d.error === "string" ? d.error : "Failed to update");
+        return;
+      }
+      toast.success("Units updated");
+      mutate(`/api/entities/${entityId}`);
+      setEditingUnitId(null);
+    } catch {
+      toast.error("Failed to update units");
+    } finally {
+      setEditUnitSaving(false);
+    }
+  }
+
+  async function handleDeleteUnit(unitId: string) {
+    const res = await fetch(`/api/ownership-units/${unitId}`, { method: "DELETE" });
+    if (!res.ok) {
+      const d = await res.json();
+      toast.error(typeof d.error === "string" ? d.error : "Failed to delete");
+      return;
+    }
+    toast.success("Units deleted");
+    mutate(`/api/entities/${entityId}`);
+  }
+
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
@@ -383,29 +431,78 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
                         <table className="w-full text-xs">
                           <thead>
                             <tr className="text-left">
-                              {["Investor", "Type", "Units", "Cost/Unit", "Cost Basis", "Acquired", "Status"].map((h) => (
+                              {["Investor", "Type", "Units", "Cost/Unit", "Cost Basis", "Acquired", "Status", "Actions"].map((h) => (
                                 <th key={h} className="px-2 py-1.5 font-semibold text-gray-500">{h}</th>
                               ))}
                             </tr>
                           </thead>
                           <tbody>
-                            {(uc.ownershipUnits || []).map((ou: any) => (
-                              <tr key={ou.id} className="border-t border-gray-100 dark:border-gray-700">
-                                <td className="px-2 py-2">
-                                  <Link href={`/investors/${ou.investor.id}`} className="text-indigo-700 hover:underline font-medium">{ou.investor.name}</Link>
-                                </td>
-                                <td className="px-2 py-2"><Badge color="blue">{ou.investor.investorType}</Badge></td>
-                                <td className="px-2 py-2 font-medium">{ou.unitsIssued.toLocaleString()}</td>
-                                <td className="px-2 py-2">${ou.unitCost.toLocaleString()}</td>
-                                <td className="px-2 py-2 font-medium">{fmt(ou.unitsIssued * ou.unitCost)}</td>
-                                <td className="px-2 py-2 text-gray-500">{formatDate(ou.acquisitionDate)}</td>
-                                <td className="px-2 py-2">
-                                  <Badge color={ou.status === "ACTIVE" ? "green" : ou.status === "REDEEMED" ? "amber" : "gray"}>
-                                    {ou.status}
-                                  </Badge>
-                                </td>
-                              </tr>
-                            ))}
+                            {(uc.ownershipUnits || []).map((ou: any) => {
+                              if (editingUnitId === ou.id) {
+                                return (
+                                  <tr key={ou.id} className="border-t border-gray-100 dark:border-gray-700 bg-indigo-50/40">
+                                    <td className="px-2 py-2">
+                                      <Link href={`/investors/${ou.investor.id}`} className="text-indigo-700 hover:underline font-medium">{ou.investor.name}</Link>
+                                    </td>
+                                    <td className="px-2 py-2"><Badge color="blue">{ou.investor.investorType}</Badge></td>
+                                    <td className="px-2 py-2">
+                                      <input
+                                        type="number"
+                                        value={editUnitForm.unitsIssued}
+                                        onChange={(ev) => setEditUnitForm((f) => ({ ...f, unitsIssued: ev.target.value }))}
+                                        className="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-2">
+                                      <input
+                                        type="number"
+                                        value={editUnitForm.unitCost}
+                                        onChange={(ev) => setEditUnitForm((f) => ({ ...f, unitCost: ev.target.value }))}
+                                        className="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-2 font-medium">{fmt((Number(editUnitForm.unitsIssued) || 0) * (Number(editUnitForm.unitCost) || 0))}</td>
+                                    <td className="px-2 py-2 text-gray-500">{formatDate(ou.acquisitionDate)}</td>
+                                    <td className="px-2 py-2">
+                                      <Badge color={ou.status === "ACTIVE" ? "green" : ou.status === "REDEEMED" ? "amber" : "gray"}>
+                                        {ou.status}
+                                      </Badge>
+                                    </td>
+                                    <td className="px-2 py-2">
+                                      <div className="flex items-center gap-1">
+                                        <button onClick={handleEditUnitSave} disabled={editUnitSaving} className="text-[10px] font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded px-2 py-1 disabled:opacity-50">
+                                          {editUnitSaving ? "Saving…" : "Save"}
+                                        </button>
+                                        <button onClick={() => setEditingUnitId(null)} className="text-[10px] font-medium text-gray-500 hover:text-gray-700 rounded px-2 py-1">Cancel</button>
+                                        <button onClick={() => { setEditingUnitId(null); handleDeleteUnit(ou.id); }} className="text-[10px] font-medium text-red-500 hover:text-red-700 rounded px-2 py-1 hover:bg-red-50">Delete</button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              }
+                              return (
+                                <tr key={ou.id} className="border-t border-gray-100 dark:border-gray-700">
+                                  <td className="px-2 py-2">
+                                    <Link href={`/investors/${ou.investor.id}`} className="text-indigo-700 hover:underline font-medium">{ou.investor.name}</Link>
+                                  </td>
+                                  <td className="px-2 py-2"><Badge color="blue">{ou.investor.investorType}</Badge></td>
+                                  <td className="px-2 py-2 font-medium">{ou.unitsIssued.toLocaleString()}</td>
+                                  <td className="px-2 py-2">${ou.unitCost.toLocaleString()}</td>
+                                  <td className="px-2 py-2 font-medium">{fmt(ou.unitsIssued * ou.unitCost)}</td>
+                                  <td className="px-2 py-2 text-gray-500">{formatDate(ou.acquisitionDate)}</td>
+                                  <td className="px-2 py-2">
+                                    <Badge color={ou.status === "ACTIVE" ? "green" : ou.status === "REDEEMED" ? "amber" : "gray"}>
+                                      {ou.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-2 py-2">
+                                    <button onClick={() => startEditUnit(ou)} className="text-[10px] font-medium text-indigo-600 hover:text-indigo-800 rounded px-2 py-1 hover:bg-indigo-50 border border-indigo-200">
+                                      Edit
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       ) : (
