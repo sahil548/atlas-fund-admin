@@ -169,6 +169,7 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         body: JSON.stringify({
           entityId: form.entityId,
           distributableAmount: Number(form.grossAmount),
+          distributionDate: form.distributionDate || undefined,
           saveResults: false,
         }),
       });

@@ -9,6 +9,7 @@ import { logger } from "@/lib/logger";
 const CalculateWaterfallSchema = z.object({
   entityId: z.string().min(1, "Entity is required"),
   distributableAmount: z.number().positive("Distributable amount must be positive"),
+  distributionDate: z.string().optional(),
   saveResults: z.boolean().default(true),
 });
 
@@ -32,7 +33,8 @@ export async function POST(
     const { data, error } = await parseBody(req, CalculateWaterfallSchema);
     if (error) return error;
 
-    const { entityId, distributableAmount, saveResults } = data!;
+    const { entityId, distributableAmount, distributionDate: distDateStr, saveResults } = data!;
+    const distDate = distDateStr ? new Date(distDateStr + "T00:00:00Z") : new Date();
 
     // Fetch the template with tiers — try firm-linked first, then any template by ID
     let template = await prisma.waterfallTemplate.findFirst({
@@ -129,29 +131,33 @@ export async function POST(
         })
       : [];
 
-    // Get total prior distributions for this entity
+    // Calculate years outstanding as fraction of current year through distribution date
+    // Preferred return is annual and non-cumulative (resets each calendar year)
+    const distYear = distDate.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(distYear, 0, 1));
+    const yearEnd = new Date(Date.UTC(distYear + 1, 0, 1));
+    const totalDaysInYear = (yearEnd.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000);
+    const daysThroughDist = (distDate.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000);
+    const yearsOutstanding = daysThroughDist / totalDaysInYear;
+
+    // Get prior LP distributions for the current calendar year only (pref resets annually)
+    const currentYearStart = yearStart;
     const priorDist = await prisma.distributionEvent.aggregate({
-      where: { entityId, status: "PAID" },
+      where: {
+        entityId,
+        distributionDate: { gte: currentYearStart, lt: distDate },
+      },
       _sum: { netToLPs: true },
     });
     const totalDistributedPrior = priorDist._sum.netToLPs ?? 0;
 
-    // Calculate years outstanding from first capital call
-    const firstCall = await prisma.capitalCall.findFirst({
-      where: { entityId },
-      orderBy: { callDate: "asc" },
-      select: { callDate: true },
-    });
-    const yearsOutstanding = firstCall
-      ? (Date.now() - firstCall.callDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
-      : 1;
-
     // Build waterfall config from template fields
+    // Always offset pref by prior distributions since we scope to the current year
     const waterfallConfig: WaterfallConfig = {
       carryPercent: template.carryPercent ?? 0.20,
       prefReturnCompounding:
         (template.prefReturnCompounding as "SIMPLE" | "COMPOUND") ?? "SIMPLE",
-      prefReturnOffsetByDistributions: template.prefReturnOffsetByDistributions ?? false,
+      prefReturnOffsetByDistributions: true,
       incomeCountsTowardPref: template.incomeCountsTowardPref ?? false,
       gpCoInvestPercent: template.gpCoInvestPercent ?? 0,
     };
