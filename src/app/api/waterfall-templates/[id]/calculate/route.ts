@@ -70,7 +70,7 @@ export async function POST(
       where: { entityId },
       include: { investor: { select: { id: true, name: true, investorType: true } } },
     });
-    const totalContributed = commitments.reduce((s, c) => s + c.calledAmount, 0);
+    // totalContributed calculated below after GP detection (LP-only for pref calculation)
 
     // Fetch unit class assignments to determine GP vs LP status
     // An investor with units in a GP_UNIT class is considered GP
@@ -131,6 +131,13 @@ export async function POST(
         })
       : [];
 
+    // Total contributed: LP-only for preferred return calculation
+    // GP contributions should not count toward the pref hurdle
+    const gpIds = new Set(investorShares.filter((s) => s.isGP).map((s) => s.investorId));
+    const totalContributed = commitments
+      .filter((c) => !gpIds.has(c.investorId))
+      .reduce((s, c) => s + c.calledAmount, 0);
+
     // Calculate years outstanding as fraction of current year through distribution date
     // Preferred return is annual and non-cumulative (resets each calendar year)
     const distYear = distDate.getUTCFullYear();
@@ -140,16 +147,20 @@ export async function POST(
     const daysThroughDist = (distDate.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000);
     const yearsOutstanding = daysThroughDist / totalDaysInYear;
 
-    // Get prior LP distributions for the current calendar year only (pref resets annually)
-    const currentYearStart = yearStart;
-    const priorDist = await prisma.distributionEvent.aggregate({
+    // Get prior distributions to LP investors only for the current calendar year
+    // Use line items to accurately sum what LP investors received (exclude GP)
+    const priorDistLineItems = await prisma.distributionLineItem.findMany({
       where: {
-        entityId,
-        distributionDate: { gte: currentYearStart, lt: distDate },
+        distribution: {
+          entityId,
+          distributionDate: { gte: yearStart, lt: distDate },
+        },
       },
-      _sum: { netToLPs: true },
+      select: { investorId: true, netAmount: true },
     });
-    const totalDistributedPrior = priorDist._sum.netToLPs ?? 0;
+    const totalDistributedPrior = priorDistLineItems
+      .filter((li) => !gpIds.has(li.investorId))
+      .reduce((s, li) => s + li.netAmount, 0);
 
     // Build waterfall config from template fields
     // Always offset pref by prior distributions since we scope to the current year
