@@ -395,8 +395,8 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
         {/* Waterfall Calculation Debug */}
         {waterfallDebug && (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-[10px] text-gray-600 space-y-1">
-            <div className="font-semibold text-gray-700">Calculation Inputs</div>
-            <div>Months: {waterfallDebug.completedMonths}/12 = {waterfallDebug.yearsOutstanding?.toFixed(4)}</div>
+            <div className="font-semibold text-gray-700">Calculation Inputs ({waterfallDebug.dayCountMethod || "30/360"})</div>
+            <div>Days (30/360): {waterfallDebug.days30_360} / 360 = {waterfallDebug.yearsOutstanding?.toFixed(4)}</div>
             <div>LP Committed Capital: {fmt(waterfallDebug.lpCommitments?.reduce((s: number, c: any) => s + c.committed, 0) ?? 0)}</div>
             {waterfallDebug.lpCommitments?.map((c: any) => (
               <div key={c.name} className="ml-3">• {c.name}: committed {fmt(c.committed)}, called {fmt(c.called)}</div>

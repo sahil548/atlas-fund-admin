@@ -72,10 +72,19 @@ export async function POST(
     });
     // totalContributed calculated below after GP detection (LP-only for pref calculation)
 
-    // Fetch unit class assignments to determine GP vs LP status
-    // An investor with units in a GP_UNIT class is considered GP
-    const unitClasses = await prisma.unitClass.findMany({
-      where: { entityId },
+    // Detect GP investors using multiple methods:
+    // 1. Unit class assignments on THIS entity (GP_UNIT or CARRIED_INTEREST)
+    // 2. Unit class assignments on ANY entity in the firm (GP in one fund = GP everywhere)
+    // 3. Investor type field containing "gp" or "general partner"
+    // 4. Investor name matching the firm's GP entity name
+    const gpInvestorIds = new Set<string>();
+
+    // Method 1 & 2: Check unit classes across ALL firm entities
+    const allGPUnitClasses = await prisma.unitClass.findMany({
+      where: {
+        entity: { firmId },
+        classType: { in: ["GP_UNIT", "CARRIED_INTEREST"] },
+      },
       include: {
         ownershipUnits: {
           where: { status: "ACTIVE" },
@@ -83,45 +92,52 @@ export async function POST(
         },
       },
     });
-
-    // Build set of investor IDs that hold GP_UNIT class units
-    const gpInvestorIds = new Set<string>();
-    for (const uc of unitClasses) {
-      if (uc.classType === "GP_UNIT" || uc.classType === "CARRIED_INTEREST") {
-        for (const ou of uc.ownershipUnits) {
-          gpInvestorIds.add(ou.investorId);
-        }
+    for (const uc of allGPUnitClasses) {
+      for (const ou of uc.ownershipUnits) {
+        gpInvestorIds.add(ou.investorId);
       }
     }
 
-    // Fallback: if no unit classes exist, detect GP by investor type or entity name
-    let useNameFallback = gpInvestorIds.size === 0;
-    let gpEntityName = "";
-    if (useNameFallback) {
-      const gpEntity = await prisma.entity.findFirst({
-        where: { firmId, entityType: "GP_ENTITY" },
-        select: { name: true },
-      });
-      gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
-    }
+    // Method 3 & 4: Name/type fallback for investors not caught by unit classes
+    // Find the GP entity name for name matching
+    const gpEntity = await prisma.entity.findFirst({
+      where: { firmId, entityType: "GP_ENTITY" },
+      select: { name: true },
+    });
+    const gpEntityName = gpEntity?.name?.toLowerCase() ?? "";
+
+    // Also find all entities that are GP-type for broader name matching
+    const gpEntities = await prisma.entity.findMany({
+      where: { firmId, entityType: { in: ["GP_ENTITY", "GP"] } },
+      select: { name: true },
+    });
+    const gpEntityNames = gpEntities.map((e) => e.name.toLowerCase()).filter(Boolean);
 
     // Build per-investor shares (pro-rata of committed capital)
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
     const investorShares: InvestorShare[] = totalCommitted > 0
       ? commitments.map((c) => {
-          let isGP: boolean;
-          if (!useNameFallback) {
-            // Primary: use unit class assignment
-            isGP = gpInvestorIds.has(c.investorId);
-          } else {
-            // Fallback: use investor type or GP entity name matching
+          // Already detected via unit classes?
+          let isGP = gpInvestorIds.has(c.investorId);
+
+          // Fallback: check investor type and name
+          if (!isGP) {
             const investorType = (c.investor.investorType ?? "").toLowerCase();
             const investorName = (c.investor.name ?? "").toLowerCase();
             isGP = investorType.includes("gp") ||
               investorType === "general partner" ||
-              (gpEntityName !== "" && investorName.includes(gpEntityName)) ||
-              (gpEntityName !== "" && gpEntityName.includes(investorName));
+              investorType === "fund_manager" ||
+              investorType === "fund manager" ||
+              // Match against GP entity names
+              gpEntityNames.some((gpName) =>
+                investorName.includes(gpName) || gpName.includes(investorName)
+              ) ||
+              // Direct GP indicators in investor name
+              investorName.includes("(gp)");
           }
+
+          if (isGP) gpInvestorIds.add(c.investorId);
+
           return {
             investorId: c.investorId,
             investorName: c.investor.name,
@@ -139,17 +155,16 @@ export async function POST(
       .filter((c) => !gpIds.has(c.investorId))
       .reduce((s, c) => s + c.amount, 0);
 
-    // Calculate years outstanding as fraction of current year through distribution date
-    // Use completed months / 12 for consistency with standard fund accounting
-    // (e.g., Sep 30 = 9/12, Jun 15 = 6/12 since mid-month rounds to completed months)
+    // Calculate years outstanding using 30/360 day count convention
+    // Every month = 30 days, year = 360 days
+    // Jan 1 to Sep 30 = 9 × 30 = 270 days → 270/360 = 0.75
     const distYear = distDate.getUTCFullYear();
     const distMonth = distDate.getUTCMonth(); // 0-indexed (Jan=0, Sep=8)
-    const distDay = distDate.getUTCDate();
+    const distDay = Math.min(distDate.getUTCDate(), 30); // cap at 30 for 30/360
     const yearStart = new Date(Date.UTC(distYear, 0, 1));
-    // Count completed months: if at end of month or past mid-month, count that month
-    const daysInMonth = new Date(Date.UTC(distYear, distMonth + 1, 0)).getUTCDate();
-    const completedMonths = distDay >= daysInMonth ? distMonth + 1 : (distDay >= 15 ? distMonth + 1 : distMonth);
-    const yearsOutstanding = completedMonths / 12;
+    // 30/360: days = months * 30 + day adjustment
+    const days30_360 = distMonth * 30 + distDay;
+    const yearsOutstanding = days30_360 / 360;
 
     // Get prior distributions to LP investors only for the current calendar year
     // Use grossAmount (total received) not netAmount (which may be net of carry)
@@ -230,7 +245,8 @@ export async function POST(
       // Debug: calculation inputs
       _debug: {
         yearsOutstanding,
-        completedMonths: Math.round(yearsOutstanding * 12),
+        days30_360: days30_360,
+        dayCountMethod: "30/360",
         prefBeforeOffset: totalContributed * (template.tiers.find(t => (t.hurdleRate ?? 0) > 0)?.hurdleRate ?? 8) / 100 * yearsOutstanding,
         lpCommitments: commitments
           .filter(c => !gpIds.has(c.investorId))
