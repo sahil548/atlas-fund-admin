@@ -131,36 +131,40 @@ export async function POST(
         })
       : [];
 
-    // Total contributed: LP-only for preferred return calculation
-    // GP contributions should not count toward the pref hurdle
+    // Total committed (LP-only): used for preferred return calculation
+    // GP commitments should not count toward the pref hurdle
+    // Use committed amount (not calledAmount) — pref accrues on committed capital
     const gpIds = new Set(investorShares.filter((s) => s.isGP).map((s) => s.investorId));
     const totalContributed = commitments
       .filter((c) => !gpIds.has(c.investorId))
-      .reduce((s, c) => s + c.calledAmount, 0);
+      .reduce((s, c) => s + c.amount, 0);
 
     // Calculate years outstanding as fraction of current year through distribution date
-    // Preferred return is annual and non-cumulative (resets each calendar year)
+    // Use completed months / 12 for consistency with standard fund accounting
+    // (e.g., Sep 30 = 9/12, Jun 15 = 6/12 since mid-month rounds to completed months)
     const distYear = distDate.getUTCFullYear();
+    const distMonth = distDate.getUTCMonth(); // 0-indexed (Jan=0, Sep=8)
+    const distDay = distDate.getUTCDate();
     const yearStart = new Date(Date.UTC(distYear, 0, 1));
-    const yearEnd = new Date(Date.UTC(distYear + 1, 0, 1));
-    const totalDaysInYear = (yearEnd.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000);
-    const daysThroughDist = (distDate.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000);
-    const yearsOutstanding = daysThroughDist / totalDaysInYear;
+    // Count completed months: if at end of month or past mid-month, count that month
+    const daysInMonth = new Date(Date.UTC(distYear, distMonth + 1, 0)).getUTCDate();
+    const completedMonths = distDay >= daysInMonth ? distMonth + 1 : (distDay >= 15 ? distMonth + 1 : distMonth);
+    const yearsOutstanding = completedMonths / 12;
 
     // Get prior distributions to LP investors only for the current calendar year
-    // Use line items to accurately sum what LP investors received (exclude GP)
+    // Use grossAmount (total received) not netAmount (which may be net of carry)
     const priorDistLineItems = await prisma.distributionLineItem.findMany({
       where: {
         distribution: {
           entityId,
-          distributionDate: { gte: yearStart, lt: distDate },
+          distributionDate: { gte: yearStart, lte: distDate },
         },
       },
-      select: { investorId: true, netAmount: true },
+      select: { investorId: true, grossAmount: true },
     });
     const totalDistributedPrior = priorDistLineItems
       .filter((li) => !gpIds.has(li.investorId))
-      .reduce((s, li) => s + li.netAmount, 0);
+      .reduce((s, li) => s + li.grossAmount, 0);
 
     // Build waterfall config from template fields
     // Always offset pref by prior distributions since we scope to the current year
