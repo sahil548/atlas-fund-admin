@@ -50,6 +50,10 @@ export interface WaterfallResult {
   tiers: WaterfallTierResult[];
   totalLP: number;
   totalGP: number;
+  /** LP amount from ROC/PRO_RATA tiers — distributed to ALL investors including GP */
+  allInvestorLP: number;
+  /** LP amount from pref return/profit tiers — distributed to LP investors only */
+  lpOnlyLP: number;
   distributableAmount: number;
   clawbackLiability: number;
   gpCoInvestAllocation: number;
@@ -94,6 +98,8 @@ export function computeWaterfall(
   const results: WaterfallTierResult[] = [];
   let totalLP = 0;
   let totalGP = 0;
+  let allInvestorLP = 0;  // LP from ROC/PRO_RATA tiers → all investors get pro-rata
+  let lpOnlyLP = 0;       // LP from pref/profit tiers → LP investors only
 
   const sortedTiers = [...tiers].sort((a, b) => a.tierOrder - b.tierOrder);
 
@@ -167,6 +173,19 @@ export function computeWaterfall(
     totalGP += gpShare;
     remaining -= tierAmount;
 
+    // Track which LP pool this tier's allocation belongs to:
+    // ROC, PRO_RATA, and Capital tiers → all investors (including GP) get pro-rata
+    // Pref return and other profit tiers → LP investors only
+    const isAllInvestorTier = tier.appliesTo === "PRO_RATA" ||
+      tier.appliesTo === "Capital" ||
+      tier.name.toLowerCase().includes("return of capital") ||
+      tier.name.toLowerCase().includes("roc");
+    if (isAllInvestorTier) {
+      allInvestorLP += lpShare;
+    } else {
+      lpOnlyLP += lpShare;
+    }
+
     results.push({
       tierOrder: tier.tierOrder,
       name: tier.name,
@@ -195,28 +214,32 @@ export function computeWaterfall(
   const clawbackLiability = Math.max(0, totalGP - entitledGP);
 
   // Per-investor breakdown:
-  // 1. LP portion is distributed pro-rata to LP investors ONLY (not GP)
-  // 2. GP carry portion is allocated only to GP investors
+  // 1. allInvestorLP (ROC/PRO_RATA) → distributed pro-rata to ALL investors including GP
+  // 2. lpOnlyLP (pref return/profits) → distributed pro-rata to LP investors only
+  // 3. GP carry → allocated only to GP investors
   let perInvestorBreakdown: InvestorBreakdown[] | undefined;
   if (investorShares && investorShares.length > 0) {
-    // Determine GP investors and their share of the carry
     const gpInvestors = investorShares.filter((inv) => inv.isGP);
     const lpInvestors = investorShares.filter((inv) => !inv.isGP);
     const gpCount = gpInvestors.length;
 
-    // Recalculate pro-rata shares among LP investors only
+    // Pro-rata shares among LP investors only (for lpOnlyLP distribution)
     const totalLPProRata = lpInvestors.reduce((s, inv) => s + inv.proRataShare, 0);
 
     perInvestorBreakdown = investorShares.map((inv) => {
-      // LP portion goes only to LP investors, pro-rata among them
-      const lpAllocation = inv.isGP
+      // allInvestorLP: everyone gets their pro-rata share (ROC, capital return)
+      const allInvAlloc = allInvestorLP * inv.proRataShare;
+
+      // lpOnlyLP: only LP investors get their share (pref return, profits)
+      const lpOnlyAlloc = inv.isGP
         ? 0
         : totalLPProRata > 0
-          ? totalLP * (inv.proRataShare / totalLPProRata)
+          ? lpOnlyLP * (inv.proRataShare / totalLPProRata)
           : 0;
 
+      const lpAllocation = allInvAlloc + lpOnlyAlloc;
+
       // GP carry is only allocated to GP investors
-      // If multiple GPs, split carry evenly among them (or could weight by commitment)
       const gpCarryAllocation = inv.isGP && gpCount > 0
         ? totalGP / gpCount
         : 0;
@@ -236,6 +259,8 @@ export function computeWaterfall(
     tiers: results,
     totalLP,
     totalGP,
+    allInvestorLP,
+    lpOnlyLP,
     distributableAmount,
     clawbackLiability,
     gpCoInvestAllocation,

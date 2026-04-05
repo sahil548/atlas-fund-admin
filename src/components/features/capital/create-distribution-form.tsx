@@ -183,12 +183,32 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
       const data = await res.json();
 
       // Auto-populate decomposition fields from waterfall results
-      // GP carry = totalGP, ROC from ROC tier, remainder is income
       const totalGP = data.totalGP ?? 0;
       const totalLP = data.totalLP ?? 0;
-      const rocTier = data.tiers?.find((t: any) => t.name?.toLowerCase().includes("return of capital"));
-      const roc = rocTier?.allocatedLP ?? 0;
-      const income = totalLP - roc;
+
+      // Determine ROC amount:
+      // 1. If distribution type is ROC, ALL LP allocation is return of capital
+      // 2. Otherwise, look for ROC-named tiers
+      const isROCDistribution = distTypeNormalized.includes("return of capital") ||
+        distTypeNormalized.includes("roc");
+
+      let roc: number;
+      let income: number;
+      if (isROCDistribution) {
+        // Entire LP allocation is return of capital
+        roc = totalLP;
+        income = 0;
+      } else {
+        // Find ROC tiers by name or appliesTo
+        const rocTierTotal = (data.tiers || [])
+          .filter((t: any) => {
+            const n = (t.name || "").toLowerCase();
+            return n.includes("return of capital") || n.includes("roc");
+          })
+          .reduce((s: number, t: any) => s + (t.allocatedLP ?? 0), 0);
+        roc = rocTierTotal;
+        income = totalLP - roc;
+      }
 
       set("returnOfCapital", roc.toFixed(2));
       set("income", income.toFixed(2));
