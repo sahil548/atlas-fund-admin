@@ -113,32 +113,41 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
     setWaterfallLoading(true);
     try {
       // Match template to distribution type by name, prioritizing templates linked to this entity
-      // 1. First look among templates assigned to the selected entity
-      // 2. Fall back to all templates only if no entity-specific match
+      // 1. Try entity-linked templates first for a name match
+      // 2. If no match, broaden search to ALL templates (entity may only be linked to one template
+      //    but the user may have created separate templates per distribution type)
       const entityTemplates = templates.filter((t) =>
         t.entities?.some((e) => e.id === form.entityId)
       );
-      const searchPool = entityTemplates.length > 0 ? entityTemplates : templates;
 
       const distTypeNormalized = form.distributionType.toLowerCase().replace(/_/g, " ");
-      let template = searchPool.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
-      // Fallback: try matching common aliases
-      if (!template && distTypeNormalized.includes("return of capital")) {
-        template = searchPool.find((t) => {
-          const n = t.name.toLowerCase();
-          return n.includes("roc") || n.includes("return") || n.includes("capital return");
-        });
-      }
-      if (!template && distTypeNormalized.includes("capital gain")) {
-        template = searchPool.find((t) => {
-          const n = t.name.toLowerCase();
-          return n.includes("gain") || n.includes("appreciation");
-        });
-      }
+
+      const nameMatch = (pool: WaterfallTemplate[]) =>
+        pool.find((t) => t.name.toLowerCase().includes(distTypeNormalized));
+      const aliasMatch = (pool: WaterfallTemplate[]) => {
+        if (distTypeNormalized.includes("return of capital")) {
+          return pool.find((t) => {
+            const n = t.name.toLowerCase();
+            return n.includes("roc") || n.includes("return") || n.includes("capital return");
+          });
+        }
+        if (distTypeNormalized.includes("capital gain")) {
+          return pool.find((t) => {
+            const n = t.name.toLowerCase();
+            return n.includes("gain") || n.includes("appreciation");
+          });
+        }
+        return undefined;
+      };
+
+      // Search entity templates first, then all templates
+      let template = nameMatch(entityTemplates) || aliasMatch(entityTemplates)
+        || nameMatch(templates) || aliasMatch(templates);
+
       // Final fallback: use first entity template, then first any template
       if (!template && entityTemplates.length > 0) {
         template = entityTemplates[0];
-        toast.success(`No "${form.distributionType}" waterfall found for this entity — using "${template.name}" template`);
+        toast.success(`No "${form.distributionType}" waterfall found — using "${template.name}" template`);
       }
       if (!template && templates.length > 0) {
         template = templates[0];
