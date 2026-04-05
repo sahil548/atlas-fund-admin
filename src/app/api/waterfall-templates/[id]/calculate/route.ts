@@ -108,7 +108,7 @@ export async function POST(
 
     // Also find all entities that are GP-type for broader name matching
     const gpEntities = await prisma.entity.findMany({
-      where: { firmId, entityType: { in: ["GP_ENTITY", "GP"] } },
+      where: { firmId, entityType: "GP_ENTITY" },
       select: { name: true },
     });
     const gpEntityNames = gpEntities.map((e) => e.name.toLowerCase()).filter(Boolean);
