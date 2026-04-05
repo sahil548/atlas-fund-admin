@@ -690,6 +690,20 @@ export function EntityCapTableTab({ entity, entityId }: { entity: any; entityId:
             })}
             {commitments.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No committed investors.</td></tr>}
           </tbody>
+          {commitments.length > 0 && (
+            <tfoot className="bg-gray-50 dark:bg-gray-800 border-t border-gray-200">
+              <tr className="font-semibold text-gray-700 dark:text-gray-300">
+                <td className="px-3 py-2">Total</td>
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2">{fmt(commitments.reduce((s: number, c: any) => s + c.amount, 0))}</td>
+                <td className="px-3 py-2">{fmt(commitments.reduce((s: number, c: any) => s + (c.calledAmount ?? 0), 0))}</td>
+                <td className="px-3 py-2">{fmt(commitments.reduce((s: number, c: any) => s + (c.amount - (c.calledAmount ?? 0)), 0))}</td>
+                <td className="px-3 py-2" />
+                <td className="px-3 py-2" />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 
