@@ -119,6 +119,17 @@ export async function POST(
     const gpEntityNames = gpCandidateEntities.map((e) => e.name.toLowerCase()).filter(Boolean);
     const gpEntityNamesNormalized = gpCandidateEntities.map((e) => normalizeName(e.name)).filter(Boolean);
 
+    // Method 5: Match investor names against ALL non-fund entities in the firm
+    // If an investor shares a name with an entity that isn't a fund, it's likely the GP/manager
+    const allFirmEntities = await prisma.entity.findMany({
+      where: { firmId },
+      select: { name: true, entityType: true },
+    });
+    const nonFundEntityNames = allFirmEntities
+      .filter((e) => !["MAIN_FUND", "SIDECAR", "SPV", "CO_INVEST_VEHICLE"].includes(e.entityType))
+      .map((e) => normalizeName(e.name))
+      .filter(Boolean);
+
     // Build per-investor shares (pro-rata of committed capital)
     const totalCommitted = commitments.reduce((s, c) => s + c.amount, 0);
     const gpDetectionLog: Array<{ investor: string; method: string }> = [];
@@ -134,11 +145,11 @@ export async function POST(
             const investorName = (c.investor.name ?? "").toLowerCase();
             const investorNameNorm = normalizeName(c.investor.name ?? "");
 
-            // Check investor type field
+            // Check investor type field (use includes for robustness against whitespace/casing)
             if (investorType.includes("gp") ||
-                investorType === "general partner" ||
-                investorType === "fund_manager" ||
-                investorType === "fund manager") {
+                investorType.includes("general partner") ||
+                investorType.includes("fund manager") ||
+                investorType.includes("fund_manager")) {
               isGP = true;
               gpDetectionLog.push({ investor: c.investor.name, method: "investor_type:" + investorType });
             }
@@ -157,6 +168,14 @@ export async function POST(
             )) {
               isGP = true;
               gpDetectionLog.push({ investor: c.investor.name, method: "name_normalized_match" });
+            }
+
+            // Method 5: investor name matches a non-fund entity in the firm
+            if (!isGP && investorNameNorm.length > 2 && nonFundEntityNames.some((entNorm) =>
+              investorNameNorm.includes(entNorm) || entNorm.includes(investorNameNorm)
+            )) {
+              isGP = true;
+              gpDetectionLog.push({ investor: c.investor.name, method: "non_fund_entity_match" });
             }
 
             // Direct GP indicators in investor name
@@ -287,6 +306,7 @@ export async function POST(
         gpDetectedIds: Array.from(gpIds),
         gpDetectionLog,
         gpCandidateEntities: gpCandidateEntities.map(e => ({ name: e.name, type: e.entityType, normalized: normalizeName(e.name) })),
+        nonFundEntities: allFirmEntities.filter(e => !["MAIN_FUND", "SIDECAR", "SPV", "CO_INVEST_VEHICLE"].includes(e.entityType)).map(e => ({ name: e.name, type: e.entityType, normalized: normalizeName(e.name) })),
         allInvestorNames: commitments.map(c => ({ name: c.investor.name, type: c.investor.investorType, normalized: normalizeName(c.investor.name) })),
         priorDistCount: priorDistLineItems.length,
         priorDistLPTotal: totalDistributedPrior,
