@@ -270,6 +270,7 @@ export default function CapitalCallDetailPage() {
           callId={data.id}
           lineItems={data.lineItems}
           callStatus={data.status}
+          dueDate={data.dueDate}
           onLineItemUpdate={() => mutate()}
         />
       </SectionPanel>
