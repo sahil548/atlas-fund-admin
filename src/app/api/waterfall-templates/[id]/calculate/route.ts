@@ -229,16 +229,12 @@ export async function POST(
         grossAmount: true,
         returnOfCapital: true,
         income: true,
-        longTermGain: true,
-        shortTermGain: true,
         carriedInterest: true,
         distribution: {
           select: {
-            id: true,
             distributionDate: true,
             distributionType: true,
             status: true,
-            grossAmount: true,
           },
         },
         investor: { select: { name: true } },
