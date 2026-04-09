@@ -74,19 +74,36 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
   );
 
   // Fetch commitments for selected entity (for manual per-investor allocation)
-  const { data: commitments = [] } = useSWR<{ investorId: string; investor: { id: string; name: string }; amount: number }[]>(
+  const { data: commitments = [] } = useSWR<{ investorId: string; investor: { id: string; name: string; investorType?: string }; amount: number }[]>(
     form.entityId ? `/api/commitments?entityId=${form.entityId}` : null,
     fetcher
   );
 
-  // When entity/commitments load, pre-populate per-investor allocations (pro-rata)
+  // Helper: detect if an investor is a GP/Fund Manager (matches server-side logic)
+  const isGPInvestor = (investorType?: string, name?: string): boolean => {
+    const t = (investorType ?? "").toLowerCase();
+    const n = (name ?? "").toLowerCase();
+    return t.includes("gp") ||
+      t.includes("general partner") ||
+      t.includes("fund manager") ||
+      t.includes("fund_manager") ||
+      n.includes("(gp)");
+  };
+
+  // When entity/commitments load, pre-populate per-investor allocations (pro-rata of LP-only)
+  // GP investors are excluded from the LP pro-rata (they receive carry via waterfall instead)
   // User can then override individual amounts before submitting
   useEffect(() => {
     if (!form.entityId || commitments.length === 0 || waterfallRan) return;
-    const totalCommit = commitments.reduce((s, c) => s + c.amount, 0);
+    // Split into LP and GP investors
+    const lpCommitments = commitments.filter((c) => !isGPInvestor(c.investor?.investorType, c.investor?.name));
+    const totalLPCommit = lpCommitments.reduce((s, c) => s + c.amount, 0);
     const gross = Number(form.grossAmount) || 0;
     const allocs: PerInvestorAllocation[] = commitments.map((c) => {
-      const share = totalCommit > 0 ? c.amount / totalCommit : 0;
+      const isGP = isGPInvestor(c.investor?.investorType, c.investor?.name);
+      // GP investors get $0 LP share in pre-population (they'll receive carry when waterfall runs)
+      // LP investors get their pro-rata of the gross based on LP-only commitment total
+      const share = isGP ? 0 : (totalLPCommit > 0 ? c.amount / totalLPCommit : 0);
       const amt = gross * share;
       return {
         investorId: c.investorId,

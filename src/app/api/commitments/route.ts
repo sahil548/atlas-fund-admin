@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     const commitments = await prisma.commitment.findMany({
       where,
       include: {
-        investor: { select: { id: true, name: true } },
+        investor: { select: { id: true, name: true, investorType: true } },
         entity: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: "desc" },
