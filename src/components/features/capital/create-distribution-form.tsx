@@ -268,15 +268,21 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
 
   async function handleSubmit() {
     // Always send per-investor overrides when allocations exist (manual or waterfall)
+    // For GP investors (gpCarryAllocation > 0 from the original waterfall calc),
+    // treat the entire override amount as carry. For LPs, zero carry.
+    // This way if the user edits a GP's gross amount, the carry follows the edit
+    // instead of sticking at the original waterfall value and going negative.
     const overrides = perInvestorAllocations.length > 0
       ? perInvestorAllocations.map((a) => {
           const amt = a.overrideAmount !== undefined && a.overrideAmount !== ""
             ? Number(a.overrideAmount)
             : a.totalAllocation;
+          const isGP = (a.gpCarryAllocation ?? 0) > 0;
+          const gpCarryAmount = isGP ? amt : 0;
           return {
             investorId: a.investorId,
             amount: amt,
-            gpCarryAmount: amt === 0 ? 0 : a.gpCarryAllocation,
+            gpCarryAmount,
           };
         })
       : undefined;

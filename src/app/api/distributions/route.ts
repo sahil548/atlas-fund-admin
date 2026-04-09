@@ -88,13 +88,31 @@ export async function POST(req: Request) {
             perInvestorOverrides.map((o) => [o.investorId, o])
           );
 
-          // Decompose each investor's non-carry portion into ROC/income/gains
-          // based on the event-level proportions of the non-carry total
-          const eventCarry = rest.carriedInterest ?? 0;
-          const eventNonCarry = grossAmount - eventCarry;
-          const rocProportion = eventNonCarry > 0 ? (rest.returnOfCapital ?? 0) / eventNonCarry : 0;
-          const incomeProportion = eventNonCarry > 0 ? (rest.income ?? 0) / eventNonCarry : 0;
-          const ltGainProportion = eventNonCarry > 0 ? (rest.longTermGain ?? 0) / eventNonCarry : 0;
+          // Recompute event-level totals from the overrides themselves.
+          // The user may have manually edited individual investor amounts after the
+          // waterfall preview ran — we trust the overrides as the source of truth.
+          const overrideSumAmount = perInvestorOverrides.reduce((s, o) => s + (o.amount ?? 0), 0);
+          const overrideSumCarry = perInvestorOverrides.reduce((s, o) => s + (o.gpCarryAmount ?? 0), 0);
+          const eventCarry = overrideSumCarry;
+          const eventNonCarry = Math.max(0, overrideSumAmount - eventCarry);
+
+          // Preserve the user's ROC/income/longTermGain split of the non-carry portion.
+          // If the user-entered totals don't add up (e.g., after they edited overrides
+          // but didn't re-type the top-level breakdown), normalize proportionally so
+          // ROC% + income% + LTG% = 1 across the non-carry pool.
+          const userNonCarryTotal =
+            (rest.returnOfCapital ?? 0) + (rest.income ?? 0) + (rest.longTermGain ?? 0);
+          let rocProportion = 0;
+          let incomeProportion = 0;
+          let ltGainProportion = 0;
+          if (userNonCarryTotal > 0) {
+            rocProportion = (rest.returnOfCapital ?? 0) / userNonCarryTotal;
+            incomeProportion = (rest.income ?? 0) / userNonCarryTotal;
+            ltGainProportion = (rest.longTermGain ?? 0) / userNonCarryTotal;
+          } else if (eventNonCarry > 0) {
+            // No user-supplied split — default all non-carry to income
+            incomeProportion = 1;
+          }
 
           const lineItemsData = commitments.map((c) => {
             const override = overrideMap.get(c.investorId);
@@ -122,6 +140,21 @@ export async function POST(req: Request) {
           });
 
           await prisma.distributionLineItem.createMany({ data: lineItemsData });
+
+          // Sync the parent DistributionEvent totals to match the overrides so the
+          // UI's header (Return of Capital / Income / Carry / Net to LPs) is consistent
+          // with the per-investor line items.
+          await prisma.distributionEvent.update({
+            where: { id: dist.id },
+            data: {
+              grossAmount: overrideSumAmount,
+              carriedInterest: eventCarry,
+              returnOfCapital: eventNonCarry * rocProportion,
+              income: eventNonCarry * incomeProportion,
+              longTermGain: eventNonCarry * ltGainProportion,
+              netToLPs: eventNonCarry,
+            },
+          });
         } else {
           // Simple pro-rata by commitment amount (no waterfall)
           const lineItemsData = commitments.map((c) => {
