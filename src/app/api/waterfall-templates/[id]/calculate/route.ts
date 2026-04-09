@@ -305,9 +305,17 @@ export async function POST(
     });
     // Only count line items for LP investors (not GP)
     const priorDistLineItems = priorDistLineItemsRaw.filter((li) => !gpIds.has(li.investorId));
-    // Pref offset counts all prior LP distributions (gross)
-    const totalDistributedPrior = priorDistLineItems
+    // Full prior LP distributions (gross) — used for the ROC tier check / debug visibility
+    const totalDistributedPriorGross = priorDistLineItems
       .reduce((s, li) => s + li.grossAmount, 0);
+    // Pref-offsetting prior distributions: exclude Return of Capital.
+    // ROC repays principal and does not reduce accrued pref. Pref is only paid down
+    // by actual pref payments (income / gains), which sit in (grossAmount - returnOfCapital)
+    // for LP line items.
+    const totalDistributedPriorForPref = priorDistLineItems
+      .reduce((s, li) => s + Math.max(0, li.grossAmount - (li.returnOfCapital ?? 0)), 0);
+    // Keep legacy alias for existing references below (now = ROC-excluded pref offset).
+    const totalDistributedPrior = totalDistributedPriorForPref;
 
     // Net pref available for this distribution:
     //   = cumulative pref accrued since inception − cumulative prior LP pref distributions
@@ -391,6 +399,8 @@ export async function POST(
         hurdleRatePct: hurdleRate * 100,
         cumulativePrefAccrued,
         priorLPDistributionsInceptionToDate: totalDistributedPrior,
+        priorLPDistributionsGrossInceptionToDate: totalDistributedPriorGross,
+        priorLPDistributionsROCExcluded: totalDistributedPriorGross - totalDistributedPriorForPref,
         precomputedPrefAmount,
         fundedCallTrancheCount: lpFundedCallLineItems.length,
         prefByTranche: prefByTranche.map((t) => ({
