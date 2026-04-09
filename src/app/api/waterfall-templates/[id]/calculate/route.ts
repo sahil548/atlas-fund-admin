@@ -207,21 +207,80 @@ export async function POST(
     // Calculate years outstanding using 30/360 day count convention
     // Every month = 30 days, year = 360 days
     // Jan 1 to Sep 30 = 9 × 30 = 270 days → 270/360 = 0.75
-    const distYear = distDate.getUTCFullYear();
+    // NOTE: yearsOutstanding is retained as a fallback input for the waterfall engine,
+    // but the canonical pref computation below uses contribution-dated 30/360 on actual PIC.
     const distMonth = distDate.getUTCMonth(); // 0-indexed (Jan=0, Sep=8)
     const distDay = Math.min(distDate.getUTCDate(), 30); // cap at 30 for 30/360
-    const yearStart = new Date(Date.UTC(distYear, 0, 1));
     // 30/360: days = months * 30 + day adjustment
     const days30_360 = distMonth * 30 + distDay;
     const yearsOutstanding = days30_360 / 360;
 
-    // Get prior distributions to LP investors only for the current calendar year
-    // Use grossAmount (total received) not netAmount (which may be net of carry)
+    // 30/360 day count between two dates (US NASD convention, simple variant)
+    // Used for contribution-dated pref accrual.
+    function days360(from: Date, to: Date): number {
+      const y1 = from.getUTCFullYear();
+      const m1 = from.getUTCMonth() + 1;
+      const d1raw = from.getUTCDate();
+      const y2 = to.getUTCFullYear();
+      const m2 = to.getUTCMonth() + 1;
+      const d2raw = to.getUTCDate();
+      const d1 = Math.min(d1raw, 30);
+      const d2 = d1 === 30 && d2raw === 31 ? 30 : Math.min(d2raw, 30);
+      return (y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1);
+    }
+
+    // --------------------------------------------------------------
+    // PREF COMPUTATION: inception-to-date, PIC-weighted
+    // --------------------------------------------------------------
+    // Pull funded capital call line items (LP only) across the entire fund life.
+    // Each tranche accrues pref from its paidDate (or fall back to callDate) to distDate.
+    const fundedCallLineItems = await prisma.capitalCallLineItem.findMany({
+      where: {
+        status: "Funded",
+        capitalCall: { entityId },
+      },
+      select: {
+        investorId: true,
+        amount: true,
+        paidDate: true,
+        capitalCall: { select: { callDate: true, callNumber: true } },
+        investor: { select: { name: true } },
+      },
+    });
+    const lpFundedCallLineItems = fundedCallLineItems.filter(
+      (li) => !gpIds.has(li.investorId) && (li.paidDate || li.capitalCall?.callDate),
+    );
+
+    // Preferred return hurdle rate: first tier with a positive hurdle rate
+    const prefTier = template.tiers.find((t) => (t.hurdleRate ?? 0) > 0);
+    const hurdleRate = (prefTier?.hurdleRate ?? 8) / 100;
+
+    // Compute cumulative pref accrued since inception, per tranche
+    const prefByTranche = lpFundedCallLineItems.map((li) => {
+      const startDate = li.paidDate ?? li.capitalCall!.callDate;
+      const days = Math.max(0, days360(startDate, distDate));
+      const years = days / 360;
+      const pref = li.amount * hurdleRate * years;
+      return {
+        investorName: li.investor.name,
+        callNumber: li.capitalCall?.callNumber,
+        contributionAmount: li.amount,
+        startDate,
+        days30_360: days,
+        years,
+        prefAccrued: pref,
+      };
+    });
+    const cumulativePrefAccrued = prefByTranche.reduce((s, t) => s + t.prefAccrued, 0);
+
+    // Prior LP distributions — INCEPTION-TO-DATE (strictly before distDate), not just YTD.
+    // Matches the manual Excel waterfall which carries the accrued-unpaid-pref balance
+    // continuously across year boundaries.
     const priorDistLineItemsRaw = await prisma.distributionLineItem.findMany({
       where: {
         distribution: {
           entityId,
-          distributionDate: { gte: yearStart, lte: distDate },
+          distributionDate: { lt: distDate },
         },
       },
       select: {
@@ -246,8 +305,19 @@ export async function POST(
     const totalDistributedPrior = priorDistLineItems
       .reduce((s, li) => s + li.grossAmount, 0);
 
+    // Net pref available for this distribution:
+    //   = cumulative pref accrued since inception − cumulative prior LP pref distributions
+    // If no funded capital call history is available, fall back to engine's internal
+    // (committed × rate × yearsOutstanding) calculation by leaving precomputedPref undefined.
+    const hasContributionHistory = lpFundedCallLineItems.length > 0;
+    const precomputedPrefAmount = hasContributionHistory
+      ? Math.max(0, cumulativePrefAccrued - totalDistributedPrior)
+      : undefined;
+
     // Build waterfall config from template fields
-    // Always offset pref by prior distributions since we scope to the current year
+    // When we have contribution history, we pass a precomputed pref amount (inception-to-date,
+    // PIC-weighted, net of prior LP pref distributions). Otherwise we fall back to the engine's
+    // internal (committed × rate × yearsOutstanding) formula.
     const waterfallConfig: WaterfallConfig = {
       carryPercent: template.carryPercent ?? 0.20,
       prefReturnCompounding:
@@ -255,6 +325,7 @@ export async function POST(
       prefReturnOffsetByDistributions: true,
       incomeCountsTowardPref: template.incomeCountsTowardPref ?? false,
       gpCoInvestPercent: template.gpCoInvestPercent ?? 0,
+      precomputedPrefAmount,
     };
 
     // Map tier inputs
@@ -312,6 +383,21 @@ export async function POST(
         yearsOutstanding,
         days30_360: days30_360,
         dayCountMethod: "30/360",
+        prefMethod: hasContributionHistory ? "inception_to_date_PIC_weighted" : "legacy_committed_times_YTD",
+        hurdleRatePct: hurdleRate * 100,
+        cumulativePrefAccrued,
+        priorLPDistributionsInceptionToDate: totalDistributedPrior,
+        precomputedPrefAmount,
+        fundedCallTrancheCount: lpFundedCallLineItems.length,
+        prefByTranche: prefByTranche.map((t) => ({
+          investor: t.investorName,
+          callNumber: t.callNumber,
+          contribution: t.contributionAmount,
+          startDate: t.startDate,
+          days30_360: t.days30_360,
+          years: t.years,
+          prefAccrued: t.prefAccrued,
+        })),
         prefBeforeOffset: totalContributed * (template.tiers.find(t => (t.hurdleRate ?? 0) > 0)?.hurdleRate ?? 8) / 100 * yearsOutstanding,
         lpCommitments: commitments
           .filter(c => !gpIds.has(c.investorId))

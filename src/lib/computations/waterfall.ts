@@ -44,6 +44,13 @@ export interface WaterfallConfig {
   incomeCountsTowardPref?: boolean;                 // Default false
   gpCoInvestPercent?: number;                       // null = no GP co-invest
   priorIncomeDistributed?: number;                  // for income-counts-toward-pref calc
+  /**
+   * Pre-computed preferred return amount (inception-to-date, net of prior pref distributions).
+   * When supplied, the engine uses this value directly for the pref tier instead of computing
+   * `totalContributed × rate × years`. Allows the caller to compute pref on actual contribution
+   * tranches / PIC-weighted bases rather than on full committed capital from Jan 1.
+   */
+  precomputedPrefAmount?: number;
 }
 
 export interface WaterfallResult {
@@ -93,6 +100,7 @@ export function computeWaterfall(
   const incomeTowardPref = config?.incomeCountsTowardPref ?? false;
   const gpCoInvestPercent = config?.gpCoInvestPercent ?? 0;
   const priorIncomeDistributed = config?.priorIncomeDistributed ?? 0;
+  const precomputedPrefAmount = config?.precomputedPrefAmount;
 
   let remaining = distributableAmount;
   const results: WaterfallTierResult[] = [];
@@ -127,22 +135,29 @@ export function computeWaterfall(
     // Preferred Return: cap at hurdle rate * contributed * years (simple or compound)
     if (tier.hurdleRate && tier.hurdleRate > 0 && tier.splitLP === 100 && tier.splitGP === 0) {
       let prefAmount: number;
-      if (compounding === "COMPOUND") {
-        // Compound: contributed * (1 + rate)^years - 1
-        prefAmount = totalContributed * (Math.pow(1 + tier.hurdleRate / 100, yearsOutstanding) - 1);
+
+      if (precomputedPrefAmount !== undefined) {
+        // Caller supplied a PIC-weighted, inception-to-date pref net of prior pref distributions.
+        // Use it directly — skip internal rate math and offsets.
+        prefAmount = Math.max(0, precomputedPrefAmount);
       } else {
-        // Simple: contributed * rate * years
-        prefAmount = totalContributed * (tier.hurdleRate / 100) * yearsOutstanding;
-      }
+        if (compounding === "COMPOUND") {
+          // Compound: contributed * (1 + rate)^years - 1
+          prefAmount = totalContributed * (Math.pow(1 + tier.hurdleRate / 100, yearsOutstanding) - 1);
+        } else {
+          // Simple: contributed * rate * years
+          prefAmount = totalContributed * (tier.hurdleRate / 100) * yearsOutstanding;
+        }
 
-      // Reduce pref by prior distributions if offset option is on
-      if (offsetByDist) {
-        prefAmount = Math.max(0, prefAmount - totalDistributedPrior);
-      }
+        // Reduce pref by prior distributions if offset option is on
+        if (offsetByDist) {
+          prefAmount = Math.max(0, prefAmount - totalDistributedPrior);
+        }
 
-      // Reduce pref by prior income distributed (income counts toward pref)
-      if (incomeTowardPref) {
-        prefAmount = Math.max(0, prefAmount - priorIncomeDistributed);
+        // Reduce pref by prior income distributed (income counts toward pref)
+        if (incomeTowardPref) {
+          prefAmount = Math.max(0, prefAmount - priorIncomeDistributed);
+        }
       }
 
       tierAmount = Math.min(remaining, prefAmount);
