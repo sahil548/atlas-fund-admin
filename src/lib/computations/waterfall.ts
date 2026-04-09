@@ -111,7 +111,9 @@ export function computeWaterfall(
 
   const sortedTiers = [...tiers].sort((a, b) => a.tierOrder - b.tierOrder);
 
-  for (const tier of sortedTiers) {
+  for (let tierIdx = 0; tierIdx < sortedTiers.length; tierIdx++) {
+    const tier = sortedTiers[tierIdx];
+    const isLastTier = tierIdx === sortedTiers.length - 1;
     if (remaining <= 0) {
       results.push({
         tierOrder: tier.tierOrder,
@@ -163,13 +165,22 @@ export function computeWaterfall(
       tierAmount = Math.min(remaining, prefAmount);
     }
 
-    // GP Catch-Up: 100% to GP until GP reaches target share of total distributable
-    // Standard formula: GP target = distributableAmount * carryPercent
-    // This ensures GP gets carryPercent% of the TOTAL distribution (not just profits above pref)
+    // 100% GP tier handling:
+    // - If this is the FINAL tier in the waterfall, treat it as a "remainder to GP"
+    //   bucket and take all remaining proceeds. This matches templates with only
+    //   {pref, remainder-to-GP} where there is no subsequent profit-split tier to
+    //   mop up leftover proceeds.
+    // - Otherwise treat it as a classic GP catch-up tier: GP receives enough to
+    //   reach carryPercent% of the total distributable, then later tiers split the
+    //   rest per their LP/GP percentages.
     if (tier.splitGP === 100 && tier.splitLP === 0) {
-      const gpTarget = distributableAmount * carryPercent;
-      const gpNeeded = Math.max(0, gpTarget - totalGP);
-      tierAmount = Math.min(remaining, gpNeeded);
+      if (isLastTier) {
+        tierAmount = remaining;
+      } else {
+        const gpTarget = distributableAmount * carryPercent;
+        const gpNeeded = Math.max(0, gpTarget - totalGP);
+        tierAmount = Math.min(remaining, gpNeeded);
+      }
     }
 
     // PRO_RATA tiers: 100% goes to LP pool (distributed pro-rata to all members)
@@ -222,10 +233,14 @@ export function computeWaterfall(
   }
 
   // Clawback liability: max(0, totalGP - entitled GP amount)
-  // Entitled GP = distributableAmount * carryPercent (matches catch-up formula)
-  // In practice, after a correct waterfall run GP should equal entitledGP (no clawback)
-  // Clawback > 0 can arise when GP received carry in prior periods but fund underperforms later
-  const entitledGP = distributableAmount * carryPercent;
+  // For classic catch-up + profit-split waterfalls, entitled GP = distributableAmount * carryPercent.
+  // For simplified "pref → remainder to GP" templates (no explicit catch-up cap), GP is entitled
+  // to whatever the final remainder-to-GP tier allocates, so clawback would be spuriously
+  // triggered by the carryPercent formula. Detect this style and skip the cap.
+  const lastTier = sortedTiers[sortedTiers.length - 1];
+  const lastTierIsRemainderToGP =
+    !!lastTier && lastTier.splitGP === 100 && lastTier.splitLP === 0;
+  const entitledGP = lastTierIsRemainderToGP ? totalGP : distributableAmount * carryPercent;
   const clawbackLiability = Math.max(0, totalGP - entitledGP);
 
   // Per-investor breakdown:
