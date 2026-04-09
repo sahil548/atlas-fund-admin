@@ -215,8 +215,10 @@ export async function POST(
     const days30_360 = distMonth * 30 + distDay;
     const yearsOutstanding = days30_360 / 360;
 
-    // 30/360 day count between two dates (US NASD convention, simple variant)
-    // Used for contribution-dated pref accrual.
+    // 30/360 day count between two dates, INCLUSIVE of the start date.
+    // Matches the manual Excel waterfall convention where a contribution on day N
+    // earns a full day of pref on day N (so Nov 1 → Sep 30 = 330 days, not 329).
+    // Equivalent to standard NASD 30/360 + 1 day when from < to.
     function days360(from: Date, to: Date): number {
       const y1 = from.getUTCFullYear();
       const m1 = from.getUTCMonth() + 1;
@@ -226,7 +228,9 @@ export async function POST(
       const d2raw = to.getUTCDate();
       const d1 = Math.min(d1raw, 30);
       const d2 = d1 === 30 && d2raw === 31 ? 30 : Math.min(d2raw, 30);
-      return (y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1);
+      const base = (y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1);
+      // Inclusive-start: contribution date earns pref on the contribution date itself.
+      return base > 0 ? base + 1 : 0;
     }
 
     // --------------------------------------------------------------
