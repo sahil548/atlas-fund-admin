@@ -414,14 +414,54 @@ export function CreateDistributionForm({ open, onClose, entities }: Props) {
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-[10px] text-gray-600 space-y-1">
             <div className="font-semibold text-gray-700">Calculation Inputs ({waterfallDebug.dayCountMethod || "30/360"})</div>
             <div>Days (30/360): {waterfallDebug.days30_360} / 360 = {waterfallDebug.yearsOutstanding?.toFixed(4)}</div>
-            <div>LP Committed Capital: {fmt(waterfallDebug.lpCommitments?.reduce((s: number, c: any) => s + c.committed, 0) ?? 0)}</div>
+            <div className="mt-1 font-medium text-gray-700">LP Commitments (total: {fmt(waterfallDebug.lpCommitments?.reduce((s: number, c: any) => s + c.committed, 0) ?? 0)})</div>
             {waterfallDebug.lpCommitments?.map((c: any) => (
-              <div key={c.name} className="ml-3">• {c.name}: committed {fmt(c.committed)}, called {fmt(c.called)}</div>
+              <div key={c.name} className="ml-3">• {c.name} [{c.type || "—"}]: committed {fmt(c.committed)}, called {fmt(c.called)}</div>
             ))}
-            <div>GP: {waterfallDebug.gpCommitments?.map((c: any) => `${c.name} (${fmt(c.committed)})`).join(", ") || "none detected"}</div>
-            <div>Pref Before Offset: {fmt(waterfallDebug.prefBeforeOffset ?? 0)}</div>
-            <div>Prior LP Distributions (YTD): {fmt(waterfallDebug.priorDistLPTotal ?? 0)} ({waterfallDebug.priorDistCount ?? 0} line items)</div>
-            <div>Remaining Pref: {fmt((waterfallDebug.prefBeforeOffset ?? 0) - (waterfallDebug.priorDistLPTotal ?? 0))}</div>
+            <div className="mt-1 font-medium text-gray-700">GP Commitments (total: {fmt(waterfallDebug.gpCommitments?.reduce((s: number, c: any) => s + c.committed, 0) ?? 0)})</div>
+            {(waterfallDebug.gpCommitments?.length ?? 0) === 0 && <div className="ml-3 text-amber-600">⚠ No GP detected — all investors treated as LP</div>}
+            {waterfallDebug.gpCommitments?.map((c: any) => (
+              <div key={c.name} className="ml-3">• {c.name} [{c.type || "—"}]: committed {fmt(c.committed)} (via {waterfallDebug.gpDetectionLog?.find((l: any) => l.investor === c.name)?.method ?? "?"})</div>
+            ))}
+            <div className="mt-1 font-medium text-gray-700">Pref Calculation</div>
+            <div className="ml-3">Pref Before Offset: {fmt(waterfallDebug.prefBeforeOffset ?? 0)}</div>
+            <div className="ml-3">Prior LP Distributions (YTD): {fmt(waterfallDebug.priorDistLPTotal ?? 0)} ({waterfallDebug.priorDistCount ?? 0} line items)</div>
+            <div className="ml-3 font-medium">Remaining Pref: {fmt((waterfallDebug.prefBeforeOffset ?? 0) - (waterfallDebug.priorDistLPTotal ?? 0))}</div>
+            {waterfallDebug.priorDistLineItemsDetail?.length > 0 && (
+              <>
+                <div className="mt-1 font-medium text-gray-700">Prior Distribution Line Items (LP only)</div>
+                {waterfallDebug.priorDistLineItemsDetail.map((li: any, i: number) => (
+                  <div key={i} className="ml-3">
+                    • {li.investorName}: {fmt(li.grossAmount)} on {li.distributionDate ? new Date(li.distributionDate).toLocaleDateString() : "?"} [{li.distributionType || "—"}/{li.status || "—"}] (ROC: {fmt(li.returnOfCapital ?? 0)}, Inc: {fmt(li.income ?? 0)})
+                  </div>
+                ))}
+              </>
+            )}
+            {waterfallDebug.allPriorDistCount > (waterfallDebug.priorDistCount ?? 0) && (
+              <div className="ml-3 text-amber-600">
+                ⚠ {waterfallDebug.allPriorDistCount - (waterfallDebug.priorDistCount ?? 0)} additional line items for GP investors (excluded from offset)
+              </div>
+            )}
+            {waterfallDebug.templateConfig && (
+              <>
+                <div className="mt-1 font-medium text-gray-700">Template: {waterfallDebug.templateConfig.name}</div>
+                <div className="ml-3">Carry: {((waterfallDebug.templateConfig.carryPercent ?? 0.2) * 100).toFixed(1)}%, Compounding: {waterfallDebug.templateConfig.prefReturnCompounding ?? "SIMPLE"}</div>
+                {waterfallDebug.templateConfig.tiers?.map((t: any) => (
+                  <div key={t.order} className="ml-3">Tier {t.order} {t.name}: LP {t.splitLP}% / GP {t.splitGP}%{t.hurdleRate ? `, hurdle ${t.hurdleRate}%` : ""}{t.appliesTo ? `, ${t.appliesTo}` : ""}</div>
+                ))}
+              </>
+            )}
+            {waterfallDebug.waterfallTiers && (
+              <>
+                <div className="mt-1 font-medium text-gray-700">Tier-by-Tier Allocation</div>
+                {waterfallDebug.waterfallTiers.map((t: any) => (
+                  <div key={t.order} className="ml-3">
+                    Tier {t.order} {t.name}: LP {fmt(t.allocatedLP)} + GP {fmt(t.allocatedGP)} = {fmt(t.totalAllocated)} (remaining: {fmt(t.remaining)})
+                  </div>
+                ))}
+                <div className="ml-3 font-medium">Result: LP {fmt(waterfallDebug.resultTotalLP ?? 0)} + GP {fmt(waterfallDebug.resultTotalGP ?? 0)}</div>
+              </>
+            )}
           </div>
         )}
 

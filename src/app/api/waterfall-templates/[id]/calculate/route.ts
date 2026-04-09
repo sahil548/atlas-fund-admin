@@ -217,17 +217,37 @@ export async function POST(
 
     // Get prior distributions to LP investors only for the current calendar year
     // Use grossAmount (total received) not netAmount (which may be net of carry)
-    const priorDistLineItems = await prisma.distributionLineItem.findMany({
+    const priorDistLineItemsRaw = await prisma.distributionLineItem.findMany({
       where: {
         distribution: {
           entityId,
           distributionDate: { gte: yearStart, lte: distDate },
         },
       },
-      select: { investorId: true, grossAmount: true },
+      select: {
+        investorId: true,
+        grossAmount: true,
+        returnOfCapital: true,
+        income: true,
+        longTermGain: true,
+        shortTermGain: true,
+        carriedInterest: true,
+        distribution: {
+          select: {
+            id: true,
+            distributionDate: true,
+            distributionType: true,
+            status: true,
+            grossAmount: true,
+          },
+        },
+        investor: { select: { name: true } },
+      },
     });
+    // Only count line items for LP investors (not GP)
+    const priorDistLineItems = priorDistLineItemsRaw.filter((li) => !gpIds.has(li.investorId));
+    // Pref offset counts all prior LP distributions (gross)
     const totalDistributedPrior = priorDistLineItems
-      .filter((li) => !gpIds.has(li.investorId))
       .reduce((s, li) => s + li.grossAmount, 0);
 
     // Build waterfall config from template fields
@@ -310,6 +330,48 @@ export async function POST(
         allInvestorNames: commitments.map(c => ({ name: c.investor.name, type: c.investor.investorType, normalized: normalizeName(c.investor.name) })),
         priorDistCount: priorDistLineItems.length,
         priorDistLPTotal: totalDistributedPrior,
+        // Detailed prior distribution line items (LP only) for diagnosis
+        priorDistLineItemsDetail: priorDistLineItems.map(li => ({
+          investorName: li.investor?.name,
+          investorId: li.investorId,
+          distributionDate: li.distribution?.distributionDate,
+          distributionType: li.distribution?.distributionType,
+          status: li.distribution?.status,
+          grossAmount: li.grossAmount,
+          returnOfCapital: li.returnOfCapital,
+          income: li.income,
+          carriedInterest: li.carriedInterest,
+        })),
+        // All prior line items (including GP, for full visibility)
+        allPriorDistCount: priorDistLineItemsRaw.length,
+        allPriorDistTotal: priorDistLineItemsRaw.reduce((s, li) => s + li.grossAmount, 0),
+        // Template config being used
+        templateConfig: {
+          name: template.name,
+          carryPercent: template.carryPercent,
+          prefReturnCompounding: template.prefReturnCompounding,
+          prefReturnOffsetByDistributions: template.prefReturnOffsetByDistributions,
+          incomeCountsTowardPref: template.incomeCountsTowardPref,
+          tiers: template.tiers.map(t => ({
+            order: t.tierOrder,
+            name: t.name,
+            splitLP: t.splitLP,
+            splitGP: t.splitGP,
+            hurdleRate: t.hurdleRate,
+            appliesTo: t.appliesTo,
+          })),
+        },
+        // Tier-by-tier waterfall math
+        waterfallTiers: result.tiers.map(t => ({
+          order: t.tierOrder,
+          name: t.name,
+          allocatedLP: t.allocatedLP,
+          allocatedGP: t.allocatedGP,
+          totalAllocated: t.totalAllocated,
+          remaining: t.remaining,
+        })),
+        resultTotalLP: result.totalLP,
+        resultTotalGP: result.totalGP,
       },
       // Tier breakdown
       tiers: result.tiers,
