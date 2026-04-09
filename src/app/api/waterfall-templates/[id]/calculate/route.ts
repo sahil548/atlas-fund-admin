@@ -215,11 +215,10 @@ export async function POST(
     const days30_360 = distMonth * 30 + distDay;
     const yearsOutstanding = days30_360 / 360;
 
-    // 30/360 day count between two dates, INCLUSIVE of the start date.
-    // Matches the manual Excel waterfall convention where a contribution on day N
-    // earns a full day of pref on day N (so Nov 1 → Sep 30 = 330 days, not 329).
-    // Equivalent to standard NASD 30/360 + 1 day when from < to.
-    function days360(from: Date, to: Date): number {
+    // Standard NASD 30/360 day count between two dates, EXCLUSIVE of the end date.
+    // Used for intermediate pref-accrual segments where the end of one segment is
+    // the start of the next (no double-counting at the boundary).
+    function days360Exclusive(from: Date, to: Date): number {
       const y1 = from.getUTCFullYear();
       const m1 = from.getUTCMonth() + 1;
       const d1raw = from.getUTCDate();
@@ -228,8 +227,14 @@ export async function POST(
       const d2raw = to.getUTCDate();
       const d1 = Math.min(d1raw, 30);
       const d2 = d1 === 30 && d2raw === 31 ? 30 : Math.min(d2raw, 30);
-      const base = (y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1);
-      // Inclusive-start: contribution date earns pref on the contribution date itself.
+      return (y2 - y1) * 360 + (m2 - m1) * 30 + (d2 - d1);
+    }
+    // Inclusive 30/360 (both endpoints count). Matches the manual Excel waterfall
+    // convention where a contribution on day N earns a full day of pref on day N,
+    // AND a distribution on day M collects pref on day M. Used for the final segment
+    // running up to the distribution date.
+    function days360Inclusive(from: Date, to: Date): number {
+      const base = days360Exclusive(from, to);
       return base > 0 ? base + 1 : 0;
     }
 
@@ -259,23 +264,16 @@ export async function POST(
     const prefTier = template.tiers.find((t) => (t.hurdleRate ?? 0) > 0);
     const hurdleRate = (prefTier?.hurdleRate ?? 8) / 100;
 
-    // Compute cumulative pref accrued since inception, per tranche
+    // Per-tranche contribution summary (kept for debug visibility only)
     const prefByTranche = lpFundedCallLineItems.map((li) => {
       const startDate = li.paidDate ?? li.capitalCall!.callDate;
-      const days = Math.max(0, days360(startDate, distDate));
-      const years = days / 360;
-      const pref = li.amount * hurdleRate * years;
       return {
         investorName: li.investor.name,
         callNumber: li.capitalCall?.callNumber,
         contributionAmount: li.amount,
         startDate,
-        days30_360: days,
-        years,
-        prefAccrued: pref,
       };
     });
-    const cumulativePrefAccrued = prefByTranche.reduce((s, t) => s + t.prefAccrued, 0);
 
     // Prior LP distributions — INCEPTION-TO-DATE (strictly before distDate), not just YTD.
     // Matches the manual Excel waterfall which carries the accrued-unpaid-pref balance
@@ -316,6 +314,91 @@ export async function POST(
       .reduce((s, li) => s + Math.max(0, li.grossAmount - (li.returnOfCapital ?? 0)), 0);
     // Keep legacy alias for existing references below (now = ROC-excluded pref offset).
     const totalDistributedPrior = totalDistributedPriorForPref;
+
+    // --------------------------------------------------------------
+    // Segment-based pref accrual (timeline of PIC events)
+    // --------------------------------------------------------------
+    // Build a chronological timeline of PIC-changing events:
+    //   - Contribution events: add to the LP PIC base on their paid/call date
+    //   - ROC events: subtract from the LP PIC base, effective the first day of
+    //     the month FOLLOWING the distribution date. This matches the manual
+    //     Excel convention where the PIC step-down flows through starting the
+    //     next monthly pref accrual (e.g. 10/21 ROC → 11/1 effective).
+    // Then walk segments between events, accruing pref on the running balance.
+    type PicEvent = {
+      date: Date;
+      amount: number; // positive for contribution, negative for ROC
+      kind: "contribution" | "roc";
+      label: string;
+    };
+    const picEvents: PicEvent[] = [];
+    for (const li of lpFundedCallLineItems) {
+      const d = li.paidDate ?? li.capitalCall!.callDate;
+      picEvents.push({
+        date: new Date(d),
+        amount: li.amount,
+        kind: "contribution",
+        label: `${li.investor.name} call ${li.capitalCall?.callNumber ?? ""}`,
+      });
+    }
+    for (const li of priorDistLineItems) {
+      const roc = li.returnOfCapital ?? 0;
+      if (roc <= 0) continue;
+      const dd = li.distribution?.distributionDate;
+      if (!dd) continue;
+      const d = new Date(dd);
+      // Effective date = first day of the next month
+      const eff = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+      // If the effective date is on/after the current distribution date, skip —
+      // the ROC hasn't had time to flow into the pref base for this calculation.
+      if (eff.getTime() >= distDate.getTime()) continue;
+      picEvents.push({
+        date: eff,
+        amount: -roc,
+        kind: "roc",
+        label: `${li.investor?.name ?? "LP"} ROC`,
+      });
+    }
+    picEvents.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    // Walk segments from each event until the next event (or distDate for the last).
+    let runningBalance = 0;
+    let cumulativePrefAccrued = 0;
+    const prefSegments: Array<{
+      segmentStart: Date;
+      segmentEnd: Date;
+      days: number;
+      balance: number;
+      prefAccrued: number;
+      eventKind: "contribution" | "roc";
+      eventLabel: string;
+    }> = [];
+    for (let i = 0; i < picEvents.length; i++) {
+      const ev = picEvents[i];
+      runningBalance += ev.amount;
+      if (runningBalance <= 0) continue;
+      const segStart = ev.date;
+      const isLast = i === picEvents.length - 1;
+      const nextDate = isLast ? distDate : picEvents[i + 1].date;
+      // Final segment runs through the distribution date inclusive; intermediate
+      // segments are exclusive of the next event date (which is the start of the
+      // next segment).
+      const days = isLast
+        ? Math.max(0, days360Inclusive(segStart, distDate))
+        : Math.max(0, days360Exclusive(segStart, nextDate));
+      if (days <= 0) continue;
+      const pref = runningBalance * hurdleRate * (days / 360);
+      cumulativePrefAccrued += pref;
+      prefSegments.push({
+        segmentStart: segStart,
+        segmentEnd: isLast ? distDate : new Date(nextDate.getTime() - 86_400_000),
+        days,
+        balance: runningBalance,
+        prefAccrued: pref,
+        eventKind: ev.kind,
+        eventLabel: ev.label,
+      });
+    }
 
     // Net pref available for this distribution:
     //   = cumulative pref accrued since inception − cumulative prior LP pref distributions
@@ -395,7 +478,7 @@ export async function POST(
         yearsOutstanding,
         days30_360: days30_360,
         dayCountMethod: "30/360",
-        prefMethod: hasContributionHistory ? "inception_to_date_PIC_weighted" : "legacy_committed_times_YTD",
+        prefMethod: hasContributionHistory ? "segment_based_PIC_timeline" : "legacy_committed_times_YTD",
         hurdleRatePct: hurdleRate * 100,
         cumulativePrefAccrued,
         priorLPDistributionsInceptionToDate: totalDistributedPrior,
@@ -408,9 +491,15 @@ export async function POST(
           callNumber: t.callNumber,
           contribution: t.contributionAmount,
           startDate: t.startDate,
-          days30_360: t.days30_360,
-          years: t.years,
-          prefAccrued: t.prefAccrued,
+        })),
+        prefSegments: prefSegments.map((s) => ({
+          start: s.segmentStart,
+          end: s.segmentEnd,
+          days30_360: s.days,
+          balance: s.balance,
+          eventKind: s.eventKind,
+          eventLabel: s.eventLabel,
+          prefAccrued: s.prefAccrued,
         })),
         prefBeforeOffset: totalContributed * (template.tiers.find(t => (t.hurdleRate ?? 0) > 0)?.hurdleRate ?? 8) / 100 * yearsOutstanding,
         lpCommitments: commitments
