@@ -399,4 +399,207 @@ describe("computeWaterfall — waterfall distribution engine", () => {
 
     expect(result.totalLP + result.totalGP).toBeCloseTo(10_000_000, 0);
   });
+
+  // ─── precomputedPrefAmount config (df17108) ──────────────────────────────
+  describe("precomputedPrefAmount — engine uses caller-supplied pref", () => {
+    it("uses precomputedPrefAmount directly instead of internal rate math", () => {
+      // Caller passes pref = $500K explicitly; engine should NOT compute
+      // 8% × $8M × 2yr = $1.28M.
+      const result = computeWaterfall(
+        buildStandardTiers(),
+        10_000_000,
+        8_000_000,
+        0,
+        2,
+        { precomputedPrefAmount: 500_000 },
+      );
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier2.allocatedLP).toBeCloseTo(500_000, 0);
+    });
+
+    it("clamps negative precomputed pref to zero", () => {
+      // If caller has already over-paid pref (offset > accrued), pref should be 0
+      const result = computeWaterfall(
+        buildStandardTiers(),
+        10_000_000,
+        8_000_000,
+        0,
+        2,
+        { precomputedPrefAmount: -100_000 },
+      );
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier2.allocatedLP).toBeCloseTo(0, 0);
+    });
+
+    it("precomputedPrefAmount is capped by remaining after ROC", () => {
+      // Only $1M remains after ROC, even if caller passes pref = $2M
+      const result = computeWaterfall(
+        buildStandardTiers(),
+        9_000_000,           // distributable
+        8_000_000,           // contributed (ROC eats 8M)
+        0,
+        2,
+        { precomputedPrefAmount: 2_000_000 },
+      );
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      // $1M remains after $8M ROC; pref capped at remaining
+      expect(tier2.allocatedLP).toBeCloseTo(1_000_000, 0);
+    });
+
+    it("precomputedPrefAmount ignores offsetByDistributions (caller handles it upstream)", () => {
+      // When precomputed is supplied, offsetByDist flag is skipped — caller is
+      // expected to have already netted out prior pref distributions.
+      const result = computeWaterfall(
+        buildStandardTiers(),
+        10_000_000,
+        8_000_000,
+        999_999_999,         // huge prior distributions
+        2,
+        {
+          precomputedPrefAmount: 500_000,
+          prefReturnOffsetByDistributions: true,
+        },
+      );
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier2.allocatedLP).toBeCloseTo(500_000, 0);
+    });
+
+    it("invariant holds when precomputedPrefAmount is set", () => {
+      const result = computeWaterfall(
+        buildStandardTiers(),
+        10_000_000,
+        8_000_000,
+        0,
+        2,
+        { precomputedPrefAmount: 500_000 },
+      );
+      expect(result.totalLP + result.totalGP).toBeCloseTo(10_000_000, 0);
+    });
+
+    it("falls back to internal math when precomputedPrefAmount is undefined", () => {
+      const internal = computeWaterfall(buildStandardTiers(), 10_000_000, 8_000_000, 0, 2);
+      const explicitUndef = computeWaterfall(
+        buildStandardTiers(),
+        10_000_000,
+        8_000_000,
+        0,
+        2,
+        { precomputedPrefAmount: undefined },
+      );
+      const tier2Internal = internal.tiers.find((t) => t.tierOrder === 2)!;
+      const tier2Explicit = explicitUndef.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier2Explicit.allocatedLP).toBeCloseTo(tier2Internal.allocatedLP, 0);
+    });
+  });
+
+  // ─── Remainder-to-GP as final tier (2a0a3f8) ─────────────────────────────
+  describe("final 100%-GP tier behaves as remainder-to-GP bucket", () => {
+    // Simplified template: {pref → remainder to GP}. No explicit profit-split tier.
+    // Every dollar above the pref should go to GP.
+    function buildSimplifiedTiers(): WaterfallTierInput[] {
+      return [
+        {
+          tierOrder: 1,
+          name: "Preferred Return",
+          splitLP: 100,
+          splitGP: 0,
+          hurdleRate: 8,
+          appliesTo: null,
+        },
+        {
+          tierOrder: 2,
+          name: "Remainder to GP",
+          splitLP: 0,
+          splitGP: 100,
+          hurdleRate: null,
+          appliesTo: null,
+        },
+      ];
+    }
+
+    it("PCF II 12/31/25 $124K distribution: $60K LP pref + $64K GP (all remainder)", () => {
+      // From commit 2a0a3f8 expected result table.
+      const result = computeWaterfall(
+        buildSimplifiedTiers(),
+        124_000,
+        0, // no ROC tier — contributed irrelevant when pref is precomputed
+        0,
+        1,
+        { precomputedPrefAmount: 60_000 },
+      );
+      const tier1 = result.tiers.find((t) => t.tierOrder === 1)!;
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier1.allocatedLP).toBeCloseTo(60_000, 0);
+      expect(tier2.allocatedGP).toBeCloseTo(64_000, 0);
+      expect(result.totalLP + result.totalGP).toBeCloseTo(124_000, 0);
+    });
+
+    it("no proceeds left unallocated when final tier is 100% GP", () => {
+      // Previously: final GP tier capped at distributable * 20% → proceeds leaked.
+      const result = computeWaterfall(
+        buildSimplifiedTiers(),
+        1_000_000,
+        0,
+        0,
+        1,
+        { precomputedPrefAmount: 100_000 },
+      );
+      expect(result.totalLP + result.totalGP).toBeCloseTo(1_000_000, 0);
+    });
+
+    it("remainder-to-GP takes ALL remaining, not just carryPercent share", () => {
+      // With 20% carry, old behavior would have given GP only $200K of the $900K surplus.
+      const result = computeWaterfall(
+        buildSimplifiedTiers(),
+        1_000_000,
+        0,
+        0,
+        1,
+        { precomputedPrefAmount: 100_000, carryPercent: 0.20 },
+      );
+      const tier2 = result.tiers.find((t) => t.tierOrder === 2)!;
+      expect(tier2.allocatedGP).toBeCloseTo(900_000, 0);
+    });
+
+    it("non-final 100%-GP tier still behaves as classic catch-up (not remainder)", () => {
+      // Standard 4-tier: the 100%-GP catch-up is NOT the last tier
+      // (carry tier comes after it). It must still cap at carryPercent × distributable.
+      const result = computeWaterfall(buildStandardTiers(), 20_000_000, 5_000_000, 0, 2);
+      const tier3 = result.tiers.find((t) => t.tierOrder === 3)!; // GP Catch-Up
+      const tier4 = result.tiers.find((t) => t.tierOrder === 4)!; // Carry
+      // GP tier 3 capped; tier 4 still gets allocation (surplus flows to profit split)
+      expect(tier3.totalAllocated).toBeLessThan(20_000_000 * 0.20 + 1);
+      expect(tier4.totalAllocated).toBeGreaterThan(0);
+    });
+
+    it("clawback liability is zero for remainder-to-GP templates (no spurious cap)", () => {
+      // Simplified templates should not trigger clawback just because GP received
+      // more than distributable × carryPercent — that ceiling doesn't apply here.
+      const result = computeWaterfall(
+        buildSimplifiedTiers(),
+        1_000_000,
+        0,
+        0,
+        1,
+        { precomputedPrefAmount: 100_000 },
+      );
+      // GP got $900K which is more than 20% × $1M = $200K; old clawback formula
+      // would have flagged $700K. The fix sets entitledGP = totalGP for this shape.
+      expect(result.clawbackLiability).toBeCloseTo(0, 0);
+    });
+
+    it("underfunded simplified template still invariants hold", () => {
+      // Pref exceeds distributable — all goes to LP, nothing to GP.
+      const result = computeWaterfall(
+        buildSimplifiedTiers(),
+        50_000,
+        0,
+        0,
+        1,
+        { precomputedPrefAmount: 100_000 },
+      );
+      expect(result.totalLP).toBeCloseTo(50_000, 0);
+      expect(result.totalGP).toBeCloseTo(0, 0);
+    });
+  });
 });
