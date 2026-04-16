@@ -94,7 +94,8 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   3. Every walkthrough comment is triaged as "urgent — fix in v3.0" or "non-urgent — defer to v3.1+" with explicit reasoning
   4. Urgent items either fold into an existing v3.0 phase (22-27) or land in the Phase 28 follow-up backlog
   5. Phases 22-27 plans are updated in-place when they pick up urgent walkthrough items
-**Plans:** TBD (likely 1 plan: Claude writes scripts + checklists + seed-data notes, user executes walkthroughs, Claude captures feedback + triage in the two walkthrough files)
+**Plans:** 1 plan
+- [ ] 21-01-PLAN.md — Walkthrough scaffolding (session notes + GP + LP baseline files) → user-executed GP + LP walkthroughs → Claude triages per the locked rubric → urgent items folded into downstream P22-27 sections in-place OR into Phase 28 backlog
 
 ### Phase 22: Fit & Finish — Code
 
