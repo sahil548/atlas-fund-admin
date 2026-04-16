@@ -4,6 +4,16 @@
 
 ---
 
+## 🐛 Seed bug discovered during GP session transition (2026-04-16)
+
+When the GP walkthrough exercised CRUD flows (adding an income entry on an asset, etc.), the subsequent `npx prisma db seed` between sessions FAILED with a foreign-key constraint violation: `AssetExpense_assetId_fkey`. Root cause: `prisma/seed.ts:82` tries to `asset.deleteMany()` before clearing dependent rows in `AssetExpense` (and probably `AssetIncome`, `AssetValuation`, etc.). The seed's delete-order is incomplete.
+
+**Workaround used between GP and LP sessions:** a full `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION="yes" npx prisma db push --force-reset && npx prisma db seed` — this bypasses the manual delete order entirely.
+
+**For Phase 22/23 triage:** add a new observation (or fold into FIN-08) — the seed delete order needs to mirror the full dependent-row graph. This is a developer-workflow bug that doesn't block shipping, but it will bite Kathryn or anyone else iterating locally.
+
+---
+
 ## Before You Start Either Session
 
 Complete these steps in order:
