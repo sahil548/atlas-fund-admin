@@ -4,6 +4,7 @@
 
 - ✅ **v1.0 GP Production Ready** — Phases 1-10 (shipped 2026-03-08) — [archive](milestones/v1.0-ROADMAP.md)
 - ✅ **v2.0 Intelligence Platform** — Phases 11-20 (shipped 2026-03-18) — [archive](milestones/v2.0-ROADMAP.md)
+- 🔶 **v2.1 CRUD Completion & Waterfall Correctness** — retroactive, 71 commits 2026-03-24 → 2026-04-09 (Kathryn, off-GSD) — [archive](milestones/v2.1-ROADMAP.md)
 
 ---
 
@@ -13,6 +14,25 @@
 See [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full phase details.
 
 Phases 1-10 shipped 2026-03-08. 231 commits, 497 files changed, ~92K LOC TypeScript.
+
+</details>
+
+<details>
+<summary>🔶 v2.1 CRUD Completion & Waterfall Correctness — IN REVIEW 2026-04-16 (retroactive)</summary>
+
+See [milestones/v2.1-ROADMAP.md](milestones/v2.1-ROADMAP.md) and [milestones/v2.1-REQUIREMENTS.md](milestones/v2.1-REQUIREMENTS.md).
+
+71 commits between 2026-03-24 and 2026-04-09 by Kathryn. 65 on `origin/main`, 6 on unmerged branch `feat/edit-delete-across-entities`. Shipped outside the GSD workflow; documented retroactively 2026-04-16.
+
+**Themes:**
+- CRUD completion across 9+ entity domains (11 new API routes)
+- Waterfall + pref-return correctness (PIC-weighted, 30/360, ROC handling, final-tier-remainder)
+- GP detection hardening
+- Cap table + investor activity polish
+
+**Regression tests added retroactively:** 45 (87 total in waterfall/pref domain, all passing).
+
+**Pending:** merge of 6-commit branch after UI smoke-test on PCF II distribution.
 
 </details>
 
@@ -53,3 +73,4 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 | 18. AI Features | v2.0 | 4/4 | Complete | 2026-03-10 |
 | 19. Dashboard & Supporting Modules | v2.0 | 5/5 | Complete | 2026-03-10 |
 | 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |
+| v2.1 (retroactive, off-GSD) | v2.1 | N/A (71 commits) | In Review | 2026-04-09 (last commit) |

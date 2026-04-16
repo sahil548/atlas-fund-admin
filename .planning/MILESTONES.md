@@ -1,5 +1,36 @@
 # Atlas — Milestones
 
+## v2.1 CRUD Completion & Waterfall Correctness (In Review: 2026-04-16)
+
+**Status:** Documented retroactively. 65 commits on main, 6 unmerged on `feat/edit-delete-across-entities`.
+**Contributor:** Kathryn (solo, work done outside GSD workflow)
+**Timeline:** 2026-03-24 → 2026-04-09 (last branch commit)
+**Stats:** 71 commits, ~66 files changed, +4,949 / −521 lines
+
+### Key Accomplishments
+
+1. **Edit/delete/revert across 9+ entity domains** — assets, expenses, income, valuations, vehicles, commitments, capital calls, distributions, waterfall templates, deals, tasks, documents, entities, side letters. 11 new API routes with PATCH/DELETE.
+2. **Waterfall math rewritten for real-world fund accounting** — PIC-weighted inception-to-date pref, 30/360 inclusive day count, ROC excluded from pref offset, segment-based PIC timeline with post-ROC step-down, final-tier-remainder-to-GP handling. Ground-truthed against Kathryn's manual Excel waterfall for CG Private Credit Fund II.
+3. **GP detection strengthened** — firm-wide detection via normalized name matching, Fund Manager investor type, unit classes, non-fund fallback. Eliminates whole classes of "wrong investor classified as GP/LP" bugs.
+4. **Cap table & investor activity polish** — editable issued units, commitments total row, $0 filtering, date sorting, full dollar display, portal-rendered dropdowns.
+5. **Test coverage added retroactively** — 45 new tests across waterfall engine and pref-accrual helpers (87 total passing in waterfall domain). Pure `pref-accrual.ts` lib extracted for testability.
+
+### Known Gaps (Tech Debt entering v3.0)
+
+- Calculate route still inlines pref-accrual logic that duplicates `pref-accrual.ts` — refactor pending
+- CRUD + UX work has zero regression test coverage (17 CRUD + 10 UX requirements, untested)
+- 6 commits on `feat/edit-delete-across-entities` pending merge review (recommended fast-forward after UI smoke-test)
+- Branch name misleading (tip commits are all pref-return fixes, not edit/delete)
+- No PROJECT.md/RESEARCH.md/PLAN.md/VERIFICATION.md per GSD convention — reconstructed from git log only
+- Validation against one fund only (PCF II) — equity funds, European vs American waterfalls, multi-LP funds not exercised
+
+### Archive
+
+- [v2.1-ROADMAP.md](milestones/v2.1-ROADMAP.md)
+- [v2.1-REQUIREMENTS.md](milestones/v2.1-REQUIREMENTS.md)
+
+---
+
 ## v2.0 Intelligence Platform (Shipped: 2026-03-18)
 
 **Phases:** 10 | **Plans:** 58
