@@ -1,83 +1,107 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: CRUD Completion & Waterfall Correctness
-status: in_review
-stopped_at: v2.1 retroactively documented; 6-commit branch pending merge review
-last_updated: "2026-04-16T12:40:00.000Z"
-last_activity: "2026-04-16 — Kathryn's 71 commits (2026-03-24 → 2026-04-09) documented as v2.1 retroactive milestone. 45 regression tests added for waterfall + pref-accrual. 6-commit branch feat/edit-delete-across-entities pending merge review."
+milestone: v3.0
+milestone_name: Consolidation & Scale Readiness
+status: roadmap_complete
+stopped_at: "v3.0 roadmap created (phases 21-27); ready for /gsd:plan-phase 21"
+last_updated: "2026-04-16T14:30:00.000Z"
+last_activity: "2026-04-16 — v3.0 roadmap written: 7 phases (21-27), 30/30 requirements mapped, all success criteria defined goal-backward."
 progress:
-  total_phases: "N/A (off-GSD)"
-  completed_phases: "N/A"
-  total_plans: "N/A"
-  completed_plans: "N/A"
-  percent: "N/A"
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Atlas — GSD State
 
 ## Project Reference
-- **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-03-18 — predates v2.1 work)
+- **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-04-16)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** Close out v2.1 (merge branch, decide on v3.0 scope)
+- **Current focus:** v3.0 Consolidation & Scale Readiness — roadmap complete, ready to plan Phase 21
 
 ## Current Position
 
-- **Milestone:** v2.1 (CRUD Completion & Waterfall Correctness) — IN REVIEW
-- **Status:** 65 of 71 commits landed on `origin/main`. 6 commits on `feat/edit-delete-across-entities` pending merge.
-- **Active branch (local review):** `review/kathryn-v2.1` — tracks `origin/feat/edit-delete-across-entities`
-- **Last activity:** 2026-04-16 — retroactive documentation + regression tests added
+- **Milestone:** v3.0 (Consolidation & Scale Readiness) — ROADMAP COMPLETE
+- **Previous:** v2.1 shipped 2026-04-16 (tagged, pushed)
+- **Phase:** Phase 21 (Fit & Finish) — not started, ready to plan
+- **Plan:** —
+- **Status:** Roadmap complete; next step is `/gsd:plan-phase 21`
+- **Last activity:** 2026-04-16 — v3.0 ROADMAP.md written with 7 phases (21-27) and 30/30 requirements mapped
 
-### Open decisions
-1. **Merge `feat/edit-delete-across-entities` into main?**
-   - Recommendation: yes, fast-forward, after UI smoke-test on PCF II distribution
-   - Regression tests already added (87 passing in waterfall domain)
-2. **What is v3.0 scope?**
-   - See continuation plan below
-3. **Rename branch before archiving?**
-   - Current name is misleading (tip commits are pref-return, not edit/delete)
-   - Suggested: `feat/waterfall-pref-corrections`
+## v3.0 Phase Overview
+
+| Phase | Name | Requirements | Size |
+|-------|------|--------------|------|
+| 21 | Fit & Finish | FIN-01..08 (8) | Medium |
+| 22 | Post-Fit-&-Finish Manual Walkthrough | MAN-01, MAN-02 (2) | Small |
+| 23 | RBAC Enforcement | RBAC-01..05 (5) | Medium |
+| 24 | Pagination | PAGE-01..04 (4) | Medium |
+| 25 | Error Boundaries | ERR-01..03 (3) | Small |
+| 26 | E2E Test Coverage | E2E-01..06 (6) | Medium |
+| 27 | Post-Hardening Walkthrough & Follow-up Fixes | MAN-03, MAN-04 (2) | Small-to-medium |
+
+**Coverage:** 30/30 requirements mapped, no orphans.
+
+**Dependency ordering rationale:** Fit & finish first so walkthroughs and hardening run against a clean baseline. Manual walkthrough (P22) before hardening so its feedback can shape hardening priorities. RBAC (P23) before E2E (P26) so tests exercise real role enforcement. Error boundaries (P25) before E2E so tests aren't flapping on white-screens. Final walkthrough (P27) after all hardening so the user can feel-check the full v3.0 before sign-off.
 
 ## Accumulated Context
 
-### Key Architectural Decisions (from v2.1)
-1. **30/360 inclusive day count** for pref accrual (Excel convention, not standard NASD)
-2. **ROC flows into PIC base effective first day of following month** (Excel convention)
-3. **Final 100%-GP tier treated as remainder-to-GP bucket** when no subsequent profit-split tier exists
-4. **GP detection is firm-wide and multi-signal** — normalized name, Fund Manager type, unit classes, non-fund fallback
-5. **Multiple waterfall templates per vehicle** (was 1:1)
-6. **Multiple investor profiles per contact** (was 1:1)
-7. **Pref offset excludes ROC** — only income/gains reduce accrued pref
-8. **`precomputedPrefAmount` config** on waterfall engine — caller provides PIC-weighted pref, engine uses directly
+### Key Architectural Decisions (carried from v2.0 + v2.1)
+
+From v2.0:
+- REST API, not tRPC
+- SWR for client data
+- Zod on all routes via `parseBody`
+- Custom Select/Modal/Tabs (no Radix dependency)
+- Firm-wide multi-tenancy via `useFirm()` hook
+- Clerk auth (prod) / mock UserProvider (dev)
+
+From v2.1:
+- 30/360 inclusive day count for pref accrual (Excel convention)
+- ROC flows into PIC base effective first day of following month
+- Final 100%-GP tier treated as remainder-to-GP when no subsequent profit-split tier
+- GP detection is firm-wide and multi-signal (name, type, unit class, fallback)
+- Multiple waterfall templates per vehicle; multiple investor profiles per contact
+- Pref offset excludes ROC; only income/gains reduce accrued pref
+- `precomputedPrefAmount` config on waterfall engine
+
+### v3.0 Scope Decisions (2026-04-16)
+
+| Decision | Answer |
+|----------|--------|
+| v3.0 direction | Path C (fit & finish) → Path A (hardening) |
+| Scale target | 2–3x growth (30 LPs, 30 assets) |
+| Path A must-haves | RBAC enforcement, E2E tests for CRUD |
+| Path A deferred | Rate limiting, code splitting |
+| Also in v3.0 | Pagination, error boundaries |
+| Deferred to v3.1+ | Background jobs, full perf monitoring |
+| Manual walkthroughs | Kept as standalone phases (22 + 27), not merged into automated work |
+| Phase count | 7 (within 5-8 target band for consolidation-sized milestone) |
 
 ### Blockers/Concerns
-1. **Route duplication:** `waterfall-templates/[id]/calculate/route.ts` still inlines day-count and segment-walk logic that duplicates `src/lib/computations/pref-accrual.ts`. Refactor needed in v3.0.
-2. **Single-fund validation:** all ground-truth values come from CG Private Credit Fund II. Other fund shapes not exercised.
-3. **CRUD work is untested:** 17 CRUD requirements shipped with zero regression tests.
-4. **Process gap:** v2.1 shipped outside the GSD workflow. No PROJECT.md, PLAN.md, RESEARCH.md, or per-phase VERIFICATION.md were produced during the work.
+
+- None blocking Phase 21 kickoff.
+- Watch: Phase 26 (E2E) depends on Phase 23 (RBAC) shipping cleanly; if RBAC slips, E2E tests may need to accommodate a mid-migration auth state.
 
 ## Performance Metrics
 
 - Plans completed (v1.0): 36 plans across 10 phases
 - Plans completed (v2.0): 58 plans across 10 phases
-- v2.1 (off-GSD): 71 commits, no plan breakdown
-- Test coverage (waterfall + pref domain): 87 tests passing (was 42 before 2026-04-16)
+- v2.1 (off-GSD): 71 commits, no plan breakdown — retroactively documented
+- Tests added in v2.1: 45 (87 total in waterfall domain)
+- v3.0 phases planned: 7 (21-27)
+- v3.0 requirements mapped: 30/30
 
 ## Session Continuity
 
 - **Initialized:** 2026-03-08
+- **v1.0 shipped:** 2026-03-08
 - **v2.0 shipped:** 2026-03-18
-- **v2.1 work (off-GSD):** 2026-03-24 → 2026-04-09 (Kathryn)
-- **v2.1 retroactive intake + tests:** 2026-04-16
+- **v2.1 shipped + tagged:** 2026-04-16
+- **v3.0 kickoff:** 2026-04-16
+- **v3.0 roadmap complete:** 2026-04-16
 - **Last session:** 2026-04-16
-- **Stopped at:** v2.1 documented; merge-review pending + v3.0 scope pending
+- **Stopped at:** v3.0 roadmap written; next is `/gsd:plan-phase 21`
 - **Resume file:** None
-
-## Next Steps (when user returns)
-
-1. **Smoke-test the branch** on PCF II 9/30/25 distribution → confirm debug panel shows `120,750 LP pref / 5,638.72 GP carry`
-2. **Rename branch** to `feat/waterfall-pref-corrections`
-3. **Merge** via fast-forward
-4. **Commit** test additions + v2.1 planning docs
-5. **Tag** `v2.1`
-6. **Kick off v3.0** — see proposed scope in the chat summary

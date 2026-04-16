@@ -16,9 +16,24 @@ The GP team can manage the full deal-to-asset lifecycle and see accurate fund/LP
 
 ---
 
-## Current State (v2.0 shipped 2026-03-18)
+## Current Milestone: v3.0 Consolidation & Scale Readiness
 
-Atlas is **deployed on Vercel with real Clerk authentication and real data**. v2.0 adds AI intelligence, CRM, meeting capture, and production-quality polish to the v1.0 foundation.
+**Goal:** Close accumulated v2.0/v2.1 gaps (fit & finish), then harden for a 2–3x growth scenario (30 LPs, 30 assets): RBAC enforcement, pagination, error boundaries, and E2E test coverage on the CRUD work shipped in v2.1.
+
+**Target themes:**
+- **Fit & finish:** close v2.0 VERIFICATION.md gaps, retrofit stale REQUIREMENTS checkboxes, complete Plan 20-10 human verification, build missing `/meetings/[id]` page, refactor calculate route to use `pref-accrual.ts`, write waterfall conventions doc, validate waterfall against a second fund
+- **RBAC enforcement:** middleware that enforces GP_ADMIN / GP_TEAM / SERVICE_PROVIDER / LP_INVESTOR roles on all API routes (currently any authenticated user can hit anything)
+- **Pagination:** cursor-based pagination on list endpoints so the app stays responsive at 30+ LPs / assets
+- **Error boundaries:** page-level boundaries so one bad API response doesn't crash the app
+- **E2E tests for CRUD:** Playwright tests for Kathryn's v2.1 work (capital call lifecycle, distribution lifecycle, commitment edits) — locks in behavior that currently has zero regression coverage
+
+**Explicitly deferred to v3.1+:** rate limiting on AI endpoints, code splitting / lazy loading, background jobs (BullMQ/Trigger.dev), full perf monitoring stack (Sentry/Datadog)
+
+---
+
+## Current State (v2.1 shipped 2026-04-16)
+
+Atlas is **deployed on Vercel with real Clerk authentication and real data**. v2.0 added AI intelligence, CRM, meeting capture, and production polish. v2.1 added CRUD completion across all entity domains and rewrote waterfall/pref-return math for real-world fund accounting.
 
 - **Auth:** Clerk 7 active in production. Mock UserProvider available for local dev.
 - **Data:** Production uses real data. Dev uses seeded demo data (8 users: 3 GP + 5 LP).
@@ -99,12 +114,53 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v2
 - ✓ INTEG-01 through INTEG-09 (bug fixes, dead code, workflow verification) — v2.0
 - ✓ SCHEMA-01 through SCHEMA-04 (logging, Zod schemas, indexes, parseBody) — v2.0
 - ✓ UIPOL-01 through UIPOL-06 (modal, select, tabs, dark mode, error boundaries) — v2.0
+- ✓ CRUD-01 through CRUD-17 (edit/delete/revert across 9+ entity domains) — v2.1
+- ✓ WF-01 through WF-26 (waterfall + pref-return correctness, PIC-weighted, 30/360, ROC handling, remainder-to-GP) — v2.1
+- ✓ UX-01 through UX-10 (cap table + investor activity polish) — v2.1
+- ✓ BUILD-01 through BUILD-05 (TypeScript + Prisma relation fixes) — v2.1
 
-### Active
+### Active (v3.0)
 
-(None — define in next milestone via `/gsd:new-milestone`)
+**Fit & Finish:**
+- [ ] **FIN-01**: Build `/meetings/[id]` detail page (activity feed currently 404s)
+- [ ] **FIN-02**: Refactor `/api/waterfall-templates/[id]/calculate` to import from `pref-accrual.ts` (remove duplicated logic)
+- [ ] **FIN-03**: Write `docs/waterfall-conventions.md` explaining 30/360 inclusive and ROC effective-date convention
+- [ ] **FIN-04**: Ground-truth waterfall against a second fund (beyond CG Private Credit Fund II) to surface PCF-II-specific assumptions
+- [ ] **FIN-05**: Retrofit VERIFICATION.md for v2.0 phases 12, 13, 14, 15, 18, 20
+- [ ] **FIN-06**: Sync stale REQUIREMENTS.md checkboxes (TASK-01..05, FIN-07, FIN-10, Phase 20 INTEG/SCHEMA/UIPOL)
+- [ ] **FIN-07**: Execute Plan 20-10 (final human verification checkpoint for v2.0)
+- [ ] **FIN-08**: Re-verify the three March-5 bugs (DD tab 0%, pass rate 300%, IC memo spinner) on current main
 
-### Out of Scope
+**Hardening:**
+- [ ] **RBAC-01**: Role-enforcement middleware on all API routes (reject LP_INVESTOR on GP routes, SERVICE_PROVIDER scoped by entity)
+- [ ] **RBAC-02**: Entity-scoped access for SERVICE_PROVIDER role (CPAs only see entities they're assigned to)
+- [ ] **RBAC-03**: Admin audit log of role enforcement rejections (who tried what)
+- [ ] **PAGE-01**: Cursor-based pagination helper reusable across list endpoints
+- [ ] **PAGE-02**: Apply pagination to deals, assets, transactions, investors, tasks, documents, contacts list endpoints
+- [ ] **PAGE-03**: UI: "Load more" pattern on list pages (SWR infinite mode)
+- [ ] **ERR-01**: Page-level error boundaries catch malformed API responses without white-screening
+- [ ] **ERR-02**: Graceful "Something went wrong" fallback with retry button on every main page
+- [ ] **E2E-01**: Playwright setup + Clerk auth helper for E2E tests
+- [ ] **E2E-02**: Capital call lifecycle E2E (create → edit line items → issue → fund → revert → delete)
+- [ ] **E2E-03**: Distribution lifecycle E2E (create with waterfall → edit overrides → approve → pay → revert → delete)
+- [ ] **E2E-04**: Commitment lifecycle E2E (create → assign unit class → edit amount → delete)
+- [ ] **E2E-05**: Waterfall template E2E (create → add tiers → edit tiers → assign to vehicle → delete)
+
+**Manual Walkthrough & Feedback:**
+- [ ] **MAN-01**: GP-side manual walkthrough after Fit & Finish (user-driven note capture)
+- [ ] **MAN-02**: LP-side manual walkthrough after Fit & Finish (user-driven note capture)
+- [ ] **MAN-03**: Post-hardening manual walkthrough (RBAC + pagination + error boundaries feel-check)
+- [ ] **MAN-04**: Follow-up fixes from walkthroughs before v3.0 sign-off
+
+### Out of Scope (v3.0)
+
+**Deferred from v3.0 → v3.1+:**
+- Rate limiting on AI endpoints (deferred — low-risk at 30 LP scale, revisit if AI costs spike)
+- Code splitting / lazy loading (deferred — bundle size acceptable at current scale)
+- Background job runner (deferred — no immediate need; notifications fire inline)
+- Full perf monitoring stack (Sentry/Datadog — deferred, may revisit with a lightweight error tracker)
+
+**Permanently out of scope:**
 
 - Native mobile app (PWA later, native much later)
 - SOC 2 compliance (build toward it, not yet)
@@ -154,11 +210,13 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v2
 
 - **v1.0 shipped 2026-03-08:** 231 commits, 497 files, ~92K LOC
 - **v2.0 shipped 2026-03-18:** 264 commits, 545 files, ~91K LOC
-- **Total:** 495 commits, 94 plans across 20 phases
+- **v2.1 shipped 2026-04-16:** 71 commits, +4,949 / −521 lines (tagged, pushed to origin)
+- **Total:** ~566 commits, 94 GSD plans + 71 ad-hoc commits
 
 v1.0 requirements archived: [milestones/v1.0-REQUIREMENTS.md](milestones/v1.0-REQUIREMENTS.md)
 v2.0 requirements archived: [milestones/v2.0-REQUIREMENTS.md](milestones/v2.0-REQUIREMENTS.md)
+v2.1 requirements archived: [milestones/v2.1-REQUIREMENTS.md](milestones/v2.1-REQUIREMENTS.md)
 
 ---
 
-*Last updated: 2026-03-18 after v2.0 milestone shipped*
+*Last updated: 2026-04-16 after v2.1 milestone tagged + v3.0 scope defined*
