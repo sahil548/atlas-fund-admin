@@ -63,13 +63,13 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 
 **Goal:** Close accumulated v2.0/v2.1 gaps (fit & finish), then harden for 2–3x growth scale (30 LPs, 30 assets) with RBAC enforcement, pagination, error boundaries, and E2E coverage on v2.1 CRUD work. Bookended by two manual walkthroughs: baseline at Phase 21, final sign-off at Phase 28.
 
-**Requirements:** 30 total across 6 categories (FIN × 8, MAN × 4, RBAC × 5, PAGE × 4, ERR × 3, E2E × 6).
+**Requirements:** 34 total across 6 categories (FIN × 12, MAN × 4, RBAC × 5, PAGE × 4, ERR × 3, E2E × 6). FIN-09..12 added from Phase 21 walkthrough triage 2026-04-16.
 
 **Size:** 8 phases, mostly small-to-medium (consolidation work — no new feature surface).
 
 ### Phases
 
-- [ ] **Phase 21: Initial Manual Walkthrough (Baseline)** — User-driven GP + LP tours of the current app to capture a fresh baseline of feedback BEFORE any v3.0 changes are made. Output shapes subsequent phase priorities.
+- [x] **Phase 21: Initial Manual Walkthrough (Baseline)** — User-driven GP + LP tours of the current app to capture a fresh baseline of feedback BEFORE any v3.0 changes are made. Output shapes subsequent phase priorities. COMPLETE 2026-04-16 — 52 observations triaged, 19 urgent items folded into Phase 22, 1 item to Phase 28 backlog.
 - [ ] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification
 - [ ] **Phase 23: Fit & Finish — Docs & Verification Retrofit** — Waterfall conventions doc, VERIFICATION.md retrofit for v2.0 phases 12/13/14/15/18/20, traceability sync, Plan 20-10 closeout
 - [ ] **Phase 24: RBAC Enforcement** — API middleware + UI hiding so role boundaries are actually enforced, not just modeled
@@ -94,21 +94,48 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   3. Every walkthrough comment is triaged as "urgent — fix in v3.0" or "non-urgent — defer to v3.1+" with explicit reasoning
   4. Urgent items either fold into an existing v3.0 phase (22-27) or land in the Phase 28 follow-up backlog
   5. Phases 22-27 plans are updated in-place when they pick up urgent walkthrough items
-**Plans:** 1 plan
-- [ ] 21-01-PLAN.md — Walkthrough scaffolding (session notes + GP + LP baseline files) → user-executed GP + LP walkthroughs → Claude triages per the locked rubric → urgent items folded into downstream P22-27 sections in-place OR into Phase 28 backlog
+**Plans:** 1/1 plans complete
+- [x] 21-01-PLAN.md — Walkthrough scaffolding (session notes + GP + LP baseline files) → user-executed GP + LP walkthroughs → Claude triages per the locked rubric → urgent items folded into downstream P22-27 sections in-place OR into Phase 28 backlog. COMPLETE 2026-04-16.
 
 ### Phase 22: Fit & Finish — Code
 
 **Goal:** Close the code-level v2.0/v2.1 gaps so the app is internally consistent before hardening work starts.
-**Size:** Medium (4 discrete code-level items — one new page, one refactor, one validation, one bug re-verify)
+**Size:** Medium-to-large (original 4 items + significant additions from Phase 21 walkthrough)
 **Depends on:** Phase 21 (walkthrough feedback may add items here)
-**Requirements:** FIN-01, FIN-02, FIN-04, FIN-08
+**Requirements:** FIN-01, FIN-02, FIN-04, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12
 **Success Criteria** (what must be TRUE):
-  1. Clicking a meeting in the activity feed loads a working meeting detail page (no 404) — FIN-01
+  1. Clicking a meeting in the activity feed loads a working meeting detail page (no 404); meeting list cards have click handlers routing to that detail page — FIN-01
   2. The waterfall calculate route imports its day-count and segment-walk logic from `pref-accrual.ts` (no inlined duplicate), and all 87 pref/waterfall tests still pass — FIN-02
   3. A second fund (non-PCF-II) produces the expected waterfall output against a ground-truth Excel reference, surfacing any PCF-II-specific assumptions — FIN-04
   4. The three March-5 bugs (DD tab 0%, pass rate 300%, IC memo spinner) are each formally marked resolved with evidence OR reopened with a reproduction note — FIN-08
-**Plans:** TBD (likely 2-3 plans: meeting page, waterfall refactor + second-fund validation, bug re-verification)
+  5. Error copy cleanup: "not authorized" is not used for non-auth failure modes across deal delete, document AI summary, and any other catch-all usages — FIN-09
+  6. List sort/filter: asset class filter, entity column sort, and meetings sort/filter all work — FIN-10
+  7. Integrated records: per-asset and per-entity task widgets link to `/tasks/[id]`; cap-table investors link to CRM contact records — FIN-11
+  8. LP display quality: capital account statement reconciles; LP portfolio shows invested capital vs. fair value — FIN-12
+**Plans:** TBD (likely 3-4 plans given additions)
+
+**Additions from Phase 21 walkthrough:**
+- GP Obs 3: Fix "not authorized" error copy on deal stage-gate rejection — explain the rule, not auth failure (FIN-09)
+- GP Obs 5: Investigate post-DD deal showing zero workstreams (BUG-01 variant or seed gap) — diagnose and fix (FIN-08)
+- GP Obs 6: Wire activity feed entries on deal detail to be clickable/navigable — unified activity-feed component fix (FIN-01 adjacent)
+- GP Obs 7: Investigate and close deletion bypass that allows admin delete of IC-Review/Closing deals against stage-gate intent
+- GP Obs 8: Fix asset list class filter buttons — they render but do not filter (FIN-10)
+- GP Obs 10: Unblock asset edit surface — entry date and other fields must be editable; HIGH priority per asset-calc thesis (Obs 20)
+- GP Obs 12: Add clear edit path for lease/contract fields on asset Overview — HIGH priority per asset-calc thesis (Obs 20)
+- GP Obs 18: Wire per-asset task tab rows to `/tasks/[id]` detail (linkage fix only — detail view exists) (FIN-11)
+- GP Obs 19: Wire per-asset activity feed entries to be navigable — shared fix with Obs 6 (FIN-01 adjacent)
+- GP Obs 21: Add column sort to entities list — no sorting currently (FIN-10)
+- GP Obs 22: Wire per-entity task widgets to `/tasks/[id]` (same fix as Obs 18, FIN-11)
+- GP Obs 24: Fix "Asset Allocations" percentage label ambiguity — add tooltip clarifying semantic direction (entity's ownership stake IN asset)
+- GP Obs 25: Fix cost basis seed linkage so entity overview shows non-zero cost bases; verify UI data-entry path — HIGH priority per asset-calc thesis
+- GP Obs 27: Wire cap-table investor rows to link to Directory/CRM contact record (FIN-11)
+- GP Obs 35: Fix Add Side Letter form crash — TypeError on `entities.map` due to v2.1 response shape change; normalize endpoint or safe-unwrap — BLOCKER
+- GP Obs 39: Fix "unauthorized" error copy on document AI summary — explain condition and next action (FIN-09)
+- GP Obs 40: Fix document upload wizard — stuck on step 1, cannot advance — BLOCKER
+- GP Obs 44: Fix meetings list sort/filter (FIN-10)
+- GP Obs 47: Fix seed delete order — add `deleteMany` for `AssetExpense`, `AssetIncome`, `AssetValuation` before `asset.deleteMany()` in seed.ts
+- LP-Obs 2: Fix LP Capital Account distribution total reconciliation — $14M total vs $8M accounted for gap is unacceptable for real LP use — BLOCKER (FIN-12)
+- LP-Obs 3: Add invested capital + current fair value columns to LP Portfolio view per holding (FIN-12)
 
 ### Phase 23: Fit & Finish — Docs & Verification Retrofit
 
@@ -122,6 +149,9 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   3. REQUIREMENTS.md traceability is consistent: TASK-01..05 checked, Phase 20 INTEG/SCHEMA/UIPOL present, FIN-07/FIN-10 notes corrected (referring to v2.0's naming, not v3.0's) — FIN-06
   4. Plan 20-10 (final human verification checkpoint for v2.0) has a SUMMARY.md documenting user-facing acceptance of v2.0 polish work — FIN-07
 **Plans:** TBD (likely 2 plans: conventions doc + traceability sync, VERIFICATION.md retrofit + Plan 20-10 closeout)
+
+**Additions from Phase 21 walkthrough:**
+- GP Obs 11: Add tooltip to asset Overview "Next Review" date explaining how the date is determined (auto-computed, manually set, or rolled from last review). Pure documentation/UI copy — no code logic change.
 
 ### Phase 24: RBAC Enforcement
 
@@ -206,7 +236,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 | 19. Dashboard & Supporting Modules | v2.0 | 5/5 | Complete | 2026-03-10 |
 | 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |
 | v2.1 (retroactive, off-GSD) | v2.1 | N/A (71 commits) | In Review | 2026-04-09 (last commit) |
-| 21. Initial Manual Walkthrough (Baseline) | v3.0 | 0/TBD | Not started | — |
+| 21. Initial Manual Walkthrough (Baseline) | v3.0 | 1/1 | Complete | 2026-04-16 |
 | 22. Fit & Finish — Code | v3.0 | 0/TBD | Not started | — |
 | 23. Fit & Finish — Docs & Verification Retrofit | v3.0 | 0/TBD | Not started | — |
 | 24. RBAC Enforcement | v3.0 | 0/TBD | Not started | — |

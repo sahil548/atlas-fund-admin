@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
-status: completed
-stopped_at: Phase 21 context gathered
-last_updated: "2026-04-16T17:35:40.767Z"
-last_activity: "2026-04-16 — v3.0 roadmap restructured: walkthroughs bookend the milestone (21 + 28). 8 phases total, 30/30 requirements mapped."
+status: in_progress
+stopped_at: Phase 21 complete — walkthrough triaged, urgent items folded
+last_updated: "2026-04-16"
+last_activity: "2026-04-16 — Phase 21 complete. 52 observations triaged (21 urgent → Phase 22, 4 already scoped, 17 deferred v3.1+). FIN-09..12 added to REQUIREMENTS.md."
 progress:
   total_phases: 8
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Atlas — GSD State
@@ -18,31 +18,31 @@ progress:
 ## Project Reference
 - **PROJECT.md:** `.planning/PROJECT.md` (updated 2026-04-16)
 - **Core value:** GP team manages full deal-to-asset lifecycle and fund/LP metrics in one place
-- **Current focus:** v3.0 Consolidation & Scale Readiness — roadmap complete, ready to plan Phase 21
+- **Current focus:** v3.0 Consolidation & Scale Readiness — Phase 21 complete, ready to plan Phase 22
 
 ## Current Position
 
-- **Milestone:** v3.0 (Consolidation & Scale Readiness) — ROADMAP COMPLETE
-- **Previous:** v2.1 shipped 2026-04-16 (tagged, pushed)
-- **Phase:** Phase 21 (Initial Manual Walkthrough) — not started, ready to plan
+- **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
+- **Previous:** Phase 21 (Initial Manual Walkthrough) — COMPLETE 2026-04-16
+- **Phase:** Phase 22 (Fit & Finish — Code) — ready to plan
 - **Plan:** —
-- **Status:** Roadmap complete; next step is `/gsd:plan-phase 21`
-- **Last activity:** 2026-04-16 — v3.0 roadmap restructured: walkthroughs bookend the milestone (21 + 28). 8 phases total, 30/30 requirements mapped.
+- **Status:** Phase 21 complete. 52 observations triaged. 21 urgent items folded into Phase 22. 4 new FIN requirements (FIN-09..12) added. Next step is `/gsd:plan-phase 22`.
+- **Last activity:** 2026-04-16 — Phase 21 GP + LP walkthrough triage complete. Phase 22 scope significantly expanded by walkthrough findings.
 
 ## v3.0 Phase Overview
 
-| Phase | Name | Requirements | Size |
-|-------|------|--------------|------|
-| 21 | Initial Manual Walkthrough (Baseline) | MAN-01, MAN-02 (2) | Small |
-| 22 | Fit & Finish — Code | FIN-01, FIN-02, FIN-04, FIN-08 (4) | Medium |
-| 23 | Fit & Finish — Docs & Verification Retrofit | FIN-03, FIN-05, FIN-06, FIN-07 (4) | Small-to-medium |
-| 24 | RBAC Enforcement | RBAC-01..05 (5) | Medium |
-| 25 | Pagination | PAGE-01..04 (4) | Medium |
-| 26 | Error Boundaries | ERR-01..03 (3) | Small |
-| 27 | E2E Test Coverage | E2E-01..06 (6) | Medium |
-| 28 | Final Walkthrough & Sign-off | MAN-03, MAN-04 (2) | Small-to-medium |
+| Phase | Name | Requirements | Size | Status |
+|-------|------|--------------|------|--------|
+| 21 | Initial Manual Walkthrough (Baseline) | MAN-01, MAN-02 (2) | Small | COMPLETE |
+| 22 | Fit & Finish — Code | FIN-01, FIN-02, FIN-04, FIN-08..12 (8) | Medium-to-large | Not started |
+| 23 | Fit & Finish — Docs & Verification Retrofit | FIN-03, FIN-05, FIN-06, FIN-07 (4) | Small-to-medium | Not started |
+| 24 | RBAC Enforcement | RBAC-01..05 (5) | Medium | Not started |
+| 25 | Pagination | PAGE-01..04 (4) | Medium | Not started |
+| 26 | Error Boundaries | ERR-01..03 (3) | Small | Not started |
+| 27 | E2E Test Coverage | E2E-01..06 (6) | Medium | Not started |
+| 28 | Final Walkthrough & Sign-off | MAN-03, MAN-04 (2) | Small-to-medium | Not started |
 
-**Coverage:** 30/30 requirements mapped, no orphans.
+**Coverage:** 34/34 requirements mapped, no orphans. (FIN-09..12 added 2026-04-16 from walkthrough triage.)
 
 **Dependency ordering rationale:** Walkthrough FIRST (P21) captures a fresh baseline BEFORE any changes — its feedback shapes subsequent phases. Fit & finish split into P22 (code-level: meeting page, route refactor, second-fund validation, bug re-verify) and P23 (docs/verification retrofit) so the code changes are isolated from the documentation sync. RBAC (P24) before E2E (P27) so tests exercise real role enforcement. Error boundaries (P26) before E2E so tests aren't flapping on white-screens. Final walkthrough (P28) LAST — user feel-checks the full v3.0 stack and signs off; urgent items from P21 that weren't absorbed into P22-27 are closed here.
 
@@ -82,9 +82,17 @@ From v2.1:
 
 ### Blockers/Concerns
 
-- None blocking Phase 21 kickoff.
+- **Phase 22 scope expanded significantly** — walkthrough added 21 items beyond the original 4 FIN items. Phase 22 planners should prioritize the three hard blockers (Obs 35 Side Letter crash, Obs 40 Upload Wizard, LP-Obs 2 capital account math) and the asset-correctness cluster (Obs 10, 12, 25) above all else.
 - Watch: Phase 27 (E2E) depends on Phase 24 (RBAC) shipping cleanly; if RBAC slips, E2E tests may need to accommodate a mid-migration auth state.
-- Watch: Phase 21 walkthrough may surface urgent items that bloat Phase 22 or 23 scope. Triaging discipline needed — non-urgent items must go to v3.1+, not get absorbed silently.
+- **LP-Obs 2 proves asset-layer cascade** — the $6M distribution reconciliation gap traces back to asset income/expense data quality. Phase 22 must fix both the LP display (FIN-12) AND the root cause in asset data editability (FIN-09, Obs 10, 12).
+
+### Walkthrough Findings Summary (2026-04-16)
+
+- **GP walkthrough (James Kim, 2026-04-16):** 46 observations + Obs 47 seed bug. Strategic finding: "Get assets right — everything rolls up from there."
+- **LP walkthrough (Michael Chen + Tom Wellington, 2026-04-16):** 6 observations. Hard blocker: LP Capital Account distribution total doesn't reconcile ($14M total vs $8M breakdown).
+- **3 hard blockers:** Obs 35 (Side Letter crash), Obs 40 (Upload Wizard stuck), LP-Obs 2 (capital account math gap)
+- **Top strategic priority:** Asset-correctness cluster (Obs 10, 12, 25, LP-Obs 2)
+- **FIN requirements added:** FIN-09 (error-copy), FIN-10 (list sort/filter), FIN-11 (integrated records), FIN-12 (LP calc quality)
 
 ## Performance Metrics
 
@@ -93,7 +101,8 @@ From v2.1:
 - v2.1 (off-GSD): 71 commits, no plan breakdown — retroactively documented
 - Tests added in v2.1: 45 (87 total in waterfall domain)
 - v3.0 phases planned: 8 (21-28)
-- v3.0 requirements mapped: 30/30
+- v3.0 requirements mapped: 34/34 (FIN-09..12 added from Phase 21 walkthrough)
+- v3.0 Phase 21: 1/1 plan complete, 52 observations triaged, 21 urgent items folded
 
 ## Session Continuity
 
@@ -103,7 +112,7 @@ From v2.1:
 - **v2.1 shipped + tagged:** 2026-04-16
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
-- **Last session:** 2026-04-16T17:35:40.764Z
+- **Last session:** 2026-04-16T22:21:28.725Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Phase 21 context gathered
-- **Resume file:** .planning/phases/21-initial-manual-walkthrough-baseline/21-CONTEXT.md
+- **Stopped at:** Phase 21 complete — walkthrough triaged, urgent items folded
+- **Resume file:** .planning/phases/21-initial-manual-walkthrough-baseline/21-01-SUMMARY.md

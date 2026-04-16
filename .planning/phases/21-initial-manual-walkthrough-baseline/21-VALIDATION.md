@@ -2,7 +2,7 @@
 phase: 21
 slug: initial-manual-walkthrough-baseline
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-16
 ---
@@ -157,14 +157,14 @@ grep -oE "Phase 2[2-8]" .planning/walkthroughs/v3.0-lp-baseline.md | sort -u
 
 ## Validation Sign-Off
 
-- [ ] Wave 0 complete: `.planning/walkthroughs/` dir + both baseline skeletons created
-- [ ] Layer 1 green: both baseline files exist and are non-empty post-walkthrough
-- [ ] Layer 2 green: schema checks pass — all required fields populated, no empty values
-- [ ] Layer 3 green: triage sanity audit completed, no unresolved flags
-- [ ] Layer 4 green: every urgent destination maps to an existing phase in ROADMAP.md
-- [ ] Sampling continuity: Layer 1 runs post each walkthrough session, Layers 2–4 run post-triage
-- [ ] No watch-mode flags (N/A — no test runner)
-- [ ] Feedback latency < 5s for automated layers
-- [ ] `nyquist_compliant: true` set in frontmatter after all layers green
+- [x] Wave 0 complete: `.planning/walkthroughs/` dir + both baseline skeletons created
+- [x] Layer 1 green: both baseline files exist and are non-empty post-walkthrough
+- [x] Layer 2 green: schema checks pass — all required fields populated, no empty values
+- [x] Layer 3 green: triage sanity audit completed, no unresolved flags
+- [x] Layer 4 green: every urgent destination maps to an existing phase in ROADMAP.md
+- [x] Sampling continuity: Layer 1 runs post each walkthrough session, Layers 2–4 run post-triage
+- [x] No watch-mode flags (N/A — no test runner)
+- [x] Feedback latency < 5s for automated layers
+- [x] `nyquist_compliant: true` set in frontmatter after all layers green
 
-**Approval:** pending
+**Approval:** 2026-04-16 — all 4 layers green, Wave 3+4 complete

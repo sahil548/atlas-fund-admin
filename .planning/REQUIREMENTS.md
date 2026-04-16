@@ -19,6 +19,10 @@
 - [ ] **FIN-06**: REQUIREMENTS.md traceability is consistent: all TASK-01..05 checkboxes marked complete, Phase 20 INTEG/SCHEMA/UIPOL requirements present, FIN-07/FIN-10 v2.0 notes corrected
 - [ ] **FIN-07**: Plan 20-10 (final human verification checkpoint) has a SUMMARY.md documenting user-facing acceptance of v2.0 polish work
 - [ ] **FIN-08**: The three March-5 bugs (DD tab 0%, pass rate 300%, IC memo spinner) are verified resolved on current main or formally filed if any remain
+- [ ] **FIN-09**: Error copy cleanup — "Unauthorized" / "Not authorized" is not used as a catch-all for non-auth failure modes. Every error message explains the condition and the action to resolve it (e.g., "Can't delete a deal past Screening — move it to Dead first"; "Enable AI access in Settings > AI Config"). Covers at minimum: deal stage-gate rejection (GP Obs 3), document AI summary access (GP Obs 39). *Source: Phase 21 walkthrough, GP Obs 3 + 39.*
+- [ ] **FIN-10**: List sort/filter functional — asset list class filter, entity list column sort, and meetings list sort/filter all work correctly. A broken or non-functional list control does not appear in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 8, 21, 44.*
+- [ ] **FIN-11**: Integrated records — per-surface task lists (on assets and entities) are linked to the central task system via `/tasks/[id]` navigation. Cap-table investor rows link to their CRM/Directory contact record. No orphaned task or investor widget exists in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 18, 22, 27.*
+- [ ] **FIN-12**: LP display quality — (a) the LP Capital Account statement distribution total reconciles with its itemized breakdown (no unexplained gap); (b) the LP Portfolio view shows invested capital alongside current fair value per holding. *Source: Phase 21 walkthrough, LP-Obs 2 + 3.*
 
 ### RBAC Enforcement
 
@@ -54,8 +58,8 @@
 
 These are user-driven checkpoint phases. Claude sets up the walkthrough (script, seed data, checklist) but the user clicks through the app, captures comments, and files them as follow-up fixes. v3.0 bookends the work with two walkthroughs: one at Phase 21 to capture a fresh baseline before any changes, and one at Phase 28 to sign off after everything has shipped.
 
-- [ ] **MAN-01**: GP-side baseline walkthrough at START of v3.0 — user tours dashboard, deal desk, vehicles, assets, capital activity, waterfall, transactions, cap table with note-taking checklist, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-gp-baseline.md` + triaged feedback that shapes subsequent phases
-- [ ] **MAN-02**: LP-side baseline walkthrough at START of v3.0 — user signs in as an LP, tours portal, captures feedback on accuracy, clarity, what's missing, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-lp-baseline.md` + triaged feedback
+- [x] **MAN-01**: GP-side baseline walkthrough at START of v3.0 — user tours dashboard, deal desk, vehicles, assets, capital activity, waterfall, transactions, cap table with note-taking checklist, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-gp-baseline.md` + triaged feedback that shapes subsequent phases
+- [x] **MAN-02**: LP-side baseline walkthrough at START of v3.0 — user signs in as an LP, tours portal, captures feedback on accuracy, clarity, what's missing, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-lp-baseline.md` + triaged feedback
 - [ ] **MAN-03**: Final walkthrough & sign-off at END of v3.0 — user verifies the full v3.0 stack (fit & finish + RBAC + pagination + error boundaries + E2E) feels right end-to-end, signs off on the milestone; output = `.planning/walkthroughs/v3.0-final-signoff.md`
 - [ ] **MAN-04**: Follow-up fixes from walkthroughs — any items triaged as "urgent" from MAN-01/02/03 are fixed before v3.0 is considered done. Non-urgent items deferred to v3.1 with explicit reasoning. Paired with MAN-03 in the final phase.
 
@@ -106,12 +110,16 @@ Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MAN-01 | Phase 21 | Pending |
-| MAN-02 | Phase 21 | Pending |
+| MAN-01 | Phase 21 | Complete |
+| MAN-02 | Phase 21 | Complete |
 | FIN-01 | Phase 22 | Pending |
 | FIN-02 | Phase 22 | Pending |
 | FIN-04 | Phase 22 | Pending |
 | FIN-08 | Phase 22 | Pending |
+| FIN-09 | Phase 22 | Pending |
+| FIN-10 | Phase 22 | Pending |
+| FIN-11 | Phase 22 | Pending |
+| FIN-12 | Phase 22 | Pending |
 | FIN-03 | Phase 23 | Pending |
 | FIN-05 | Phase 23 | Pending |
 | FIN-06 | Phase 23 | Pending |
@@ -138,11 +146,11 @@ Which phases cover which requirements.
 | MAN-04 | Phase 28 | Pending |
 
 **Coverage:**
-- v3.0 requirements: 30 total
-- Mapped to phases: 30 ✓
+- v3.0 requirements: 34 total (FIN-09..12 added 2026-04-16 after Phase 21 walkthrough triage)
+- Mapped to phases: 34 ✓
 - Unmapped: 0
 
 ---
 
 *Requirements defined: 2026-04-16*
-*Last updated: 2026-04-16 after v3.0 roadmap restructured to bookend walkthroughs (phases 21-28)*
+*Last updated: 2026-04-16 after Phase 21 walkthrough triage — FIN-09..12 added from GP/LP observations*
