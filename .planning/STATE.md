@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: roadmap_complete
-stopped_at: "v3.0 roadmap created (phases 21-27); ready for /gsd:plan-phase 21"
-last_updated: "2026-04-16T14:30:00.000Z"
-last_activity: "2026-04-16 — v3.0 roadmap written: 7 phases (21-27), 30/30 requirements mapped, all success criteria defined goal-backward."
+stopped_at: "v3.0 roadmap restructured (phases 21-28) — walkthroughs bookend the milestone; ready for /gsd:plan-phase 21"
+last_updated: "2026-04-16T14:45:00.000Z"
+last_activity: "2026-04-16 — v3.0 roadmap restructured: walkthrough at 21 (baseline) and 28 (final sign-off). Fit & finish split into Phase 22 (code) + Phase 23 (docs/verification retrofit). 8 phases total, 30/30 requirements still mapped."
 progress:
-  total_phases: 7
+  total_phases: 8
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -25,26 +25,27 @@ progress:
 
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — ROADMAP COMPLETE
 - **Previous:** v2.1 shipped 2026-04-16 (tagged, pushed)
-- **Phase:** Phase 21 (Fit & Finish) — not started, ready to plan
+- **Phase:** Phase 21 (Initial Manual Walkthrough) — not started, ready to plan
 - **Plan:** —
 - **Status:** Roadmap complete; next step is `/gsd:plan-phase 21`
-- **Last activity:** 2026-04-16 — v3.0 ROADMAP.md written with 7 phases (21-27) and 30/30 requirements mapped
+- **Last activity:** 2026-04-16 — v3.0 roadmap restructured: walkthroughs bookend the milestone (21 + 28). 8 phases total, 30/30 requirements mapped.
 
 ## v3.0 Phase Overview
 
 | Phase | Name | Requirements | Size |
 |-------|------|--------------|------|
-| 21 | Fit & Finish | FIN-01..08 (8) | Medium |
-| 22 | Post-Fit-&-Finish Manual Walkthrough | MAN-01, MAN-02 (2) | Small |
-| 23 | RBAC Enforcement | RBAC-01..05 (5) | Medium |
-| 24 | Pagination | PAGE-01..04 (4) | Medium |
-| 25 | Error Boundaries | ERR-01..03 (3) | Small |
-| 26 | E2E Test Coverage | E2E-01..06 (6) | Medium |
-| 27 | Post-Hardening Walkthrough & Follow-up Fixes | MAN-03, MAN-04 (2) | Small-to-medium |
+| 21 | Initial Manual Walkthrough (Baseline) | MAN-01, MAN-02 (2) | Small |
+| 22 | Fit & Finish — Code | FIN-01, FIN-02, FIN-04, FIN-08 (4) | Medium |
+| 23 | Fit & Finish — Docs & Verification Retrofit | FIN-03, FIN-05, FIN-06, FIN-07 (4) | Small-to-medium |
+| 24 | RBAC Enforcement | RBAC-01..05 (5) | Medium |
+| 25 | Pagination | PAGE-01..04 (4) | Medium |
+| 26 | Error Boundaries | ERR-01..03 (3) | Small |
+| 27 | E2E Test Coverage | E2E-01..06 (6) | Medium |
+| 28 | Final Walkthrough & Sign-off | MAN-03, MAN-04 (2) | Small-to-medium |
 
 **Coverage:** 30/30 requirements mapped, no orphans.
 
-**Dependency ordering rationale:** Fit & finish first so walkthroughs and hardening run against a clean baseline. Manual walkthrough (P22) before hardening so its feedback can shape hardening priorities. RBAC (P23) before E2E (P26) so tests exercise real role enforcement. Error boundaries (P25) before E2E so tests aren't flapping on white-screens. Final walkthrough (P27) after all hardening so the user can feel-check the full v3.0 before sign-off.
+**Dependency ordering rationale:** Walkthrough FIRST (P21) captures a fresh baseline BEFORE any changes — its feedback shapes subsequent phases. Fit & finish split into P22 (code-level: meeting page, route refactor, second-fund validation, bug re-verify) and P23 (docs/verification retrofit) so the code changes are isolated from the documentation sync. RBAC (P24) before E2E (P27) so tests exercise real role enforcement. Error boundaries (P26) before E2E so tests aren't flapping on white-screens. Final walkthrough (P28) LAST — user feel-checks the full v3.0 stack and signs off; urgent items from P21 that weren't absorbed into P22-27 are closed here.
 
 ## Accumulated Context
 
@@ -77,13 +78,14 @@ From v2.1:
 | Path A deferred | Rate limiting, code splitting |
 | Also in v3.0 | Pagination, error boundaries |
 | Deferred to v3.1+ | Background jobs, full perf monitoring |
-| Manual walkthroughs | Kept as standalone phases (22 + 27), not merged into automated work |
-| Phase count | 7 (within 5-8 target band for consolidation-sized milestone) |
+| Manual walkthroughs | Bookend the milestone — Phase 21 (baseline, pre-work) and Phase 28 (final sign-off) |
+| Phase count | 8 (within 5-10 band; bookending walkthroughs pushed count to 8 vs original 7) |
 
 ### Blockers/Concerns
 
 - None blocking Phase 21 kickoff.
-- Watch: Phase 26 (E2E) depends on Phase 23 (RBAC) shipping cleanly; if RBAC slips, E2E tests may need to accommodate a mid-migration auth state.
+- Watch: Phase 27 (E2E) depends on Phase 24 (RBAC) shipping cleanly; if RBAC slips, E2E tests may need to accommodate a mid-migration auth state.
+- Watch: Phase 21 walkthrough may surface urgent items that bloat Phase 22 or 23 scope. Triaging discipline needed — non-urgent items must go to v3.1+, not get absorbed silently.
 
 ## Performance Metrics
 
@@ -91,7 +93,7 @@ From v2.1:
 - Plans completed (v2.0): 58 plans across 10 phases
 - v2.1 (off-GSD): 71 commits, no plan breakdown — retroactively documented
 - Tests added in v2.1: 45 (87 total in waterfall domain)
-- v3.0 phases planned: 7 (21-27)
+- v3.0 phases planned: 8 (21-28)
 - v3.0 requirements mapped: 30/30
 
 ## Session Continuity
@@ -103,5 +105,6 @@ From v2.1:
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
 - **Last session:** 2026-04-16
-- **Stopped at:** v3.0 roadmap written; next is `/gsd:plan-phase 21`
+- **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
+- **Stopped at:** v3.0 roadmap restructured (8 phases); next is `/gsd:plan-phase 21`
 - **Resume file:** None

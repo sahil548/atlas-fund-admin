@@ -146,11 +146,11 @@ Atlas is **deployed on Vercel with real Clerk authentication and real data**. v2
 - [ ] **E2E-04**: Commitment lifecycle E2E (create → assign unit class → edit amount → delete)
 - [ ] **E2E-05**: Waterfall template E2E (create → add tiers → edit tiers → assign to vehicle → delete)
 
-**Manual Walkthrough & Feedback:**
-- [ ] **MAN-01**: GP-side manual walkthrough after Fit & Finish (user-driven note capture)
-- [ ] **MAN-02**: LP-side manual walkthrough after Fit & Finish (user-driven note capture)
-- [ ] **MAN-03**: Post-hardening manual walkthrough (RBAC + pagination + error boundaries feel-check)
-- [ ] **MAN-04**: Follow-up fixes from walkthroughs before v3.0 sign-off
+**Manual Walkthrough & Feedback (bookend the milestone):**
+- [ ] **MAN-01**: GP-side BASELINE walkthrough at start of v3.0 (before any changes — Phase 21)
+- [ ] **MAN-02**: LP-side BASELINE walkthrough at start of v3.0 (before any changes — Phase 21)
+- [ ] **MAN-03**: Final walkthrough & sign-off at end of v3.0 (full stack feel-check — Phase 28)
+- [ ] **MAN-04**: Follow-up fixes from walkthroughs before v3.0 sign-off (Phase 28)
 
 ### Out of Scope (v3.0)
 

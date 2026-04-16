@@ -52,12 +52,12 @@
 
 ### Manual Walkthrough & Feedback
 
-These are user-driven checkpoint phases. Claude sets up the walkthrough (script, seed data, checklist) but the user clicks through the app, captures comments, and files them as follow-up fixes. Each walkthrough's output is a written feedback doc + any urgent bugs triaged into the plan.
+These are user-driven checkpoint phases. Claude sets up the walkthrough (script, seed data, checklist) but the user clicks through the app, captures comments, and files them as follow-up fixes. v3.0 bookends the work with two walkthroughs: one at Phase 21 to capture a fresh baseline before any changes, and one at Phase 28 to sign off after everything has shipped.
 
-- [ ] **MAN-01**: GP-side manual walkthrough after Fit & Finish — user tours dashboard, deal desk, vehicles, assets, capital activity, waterfall, transactions, cap table with note-taking checklist; output = `.planning/walkthroughs/v3.0-gp-post-fix.md` + triaged follow-up items
-- [ ] **MAN-02**: LP-side manual walkthrough after Fit & Finish — user signs in as an LP, tours portal, captures feedback on accuracy, clarity, what's missing; output = `.planning/walkthroughs/v3.0-lp-post-fix.md` + triaged follow-ups
-- [ ] **MAN-03**: Post-hardening manual walkthrough — user verifies RBAC feels right (correct items hidden per role), pagination feels right (no "where did the old ones go?"), error boundaries behave gracefully when a route is broken; output = `.planning/walkthroughs/v3.0-post-hardening.md` + triaged follow-ups
-- [ ] **MAN-04**: Follow-up fixes from walkthroughs — any items triaged as "urgent" from MAN-01/02/03 are fixed before v3.0 is considered done. Non-urgent items deferred to v3.1 with explicit reasoning.
+- [ ] **MAN-01**: GP-side baseline walkthrough at START of v3.0 — user tours dashboard, deal desk, vehicles, assets, capital activity, waterfall, transactions, cap table with note-taking checklist, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-gp-baseline.md` + triaged feedback that shapes subsequent phases
+- [ ] **MAN-02**: LP-side baseline walkthrough at START of v3.0 — user signs in as an LP, tours portal, captures feedback on accuracy, clarity, what's missing, BEFORE any v3.0 work is done; output = `.planning/walkthroughs/v3.0-lp-baseline.md` + triaged feedback
+- [ ] **MAN-03**: Final walkthrough & sign-off at END of v3.0 — user verifies the full v3.0 stack (fit & finish + RBAC + pagination + error boundaries + E2E) feels right end-to-end, signs off on the milestone; output = `.planning/walkthroughs/v3.0-final-signoff.md`
+- [ ] **MAN-04**: Follow-up fixes from walkthroughs — any items triaged as "urgent" from MAN-01/02/03 are fixed before v3.0 is considered done. Non-urgent items deferred to v3.1 with explicit reasoning. Paired with MAN-03 in the final phase.
 
 ---
 
@@ -106,36 +106,36 @@ Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIN-01 | Phase 21 | Pending |
-| FIN-02 | Phase 21 | Pending |
-| FIN-03 | Phase 21 | Pending |
-| FIN-04 | Phase 21 | Pending |
-| FIN-05 | Phase 21 | Pending |
-| FIN-06 | Phase 21 | Pending |
-| FIN-07 | Phase 21 | Pending |
-| FIN-08 | Phase 21 | Pending |
-| MAN-01 | Phase 22 | Pending |
-| MAN-02 | Phase 22 | Pending |
-| RBAC-01 | Phase 23 | Pending |
-| RBAC-02 | Phase 23 | Pending |
-| RBAC-03 | Phase 23 | Pending |
-| RBAC-04 | Phase 23 | Pending |
-| RBAC-05 | Phase 23 | Pending |
-| PAGE-01 | Phase 24 | Pending |
-| PAGE-02 | Phase 24 | Pending |
-| PAGE-03 | Phase 24 | Pending |
-| PAGE-04 | Phase 24 | Pending |
-| ERR-01 | Phase 25 | Pending |
-| ERR-02 | Phase 25 | Pending |
-| ERR-03 | Phase 25 | Pending |
-| E2E-01 | Phase 26 | Pending |
-| E2E-02 | Phase 26 | Pending |
-| E2E-03 | Phase 26 | Pending |
-| E2E-04 | Phase 26 | Pending |
-| E2E-05 | Phase 26 | Pending |
-| E2E-06 | Phase 26 | Pending |
-| MAN-03 | Phase 27 | Pending |
-| MAN-04 | Phase 27 | Pending |
+| MAN-01 | Phase 21 | Pending |
+| MAN-02 | Phase 21 | Pending |
+| FIN-01 | Phase 22 | Pending |
+| FIN-02 | Phase 22 | Pending |
+| FIN-04 | Phase 22 | Pending |
+| FIN-08 | Phase 22 | Pending |
+| FIN-03 | Phase 23 | Pending |
+| FIN-05 | Phase 23 | Pending |
+| FIN-06 | Phase 23 | Pending |
+| FIN-07 | Phase 23 | Pending |
+| RBAC-01 | Phase 24 | Pending |
+| RBAC-02 | Phase 24 | Pending |
+| RBAC-03 | Phase 24 | Pending |
+| RBAC-04 | Phase 24 | Pending |
+| RBAC-05 | Phase 24 | Pending |
+| PAGE-01 | Phase 25 | Pending |
+| PAGE-02 | Phase 25 | Pending |
+| PAGE-03 | Phase 25 | Pending |
+| PAGE-04 | Phase 25 | Pending |
+| ERR-01 | Phase 26 | Pending |
+| ERR-02 | Phase 26 | Pending |
+| ERR-03 | Phase 26 | Pending |
+| E2E-01 | Phase 27 | Pending |
+| E2E-02 | Phase 27 | Pending |
+| E2E-03 | Phase 27 | Pending |
+| E2E-04 | Phase 27 | Pending |
+| E2E-05 | Phase 27 | Pending |
+| E2E-06 | Phase 27 | Pending |
+| MAN-03 | Phase 28 | Pending |
+| MAN-04 | Phase 28 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 30 total
@@ -145,4 +145,4 @@ Which phases cover which requirements.
 ---
 
 *Requirements defined: 2026-04-16*
-*Last updated: 2026-04-16 after v3.0 roadmap created (phases 21-27)*
+*Last updated: 2026-04-16 after v3.0 roadmap restructured to bookend walkthroughs (phases 21-28)*
