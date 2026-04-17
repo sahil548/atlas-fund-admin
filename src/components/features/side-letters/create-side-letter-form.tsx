@@ -18,6 +18,13 @@ const fetcher = (url: string) =>
     return r.json();
   });
 
+// Defensive unwrap — tolerates plain arrays (legacy) and paginated envelopes ({ data: T[] })
+const unwrapArray = <T,>(r: any): T[] => {
+  if (Array.isArray(r)) return r;
+  if (Array.isArray(r?.data)) return r.data;
+  return [];
+};
+
 interface RuleInput {
   ruleType: "FEE_DISCOUNT" | "CARRY_OVERRIDE" | "MFN" | "CO_INVEST_RIGHTS" | "CUSTOM";
   enabled: boolean;
@@ -50,11 +57,13 @@ interface Props {
 export function CreateSideLetterForm({ open, onClose, onCreated }: Props) {
   const toast = useToast();
   const { firmId } = useFirm();
-  const { data: investors } = useSWR(open ? `/api/investors?firmId=${firmId}` : null, (url: string) =>
-    fetcher(url).then((r: any) => r.data ?? r),
+  const { data: investors = [] } = useSWR<any[]>(
+    open ? `/api/investors?firmId=${firmId}` : null,
+    (url: string) => fetcher(url).then(unwrapArray),
   );
-  const { data: entities } = useSWR(open ? `/api/entities?firmId=${firmId}` : null, (url: string) =>
-    fetcher(url).then((r: any) => r.data ?? r),
+  const { data: entities = [] } = useSWR<any[]>(
+    open ? `/api/entities?firmId=${firmId}` : null,
+    (url: string) => fetcher(url).then(unwrapArray),
   );
 
   const [form, setForm] = useState({ investorId: "", entityId: "", terms: "" });
@@ -143,11 +152,11 @@ export function CreateSideLetterForm({ open, onClose, onCreated }: Props) {
 
   const investorOptions = [
     { value: "", label: "Select investor..." },
-    ...(investors || []).map((i: any) => ({ value: i.id, label: i.name })),
+    ...investors.map((i: any) => ({ value: i.id, label: i.name })),
   ];
   const entityOptions = [
     { value: "", label: "Select entity..." },
-    ...(entities || []).map((e: any) => ({ value: e.id, label: e.name })),
+    ...entities.map((e: any) => ({ value: e.id, label: e.name })),
   ];
 
   return (
