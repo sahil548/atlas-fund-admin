@@ -266,21 +266,34 @@ export function EntityOverviewTab({ entity, entityId, onTabChange }: { entity: a
 
       {/* 7. Asset Allocations table */}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 dark:border-gray-700"><h3 className="text-sm font-semibold">Asset Allocations</h3></div>
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold">Asset Allocations</h3>
+            <span
+              title="Percentage of each asset owned by this fund vehicle."
+              className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-[10px] font-bold cursor-help select-none"
+            >
+              ?
+            </span>
+          </div>
+        </div>
         <table className="w-full text-xs">
           <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>{["Asset", "Type", "Allocation %", "Cost Basis", "Fair Value"].map((h) => <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {(e.assetAllocations || []).map((a: { id: string; allocationPercent: number; costBasis: number; asset: { id: string; name: string; assetClass: string; fairValue: number } }) => (
-              <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td className="px-3 py-2.5"><Link href={`/assets/${a.asset.id}`} className="text-indigo-700 hover:underline font-medium">{a.asset.name}</Link></td>
-                <td className="px-3 py-2.5"><Badge color="blue">{a.asset.assetClass?.replace(/_/g, " ")}</Badge></td>
-                <td className="px-3 py-2.5">{a.allocationPercent.toFixed(1)}%</td>
-                <td className="px-3 py-2.5">{fmt(a.costBasis || 0)}</td>
-                <td className="px-3 py-2.5 font-medium">{fmt(a.asset.fairValue || 0)}</td>
-              </tr>
-            ))}
+            {(e.assetAllocations || []).map((a: { id: string; allocationPercent: number; costBasis: number | null; asset: { id: string; name: string; assetClass: string; fairValue: number; costBasis: number } }) => {
+              const derivedCostBasis = a.costBasis ?? ((a.allocationPercent / 100) * (a.asset.costBasis || 0));
+              return (
+                <tr key={a.id} className="border-t border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <td className="px-3 py-2.5"><Link href={`/assets/${a.asset.id}`} className="text-indigo-700 hover:underline font-medium">{a.asset.name}</Link></td>
+                  <td className="px-3 py-2.5"><Badge color="blue">{a.asset.assetClass?.replace(/_/g, " ")}</Badge></td>
+                  <td className="px-3 py-2.5">{a.allocationPercent.toFixed(1)}%</td>
+                  <td className="px-3 py-2.5">{fmt(derivedCostBasis)}</td>
+                  <td className="px-3 py-2.5 font-medium">{fmt((a.allocationPercent / 100) * (a.asset.fairValue || 0))}</td>
+                </tr>
+              );
+            })}
             {(!e.assetAllocations || e.assetAllocations.length === 0) && <tr><td colSpan={5} className="px-3 py-6 text-center text-gray-400">No asset allocations.</td></tr>}
           </tbody>
         </table>
