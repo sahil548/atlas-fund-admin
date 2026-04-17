@@ -1583,11 +1583,12 @@ async function main() {
 
   // All deals that should have workstreams scaffolded
   const dealsToScaffold = [
-    { deal: deal1, prefix: "ws-1" }, // DIVERSIFIED, EQUITY  → 6 UNIVERSAL
+    { deal: deal1, prefix: "ws-1" }, // DIVERSIFIED, EQUITY  → 6 UNIVERSAL (IC_REVIEW stage)
     { deal: deal2, prefix: "ws-2" }, // DIVERSIFIED, EQUITY  → 6 UNIVERSAL
     { deal: deal3, prefix: "ws-3" }, // REAL_ESTATE, EQUITY  → 6 UNIVERSAL + 2 RE = 8
     { deal: deal4, prefix: "ws-4" }, // REAL_ESTATE, DEBT    → 6 UNIVERSAL + 2 RE + Credit DD = 9
     { deal: deal5, prefix: "ws-5" }, // INFRASTRUCTURE, EQUITY → 6 UNIVERSAL + 2 INFRA = 8
+    { deal: deal9, prefix: "ws-9" }, // REAL_ESTATE, EQUITY → 6 UNIVERSAL + 2 RE = 8 (CLOSED stage — BUG-01 fix)
     { deal: deal10, prefix: "ws-10" }, // INFRASTRUCTURE, EQUITY → 6 UNIVERSAL + 2 INFRA = 8 (DUE_DILIGENCE stage)
     { deal: deal11, prefix: "ws-11" }, // REAL_ESTATE, EQUITY → 6 UNIVERSAL + 2 RE = 8 (CLOSING stage)
   ];
@@ -1619,6 +1620,12 @@ async function main() {
 
     console.log(`  → ${deal.name}: ${templates.length} workstreams (${templates.map((t) => t.name).join(", ")})`);
   }
+
+  // Mark all workstreams as COMPLETE for deal-9 (CLOSED stage — DD was completed)
+  await prisma.dDWorkstream.updateMany({
+    where: { dealId: deal9.id },
+    data: { status: "COMPLETE", completedTasks: 5, totalTasks: 5 },
+  });
 
   // Mark some workstreams as COMPLETE for deal-11 (CLOSING stage — DD is done)
   await prisma.dDWorkstream.updateMany({
