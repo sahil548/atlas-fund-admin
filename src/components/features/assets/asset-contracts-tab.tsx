@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { fmt, formatDate, cn } from "@/lib/utils";
+import { EditLeaseForm } from "@/components/features/assets/edit-lease-form";
+import { EditCreditAgreementForm } from "@/components/features/assets/edit-credit-agreement-form";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -295,6 +297,8 @@ function ContractsEmpty() {
 export function AssetContractsTab({ asset: a }: Props) {
   const [filter, setFilter] = useState<FilterPill>("All");
   const [viewMode, setViewMode] = useState<ViewMode>("card");
+  const [editingLease, setEditingLease] = useState<any | null>(null);
+  const [editingAgreement, setEditingAgreement] = useState<any | null>(null);
 
   const FILTER_PILLS: FilterPill[] = ["All", "Active", "Expired", "Draft"];
 
@@ -308,8 +312,137 @@ export function AssetContractsTab({ asset: a }: Props) {
     if (leases.length === 0) return <ContractsEmpty />;
 
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
+      <>
+        <EditLeaseForm
+          lease={editingLease}
+          open={!!editingLease}
+          onClose={() => setEditingLease(null)}
+          assetId={a.id}
+        />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {FILTER_PILLS.map((pill) => (
+                <button
+                  key={pill}
+                  onClick={() => setFilter(pill)}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-full border transition-colors",
+                    filter === pill
+                      ? "bg-indigo-600 text-white border-indigo-600"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300",
+                  )}
+                >
+                  {pill}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setViewMode("card")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-lg border transition-colors",
+                  viewMode === "card"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-500 border-gray-200",
+                )}
+              >
+                Cards
+              </button>
+              <button
+                onClick={() => setViewMode("table")}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-lg border transition-colors",
+                  viewMode === "table"
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white text-gray-500 border-gray-200",
+                )}
+              >
+                Table
+              </button>
+            </div>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="text-center py-8 text-xs text-gray-400">
+              No leases match the selected filter
+            </div>
+          ) : viewMode === "card" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filtered.map((lease: any) => (
+                <div key={lease.id} className="relative">
+                  <LeaseCard lease={lease} />
+                  <button
+                    onClick={() => setEditingLease(lease)}
+                    className="absolute top-3 right-3 text-xs text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded px-2 py-0.5"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50">
+                  <tr>
+                    {["Tenant", "Sq Ft", "Annual Rent", "Lease Term", "% of Rent", "Status", ""].map((h) => (
+                      <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((t: any) => {
+                    const status = getLeaseStatus(t);
+                    const isActive = status === "ACTIVE" || status === "CURRENT";
+                    return (
+                      <tr key={t.id} className="border-t border-gray-50">
+                        <td className={cn("px-3 py-2.5 font-medium", !isActive && "text-gray-400")}>{t.tenantName}</td>
+                        <td className="px-3 py-2.5">{t.squareFootage || "---"}</td>
+                        <td className="px-3 py-2.5">{t.baseRentAnnual ? fmt(t.baseRentAnnual) : "---"}</td>
+                        <td className="px-3 py-2.5">
+                          {t.leaseStartDate && t.leaseEndDate
+                            ? `${new Date(t.leaseStartDate).getFullYear()}–${new Date(t.leaseEndDate).getFullYear()}`
+                            : "---"}
+                        </td>
+                        <td className="px-3 py-2.5">{t.rentPercentOfTotal || "---"}</td>
+                        <td className="px-3 py-2.5">
+                          <Badge color={isActive ? "green" : "gray"}>{isActive ? "Active" : "Expired"}</Badge>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <button
+                            onClick={() => setEditingLease(t)}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // ── Credit ────────────────────────────────────────────────
+  if (a.assetClass === "CREDIT" || (a.creditAgreements && a.creditAgreements.length > 0)) {
+    const agreements: any[] = a.creditAgreements ?? [];
+    if (agreements.length === 0) return <ContractsEmpty />;
+
+    return (
+      <>
+        <EditCreditAgreementForm
+          agreement={editingAgreement}
+          open={!!editingAgreement}
+          onClose={() => setEditingAgreement(null)}
+          assetId={a.id}
+        />
+        <div className="space-y-4">
           <div className="flex gap-2">
             {FILTER_PILLS.map((pill) => (
               <button
@@ -326,80 +459,21 @@ export function AssetContractsTab({ asset: a }: Props) {
               </button>
             ))}
           </div>
-          <div className="flex gap-1">
-            <button
-              onClick={() => setViewMode("card")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-lg border transition-colors",
-                viewMode === "card"
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-500 border-gray-200",
-              )}
-            >
-              Cards
-            </button>
-            <button
-              onClick={() => setViewMode("table")}
-              className={cn(
-                "px-3 py-1 text-xs rounded-lg border transition-colors",
-                viewMode === "table"
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-500 border-gray-200",
-              )}
-            >
-              Table
-            </button>
-          </div>
-        </div>
-
-        {filtered.length === 0 ? (
-          <div className="text-center py-8 text-xs text-gray-400">
-            No leases match the selected filter
-          </div>
-        ) : viewMode === "card" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filtered.map((lease: any) => (
-              <LeaseCard key={lease.id} lease={lease} />
+            {agreements.map((ag: any) => (
+              <div key={ag.id} className="relative">
+                <CreditCard agreement={ag} />
+                <button
+                  onClick={() => setEditingAgreement(ag)}
+                  className="absolute top-3 right-3 text-xs text-indigo-600 hover:text-indigo-800 bg-white border border-indigo-200 rounded px-2 py-0.5"
+                >
+                  Edit
+                </button>
+              </div>
             ))}
           </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <LeaseTable leases={filtered} />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // ── Credit ────────────────────────────────────────────────
-  if (a.assetClass === "CREDIT") {
-    const agreements: any[] = a.creditAgreements ?? [];
-    if (agreements.length === 0) return <ContractsEmpty />;
-
-    return (
-      <div className="space-y-4">
-        <div className="flex gap-2">
-          {FILTER_PILLS.map((pill) => (
-            <button
-              key={pill}
-              onClick={() => setFilter(pill)}
-              className={cn(
-                "px-3 py-1 text-xs rounded-full border transition-colors",
-                filter === pill
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300",
-              )}
-            >
-              {pill}
-            </button>
-          ))}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {agreements.map((ag: any) => (
-            <CreditCard key={ag.id} agreement={ag} />
-          ))}
-        </div>
-      </div>
+      </>
     );
   }
 

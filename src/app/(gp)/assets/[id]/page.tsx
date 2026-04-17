@@ -17,6 +17,7 @@ import { ExitAssetModal } from "@/components/features/assets/exit-asset-modal";
 import { AssetOverviewTab } from "@/components/features/assets/asset-overview-tab";
 import { AssetContractsTab } from "@/components/features/assets/asset-contracts-tab";
 import { ValuationHistoryChart } from "@/components/features/assets/valuation-history-chart";
+import { EditValuationForm } from "@/components/features/assets/edit-valuation-form";
 import { AssetIncomeTab } from "@/components/features/assets/asset-income-tab";
 import { AssetExpensesTab } from "@/components/features/assets/asset-expenses-tab";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -137,6 +138,7 @@ export default function AssetDetailPage({
   const [showExitModal, setShowExitModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [editingValuation, setEditingValuation] = useState<any | null>(null);
 
   if (isLoading || !a) return <div className="text-sm text-gray-400">Loading...</div>;
 
@@ -260,6 +262,49 @@ export default function AssetDetailPage({
           {a.valuations?.length >= 2 && (
             <ValuationHistoryChart valuations={a.valuations} />
           )}
+
+          {/* Valuation History Table */}
+          {a.valuations?.length > 0 && (
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+                <h3 className="text-sm font-semibold">Valuation History</h3>
+              </div>
+              <table className="w-full text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    {["Date", "Method", "Fair Value", "MOIC", "Status", "Notes", ""].map((h) => (
+                      <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {a.valuations.map((v: any) => (
+                    <tr key={v.id} className="border-t border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <td className="px-4 py-2.5 font-medium">{v.valuationDate ? new Date(v.valuationDate).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" }) : "---"}</td>
+                      <td className="px-4 py-2.5 text-gray-500">{v.method?.replace(/_/g, " ") || "---"}</td>
+                      <td className="px-4 py-2.5 font-medium">{v.fairValue != null ? fmt(v.fairValue) : "---"}</td>
+                      <td className="px-4 py-2.5">{v.moic != null ? `${Number(v.moic).toFixed(2)}x` : "---"}</td>
+                      <td className="px-4 py-2.5">
+                        <Badge color={v.status === "APPROVED" ? "green" : "yellow"}>
+                          {v.status?.toLowerCase() || "draft"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-400 max-w-[180px] truncate">{v.notes || "---"}</td>
+                      <td className="px-4 py-2.5">
+                        <button
+                          onClick={() => setEditingValuation(v)}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {/* Attribution comparison */}
           <AssetPerformanceTab assetId={a.id} />
         </div>
@@ -501,6 +546,12 @@ export default function AssetDetailPage({
         isOpen={showExitModal}
         onClose={() => setShowExitModal(false)}
         onSuccess={() => mutate(`/api/assets/${id}`)}
+      />
+      <EditValuationForm
+        valuation={editingValuation}
+        open={!!editingValuation}
+        onClose={() => setEditingValuation(null)}
+        assetId={a.id}
       />
 
       </SectionErrorBoundary>
