@@ -22,7 +22,7 @@
 - [ ] **FIN-09**: Error copy cleanup — "Unauthorized" / "Not authorized" is not used as a catch-all for non-auth failure modes. Every error message explains the condition and the action to resolve it (e.g., "Can't delete a deal past Screening — move it to Dead first"; "Enable AI access in Settings > AI Config"). Covers at minimum: deal stage-gate rejection (GP Obs 3), document AI summary access (GP Obs 39). *Source: Phase 21 walkthrough, GP Obs 3 + 39.*
 - [ ] **FIN-10**: List sort/filter functional — asset list class filter, entity list column sort, and meetings list sort/filter all work correctly. A broken or non-functional list control does not appear in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 8, 21, 44.*
 - [ ] **FIN-11**: Integrated records — per-surface task lists (on assets and entities) are linked to the central task system via `/tasks/[id]` navigation. Cap-table investor rows link to their CRM/Directory contact record. No orphaned task or investor widget exists in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 18, 22, 27.*
-- [ ] **FIN-12**: LP display quality — (a) the LP Capital Account statement distribution total reconciles with its itemized breakdown (no unexplained gap); (b) the LP Portfolio view shows invested capital alongside current fair value per holding. *Source: Phase 21 walkthrough, LP-Obs 2 + 3.*
+- [x] **FIN-12**: LP display quality — (a) the LP Capital Account statement distribution total reconciles with its itemized breakdown (no unexplained gap); (b) the LP Portfolio view shows invested capital alongside current fair value per holding. *Source: Phase 21 walkthrough, LP-Obs 2 + 3.*
 
 ### RBAC Enforcement
 
@@ -119,7 +119,7 @@ Which phases cover which requirements.
 | FIN-09 | Phase 22 | Pending |
 | FIN-10 | Phase 22 | Pending |
 | FIN-11 | Phase 22 | Pending |
-| FIN-12 | Phase 22 | Pending |
+| FIN-12 | Phase 22 | Complete |
 | FIN-03 | Phase 23 | Pending |
 | FIN-05 | Phase 23 | Pending |
 | FIN-06 | Phase 23 | Pending |

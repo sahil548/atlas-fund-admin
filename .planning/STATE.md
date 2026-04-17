@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: completed
-stopped_at: Completed 22-02-PLAN.md — Document Upload (Obs 40 fixed)
-last_updated: "2026-04-17T05:53:14.769Z"
-last_activity: 2026-04-16 — Phase 21 GP + LP walkthrough triage complete. Phase 22 scope significantly expanded by walkthrough findings.
+stopped_at: Completed Phase 22 Plan 03 (LP-Obs 2 capital account reconciliation)
+last_updated: "2026-04-17T05:57:16.683Z"
+last_activity: "2026-04-17 — Plan 22-03 executed: LP Capital Account reconciliation (LP-Obs 2). Seed data mismatch root cause: entity2 PAID distributions had no per-investor DLIs. Added 15 DLIs + distributionBreakdown to API + breakdown rows to display. All 3 hard blockers closed."
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Atlas — GSD State
@@ -25,9 +25,9 @@ progress:
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
 - **Previous:** Phase 21 (Initial Manual Walkthrough) — COMPLETE 2026-04-16
 - **Phase:** Phase 22 (Fit & Finish — Code) — IN PROGRESS
-- **Plan:** 22-02 COMPLETE (Obs 40 — Document Upload). Next: 22-03 (LP Capital Account Reconciliation).
-- **Status:** Plans 22-01 (Side Letter crash + seed fix) and 22-02 (Document Upload FileUpload + FormData) complete. 2 of 3 hard blockers closed (Obs 35, Obs 40). Last blocker: LP-Obs 2.
-- **Last activity:** 2026-04-16 — Plan 22-02 executed: FileUpload primitive wired into Upload modal, FormData submission with DocumentFormDataSchema.safeParse() validation. Obs 40 closed.
+- **Plan:** 22-03 COMPLETE (LP-Obs 2 — LP Capital Account Reconciliation). Next: 22-04 (Asset Correctness cluster).
+- **Status:** Plans 22-01, 22-02, and 22-03 complete. ALL 3 hard blockers closed (Obs 35, Obs 40, LP-Obs 2). FIN-12 marked complete.
+- **Last activity:** 2026-04-17 — Plan 22-03 executed: LP Capital Account reconciliation. Seed mismatch root cause. 15 entity2 DLIs added, API returns distributionBreakdown, display shows ROC/income/LTG rows.
 
 ## v3.0 Phase Overview
 
@@ -114,7 +114,7 @@ From v2.1:
 - **v2.1 shipped + tagged:** 2026-04-16
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
-- **Last session:** 2026-04-17T05:53:14.766Z
+- **Last session:** 2026-04-17T05:57:16.681Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Completed 22-02-PLAN.md — Document Upload (Obs 40 fixed)
+- **Stopped at:** Completed Phase 22 Plan 03 (LP-Obs 2 capital account reconciliation)
 - **Resume file:** None

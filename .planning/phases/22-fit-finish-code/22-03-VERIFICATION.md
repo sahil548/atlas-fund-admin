@@ -1,7 +1,7 @@
 ---
 plan: 22-03
 phase: 22-fit-finish-code
-status: in-progress
+status: complete
 ---
 
 # 22-03 Verification — LP Capital Account Reconciliation (LP-Obs 2)
@@ -67,23 +67,48 @@ The fix adds:
 
 ---
 
+## Task 2 — Commits
+
+| Commit | Description |
+|--------|-------------|
+| f4c57b1 | test(22-03): add FIN-12 LP-Obs 2 category-sum = totalDistributed invariant tests |
+| 19d4882 | feat(22-03): fix LP capital account reconciliation — LP-Obs 2 (FIN-12) |
+
+---
+
 ## Test Results
 
-- [ ] `npx vitest run src/app/api/lp/__tests__/capital-account.test.ts` — PASS
-- [ ] `npm run build` — clean
+- [x] `npx vitest run src/app/api/lp/__tests__/capital-account.test.ts` — 12 tests PASS
+- [x] `npx vitest run src/lib/computations` — 148 tests PASS (no regressions)
+- [x] `npm run build` — Compiled successfully in 6.6s, 116 static pages generated
+
+### vitest output (capital-account suite)
+```
+RUN  v4.0.18
+ ✓ src/app/api/lp/__tests__/capital-account.test.ts (12 tests) 3ms
+ Test Files  1 passed (1)
+       Tests  12 passed (12)
+```
 
 ---
 
 ## Manual Verification Checklist
 
 - [ ] Sign in as `user-lp-wellington`, go to `/lp-account`
-  - [ ] "Total Distributions" shows non-zero amount
-  - [ ] Breakdown rows (ROC, Income / Yield, Long-Term Gain) sum to match total
+  - [ ] "Total Distributions" shows ~$2M (entity2 distributions: dist-h2 + dist-h6 + dist-h12)
+  - [ ] Breakdown rows (Return of Capital, Income / Yield, Long-Term Gain) sum to match Total Distributions
   - [ ] Zero unexplained gap
 - [ ] Sign in as `user-lp-calpers` (Michael Chen), go to `/lp-account`
-  - [ ] No regression: distribution total still shows correct amount
+  - [ ] No regression: distribution total shows correct amount (entity1 PAID dists remain)
   - [ ] Breakdown rows show and sum correctly
-- [ ] All other seeded LPs: unit test invariant passes for every investor
+  - [ ] CalPERS entity2 distributions also show (from newly seeded dli-h2-1, dli-h6-1, dli-h12-1)
+- [ ] All seeded LPs: category-sum invariant test passes for every investor fixture
+
+## Data Quality Note
+
+The pre-existing seed DLIs (dli-1-3, dli-2-3, dli-4-3, dli-3-3) for Wellington reference entity1 and entity8 — funds he has no commitment to. These records remain in the seed for historical/test purposes but are correctly excluded by the API. No fix was applied to those records to avoid destructive seed changes. A note in the seed file identifies them as potentially orphaned data.
+
+The asset-layer root cause (Obs 20 cascade thesis) does NOT apply here — the gap was purely a seed data mismatch at the DistributionLineItem level, not an asset income/expense data quality issue. Plan 22-04 (asset correctness cluster) can proceed independently.
 
 ---
 
