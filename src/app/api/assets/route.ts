@@ -87,11 +87,28 @@ export async function POST(req: NextRequest) {
       name, assetClass, capitalInstrument, participationStructure,
       sector, status, costBasis, fairValue, incomeType,
       entityId, allocationPercent,
+      // Phase 22-10: parity fields
+      entryDate, projectedIRR, projectedMultiple, typeDetails,
     } = data!;
 
     const cost = Number(costBasis);
     const fv = Number(fairValue);
     const moic = cost > 0 ? fv / cost : 0;
+
+    // Build type-conditional nested create based on typeDetails.kind
+    let typeDetailsCreate: Record<string, unknown> = {};
+    if (typeDetails) {
+      const { kind, ...detailFields } = typeDetails;
+      if (kind === "REAL_ESTATE") {
+        typeDetailsCreate = { realEstateDetails: { create: detailFields } };
+      } else if (kind === "PRIVATE_CREDIT") {
+        typeDetailsCreate = { creditDetails: { create: detailFields } };
+      } else if (kind === "OPERATING") {
+        typeDetailsCreate = { equityDetails: { create: detailFields } };
+      } else if (kind === "LP_INTEREST") {
+        typeDetailsCreate = { fundLPDetails: { create: detailFields } };
+      }
+    }
 
     const asset = await prisma.asset.create({
       data: {
@@ -105,7 +122,9 @@ export async function POST(req: NextRequest) {
         fairValue: fv,
         moic,
         incomeType: incomeType || null,
-        entryDate: new Date(),
+        entryDate: entryDate ? new Date(entryDate) : new Date(),
+        ...(projectedIRR !== undefined ? { projectedIRR } : {}),
+        ...(projectedMultiple !== undefined ? { projectedMultiple } : {}),
         entityAllocations: {
           create: {
             entityId,
@@ -113,11 +132,16 @@ export async function POST(req: NextRequest) {
             costBasis: cost,
           },
         },
+        ...typeDetailsCreate,
       },
       include: {
         entityAllocations: {
           include: { entity: { select: { id: true, name: true } } },
         },
+        realEstateDetails: true,
+        creditDetails: true,
+        equityDetails: true,
+        fundLPDetails: true,
       },
     });
 

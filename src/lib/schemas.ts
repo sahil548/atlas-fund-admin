@@ -1001,6 +1001,16 @@ export const CreateAssetSchema = z.object({
   incomeType: z.string().optional(),
   entityId: z.string().min(1, "Entity ID is required"),
   allocationPercent: z.number().min(0).max(100).optional(),
+  // Phase 22-10: parity with UpdateAssetSchema so Add Asset can populate the same surface as Edit
+  entryDate: z.string().datetime().optional(),
+  projectedIRR: z.number().nullable().optional(),
+  projectedMultiple: z.number().nullable().optional(),
+  typeDetails: z.discriminatedUnion("kind", [
+    RealEstateDetailsUpdateSchema,
+    CreditDetailsUpdateSchema,
+    EquityDetailsUpdateSchema,
+    FundLPDetailsUpdateSchema,
+  ]).optional(),
 });
 
 // ── Documents (PATCH link) ─────────────────────────────────────

@@ -108,12 +108,24 @@ interface Props {
   };
 }
 
-// Determine which type-conditional section to show based on which details record exists
+// Determine which type-conditional section to show.
+// Phase 22-10: existing production assets created before the AssetRealEstateDetails /
+// AssetCreditDetails / AssetEquityDetails / AssetFundLPDetails child records were populated
+// would return null here and silently hide the fieldset. Fall back to the asset's class /
+// capital instrument / participation structure so users can populate the detail record on
+// first edit. The PUT route upserts, so saving creates the missing detail row.
 function detectAssetKind(asset: Props["asset"]): "REAL_ESTATE" | "PRIVATE_CREDIT" | "OPERATING" | "LP_INTEREST" | null {
   if (asset.realEstateDetails) return "REAL_ESTATE";
   if (asset.creditDetails) return "PRIVATE_CREDIT";
   if (asset.equityDetails) return "OPERATING";
   if (asset.fundLPDetails) return "LP_INTEREST";
+
+  // Metadata fallback for existing assets without detail records
+  if (asset.assetClass === "REAL_ESTATE") return "REAL_ESTATE";
+  if (asset.capitalInstrument === "DEBT") return "PRIVATE_CREDIT";
+  if (asset.participationStructure === "LP_STAKE_SILENT_PARTNER") return "LP_INTEREST";
+  if (asset.assetClass === "OPERATING_BUSINESS") return "OPERATING";
+
   return null;
 }
 
