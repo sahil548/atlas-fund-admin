@@ -6,7 +6,6 @@
 
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getAuthUser, unauthorized } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { MeetingDecisionsSchema } from "@/lib/json-schemas";
 
@@ -14,9 +13,6 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const authUser = await getAuthUser();
-  if (!authUser) return unauthorized();
-
   const { id } = await params;
 
   try {
