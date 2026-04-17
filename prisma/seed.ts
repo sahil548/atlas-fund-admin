@@ -80,8 +80,6 @@ async function main() {
   await prisma.assetEquityDetails.deleteMany();
   await prisma.assetEntityAllocation.deleteMany();
   await prisma.assetExpense.deleteMany();
-  await prisma.assetIncome.deleteMany();
-  await prisma.assetValuation.deleteMany();
   await prisma.asset.deleteMany();
   await prisma.sideLetterRule.deleteMany();
   await prisma.sideLetter.deleteMany();
