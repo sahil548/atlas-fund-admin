@@ -37,6 +37,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: "/settings", label: "Settings", description: "Platform configuration and preferences", keywords: ["settings", "config", "preferences", "api", "keys"], icon: "Settings", sidebarIcon: "\u2699", portal: "gp", priority: 60 },
   { path: "/profile", label: "Profile", description: "Your profile and AI settings", keywords: ["profile", "ai", "settings", "api key", "personal"], icon: "User", sidebarIcon: "\u25CB", portal: "gp", priority: 90, hiddenFromSidebar: true },
   { path: "/contacts/:id", label: "Contact Detail", description: "Contact relationship intelligence and activity history", keywords: ["contact", "crm", "interactions", "relationship"], icon: "User", sidebarIcon: "\u25CB", portal: "gp", priority: 0, hiddenFromSidebar: true },
+  { path: "/meetings/:id", label: "Meeting Detail", description: "Individual meeting notes and transcript", keywords: ["meeting", "transcript", "notes"], icon: "Calendar", sidebarIcon: "\u25CE", portal: "gp", priority: 0, hiddenFromSidebar: true },
 
   // ── LP Navigation ──────────────────────────────────────────
   { path: "/lp-dashboard", label: "My Overview", description: "LP investor overview", keywords: ["lp", "investor", "portal", "my overview"], icon: "LayoutDashboard", sidebarIcon: "\u25FB", portal: "lp", priority: 70 },
@@ -73,6 +74,7 @@ export function getPageTitle(pathname: string): string {
   if (pathname.startsWith("/investors/")) return "Investor Detail";
   if (pathname.startsWith("/companies/")) return "Company Detail";
   if (pathname.startsWith("/transactions/")) return "Transaction Detail";
+  if (pathname.startsWith("/meetings/")) return "Meeting Detail";
 
   return "Atlas";
 }

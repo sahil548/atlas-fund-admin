@@ -94,9 +94,11 @@ function getLegacyDecisions(decisions: MeetingForCard["decisions"]): string[] {
 interface Props {
   meeting: MeetingForCard;
   onUpdated?: () => void;
+  /** If provided, a "View details" link is rendered in the card header */
+  href?: string;
 }
 
-export function MeetingDetailCard({ meeting, onUpdated }: Props) {
+export function MeetingDetailCard({ meeting, onUpdated, href }: Props) {
   const toast = useToast();
   const [actionItemsOpen, setActionItemsOpen] = useState(false);
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
@@ -176,7 +178,13 @@ export function MeetingDetailCard({ meeting, onUpdated }: Props) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {meeting.title}
+              {href ? (
+                <Link href={href} className="hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+                  {meeting.title}
+                </Link>
+              ) : (
+                meeting.title
+              )}
             </h3>
             {meeting.meetingType && (
               <Badge color={TYPE_COLORS[meeting.meetingType] || "gray"}>

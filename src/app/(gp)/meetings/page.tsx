@@ -243,6 +243,7 @@ export default function MeetingsPage() {
             <MeetingDetailCard
               key={m.id}
               meeting={m}
+              href={`/meetings/${m.id}`}
               onUpdated={() => mutate(buildUrl(null))}
             />
           ))}
