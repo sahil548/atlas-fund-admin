@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast";
+import { ERR } from "@/lib/error-messages";
 
 interface DocumentSummary {
   documentType?: string;
@@ -272,9 +273,15 @@ export function DocumentExtractionPanel({
           {/* NONE state */}
           {document.extractionStatus === "NONE" && (
             <div className="py-8 text-center space-y-3">
-              <p className="text-sm text-gray-400">
-                This document has not been processed by AI yet.
-              </p>
+              {document.extractionError?.toLowerCase().includes("no ai api key") ? (
+                <p className="text-sm text-amber-700">
+                  {ERR.DOC_EXTRACT_NO_AI}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  This document has not been processed by AI yet.
+                </p>
+              )}
               <button
                 onClick={handleRetry}
                 disabled={retrying}
