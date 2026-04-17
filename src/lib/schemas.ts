@@ -382,6 +382,11 @@ export const UpdateAssetSchema = z.object({
   projectedMetrics: ProjectedMetricsSchema.optional(),
   // Phase 14-04: review schedule fields
   nextReview: z.string().nullable().optional(),
+  // Phase 22-11: review cadence + ownership + board seat — editable from UI
+  reviewFrequency: z.enum(["quarterly", "semi_annual", "annual"]).nullable().optional(),
+  ownershipPercent: z.number().min(0).max(100).nullable().optional(),
+  shareCount: z.number().nonnegative().nullable().optional(),
+  hasBoardSeat: z.boolean().optional(),
   // Phase 22-04: type-conditional one-to-one details update
   typeDetails: z.discriminatedUnion("kind", [
     RealEstateDetailsUpdateSchema,
@@ -1011,6 +1016,12 @@ export const CreateAssetSchema = z.object({
     EquityDetailsUpdateSchema,
     FundLPDetailsUpdateSchema,
   ]).optional(),
+  // Phase 22-11: review schedule + ownership + board seat at creation
+  nextReview: z.string().nullable().optional(),
+  reviewFrequency: z.enum(["quarterly", "semi_annual", "annual"]).nullable().optional(),
+  ownershipPercent: z.number().min(0).max(100).nullable().optional(),
+  shareCount: z.number().nonnegative().nullable().optional(),
+  hasBoardSeat: z.boolean().optional(),
 });
 
 // ── Documents (PATCH link) ─────────────────────────────────────

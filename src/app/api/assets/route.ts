@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
       entityId, allocationPercent,
       // Phase 22-10: parity fields
       entryDate, projectedIRR, projectedMultiple, typeDetails,
+      // Phase 22-11: review schedule + ownership + board seat
+      nextReview, reviewFrequency, ownershipPercent, shareCount, hasBoardSeat,
     } = data!;
 
     const cost = Number(costBasis);
@@ -125,6 +127,12 @@ export async function POST(req: NextRequest) {
         entryDate: entryDate ? new Date(entryDate) : new Date(),
         ...(projectedIRR !== undefined ? { projectedIRR } : {}),
         ...(projectedMultiple !== undefined ? { projectedMultiple } : {}),
+        // Phase 22-11 scalars
+        ...(nextReview !== undefined ? { nextReview: nextReview ? new Date(nextReview) : null } : {}),
+        ...(reviewFrequency !== undefined ? { reviewFrequency } : {}),
+        ...(ownershipPercent !== undefined ? { ownershipPercent } : {}),
+        ...(shareCount !== undefined ? { shareCount } : {}),
+        ...(hasBoardSeat !== undefined ? { hasBoardSeat } : {}),
         entityAllocations: {
           create: {
             entityId,

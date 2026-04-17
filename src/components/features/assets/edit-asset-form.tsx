@@ -16,6 +16,14 @@ const STATUSES = [
   { value: "WRITTEN_OFF", label: "Written Off" },
 ];
 
+// Phase 22-11: review cadence options
+const REVIEW_FREQUENCIES = [
+  { value: "", label: "None" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "semi_annual", label: "Semi-annual" },
+  { value: "annual", label: "Annual" },
+];
+
 const ASSET_CLASSES = [
   { value: "REAL_ESTATE", label: "Real Estate" },
   { value: "PUBLIC_SECURITIES", label: "Public Securities" },
@@ -64,6 +72,12 @@ interface Props {
     participationStructure?: string | null;
     projectedIRR?: number | null;
     projectedMultiple?: number | null;
+    // Phase 22-11: review schedule + ownership + board seat
+    nextReview?: string | Date | null;
+    reviewFrequency?: string | null;
+    ownershipPercent?: number | null;
+    shareCount?: number | null;
+    hasBoardSeat?: boolean | null;
     realEstateDetails?: {
       propertyType?: string | null;
       squareFeet?: string | null;
@@ -148,6 +162,12 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
     participationStructure: "",
     projectedIRR: "",
     projectedMultiple: "",
+    // Phase 22-11
+    nextReview: "",
+    reviewFrequency: "",
+    ownershipPercent: "",
+    shareCount: "",
+    hasBoardSeat: false,
   });
 
   // Type-conditional detail fields stored separately so we can track dirtiness
@@ -174,6 +194,15 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
       }
     }
 
+    // Phase 22-11: format nextReview for <input type="date">
+    let nextReviewStr = "";
+    if (asset.nextReview) {
+      const d = new Date(asset.nextReview);
+      if (!isNaN(d.getTime())) {
+        nextReviewStr = d.toISOString().slice(0, 10);
+      }
+    }
+
     setForm({
       name: asset.name || "",
       entryDate: entryDateStr,
@@ -187,6 +216,12 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
       participationStructure: asset.participationStructure || "",
       projectedIRR: asset.projectedIRR != null ? String(asset.projectedIRR) : "",
       projectedMultiple: asset.projectedMultiple != null ? String(asset.projectedMultiple) : "",
+      // Phase 22-11
+      nextReview: nextReviewStr,
+      reviewFrequency: asset.reviewFrequency || "",
+      ownershipPercent: asset.ownershipPercent != null ? String(asset.ownershipPercent) : "",
+      shareCount: asset.shareCount != null ? String(asset.shareCount) : "",
+      hasBoardSeat: asset.hasBoardSeat ?? false,
     });
 
     // Pre-fill type-specific detail forms
@@ -251,7 +286,7 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
     setTypeDetails(null);
   }, [open, asset]);
 
-  const setF = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const setF = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
   // Helper to mark RE details as dirty
   const setRe = (k: string, v: string) => {
@@ -314,6 +349,13 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
     if (form.projectedMultiple) payload.projectedMultiple = Number(form.projectedMultiple);
     else payload.projectedMultiple = null;
 
+    // Phase 22-11: review schedule + ownership + board seat
+    payload.nextReview = form.nextReview ? new Date(form.nextReview).toISOString() : null;
+    payload.reviewFrequency = form.reviewFrequency || null;
+    payload.ownershipPercent = form.ownershipPercent ? Number(form.ownershipPercent) : null;
+    payload.shareCount = form.shareCount ? Number(form.shareCount) : null;
+    payload.hasBoardSeat = form.hasBoardSeat;
+
     // Type-conditional details (only include if user edited any detail field)
     if (typeDetails) payload.typeDetails = typeDetails;
 
@@ -373,6 +415,33 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
           <FormField label="Projected IRR (%)"><Input type="number" step="0.01" value={form.projectedIRR} onChange={(e) => setF("projectedIRR", e.target.value)} placeholder="e.g., 15.5" /></FormField>
           <FormField label="Projected Multiple (x)"><Input type="number" step="0.01" value={form.projectedMultiple} onChange={(e) => setF("projectedMultiple", e.target.value)} placeholder="e.g., 2.0" /></FormField>
         </div>
+
+        {/* ─── B.5) Phase 22-11: Review schedule + ownership + board seat ─── */}
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-2">
+          <legend className="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400 px-1">Review & Ownership</legend>
+          <div className="space-y-3 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Next Review">
+                <Input type="date" value={form.nextReview} onChange={(e) => setF("nextReview", e.target.value)} />
+              </FormField>
+              <FormField label="Review Frequency">
+                <Select value={form.reviewFrequency} onChange={(e) => setF("reviewFrequency", e.target.value)} options={REVIEW_FREQUENCIES} />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Ownership %">
+                <Input type="number" step="0.01" value={form.ownershipPercent} onChange={(e) => setF("ownershipPercent", e.target.value)} placeholder="e.g., 18.4" />
+              </FormField>
+              <FormField label="Share Count">
+                <Input type="number" step="1" value={form.shareCount} onChange={(e) => setF("shareCount", e.target.value)} placeholder="e.g., 500000" />
+              </FormField>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input type="checkbox" checked={form.hasBoardSeat} onChange={(e) => setF("hasBoardSeat", e.target.checked)} className="rounded border-gray-300" />
+              Has board seat
+            </label>
+          </div>
+        </fieldset>
 
         {/* ─── C) Type-conditional section ─── */}
         {kind && sectionLabel && (

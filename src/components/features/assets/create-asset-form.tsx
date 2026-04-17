@@ -28,6 +28,14 @@ const STATUS_OPTIONS = [
   { value: "WRITTEN_OFF", label: "Written Off" },
 ];
 
+// Phase 22-11: review cadence options
+const REVIEW_FREQUENCIES = [
+  { value: "", label: "None" },
+  { value: "quarterly", label: "Quarterly" },
+  { value: "semi_annual", label: "Semi-annual" },
+  { value: "annual", label: "Annual" },
+];
+
 // Phase 22-10: mirror the Edit Asset form's type-conditional kind detection so Add Asset surfaces
 // the right per-type scalar fieldset based on the user's selection at creation time.
 type AssetKind = "REAL_ESTATE" | "PRIVATE_CREDIT" | "OPERATING" | "LP_INTEREST" | null;
@@ -75,6 +83,12 @@ export function CreateAssetForm({ open, onClose }: Props) {
     allocationPercent: "100",
     projectedIRR: "",
     projectedMultiple: "",
+    // Phase 22-11
+    nextReview: "",
+    reviewFrequency: "",
+    ownershipPercent: "",
+    shareCount: "",
+    hasBoardSeat: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -101,6 +115,12 @@ export function CreateAssetForm({ open, onClose }: Props) {
         allocationPercent: "100",
         projectedIRR: "",
         projectedMultiple: "",
+        // Phase 22-11
+        nextReview: "",
+        reviewFrequency: "",
+        ownershipPercent: "",
+        shareCount: "",
+        hasBoardSeat: false,
       });
       setReForm({ propertyType: "", squareFeet: "", occupancy: "", noi: "", capRate: "", rentPerSqft: "", debt: "", debtDscr: "" });
       setCreditForm({ instrument: "", principal: "", rate: "", maturity: "", ltv: "", dscr: "", nextPaymentDate: "", accruedInterest: "" });
@@ -110,7 +130,7 @@ export function CreateAssetForm({ open, onClose }: Props) {
     }
   }, [open]);
 
-  const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const set = (k: string, v: string | boolean) => setForm((p) => ({ ...p, [k]: v }));
 
   const kind = deriveKind(form.assetClass, form.capitalInstrument, form.participationStructure);
 
@@ -172,6 +192,12 @@ export function CreateAssetForm({ open, onClose }: Props) {
       if (form.entryDate) payload.entryDate = new Date(form.entryDate).toISOString();
       if (form.projectedIRR) payload.projectedIRR = Number(form.projectedIRR);
       if (form.projectedMultiple) payload.projectedMultiple = Number(form.projectedMultiple);
+      // Phase 22-11 scalars
+      if (form.nextReview) payload.nextReview = new Date(form.nextReview).toISOString();
+      if (form.reviewFrequency) payload.reviewFrequency = form.reviewFrequency;
+      if (form.ownershipPercent) payload.ownershipPercent = Number(form.ownershipPercent);
+      if (form.shareCount) payload.shareCount = Number(form.shareCount);
+      if (form.hasBoardSeat) payload.hasBoardSeat = true;
       const typeDetails = buildTypeDetailsPayload();
       if (typeDetails) payload.typeDetails = typeDetails;
 
@@ -277,6 +303,33 @@ export function CreateAssetForm({ open, onClose }: Props) {
             <Input type="number" value={form.allocationPercent} onChange={(e) => set("allocationPercent", e.target.value)} placeholder="100" />
           </FormField>
         </div>
+
+        {/* Phase 22-11: Review schedule + ownership + board seat */}
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-2">
+          <legend className="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400 px-1">Review & Ownership</legend>
+          <div className="space-y-3 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Next Review">
+                <Input type="date" value={form.nextReview} onChange={(e) => set("nextReview", e.target.value)} />
+              </FormField>
+              <FormField label="Review Frequency">
+                <Select value={form.reviewFrequency} onChange={(e) => set("reviewFrequency", e.target.value)} options={REVIEW_FREQUENCIES} />
+              </FormField>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label="Ownership %">
+                <Input type="number" step="0.01" value={form.ownershipPercent} onChange={(e) => set("ownershipPercent", e.target.value)} placeholder="e.g. 18.4" />
+              </FormField>
+              <FormField label="Share Count">
+                <Input type="number" step="1" value={form.shareCount} onChange={(e) => set("shareCount", e.target.value)} placeholder="e.g. 500000" />
+              </FormField>
+            </div>
+            <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <input type="checkbox" checked={form.hasBoardSeat} onChange={(e) => set("hasBoardSeat", e.target.checked)} className="rounded border-gray-300" />
+              Has board seat
+            </label>
+          </div>
+        </fieldset>
 
         {/* Phase 22-10: type-conditional section mirrors Edit Asset modal */}
         {kind && sectionLabel && (
