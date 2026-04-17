@@ -1194,3 +1194,17 @@ export const UpdateDocumentSchema = z.object({
   entityId: z.string().nullable().optional(),
   dealId: z.string().nullable().optional(),
 });
+
+// ── Documents (FormData upload) ──────────────────────────────────────────────
+// Used by the multipart/form-data branch of POST /api/documents.
+// The `file` part is validated separately via `instanceof File` check because
+// Zod does not natively model File objects. This schema validates the scalar fields only.
+
+export const DocumentFormDataSchema = z.object({
+  name: z.string().min(1, "Name is required").max(200),
+  category: z.string().min(1, "Category is required"),
+  firmId: z.string().min(1, "firmId is required"),
+  associatedDealId: z.string().optional(),
+  associatedEntityId: z.string().optional(),
+  associatedAssetId: z.string().optional(),
+});

@@ -8,7 +8,7 @@ import { getAuthUser, unauthorized, forbidden } from "@/lib/auth";
 import { getEffectivePermissions, checkPermission } from "@/lib/permissions";
 import { extractTextFromBuffer, extractDocumentFields, shouldExtractAI } from "@/lib/document-extraction";
 import { parseBody } from "@/lib/api-helpers";
-import { PatchDocumentLinkSchema } from "@/lib/schemas";
+import { PatchDocumentLinkSchema, DocumentFormDataSchema, CreateDocumentSchema } from "@/lib/schemas";
 import { logger } from "@/lib/logger";
 import { DocumentCategory } from "@prisma/client";
 
@@ -93,30 +93,50 @@ export async function POST(req: Request) {
       if (!checkPermission(perms, "documents", "full")) return forbidden();
     }
 
-    const formData = await req.formData();
-    const file = formData.get("file") as File | null;
-    const name = (formData.get("name") as string) || "Untitled";
-    const category = (formData.get("category") as string) || "OTHER";
-    const assetId = (formData.get("assetId") as string) || undefined;
-    const entityId = (formData.get("entityId") as string) || undefined;
-    const dealId = (formData.get("dealId") as string) || undefined;
-    const capitalCallId = (formData.get("capitalCallId") as string) || undefined;
-    const distributionEventId = (formData.get("distributionEventId") as string) || undefined;
+    const contentType = req.headers.get("content-type") ?? "";
 
-    let fileUrl: string | null = null;
-    let fileSize: number | null = null;
-    let mimeType: string | null = null;
-    let buffer: Buffer | null = null;
-    let originalFileName: string | null = null;
+    // ── multipart/form-data branch (file upload from the Upload modal) ──────
+    if (contentType.includes("multipart/form-data")) {
+      const form = await req.formData();
 
-    if (file && file.size > 0) {
+      // 1. Validate the file part separately — Zod does not natively model File objects.
+      const file = form.get("file");
+      if (!(file instanceof File) || file.size === 0) {
+        return NextResponse.json({ error: "A file is required" }, { status: 400 });
+      }
+
+      // 2. Extract scalar fields and validate them via DocumentFormDataSchema.
+      //    NOTE: parseBody() is for JSON bodies and does NOT support multipart — we
+      //    call .safeParse() directly on the constructed plain object.
+      const parsed = DocumentFormDataSchema.safeParse({
+        name: form.get("name")?.toString() ?? "",
+        category: form.get("category")?.toString() ?? "",
+        firmId: form.get("firmId")?.toString() ?? (authUser?.firmId ?? ""),
+        associatedDealId: form.get("associatedDealId")?.toString() || undefined,
+        associatedEntityId: form.get("associatedEntityId")?.toString() || undefined,
+        associatedAssetId: form.get("associatedAssetId")?.toString() || undefined,
+      });
+      if (!parsed.success) {
+        return NextResponse.json(
+          { error: parsed.error.issues[0]?.message ?? "Invalid form data" },
+          { status: 400 },
+        );
+      }
+      const { name, category, firmId: formFirmId, associatedDealId, associatedEntityId, associatedAssetId } = parsed.data;
+
+      // Also read legacy field names that other callers (deal documents tab, etc.) may send
+      const capitalCallId = form.get("capitalCallId")?.toString() || undefined;
+      const distributionEventId = form.get("distributionEventId")?.toString() || undefined;
+
+      // 3. Persist the file.
       const bytes = await file.arrayBuffer();
-      buffer = Buffer.from(bytes);
+      const buffer = Buffer.from(bytes);
       const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "_")}`;
-      originalFileName = file.name;
-      mimeType = file.type || "application/octet-stream";
-      fileSize = buffer.length;
+      const originalFileName = file.name;
+      const mimeType = file.type || "application/octet-stream";
+      const fileSize = buffer.length;
 
+      let fileUrl: string;
       if (USE_BLOB) {
         const blob = await put(`documents/${fileName}`, buffer, {
           access: "private",
@@ -130,18 +150,48 @@ export async function POST(req: Request) {
         await writeFile(filePath, buffer);
         fileUrl = `/api/documents/download/${fileName}`;
       }
-    }
 
-    // Extract text content from in-memory buffer (must happen before document creation)
-    let extractedText: string | null = null;
-    if (buffer && originalFileName && mimeType) {
+      // 4. Extract text content (must happen before document creation).
+      let extractedText: string | null = null;
       try {
         const text = await extractTextFromBuffer(buffer, originalFileName, mimeType);
         if (text.length > 0) extractedText = text;
       } catch (err) {
         logger.error("[documents] Text extraction failed:", { error: err instanceof Error ? err.message : String(err) });
       }
+
+      const doc = await prisma.document.create({
+        data: {
+          name,
+          category: parseDocumentCategory(category),
+          assetId: associatedAssetId || undefined,
+          entityId: associatedEntityId || undefined,
+          dealId: associatedDealId || undefined,
+          capitalCallId,
+          distributionEventId,
+          fileUrl,
+          fileSize,
+          mimeType,
+          extractedText,
+        },
+      });
+
+      // Trigger AI extraction async (fire-and-forget).
+      const firmIdForAI = authUser?.firmId ?? formFirmId;
+      if (doc.extractedText && firmIdForAI && shouldExtractAI(doc.category)) {
+        extractDocumentFields(doc.id, doc.category, doc.extractedText, firmIdForAI, authUser?.id)
+          .catch((err) => {
+            logger.error("[documents] Background AI extraction error:", { error: err instanceof Error ? err.message : String(err) });
+          });
+      }
+
+      return NextResponse.json(doc, { status: 201 });
     }
+
+    // ── JSON branch (legacy callers — metadata-only, no file) ───────────────
+    const { data, error } = await parseBody(req, CreateDocumentSchema);
+    if (error) return error;
+    const { name, category, assetId, entityId, dealId } = data!;
 
     const doc = await prisma.document.create({
       data: {
@@ -150,26 +200,12 @@ export async function POST(req: Request) {
         assetId,
         entityId,
         dealId,
-        capitalCallId,
-        distributionEventId,
-        fileUrl,
-        fileSize,
-        mimeType,
-        extractedText,
+        fileUrl: null,
+        fileSize: null,
+        mimeType: null,
+        extractedText: null,
       },
     });
-
-    // Trigger AI extraction async (fire-and-forget) — locked decision: auto-extract on upload
-    // NEVER await this — the upload response must return immediately
-    // NOTE: On Vercel serverless, background work may be killed after response.
-    // Use POST /api/documents/[id]/extract for guaranteed extraction on failure.
-    const firmId = authUser?.firmId || new URL(req.url).searchParams.get("firmId") || null;
-    if (doc.extractedText && firmId && shouldExtractAI(doc.category)) {
-      extractDocumentFields(doc.id, doc.category, doc.extractedText, firmId, authUser?.id)
-        .catch((err) => {
-          logger.error("[documents] Background AI extraction error:", { error: err instanceof Error ? err.message : String(err) });
-        });
-    }
 
     return NextResponse.json(doc, { status: 201 });
   } catch (err: unknown) {

@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/ui/file-upload";
 import { useToast } from "@/components/ui/toast";
 import Link from "next/link";
 import { useFirm } from "@/components/providers/firm-provider";
@@ -85,6 +86,7 @@ export default function DocumentsPage() {
   const [allDocs, setAllDocs] = useState<Doc[]>([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadForm, setUploadForm] = useState({ name: "", category: "FINANCIAL", associateWith: "" });
   const [uploading, setUploading] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<Doc | null>(null);
@@ -157,34 +159,44 @@ export default function DocumentsPage() {
   }
 
   async function handleUpload() {
+    if (!uploadFile) return;
     setUploading(true);
     try {
-      const body: Record<string, string> = {
-        name: uploadForm.name,
-        category: uploadForm.category,
-      };
+      // Build FormData — DO NOT set Content-Type header; browser sets multipart boundary automatically
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("name", uploadForm.name);
+      formData.append("category", uploadForm.category);
+      formData.append("firmId", firmId);
 
       if (uploadForm.associateWith) {
         const [type, id] = uploadForm.associateWith.split(":");
-        if (type === "entity") body.entityId = id;
-        else if (type === "asset") body.assetId = id;
-        else if (type === "deal") body.dealId = id;
+        if (type === "entity") formData.append("associatedEntityId", id);
+        else if (type === "asset") formData.append("associatedAssetId", id);
+        else if (type === "deal") formData.append("associatedDealId", id);
       }
 
       const res = await fetch("/api/documents", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: formData,
+        // No Content-Type header — browser sets multipart boundary automatically
       });
 
-      if (res.ok) {
-        // Refresh the paginated list
-        setAllDocs([]);
-        setCursor(null);
-        mutate(buildUrl(null));
-        setShowUpload(false);
-        setUploadForm({ name: "", category: "FINANCIAL", associateWith: "" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = typeof data.error === "string" ? data.error : "Upload failed";
+        toast.error(msg);
+        return;
       }
+
+      // Refresh the paginated list
+      setAllDocs([]);
+      setCursor(null);
+      mutate(buildUrl(null));
+      setShowUpload(false);
+      setUploadFile(null);
+      setUploadForm({ name: "", category: "FINANCIAL", associateWith: "" });
+      toast.success("Document uploaded");
     } finally {
       setUploading(false);
     }
@@ -320,16 +332,30 @@ export default function DocumentsPage() {
       {/* Upload Modal */}
       <Modal
         open={showUpload}
-        onClose={() => setShowUpload(false)}
+        onClose={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ name: "", category: "FINANCIAL", associateWith: "" }); }}
         title="Upload Document"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowUpload(false)}>Cancel</Button>
-            <Button onClick={handleUpload} loading={uploading} disabled={!uploadForm.name}>Upload</Button>
+            <Button variant="secondary" onClick={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ name: "", category: "FINANCIAL", associateWith: "" }); }}>Cancel</Button>
+            <Button onClick={handleUpload} loading={uploading} disabled={!uploadFile || !uploadForm.name}>Upload</Button>
           </>
         }
       >
         <div className="space-y-4">
+          <FormField label="File" required>
+            <FileUpload
+              onFileSelect={(file) => {
+                setUploadFile(file);
+                // Auto-fill name from filename if user hasn't typed one yet
+                if (file && !uploadForm.name) {
+                  setUploadForm((f) => ({ ...f, name: file.name }));
+                }
+              }}
+              selectedFile={uploadFile}
+              accept="*"
+              maxSizeMB={25}
+            />
+          </FormField>
           <FormField label="Document Name" required>
             <Input
               placeholder="e.g. Q4 Financial Report"
