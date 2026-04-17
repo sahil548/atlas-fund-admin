@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
-status: in_progress
-stopped_at: Phase 21 complete — walkthrough triaged, urgent items folded
-last_updated: "2026-04-16"
-last_activity: "2026-04-16 — Phase 21 complete. 52 observations triaged (21 urgent → Phase 22, 4 already scoped, 17 deferred v3.1+). FIN-09..12 added to REQUIREMENTS.md."
+status: completed
+stopped_at: Phase 22 context gathered
+last_updated: "2026-04-17T04:14:29.954Z"
+last_activity: 2026-04-16 — Phase 21 GP + LP walkthrough triage complete. Phase 22 scope significantly expanded by walkthrough findings.
 progress:
   total_phases: 8
   completed_phases: 1
@@ -112,7 +112,7 @@ From v2.1:
 - **v2.1 shipped + tagged:** 2026-04-16
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
-- **Last session:** 2026-04-16T22:21:28.725Z
+- **Last session:** 2026-04-17T04:14:29.951Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Phase 21 complete — walkthrough triaged, urgent items folded
-- **Resume file:** .planning/phases/21-initial-manual-walkthrough-baseline/21-01-SUMMARY.md
+- **Stopped at:** Phase 22 context gathered
+- **Resume file:** .planning/phases/22-fit-finish-code/22-CONTEXT.md
