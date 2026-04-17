@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
-status: completed
-stopped_at: Completed Phase 22 Plan 03 (LP-Obs 2 capital account reconciliation)
-last_updated: "2026-04-17T05:57:16.683Z"
-last_activity: "2026-04-17 — Plan 22-03 executed: LP Capital Account reconciliation (LP-Obs 2). Seed data mismatch root cause: entity2 PAID distributions had no per-investor DLIs. Added 15 DLIs + distributionBreakdown to API + breakdown rows to display. All 3 hard blockers closed."
+status: in_progress
+stopped_at: Completed Phase 22 Plan 04 (Asset Correctness — Obs 10, 12, 24, 25)
+last_updated: "2026-04-17T06:30:00.000Z"
+last_activity: "2026-04-17 — Plan 22-04 executed: expanded Edit Asset modal with type-conditional sections (Obs 10), sub-modals for lease/credit-agreement/valuation (Obs 12), allocation % tooltip (Obs 24), entity overview cost-basis derived from allocationPercent x asset.costBasis (Obs 25)."
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Atlas — GSD State
@@ -25,9 +25,9 @@ progress:
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
 - **Previous:** Phase 21 (Initial Manual Walkthrough) — COMPLETE 2026-04-16
 - **Phase:** Phase 22 (Fit & Finish — Code) — IN PROGRESS
-- **Plan:** 22-03 COMPLETE (LP-Obs 2 — LP Capital Account Reconciliation). Next: 22-04 (Asset Correctness cluster).
-- **Status:** Plans 22-01, 22-02, and 22-03 complete. ALL 3 hard blockers closed (Obs 35, Obs 40, LP-Obs 2). FIN-12 marked complete.
-- **Last activity:** 2026-04-17 — Plan 22-03 executed: LP Capital Account reconciliation. Seed mismatch root cause. 15 entity2 DLIs added, API returns distributionBreakdown, display shows ROC/income/LTG rows.
+- **Plan:** 22-04 COMPLETE (Asset Correctness — Obs 10, 12, 24, 25). Next: 22-05.
+- **Status:** Plans 22-01, 22-02, 22-03, and 22-04 complete. ALL 3 hard blockers closed (Obs 35, Obs 40, LP-Obs 2). Asset correctness cluster closed (Obs 10, 12, 24, 25). FIN-09, FIN-12 marked complete.
+- **Last activity:** 2026-04-17 — Plan 22-04 executed: expanded Edit Asset modal with common scalars (name, entryDate, costBasis) + type-conditional field sections, sub-modals for lease/credit-agreement/valuation editing with new nested routes, allocation tooltip, proportional cost-basis fix on entity overview.
 
 ## v3.0 Phase Overview
 
@@ -105,6 +105,8 @@ From v2.1:
 - v3.0 Phase 21: 1/1 plan complete, 52 observations triaged, 21 urgent items folded
 - v3.0 Phase 22 plan 22-01: 2 tasks, 2 files modified, 7 min, 3 commits — Obs 35 + Obs 47 closed
 - v3.0 Phase 22 plan 22-02: 2 tasks, 3 files modified, ~40 min, 1 commit — Obs 40 closed (FileUpload + FormData + DocumentFormDataSchema)
+- v3.0 Phase 22 plan 22-03: 3 tasks, 5 files modified, ~60 min — LP-Obs 2 closed (15 DLIs + distributionBreakdown API + display rows)
+- v3.0 Phase 22 plan 22-04: 3 tasks, 12 files created/modified, ~90 min, 3 commits — Obs 10, 12, 24, 25 closed (Edit Asset modal expanded, sub-modals for lease/credit/valuation, allocation tooltip, cost-basis fix)
 
 ## Session Continuity
 
@@ -116,5 +118,5 @@ From v2.1:
 - **v3.0 roadmap complete:** 2026-04-16
 - **Last session:** 2026-04-17T05:57:16.681Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Completed Phase 22 Plan 03 (LP-Obs 2 capital account reconciliation)
+- **Stopped at:** Completed Phase 22 Plan 04 (Asset Correctness — Obs 10, 12, 24, 25)
 - **Resume file:** None

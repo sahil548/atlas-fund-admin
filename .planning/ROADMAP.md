@@ -112,7 +112,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   6. List sort/filter: asset class filter, entity column sort, and meetings sort/filter all work — FIN-10
   7. Integrated records: per-asset and per-entity task widgets link to `/tasks/[id]`; cap-table investors link to CRM contact records — FIN-11
   8. LP display quality: capital account statement reconciles; LP portfolio shows invested capital vs. fair value — FIN-12
-**Plans:** 3/9 plans executed
+**Plans:** 4/9 plans executed
 
 **Additions from Phase 21 walkthrough:**
 - GP Obs 3: Fix "not authorized" error copy on deal stage-gate rejection — explain the rule, not auth failure (FIN-09)
@@ -120,14 +120,14 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 - GP Obs 6: Wire activity feed entries on deal detail to be clickable/navigable — unified activity-feed component fix (FIN-01 adjacent)
 - GP Obs 7: Investigate and close deletion bypass that allows admin delete of IC-Review/Closing deals against stage-gate intent
 - GP Obs 8: Fix asset list class filter buttons — they render but do not filter (FIN-10)
-- GP Obs 10: Unblock asset edit surface — entry date and other fields must be editable; HIGH priority per asset-calc thesis (Obs 20)
-- GP Obs 12: Add clear edit path for lease/contract fields on asset Overview — HIGH priority per asset-calc thesis (Obs 20)
+- [x] GP Obs 10: Unblock asset edit surface — entry date and other fields must be editable; HIGH priority per asset-calc thesis (Obs 20) CLOSED 2026-04-17 (22-04)
+- [x] GP Obs 12: Add clear edit path for lease/contract fields on asset Overview — HIGH priority per asset-calc thesis (Obs 20) CLOSED 2026-04-17 (22-04)
 - GP Obs 18: Wire per-asset task tab rows to `/tasks/[id]` detail (linkage fix only — detail view exists) (FIN-11)
 - GP Obs 19: Wire per-asset activity feed entries to be navigable — shared fix with Obs 6 (FIN-01 adjacent)
 - GP Obs 21: Add column sort to entities list — no sorting currently (FIN-10)
 - GP Obs 22: Wire per-entity task widgets to `/tasks/[id]` (same fix as Obs 18, FIN-11)
-- GP Obs 24: Fix "Asset Allocations" percentage label ambiguity — add tooltip clarifying semantic direction (entity's ownership stake IN asset)
-- GP Obs 25: Fix cost basis seed linkage so entity overview shows non-zero cost bases; verify UI data-entry path — HIGH priority per asset-calc thesis
+- [x] GP Obs 24: Fix "Asset Allocations" percentage label ambiguity — add tooltip clarifying semantic direction (entity's ownership stake IN asset) CLOSED 2026-04-17 (22-04)
+- [x] GP Obs 25: Fix cost basis seed linkage so entity overview shows non-zero cost bases; verify UI data-entry path — HIGH priority per asset-calc thesis CLOSED 2026-04-17 (22-04)
 - GP Obs 27: Wire cap-table investor rows to link to Directory/CRM contact record (FIN-11)
 - GP Obs 35: Fix Add Side Letter form crash — TypeError on `entities.map` due to v2.1 response shape change; normalize endpoint or safe-unwrap — BLOCKER
 - GP Obs 39: Fix "unauthorized" error copy on document AI summary — explain condition and next action (FIN-09)
@@ -237,7 +237,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 | 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |
 | v2.1 (retroactive, off-GSD) | v2.1 | N/A (71 commits) | In Review | 2026-04-09 (last commit) |
 | 21. Initial Manual Walkthrough (Baseline) | v3.0 | 1/1 | Complete | 2026-04-16 |
-| 22. Fit & Finish — Code | 3/9 | In Progress|  | — |
+| 22. Fit & Finish — Code | 4/9 | In Progress|  | — |
 | 23. Fit & Finish — Docs & Verification Retrofit | v3.0 | 0/TBD | Not started | — |
 | 24. RBAC Enforcement | v3.0 | 0/TBD | Not started | — |
 | 25. Pagination | v3.0 | 0/TBD | Not started | — |
