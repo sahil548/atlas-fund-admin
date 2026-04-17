@@ -66,9 +66,10 @@ function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: str
       ) : tasks.length > 0 ? (
         <div className="space-y-2">
           {tasks.map((t: any) => (
-            <div
+            <Link
               key={t.id}
-              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              href={`/tasks/${t.id}`}
+              className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               <div className="flex items-center gap-3">
                 <span
@@ -103,7 +104,7 @@ function AssetTasksTab({ assetId, assetName }: { assetId: string; assetName: str
               >
                 {t.status.toLowerCase().replace("_", " ")}
               </Badge>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

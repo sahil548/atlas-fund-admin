@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDate } from "@/lib/utils";
@@ -49,7 +50,7 @@ function TasksInline({ entityId, entityName }: { entityId: string; entityName: s
       ) : tasks.length > 0 ? (
         <div className="space-y-2">
           {tasks.map((t: any) => (
-            <div key={t.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Link key={t.id} href={`/tasks/${t.id}`} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <div className="flex items-center gap-3">
                 <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] flex-shrink-0 ${t.status === "DONE" ? "bg-emerald-500 border-emerald-500 text-white" : "border-gray-300"}`}>
                   {t.status === "DONE" ? "\u2713" : ""}
@@ -64,7 +65,7 @@ function TasksInline({ entityId, entityName }: { entityId: string; entityName: s
               <Badge color={t.status === "DONE" ? "green" : t.status === "IN_PROGRESS" ? "yellow" : "gray"}>
                 {t.status.toLowerCase().replace("_", " ")}
               </Badge>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (
