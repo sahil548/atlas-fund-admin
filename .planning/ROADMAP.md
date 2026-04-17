@@ -70,7 +70,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 ### Phases
 
 - [x] **Phase 21: Initial Manual Walkthrough (Baseline)** — User-driven GP + LP tours of the current app to capture a fresh baseline of feedback BEFORE any v3.0 changes are made. Output shapes subsequent phase priorities. COMPLETE 2026-04-16 — 52 observations triaged, 19 urgent items folded into Phase 22, 1 item to Phase 28 backlog.
-- [~] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification — **PARTIAL 2026-04-17: 9/10 plans complete (22-01 through 22-07 + 22-09 + 22-10 post-deploy gap-closure); Plan 22-08 FIN-04 deferred to Phase 23, assigned to Kathryn**
+- [~] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification — **PARTIAL 2026-04-17: 10/11 plans complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 post-deploy gap-closures); Plan 22-08 FIN-04 deferred to Phase 23, assigned to Kathryn**
 - [ ] **Phase 23: Fit & Finish — Docs & Verification Retrofit** — Waterfall conventions doc, VERIFICATION.md retrofit for v2.0 phases 12/13/14/15/18/20, traceability sync, Plan 20-10 closeout
 - [ ] **Phase 24: RBAC Enforcement** — API middleware + UI hiding so role boundaries are actually enforced, not just modeled
 - [ ] **Phase 25: Pagination** — Cursor-based pagination helper + apply to list endpoints + "Load more" UI for 30+ record scale
@@ -112,7 +112,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   6. List sort/filter: asset class filter, entity column sort, and meetings sort/filter all work — FIN-10
   7. Integrated records: per-asset and per-entity task widgets link to `/tasks/[id]`; cap-table investors link to CRM contact records — FIN-11
   8. LP display quality: capital account statement reconciles; LP portfolio shows invested capital vs. fair value — FIN-12
-**Plans:** 9/10 complete (22-01 through 22-07 + 22-09 + 22-10 executed; 22-08 deferred — see below)
+**Plans:** 10/11 complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 executed; 22-08 deferred — see below)
 
 - [x] 22-01-PLAN.md — Side Letter crash (Obs 35) + seed delete order (Obs 47). COMPLETE 2026-04-17.
 - [x] 22-02-PLAN.md — Document Upload Wizard (Obs 40): FileUpload + FormData + DocumentFormDataSchema. COMPLETE 2026-04-17.
@@ -124,6 +124,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 - [ ] 22-08-PLAN.md — Second-fund Excel validation (FIN-04). **Deferred to Phase 23 — assigned to Kathryn.** Excel not delivered during Phase 22. Plan is drafted; executes once Excel is placed at fixtures/.
 - [x] 22-09-PLAN.md — Phase SUMMARY, Nyquist flip, STATE/ROADMAP/REQUIREMENTS updates. COMPLETE 2026-04-17.
 - [x] 22-10-PLAN.md — **Post-deploy gap-closure (added 2026-04-17).** User surfaced two gaps after the production deploy: (a) existing prod assets without child detail records silently hid the Edit Asset type-conditional fieldset, (b) Add Asset form was missing every Phase 22 addition (Entry Date, Projected IRR/Multiple, per-type scalar fieldset). Fixed `detectAssetKind` with fallback to assetClass/instrument/participation, switched PUT `/api/assets/[id]` detail writes to `upsert`, and rewrote Add Asset form to match Edit parity. COMPLETE 2026-04-17.
+- [x] 22-11-PLAN.md — **Review schedule + ownership tracking (added 2026-04-17).** User asked "how do I set the asset review schedule" — turned out `reviewFrequency` / `nextReview` + `ownershipPercent` / `shareCount` / `hasBoardSeat` were all on the model but missing from the Add/Edit UI. Added new "Review & Ownership" fieldset to both forms; extended schemas + POST handler. This also makes the existing "Mark Reviewed" button on the Overview tab usable for the first time (previously `reviewFrequency` was only settable via seed). COMPLETE 2026-04-17.
 
 **Additions from Phase 21 walkthrough:**
 - [x] GP Obs 3: Fix "not authorized" error copy on deal stage-gate rejection — explain the rule, not auth failure (FIN-09) CONFIRMED 2026-04-17 (22-06): deal delete handler already reads json.error and API returns descriptive 400 stage-gate message; ERR.DEAL_STAGE_GATE added to centralized taxonomy
@@ -248,7 +249,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 | 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |
 | v2.1 (retroactive, off-GSD) | v2.1 | N/A (71 commits) | In Review | 2026-04-09 (last commit) |
 | 21. Initial Manual Walkthrough (Baseline) | v3.0 | 1/1 | Complete | 2026-04-16 |
-| 22. Fit & Finish — Code | v3.0 | 9/10 complete + 1 carry-forward | Partial — FIN-04 Excel carry-forward to Phase 23 (Kathryn); 22-10 post-deploy gap-closure shipped | 2026-04-17 |
+| 22. Fit & Finish — Code | v3.0 | 10/11 complete + 1 carry-forward | Partial — FIN-04 Excel carry-forward to Phase 23 (Kathryn); 22-10 + 22-11 post-deploy gap-closures shipped | 2026-04-17 |
 | 23. Fit & Finish — Docs & Verification Retrofit | v3.0 | 0/TBD | Not started | — |
 | 24. RBAC Enforcement | v3.0 | 0/TBD | Not started | — |
 | 25. Pagination | v3.0 | 0/TBD | Not started | — |
