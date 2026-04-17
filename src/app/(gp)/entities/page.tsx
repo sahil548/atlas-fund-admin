@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import useSWR, { mutate } from "swr";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { fmt, cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { useFirm } from "@/components/providers/firm-provider";
+import { SearchFilterBar } from "@/components/ui/search-filter-bar";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Building } from "lucide-react";
@@ -20,6 +21,9 @@ import { VehicleOrgChart } from "@/components/features/entities/vehicle-org-char
 import { VehicleCardsView } from "@/components/features/entities/vehicle-cards-view";
 import { CreateEntityForm } from "@/components/features/entities/create-entity-form";
 import { ChevronRight, ChevronDown } from "lucide-react";
+
+type EntitySortKey = "name" | "entityType" | "vintageYear" | "status";
+type SortDir = "asc" | "desc";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -45,6 +49,15 @@ export default function EntitiesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("flat");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
+  const [sortKey, setSortKey] = useState<EntitySortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  function handleSort(k: EntitySortKey) {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir("asc"); }
+  }
 
   // Inline edit state
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -58,11 +71,18 @@ export default function EntitiesPage() {
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
       const params = new URLSearchParams({ firmId, limit: "50" });
+      if (search) params.set("search", search);
       if (currentCursor) params.set("cursor", currentCursor);
       return `/api/entities?${params.toString()}`;
     },
-    [firmId],
+    [firmId, search],
   );
+
+  const handleSearch = useCallback((q: string) => {
+    setSearch(q);
+    setAllEntities([]);
+    setCursor(null);
+  }, []);
 
   const { isLoading } = useSWR(buildUrl(null), fetcher, {
     onSuccess: (result) => {
@@ -71,6 +91,18 @@ export default function EntitiesPage() {
     },
     revalidateOnFocus: false,
   });
+
+  const sortedEntities = useMemo(() =>
+    [...allEntities].sort((a, b) => {
+      const av = a[sortKey] ?? "";
+      const bv = b[sortKey] ?? "";
+      const cmp = typeof av === "number" && typeof bv === "number"
+        ? av - bv
+        : String(av).localeCompare(String(bv));
+      return sortDir === "asc" ? cmp : -cmp;
+    }),
+    [allEntities, sortKey, sortDir]
+  );
 
   const handleLoadMore = useCallback(async () => {
     if (!cursor || loadingMore) return;
@@ -151,6 +183,12 @@ export default function EntitiesPage() {
         subtitle={`${allEntities.length} vehicles`}
         actions={
           <div className="flex items-center gap-2">
+            <SearchFilterBar
+              filters={[]}
+              onSearch={handleSearch}
+              onFilterChange={() => {}}
+              activeFilters={activeFilters}
+            />
             <Button size="sm" onClick={() => setShowCreateForm(true)}>+ New Vehicle</Button>
             <ExportButton
               data={allEntities.map((e: any) => ({
@@ -194,7 +232,35 @@ export default function EntitiesPage() {
           <table className="w-full text-xs">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                {["Vehicle", "Type", "Vintage", "Committed", "Called", "Distributed", "Formation", "Accounting", "Actions"].map((h) => (
+                {(["Vehicle", "Type", "Vintage"] as const).map((h, i) => {
+                  const colKey: EntitySortKey = i === 0 ? "name" : i === 1 ? "entityType" : "vintageYear";
+                  const isActive = sortKey === colKey;
+                  return (
+                    <th
+                      key={h}
+                      className={cn(
+                        "text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-gray-900 hover:bg-gray-100 transition-colors",
+                        isActive && "text-indigo-700",
+                      )}
+                      onClick={() => handleSort(colKey)}
+                    >
+                      {h}{isActive ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+                    </th>
+                  );
+                })}
+                {["Committed", "Called", "Distributed"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
+                ))}
+                <th
+                  className={cn(
+                    "text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap cursor-pointer select-none hover:text-gray-900 hover:bg-gray-100 transition-colors",
+                    sortKey === "status" && "text-indigo-700",
+                  )}
+                  onClick={() => handleSort("status")}
+                >
+                  Formation{sortKey === "status" ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+                </th>
+                {["Accounting", "Actions"].map((h) => (
                   <th key={h} className="text-left px-3 py-2 font-semibold text-gray-600 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -222,7 +288,8 @@ export default function EntitiesPage() {
                     }
                   });
                   const entityIds = new Set(allEntities.map((e: any) => e.id));
-                  const roots = allEntities.filter((e: any) => !e.parentEntityId || !entityIds.has(e.parentEntityId));
+                  // Use sortedEntities for roots so sort order applies
+                  const roots = sortedEntities.filter((e: any) => !e.parentEntityId || !entityIds.has(e.parentEntityId));
 
                   const toggleExpand = (id: string) => {
                     setExpanded((prev) => {

@@ -11,8 +11,10 @@ export async function GET(req: NextRequest) {
     const authUser = await getAuthUser();
     const firmId = req.nextUrl.searchParams.get("firmId") || authUser?.firmId;
 
+    // Pass only the truly infra params as knownParams so that assetClass/status/entityId
+    // flow through to params.filters and get picked up by the baseWhere block below.
     const params = parsePaginationParams(req.nextUrl.searchParams, [
-      "firmId", "cursor", "limit", "search", "assetClass", "status", "entityId",
+      "firmId", "cursor", "limit", "search",
     ]);
 
     const baseWhere: Record<string, unknown> = {};

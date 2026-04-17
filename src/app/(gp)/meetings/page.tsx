@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import useSWR, { mutate } from "swr";
 import { StatCard } from "@/components/ui/stat-card";
 import { CreateMeetingForm } from "@/components/features/meetings/create-meeting-form";
@@ -11,9 +11,12 @@ import { ExportButton } from "@/components/ui/export-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Video, RefreshCw } from "lucide-react";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { useToast } from "@/components/ui/toast";
+
+type MeetingSortKey = "meetingDate" | "title";
+type SortDir = "asc" | "desc";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -59,6 +62,13 @@ export default function MeetingsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [sortKey, setSortKey] = useState<MeetingSortKey>("meetingDate");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function handleSort(k: MeetingSortKey) {
+    if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(k); setSortDir(k === "meetingDate" ? "desc" : "asc"); }
+  }
 
   const buildUrl = useCallback(
     (currentCursor?: string | null) => {
@@ -161,6 +171,16 @@ export default function MeetingsPage() {
     setCursor(null);
   };
 
+  const sortedMeetings = useMemo(() =>
+    [...allMeetings].sort((a, b) => {
+      const av = a[sortKey] ?? "";
+      const bv = b[sortKey] ?? "";
+      const cmp = String(av).localeCompare(String(bv));
+      return sortDir === "asc" ? cmp : -cmp;
+    }),
+    [allMeetings, sortKey, sortDir]
+  );
+
   return (
     <div className="space-y-4">
       {/* Header + Filters */}
@@ -217,6 +237,28 @@ export default function MeetingsPage() {
         <StatCard label="This Month" value={String(thisMonth)} small />
       </div>
 
+      {/* Sort Controls */}
+      {allMeetings.length > 0 && (
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span>Sort by:</span>
+          {(["meetingDate", "title"] as MeetingSortKey[]).map((k) => (
+            <button
+              key={k}
+              onClick={() => handleSort(k)}
+              className={cn(
+                "px-2 py-1 rounded border transition-colors",
+                sortKey === k
+                  ? "bg-indigo-50 border-indigo-300 text-indigo-700 font-medium"
+                  : "border-gray-200 hover:border-gray-300 hover:text-gray-700",
+              )}
+            >
+              {k === "meetingDate" ? "Date" : "Title"}
+              {sortKey === k ? (sortDir === "asc" ? " ↑" : " ↓") : ""}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Meeting Cards */}
       {isLoading && allMeetings.length === 0 ? (
         <div className="space-y-2">
@@ -239,7 +281,7 @@ export default function MeetingsPage() {
         />
       ) : (
         <div className="space-y-2">
-          {allMeetings.map((m) => (
+          {sortedMeetings.map((m) => (
             <MeetingDetailCard
               key={m.id}
               meeting={m}
