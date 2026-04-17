@@ -155,16 +155,29 @@ export default function LPPortfolioPage() {
           Your pro-rata exposure to underlying assets ({allAssets.length} assets)
         </div>
         <div className="space-y-3">
-          {allAssets.map(({ asset: a, proRata, investorPct }: { asset: { id: string; name: string; assetClass: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string }; proRata: number; investorPct: number }) => (
+          {allAssets.map(({ asset: a, proRata, investorPct, investedCapital }: {
+            asset: { id: string; name: string; assetClass: string; sector: string; fairValue: number; moic: number; incomeType: string; status: string };
+            proRata: number;
+            investorPct: number;
+            investedCapital: number;
+          }) => (
             <div key={a.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <Badge color={ASSET_CLASS_COLORS[a.assetClass]}>{ASSET_CLASS_LABELS[a.assetClass]}</Badge>
                   <span className="text-sm font-semibold dark:text-gray-100">{a.name}</span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold dark:text-gray-100">{fmt(proRata)}</div>
-                  <div className="text-[10px] text-gray-500 dark:text-gray-400">Your pro-rata ({(investorPct * 100).toFixed(1)}%)</div>
+                {/* Invested vs Current Value — LP-Obs 3 */}
+                <div className="flex items-center gap-6 text-right">
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Invested</div>
+                    <div className="text-sm font-semibold dark:text-gray-100">{fmt(investedCapital ?? 0)}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Current Value</div>
+                    <div className="text-sm font-semibold dark:text-gray-100">{fmt(proRata)}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">({(investorPct * 100).toFixed(1)}% ownership)</div>
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-2 text-xs">
