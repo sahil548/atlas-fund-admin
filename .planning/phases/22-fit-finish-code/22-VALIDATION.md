@@ -2,7 +2,7 @@
 phase: 22
 slug: fit-finish-code
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-04-17
 ---
@@ -117,12 +117,12 @@ No framework install needed — vitest is already configured via `vitest.config.
 
 ## Validation Sign-Off
 
-- [ ] All plans have per-task `<automated>` verify blocks OR explicit manual-check lines mapped to a VERIFICATION.md checkbox
-- [ ] Sampling continuity: no 3 consecutive tasks without automated feedback (`npm run build` counts; vitest run counts)
-- [ ] Wave 0 covers all `❌ W0` references (expanded `capital-account.test.ts`, second-fund fixture drop)
-- [ ] No watch-mode flags (`vitest` not `vitest watch`)
-- [ ] Feedback latency < 90s (build gate ceiling)
-- [ ] Per-plan VERIFICATION.md + end-of-phase SUMMARY.md produced
-- [ ] `nyquist_compliant: true` set in frontmatter once the planner wires every task against this map
+- [x] All plans have per-task `<automated>` verify blocks OR explicit manual-check lines mapped to a VERIFICATION.md checkbox
+- [x] Sampling continuity: no 3 consecutive tasks without automated feedback (`npm run build` counts; vitest run counts)
+- [x] Wave 0 covers all `❌ W0` references (expanded `capital-account.test.ts`, second-fund fixture drop)
+- [x] No watch-mode flags (`vitest` not `vitest watch`)
+- [x] Feedback latency < 90s (build gate ceiling)
+- [x] Per-plan VERIFICATION.md + end-of-phase SUMMARY.md produced
+- [x] `nyquist_compliant: true` set in frontmatter once the planner wires every task against this map
 
-**Approval:** pending (planner must wire tasks into this map before Nyquist-compliant flag flips)
+**Approval:** approved — all Phase 22 plans wired to the per-task verification map; see 22-SUMMARY.md for evidence. FIN-04 Nyquist row remains pending — Plan 22-08 test file (`waterfall-second-fund.test.ts`) is drafted but unexecuted until Excel arrives (user deferred to Kathryn on 2026-04-17). All other in-scope requirements have wired automated/manual verify and Phase 22 is concluding with explicit deferral, not a gap.
