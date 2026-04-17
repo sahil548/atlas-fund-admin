@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: Completed Phase 22 Plan 07 (Waterfall Refactor + FIN-08 Bug Closeout)
-last_updated: "2026-04-17T06:37:00.000Z"
-last_activity: "2026-04-17 — Plan 22-05 executed: /meetings/[id] detail page created (FIN-01), 4+ click-through sites wired for meeting entries (Obs 6, 19), LP Portfolio Invested + Current Value columns added via Prisma aggregate (LP-Obs 3). Plan 22-07 also complete per prior session."
+stopped_at: Completed Phase 22 Plan 06 (FIN-10 list controls, FIN-11 record linkage, FIN-09 error copy, Obs 7 investigation)
+last_updated: "2026-04-17T08:15:00.000Z"
+last_activity: "2026-04-17 — Plan 22-06 executed: asset class filter fixed (parsePaginationParams knownParams bug), entity list sort+search added, meetings sort added, task rows wired to /tasks/[id] in assets and entities, centralized ERR taxonomy in error-messages.ts, document AI panel updated, Obs 7 deletion bypass confirmed non-existent. FIN-09, FIN-10, FIN-11 closed."
 progress:
   total_phases: 8
   completed_phases: 1
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Atlas — GSD State
@@ -25,9 +25,9 @@ progress:
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
 - **Previous:** Phase 21 (Initial Manual Walkthrough) — COMPLETE 2026-04-16
 - **Phase:** Phase 22 (Fit & Finish — Code) — IN PROGRESS
-- **Plan:** 22-07 COMPLETE (Waterfall Refactor + FIN-08 Bug Closeout). Next: 22-08 (Phase SUMMARY).
-- **Status:** Plans 22-01 through 22-07 complete. ALL blockers closed. FIN-02, FIN-08 closed. 3 March-5 bugs formally closed with labeled evidence. Asset correctness cluster closed. LP reconciliation closed. List controls, record linkage, LP Portfolio columns all done.
-- **Last activity:** 2026-04-16 — Plan 22-07 executed: FIN-02 waterfall route refactored (imports pref math); FIN-08 3 bugs formally closed with [CLOSED:] evidence in VERIFICATION.md; BUG-01 seed gap fixed for deal-9 CLOSED stage.
+- **Plan:** 22-06 COMPLETE (FIN-10/11/09 + Obs 7). 22-07 COMPLETE (Waterfall Refactor + FIN-08 Bug Closeout). Next: 22-08 (Phase SUMMARY).
+- **Status:** Plans 22-01 through 22-07 complete. ALL blockers closed. FIN-02, FIN-08, FIN-09, FIN-10, FIN-11 closed. 3 March-5 bugs formally closed. Asset correctness cluster closed. LP reconciliation closed. List controls, record linkage, LP Portfolio columns, centralized error messages all done.
+- **Last activity:** 2026-04-17 — Plan 22-06 executed: asset class filter fixed (parsePaginationParams knownParams bug), entity sort+search, meetings sort, task row Links, centralized ERR taxonomy, document AI NONE state copy, Obs 7 no-bypass confirmed.
 
 ## v3.0 Phase Overview
 
@@ -66,6 +66,16 @@ From v2.1:
 - Multiple waterfall templates per vehicle; multiple investor profiles per contact
 - Pref offset excludes ROC; only income/gains reduce accrued pref
 - `precomputedPrefAmount` config on waterfall engine
+
+### v3.0 Phase 22 Plan 06 Decisions (2026-04-17)
+
+| Decision | Answer |
+|----------|--------|
+| parsePaginationParams knownParams | Must only contain true infrastructure params (firmId/cursor/limit/search). Business filter params (assetClass, status, entityId) placed in knownParams are silently consumed and never reach params.filters |
+| Client-side sort | useMemo on accumulated allEntities/allMeetings arrays — not URL-param sort — compatible with Phase 25 Load More |
+| Obs 7 deletion bypass | No bypass. Delete button only shown for SCREENING/DEAD. API enforces same server-side. Kill Deal → DEAD → Delete is intentional two-step |
+| AI Unauthorized strings | All 13 occurrences in src/app/api/ are genuine HTTP 401 auth failures — not misused for business logic |
+| Centralized error copy | src/lib/error-messages.ts exports ERR const — import and reference rather than inline copy |
 
 ### v3.0 Scope Decisions (2026-04-16)
 
@@ -107,6 +117,7 @@ From v2.1:
 - v3.0 Phase 22 plan 22-02: 2 tasks, 3 files modified, ~40 min, 1 commit — Obs 40 closed (FileUpload + FormData + DocumentFormDataSchema)
 - v3.0 Phase 22 plan 22-03: 3 tasks, 5 files modified, ~60 min — LP-Obs 2 closed (15 DLIs + distributionBreakdown API + display rows)
 - v3.0 Phase 22 plan 22-04: 3 tasks, 12 files created/modified, ~90 min, 3 commits — Obs 10, 12, 24, 25 closed (Edit Asset modal expanded, sub-modals for lease/credit/valuation, allocation tooltip, cost-basis fix)
+- v3.0 Phase 22 plan 22-06: 4 tasks, 7 files created/modified, ~90 min, 4 commits — FIN-09 closed (centralized error-messages.ts; ERR taxonomy), FIN-10 closed (asset filter fix, entity sort+search, meetings sort), FIN-11 closed (task rows linked, cap-table confirmed), Obs 7 no-bypass confirmed
 - v3.0 Phase 22 plan 22-07: 4 tasks, 2 files modified, ~30 min, 2 commits — FIN-02 closed (waterfall route imports pref math, 102-line reduction), FIN-08 closed (3 bugs formally verified with [CLOSED:] labels; BUG-01 seed gap fixed for deal-9)
 
 ## Session Continuity
@@ -117,7 +128,7 @@ From v2.1:
 - **v2.1 shipped + tagged:** 2026-04-16
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
-- **Last session:** 2026-04-17T06:26:49.972Z
+- **Last session:** 2026-04-17T08:15:00.000Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Completed Phase 22 Plan 07 (Waterfall Refactor + FIN-08 Bug Closeout)
+- **Stopped at:** Completed Phase 22 Plan 06 (FIN-10 list controls, FIN-11 record linkage, FIN-09 error copy, Obs 7 investigation)
 - **Resume file:** None
