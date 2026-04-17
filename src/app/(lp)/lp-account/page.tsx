@@ -31,6 +31,12 @@ interface LedgerEntry {
   runningBalance: number;
 }
 
+interface DistributionBreakdown {
+  returnOfCapital: number;
+  income: number;
+  longTermGain: number;
+}
+
 interface EntitySummary {
   entityId: string;
   entityName: string;
@@ -39,6 +45,7 @@ interface EntitySummary {
   totalContributed: number;
   totalDistributed: number;
   totalFees: number;
+  distributionBreakdown?: DistributionBreakdown;
 }
 
 interface CapitalAccountData {
@@ -197,6 +204,22 @@ export default function LPAccountPage() {
   const currentBalance = data.entities.reduce((s, e) => s + e.currentBalance, 0);
   const totalCommitment = data.entities.reduce((s, e) => s + e.commitment, 0);
 
+  // Aggregate distribution breakdown across all entities (FIN-12 LP-Obs 2 fix)
+  // Only include breakdown rows when at least one entity has distribution data.
+  const aggregateBreakdown = data.entities.reduce(
+    (acc, e) => {
+      if (e.distributionBreakdown) {
+        acc.returnOfCapital += e.distributionBreakdown.returnOfCapital;
+        acc.income += e.distributionBreakdown.income;
+        acc.longTermGain += e.distributionBreakdown.longTermGain;
+        acc.hasAny = true;
+      }
+      return acc;
+    },
+    { returnOfCapital: 0, income: 0, longTermGain: 0, hasAny: false }
+  );
+  const showBreakdown = aggregateBreakdown.hasAny && totalDistributed > 0;
+
   // Use period metrics when date range is active, otherwise fall back to dashboard aggregate metrics
   const isDateFiltered = !!(startDate && endDate);
   const metricsSource = isDateFiltered && data.periodMetrics ? data.periodMetrics : dashboard;
@@ -210,10 +233,20 @@ export default function LPAccountPage() {
   // Compute period summaries from ledger
   const periodSummaries = computePeriodSummaries(data.ledger);
 
-  const rows: { l: string; v: string; s?: boolean; hl?: boolean; label?: boolean; b?: boolean; inc?: boolean; cap?: boolean; neg?: boolean }[] = [
+  const rows: { l: string; v: string; s?: boolean; hl?: boolean; label?: boolean; b?: boolean; inc?: boolean; cap?: boolean; neg?: boolean; sub?: boolean }[] = [
     { l: "Total Commitment", v: fmtSigned(totalCommitment), s: true },
     { l: "Contributions", v: fmtSigned(totalContributed) },
     { l: "DISTRIBUTIONS", v: "", label: true },
+    // Breakdown rows: shown when the API returns subcategory data (FIN-12 fix)
+    ...(showBreakdown && aggregateBreakdown.returnOfCapital > 0
+      ? [{ l: "  Return of Capital", v: fmtSigned(aggregateBreakdown.returnOfCapital), sub: true, inc: true }]
+      : []),
+    ...(showBreakdown && aggregateBreakdown.income > 0
+      ? [{ l: "  Income / Yield", v: fmtSigned(aggregateBreakdown.income), sub: true, inc: true }]
+      : []),
+    ...(showBreakdown && aggregateBreakdown.longTermGain > 0
+      ? [{ l: "  Long-Term Gain", v: fmtSigned(aggregateBreakdown.longTermGain), sub: true, inc: true }]
+      : []),
     { l: "  Total Distributions", v: fmtSigned(totalDistributed), b: true, inc: true },
     { l: "FEES & EXPENSES", v: "", label: true },
     { l: "  Total Fees & Expenses", v: fmtSigned(-Math.abs(totalFees)), b: true, neg: true },

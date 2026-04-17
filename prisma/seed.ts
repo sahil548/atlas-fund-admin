@@ -2651,6 +2651,38 @@ End with credit risk rating, key covenant concerns, and recommended structural p
       { id: "dli-6-1", distributionId: "dist-6", investorId: investor1.id, grossAmount: 1_500_000, returnOfCapital: 0, income: 1_500_000, longTermGain: 0, carriedInterest: 0, netAmount: 1_500_000 },
       { id: "dli-6-2", distributionId: "dist-6", investorId: investor2.id, grossAmount: 1_000_000, returnOfCapital: 0, income: 1_000_000, longTermGain: 0, carriedInterest: 0, netAmount: 1_000_000 },
       { id: "dli-6-5", distributionId: "dist-6", investorId: investor5.id, grossAmount: 500_000, returnOfCapital: 0, income: 500_000, longTermGain: 0, carriedInterest: 0, netAmount: 500_000 },
+
+      // ── Historical entity2 PAID distributions ──────────────────────────────────────
+      // FIN-12 / LP-Obs 2 fix: these line items were missing, causing Wellington to show $0 distributions.
+      //
+      // entity2 investor commitments (total = 297M):
+      //   investor1: 75M (25.25%)  investor2: 47M (15.82%)  investor3: 25M (8.42%) ← Wellington
+      //   investor4: 50M (16.84%)  investor5: 100M (33.67%)
+      //
+      // dist-h2 (entity2, 2025-05-15, PAID — Helix Therapeutics partial exit)
+      //   gross: $8M, netToLPs: $7.2M, ROC: $3M, LTG: $4.2M, carry: $800K
+      //   netAmount = grossAmount - carriedInterest (carry stays with GP)
+      { id: "dli-h2-1", distributionId: "dist-h2", investorId: investor1.id, grossAmount: 2_020_202, returnOfCapital: 757_576, income: 0, longTermGain: 1_060_606, carriedInterest: 202_020, netAmount: 1_818_182 },
+      { id: "dli-h2-2", distributionId: "dist-h2", investorId: investor2.id, grossAmount: 1_265_993, returnOfCapital: 474_747, income: 0, longTermGain: 664_646, carriedInterest: 126_599, netAmount: 1_139_394 },
+      { id: "dli-h2-3", distributionId: "dist-h2", investorId: investor3.id, grossAmount: 673_400, returnOfCapital: 252_525, income: 0, longTermGain: 353_535, carriedInterest: 67_340, netAmount: 606_060 },
+      { id: "dli-h2-4", distributionId: "dist-h2", investorId: investor4.id, grossAmount: 1_346_801, returnOfCapital: 505_051, income: 0, longTermGain: 707_071, carriedInterest: 134_680, netAmount: 1_212_121 },
+      { id: "dli-h2-5", distributionId: "dist-h2", investorId: investor5.id, grossAmount: 2_693_604, returnOfCapital: 1_010_101, income: 0, longTermGain: 1_414_142, carriedInterest: 269_361, netAmount: 2_424_243 },
+
+      // dist-h6 (entity2, 2025-09-30, PAID — CloudBase Q3 dividend)
+      //   gross = net = $3.5M (pure income, no carry)
+      { id: "dli-h6-1", distributionId: "dist-h6", investorId: investor1.id, grossAmount: 883_838, returnOfCapital: 0, income: 883_838, longTermGain: 0, carriedInterest: 0, netAmount: 883_838 },
+      { id: "dli-h6-2", distributionId: "dist-h6", investorId: investor2.id, grossAmount: 553_872, returnOfCapital: 0, income: 553_872, longTermGain: 0, carriedInterest: 0, netAmount: 553_872 },
+      { id: "dli-h6-3", distributionId: "dist-h6", investorId: investor3.id, grossAmount: 294_613, returnOfCapital: 0, income: 294_613, longTermGain: 0, carriedInterest: 0, netAmount: 294_613 },
+      { id: "dli-h6-4", distributionId: "dist-h6", investorId: investor4.id, grossAmount: 589_226, returnOfCapital: 0, income: 589_226, longTermGain: 0, carriedInterest: 0, netAmount: 589_226 },
+      { id: "dli-h6-5", distributionId: "dist-h6", investorId: investor5.id, grossAmount: 1_178_451, returnOfCapital: 0, income: 1_178_451, longTermGain: 0, carriedInterest: 0, netAmount: 1_178_451 },
+
+      // dist-h12 (entity2, 2026-02-28, PAID — FreshRoute Logistics full exit)
+      //   gross: $15M, netToLPs: $13.5M, ROC: $5M, LTG: $8.5M, carry: $1.5M
+      { id: "dli-h12-1", distributionId: "dist-h12", investorId: investor1.id, grossAmount: 3_787_879, returnOfCapital: 1_262_626, income: 0, longTermGain: 2_146_465, carriedInterest: 378_788, netAmount: 3_409_091 },
+      { id: "dli-h12-2", distributionId: "dist-h12", investorId: investor2.id, grossAmount: 2_374_242, returnOfCapital: 791_245, income: 0, longTermGain: 1_345_117, carriedInterest: 237_424, netAmount: 2_136_818 },
+      { id: "dli-h12-3", distributionId: "dist-h12", investorId: investor3.id, grossAmount: 1_262_626, returnOfCapital: 420_875, income: 0, longTermGain: 715_488, carriedInterest: 126_263, netAmount: 1_136_363 },
+      { id: "dli-h12-4", distributionId: "dist-h12", investorId: investor4.id, grossAmount: 2_525_253, returnOfCapital: 841_751, income: 0, longTermGain: 1_430_976, carriedInterest: 252_525, netAmount: 2_272_728 },
+      { id: "dli-h12-5", distributionId: "dist-h12", investorId: investor5.id, grossAmount: 5_050_505, returnOfCapital: 1_683_502, income: 0, longTermGain: 2_861_952, carriedInterest: 505_051, netAmount: 4_545_454 },
     ],
   });
 

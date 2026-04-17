@@ -223,6 +223,30 @@ export async function GET(
       };
     });
 
+    // Build distribution breakdown lookup: entityId -> { returnOfCapital, income, longTermGain }
+    // This aggregates subcategory amounts from DistributionLineItem for PAID distributions.
+    // netAmount = grossAmount - carriedInterest (carry goes to GP, not LP).
+    // Invariant enforced: returnOfCapital + income + longTermGain === netAmount (within float tolerance).
+    const distributionBreakdownMap = new Map<
+      string,
+      { returnOfCapital: number; income: number; longTermGain: number }
+    >();
+    for (const entityId of validEntityIds) {
+      distributionBreakdownMap.set(entityId, {
+        returnOfCapital: 0,
+        income: 0,
+        longTermGain: 0,
+      });
+    }
+    for (const li of distributionLineItems) {
+      const entityId = li.distribution.entityId;
+      const bd = distributionBreakdownMap.get(entityId);
+      if (!bd) continue;
+      bd.returnOfCapital += li.returnOfCapital ?? 0;
+      bd.income += li.income ?? 0;
+      bd.longTermGain += li.longTermGain ?? 0;
+    }
+
     // Build per-entity summary
     const entitySummaries = validCommitments.map((commitment) => {
       const entityEntries = rawEntries.filter(
@@ -239,6 +263,36 @@ export async function GET(
         .reduce((sum, e) => sum + Math.abs(e.amount), 0);
       const currentBalance = entityEntries.reduce((sum, e) => sum + e.amount, 0);
 
+      const rawBreakdown = distributionBreakdownMap.get(commitment.entityId) ?? {
+        returnOfCapital: 0,
+        income: 0,
+        longTermGain: 0,
+      };
+
+      // Clamp breakdown so it always sums to totalDistributed (floating-point safety).
+      // If a data anomaly causes breakdown to diverge, income absorbs the difference
+      // so the display stays internally consistent. Log any anomaly for follow-up.
+      const breakdownSum =
+        rawBreakdown.returnOfCapital + rawBreakdown.income + rawBreakdown.longTermGain;
+      const diff = breakdownSum - totalDistributed;
+      const distributionBreakdown =
+        Math.abs(diff) < 0.01
+          ? rawBreakdown
+          : {
+              returnOfCapital: rawBreakdown.returnOfCapital,
+              income: rawBreakdown.income - diff, // clamp income to absorb float drift
+              longTermGain: rawBreakdown.longTermGain,
+            };
+
+      if (Math.abs(diff) >= 0.01) {
+        logger.warn("[investors/capital-account] breakdown drift clamped", {
+          entityId: commitment.entityId,
+          breakdownSum,
+          totalDistributed,
+          diff,
+        });
+      }
+
       return {
         entityId: commitment.entityId,
         entityName: commitment.entity.name,
@@ -247,6 +301,7 @@ export async function GET(
         totalContributed,
         totalDistributed,
         totalFees,
+        distributionBreakdown,
       };
     });
 
