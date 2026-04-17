@@ -200,7 +200,7 @@ export async function GET(req: NextRequest) {
     description: m.title,
     entityId: m.entityId ?? undefined,
     entityName: m.entity?.name ?? m.deal?.name ?? undefined,
-    linkPath: `/meetings`,
+    linkPath: `/meetings/${m.id}`,
     date: m.meetingDate.toISOString(),
   }));
 

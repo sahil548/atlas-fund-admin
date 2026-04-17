@@ -383,7 +383,13 @@ export default function AssetDetailPage({
                 }) => (
                   <div
                     key={m.id}
+                    role="button"
+                    tabIndex={0}
                     className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg mb-2 hover:border-indigo-200 cursor-pointer"
+                    onClick={() => router.push(`/meetings/${m.id}`)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") router.push(`/meetings/${m.id}`);
+                    }}
                   >
                     <div className="flex justify-between">
                       <div className="flex items-center gap-3">

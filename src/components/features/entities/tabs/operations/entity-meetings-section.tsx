@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
@@ -26,7 +27,7 @@ export function EntityMeetingsSection({ entity, entityId }: Props) {
       </div>
       <div className="divide-y divide-gray-50 dark:divide-gray-700">
         {meetings.map((m: any) => (
-          <div key={m.id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800">
+          <Link key={m.id} href={`/meetings/${m.id}`} className="block p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs text-gray-400 mr-2">{formatDate(m.meetingDate)}</span>
@@ -41,8 +42,8 @@ export function EntityMeetingsSection({ entity, entityId }: Props) {
                 {m.actionItems > 0 && <Badge color="gray">{m.actionItems} items</Badge>}
               </div>
             </div>
-            <div className="text-sm font-medium mt-1">{m.title}</div>
-          </div>
+            <div className="text-sm font-medium mt-1 text-indigo-700 dark:text-indigo-300 hover:underline">{m.title}</div>
+          </Link>
         ))}
         {meetings.length === 0 && (
           <div className="p-6 text-center text-sm text-gray-400">No meetings logged.</div>

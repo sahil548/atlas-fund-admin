@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import useSWR, { mutate } from "swr";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
@@ -289,6 +290,8 @@ export function DealActivityTab({ deal }: DealActivityTabProps) {
               activity.createdAt || activity.date || activity.metadata?.date;
             const actType =
               activity.activityType || activity.type || "EVENT";
+            // Entries with type="meeting" come from the Meeting model — their id is the meeting id
+            const isMeetingEntry = activity.type === "meeting";
             return (
               <div key={activity.id || idx} className="flex gap-3 py-3">
                 {/* Timeline line and dot */}
@@ -331,9 +334,18 @@ export function DealActivityTab({ deal }: DealActivityTabProps) {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-700">
-                    {activity.description}
-                  </p>
+                  {isMeetingEntry ? (
+                    <Link
+                      href={`/meetings/${activity.id}`}
+                      className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                    >
+                      {activity.description}
+                    </Link>
+                  ) : (
+                    <p className="text-sm text-gray-700">
+                      {activity.description}
+                    </p>
+                  )}
                   {activity.metadata?.summary && (
                     <p className="text-xs text-gray-500 mt-0.5">
                       {activity.metadata.summary}
