@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     const {
       name, assetClass, capitalInstrument, participationStructure,
       sector, status, costBasis, fairValue, incomeType,
-      entityId, allocationPercent,
+      entityId, allocationPercent, allocations,
       // Phase 22-10: parity fields
       entryDate, projectedIRR, projectedMultiple, typeDetails,
       // Phase 22-11: review schedule + ownership + board seat
@@ -96,6 +96,29 @@ export async function POST(req: NextRequest) {
     const cost = Number(costBasis);
     const fv = Number(fairValue);
     const moic = cost > 0 ? fv / cost : 0;
+
+    // Phase 22-12: build entity allocation create payload. Prefer the new
+    // `allocations` array (multi-entity split). Fall back to the legacy
+    // single-entity shape when only entityId is provided.
+    let entityAllocationsCreate: unknown;
+    if (allocations && allocations.length > 0) {
+      entityAllocationsCreate = allocations.map((a) => ({
+        entityId: a.entityId,
+        allocationPercent: a.allocationPercent,
+        costBasis: cost * (a.allocationPercent / 100),
+      }));
+    } else if (entityId) {
+      entityAllocationsCreate = {
+        entityId,
+        allocationPercent: Number(allocationPercent) || 100,
+        costBasis: cost,
+      };
+    } else {
+      return NextResponse.json(
+        { error: "Must provide either `entityId` (legacy single-entity) or `allocations` (multi-entity array)." },
+        { status: 400 },
+      );
+    }
 
     // Build type-conditional nested create based on typeDetails.kind
     let typeDetailsCreate: Record<string, unknown> = {};
@@ -134,11 +157,7 @@ export async function POST(req: NextRequest) {
         ...(shareCount !== undefined ? { shareCount } : {}),
         ...(hasBoardSeat !== undefined ? { hasBoardSeat } : {}),
         entityAllocations: {
-          create: {
-            entityId,
-            allocationPercent: Number(allocationPercent) || 100,
-            costBasis: cost,
-          },
+          create: entityAllocationsCreate as never,
         },
         ...typeDetailsCreate,
       },

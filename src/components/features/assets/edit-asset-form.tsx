@@ -412,8 +412,8 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
           <FormField label="Income Type"><Input value={form.incomeType} onChange={(e) => setF("incomeType", e.target.value)} /></FormField>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Projected IRR (%)"><Input type="number" step="0.01" value={form.projectedIRR} onChange={(e) => setF("projectedIRR", e.target.value)} placeholder="e.g., 15.5" /></FormField>
-          <FormField label="Projected Multiple (x)"><Input type="number" step="0.01" value={form.projectedMultiple} onChange={(e) => setF("projectedMultiple", e.target.value)} placeholder="e.g., 2.0" /></FormField>
+          <FormField label="Projected IRR (%)"><Input type="number" step="0.01" min="-100" max="1000" value={form.projectedIRR} onChange={(e) => setF("projectedIRR", e.target.value)} placeholder="e.g., 15.5" /></FormField>
+          <FormField label="Projected Multiple (x)"><Input type="number" step="0.01" min="0" value={form.projectedMultiple} onChange={(e) => setF("projectedMultiple", e.target.value)} placeholder="e.g., 2.0" /></FormField>
         </div>
 
         {/* ─── B.5) Phase 22-11: Review schedule + ownership + board seat ─── */}
@@ -430,10 +430,10 @@ export function EditAssetForm({ open, onClose, asset }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Ownership %">
-                <Input type="number" step="0.01" value={form.ownershipPercent} onChange={(e) => setF("ownershipPercent", e.target.value)} placeholder="e.g., 18.4" />
+                <Input type="number" step="0.01" min="0" max="100" value={form.ownershipPercent} onChange={(e) => setF("ownershipPercent", e.target.value)} placeholder="e.g., 18.4" />
               </FormField>
               <FormField label="Share Count">
-                <Input type="number" step="1" value={form.shareCount} onChange={(e) => setF("shareCount", e.target.value)} placeholder="e.g., 500000" />
+                <Input type="number" step="1" min="0" value={form.shareCount} onChange={(e) => setF("shareCount", e.target.value)} placeholder="e.g., 500000" />
               </FormField>
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">

@@ -1004,8 +1004,21 @@ export const CreateAssetSchema = z.object({
   costBasis: z.number().nonnegative("Cost basis must be non-negative"),
   fairValue: z.number().nonnegative("Fair value must be non-negative"),
   incomeType: z.string().optional(),
-  entityId: z.string().min(1, "Entity ID is required"),
+  // Phase 22-12: multi-entity allocations. The legacy single-entity shape
+  // (entityId + allocationPercent) is still accepted for back-compat with any
+  // existing callers. The new shape is an `allocations` array that must sum to 100.
+  entityId: z.string().optional(),
   allocationPercent: z.number().min(0).max(100).optional(),
+  allocations: z.array(z.object({
+    entityId: z.string().min(1, "Entity is required"),
+    allocationPercent: z.number().min(0.01, "Allocation % must be > 0").max(100),
+  })).optional().refine(
+    (arr) => !arr || arr.length === 0 || Math.abs(arr.reduce((s, a) => s + a.allocationPercent, 0) - 100) < 0.01,
+    { message: "Allocation percentages must sum to 100" }
+  ).refine(
+    (arr) => !arr || new Set(arr.map((a) => a.entityId)).size === arr.length,
+    { message: "Duplicate entities not allowed in allocations" }
+  ),
   // Phase 22-10: parity with UpdateAssetSchema so Add Asset can populate the same surface as Edit
   entryDate: z.string().datetime().optional(),
   projectedIRR: z.number().nullable().optional(),

@@ -79,8 +79,6 @@ export function CreateAssetForm({ open, onClose }: Props) {
     costBasis: "",
     fairValue: "",
     incomeType: "",
-    entityId: "",
-    allocationPercent: "100",
     projectedIRR: "",
     projectedMultiple: "",
     // Phase 22-11
@@ -90,6 +88,10 @@ export function CreateAssetForm({ open, onClose }: Props) {
     shareCount: "",
     hasBoardSeat: false,
   });
+  // Phase 22-12: multi-entity allocation rows. Starts with one row at 100%.
+  const [allocations, setAllocations] = useState<Array<{ entityId: string; allocationPercent: string }>>([
+    { entityId: "", allocationPercent: "100" },
+  ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Type-conditional detail fields per kind
@@ -111,8 +113,6 @@ export function CreateAssetForm({ open, onClose }: Props) {
         costBasis: "",
         fairValue: "",
         incomeType: "",
-        entityId: "",
-        allocationPercent: "100",
         projectedIRR: "",
         projectedMultiple: "",
         // Phase 22-11
@@ -122,6 +122,7 @@ export function CreateAssetForm({ open, onClose }: Props) {
         shareCount: "",
         hasBoardSeat: false,
       });
+      setAllocations([{ entityId: "", allocationPercent: "100" }]);
       setReForm({ propertyType: "", squareFeet: "", occupancy: "", noi: "", capRate: "", rentPerSqft: "", debt: "", debtDscr: "" });
       setCreditForm({ instrument: "", principal: "", rate: "", maturity: "", ltv: "", dscr: "", nextPaymentDate: "", accruedInterest: "" });
       setEquityForm({ instrument: "", ownership: "", revenue: "", ebitda: "", growth: "", employees: "" });
@@ -168,7 +169,22 @@ export function CreateAssetForm({ open, onClose }: Props) {
     if (!form.name.trim()) newErrors.name = "Name is required";
     if (!form.costBasis) newErrors.costBasis = "Cost basis is required";
     if (!form.fairValue) newErrors.fairValue = "Fair value is required";
-    if (!form.entityId) newErrors.entityId = "Entity is required";
+
+    // Phase 22-12: validate allocations
+    const allocRows = allocations.filter((a) => a.entityId);
+    if (allocRows.length === 0) {
+      newErrors.allocations = "Add at least one entity allocation";
+    } else {
+      const total = allocRows.reduce((sum, a) => sum + (Number(a.allocationPercent) || 0), 0);
+      if (Math.abs(total - 100) > 0.01) {
+        newErrors.allocations = `Allocation percentages must sum to 100 (currently ${total.toFixed(2)})`;
+      }
+      const entityIds = allocRows.map((a) => a.entityId);
+      if (new Set(entityIds).size !== entityIds.length) {
+        newErrors.allocations = "Duplicate entities not allowed";
+      }
+    }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
@@ -185,8 +201,7 @@ export function CreateAssetForm({ open, onClose }: Props) {
         costBasis: Number(form.costBasis),
         fairValue: Number(form.fairValue),
         incomeType: form.incomeType || undefined,
-        entityId: form.entityId,
-        allocationPercent: Number(form.allocationPercent) || 100,
+        allocations: allocRows.map((a) => ({ entityId: a.entityId, allocationPercent: Number(a.allocationPercent) })),
         firmId,
       };
       if (form.entryDate) payload.entryDate = new Date(form.entryDate).toISOString();
@@ -253,12 +268,8 @@ export function CreateAssetForm({ open, onClose }: Props) {
           <FormField label="Asset Class" required>
             <Select value={form.assetClass} onChange={(e) => set("assetClass", e.target.value)} options={ASSET_CLASS_OPTIONS} />
           </FormField>
-          <FormField label="Entity" error={errors.entityId} required>
-            <Select
-              value={form.entityId}
-              onChange={(e) => set("entityId", e.target.value)}
-              options={[{ value: "", label: "Select entity..." }, ...entityOptions]}
-            />
+          <FormField label="Status">
+            <Select value={form.status} onChange={(e) => set("status", e.target.value)} options={STATUS_OPTIONS} />
           </FormField>
         </div>
 
@@ -271,6 +282,75 @@ export function CreateAssetForm({ open, onClose }: Props) {
           </FormField>
         </div>
 
+        {/* Phase 22-12: multi-entity allocations */}
+        <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <legend className="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400 px-1">Entity Allocations *</legend>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 mt-1">Which fund vehicles own this asset, and at what percentage. Must sum to 100%.</p>
+          <div className="space-y-2">
+            {allocations.map((alloc, idx) => {
+              const pctTotal = allocations.reduce((sum, a) => sum + (Number(a.allocationPercent) || 0), 0);
+              return (
+                <div key={idx} className="grid grid-cols-[1fr_120px_auto] gap-2 items-end">
+                  <FormField label={idx === 0 ? "Entity" : ""}>
+                    <Select
+                      value={alloc.entityId}
+                      onChange={(e) => {
+                        const next = [...allocations];
+                        next[idx] = { ...next[idx], entityId: e.target.value };
+                        setAllocations(next);
+                      }}
+                      options={[{ value: "", label: "Select entity..." }, ...entityOptions]}
+                    />
+                  </FormField>
+                  <FormField label={idx === 0 ? "Allocation %" : ""}>
+                    <Input
+                      type="number"
+                      min="0.01"
+                      max="100"
+                      step="0.01"
+                      value={alloc.allocationPercent}
+                      onChange={(e) => {
+                        const next = [...allocations];
+                        next[idx] = { ...next[idx], allocationPercent: e.target.value };
+                        setAllocations(next);
+                      }}
+                      placeholder="100"
+                    />
+                  </FormField>
+                  {allocations.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setAllocations(allocations.filter((_, i) => i !== idx))}
+                      className="h-9 w-9 rounded-md border border-gray-300 dark:border-gray-600 text-gray-500 hover:text-red-600 hover:border-red-300 flex items-center justify-center"
+                      aria-label="Remove allocation"
+                    >
+                      ×
+                    </button>
+                  )}
+                  {allocations.length === 1 && idx === 0 && (
+                    <div className="h-9 w-9" aria-hidden />
+                  )}
+                  {idx === allocations.length - 1 && (
+                    <span className={`col-span-3 text-xs ${Math.abs(pctTotal - 100) < 0.01 ? "text-gray-500 dark:text-gray-400" : "text-amber-600 dark:text-amber-400"}`}>
+                      Total: {pctTotal.toFixed(2)}% {Math.abs(pctTotal - 100) < 0.01 ? "" : "— must sum to 100"}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setAllocations([...allocations, { entityId: "", allocationPercent: "0" }])}
+              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+            >
+              + Add entity
+            </button>
+            {errors.allocations && (
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.allocations}</p>
+            )}
+          </div>
+        </fieldset>
+
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Instrument">
             <Select value={form.capitalInstrument} onChange={(e) => set("capitalInstrument", e.target.value)} options={INSTRUMENT_OPTIONS} />
@@ -280,27 +360,21 @@ export function CreateAssetForm({ open, onClose }: Props) {
           </FormField>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Sector">
             <Input value={form.sector} onChange={(e) => set("sector", e.target.value)} placeholder="e.g. Technology" />
           </FormField>
           <FormField label="Income Type">
             <Input value={form.incomeType} onChange={(e) => set("incomeType", e.target.value)} placeholder="e.g. Dividends" />
           </FormField>
-          <FormField label="Status">
-            <Select value={form.status} onChange={(e) => set("status", e.target.value)} options={STATUS_OPTIONS} />
-          </FormField>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <FormField label="Projected IRR (%)">
-            <Input type="number" step="0.01" value={form.projectedIRR} onChange={(e) => set("projectedIRR", e.target.value)} placeholder="e.g. 15.5" />
+            <Input type="number" step="0.01" min="-100" max="1000" value={form.projectedIRR} onChange={(e) => set("projectedIRR", e.target.value)} placeholder="e.g. 15.5" />
           </FormField>
           <FormField label="Projected Multiple (x)">
-            <Input type="number" step="0.01" value={form.projectedMultiple} onChange={(e) => set("projectedMultiple", e.target.value)} placeholder="e.g. 2.0" />
-          </FormField>
-          <FormField label="Allocation %">
-            <Input type="number" value={form.allocationPercent} onChange={(e) => set("allocationPercent", e.target.value)} placeholder="100" />
+            <Input type="number" step="0.01" min="0" value={form.projectedMultiple} onChange={(e) => set("projectedMultiple", e.target.value)} placeholder="e.g. 2.0" />
           </FormField>
         </div>
 
@@ -318,10 +392,10 @@ export function CreateAssetForm({ open, onClose }: Props) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Ownership %">
-                <Input type="number" step="0.01" value={form.ownershipPercent} onChange={(e) => set("ownershipPercent", e.target.value)} placeholder="e.g. 18.4" />
+                <Input type="number" step="0.01" min="0" max="100" value={form.ownershipPercent} onChange={(e) => set("ownershipPercent", e.target.value)} placeholder="e.g. 18.4" />
               </FormField>
               <FormField label="Share Count">
-                <Input type="number" step="1" value={form.shareCount} onChange={(e) => set("shareCount", e.target.value)} placeholder="e.g. 500000" />
+                <Input type="number" step="1" min="0" value={form.shareCount} onChange={(e) => set("shareCount", e.target.value)} placeholder="e.g. 500000" />
               </FormField>
             </div>
             <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
