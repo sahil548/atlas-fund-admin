@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: "Phase 22 partial + 22-10 + 22-11 post-deploy gap closures shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
-last_updated: "2026-04-17T22:00:00.000Z"
-last_activity: "2026-04-17 — Phase 22 stays open at user request. Plan 22-11 shipped: asset review schedule (reviewFrequency + nextReview), ownership tracking (ownershipPercent + shareCount), and board seat toggle (hasBoardSeat) now editable in both Add Asset and Edit Asset modals. Same model-existed-but-UI-missed pattern as 22-10. Build clean, browser-verified, PUT round-trip confirmed."
+stopped_at: "Phase 22 partial + 22-10 + 22-11 + 22-12 post-deploy gap closures shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
+last_updated: "2026-04-17T22:30:00.000Z"
+last_activity: "2026-04-17 — Plan 22-12 shipped: Add Asset now takes multi-entity allocations (repeatable rows, sum=100 validation, per-row cost-basis split). Also added HTML min/max guardrails on structured number inputs (Projected IRR/Multiple, Ownership %, Share Count) on both Add and Edit forms. Browser + API round-trip verified; validation rejection path confirmed."
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 19
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
 ---
 
 # Atlas — GSD State
