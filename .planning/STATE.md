@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: Completed Phase 22 Plan 06 (FIN-10 list controls, FIN-11 record linkage, FIN-09 error copy, Obs 7 investigation)
-last_updated: "2026-04-17T08:15:00.000Z"
-last_activity: "2026-04-17 — Plan 22-06 executed: asset class filter fixed (parsePaginationParams knownParams bug), entity list sort+search added, meetings sort added, task rows wired to /tasks/[id] in assets and entities, centralized ERR taxonomy in error-messages.ts, document AI panel updated, Obs 7 deletion bypass confirmed non-existent. FIN-09, FIN-10, FIN-11 closed."
+stopped_at: "Phase 22 partial — FIN-04 Excel pending (carry-forward to Phase 23, assigned to Kathryn), ready for Phase 23"
+last_updated: "2026-04-17T09:00:00.000Z"
+last_activity: "2026-04-17 — Phase 22 Fit & Finish (Code) shipped. 7 plans executed (22-01 through 22-07), 7 requirements closed (FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12). All 21 walkthrough obs addressed. FIN-04 second-fund Excel carry-forward to Phase 23, assigned to Kathryn."
 progress:
   total_phases: 8
-  completed_phases: 1
-  total_plans: 10
-  completed_plans: 9
+  completed_phases: 2
+  total_plans: 17
+  completed_plans: 16
 ---
 
 # Atlas — GSD State
@@ -23,11 +23,11 @@ progress:
 ## Current Position
 
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
-- **Previous:** Phase 21 (Initial Manual Walkthrough) — COMPLETE 2026-04-16
-- **Phase:** Phase 22 (Fit & Finish — Code) — IN PROGRESS
-- **Plan:** 22-06 COMPLETE (FIN-10/11/09 + Obs 7). 22-07 COMPLETE (Waterfall Refactor + FIN-08 Bug Closeout). Next: 22-08 (Phase SUMMARY).
-- **Status:** Plans 22-01 through 22-07 complete. ALL blockers closed. FIN-02, FIN-08, FIN-09, FIN-10, FIN-11 closed. 3 March-5 bugs formally closed. Asset correctness cluster closed. LP reconciliation closed. List controls, record linkage, LP Portfolio columns, centralized error messages all done.
-- **Last activity:** 2026-04-17 — Plan 22-06 executed: asset class filter fixed (parsePaginationParams knownParams bug), entity sort+search, meetings sort, task row Links, centralized ERR taxonomy, document AI NONE state copy, Obs 7 no-bypass confirmed.
+- **Previous:** Phase 22 (Fit & Finish — Code) — PARTIAL COMPLETE 2026-04-17 (7/9 plans; FIN-04 deferred to Kathryn)
+- **Phase:** Phase 23 (Fit & Finish — Docs & Verification Retrofit) — NEXT UP
+- **Plan:** Phase 23 not yet planned. Ready to kick off.
+- **Status:** Phase 22 partial — FIN-04 Excel carry-forward to Phase 23 (Kathryn). All other Phase 22 requirements closed: FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12. All 21 walkthrough obs addressed. 3 hard blockers closed. Asset correctness cluster closed. LP reconciliation closed.
+- **Last activity:** 2026-04-17 — Phase 22 closed with 7/9 plans. 22-09 SUMMARY produced. FIN-04 deferred to Phase 23 / Kathryn.
 
 ## v3.0 Phase Overview
 
@@ -90,11 +90,21 @@ From v2.1:
 | Manual walkthroughs | Bookend the milestone — Phase 21 (baseline, pre-work) and Phase 28 (final sign-off) |
 | Phase count | 8 (within 5-10 band; bookending walkthroughs pushed count to 8 vs original 7) |
 
+### Phase 22 Findings Summary (2026-04-17)
+
+| Finding | Details |
+|---------|---------|
+| LP-Obs 2 root cause was seed data, not asset-layer cascade | entity2 had no per-investor DLIs for 3 paid distributions; fixed by adding 15 DLIs (5 investors × 3 dists); asset-layer cascade hypothesis refuted |
+| parsePaginationParams knownParams is a footgun | Business filter params (assetClass, status, entityId) placed in knownParams are silently consumed and never reach params.filters — any business filter must be omitted from knownParams |
+| Waterfall refactor surfaced no convention drift | FIN-02 mechanical import of pref-accrual.ts functions; 102-line net reduction; all 148 computation tests unchanged |
+| FIN-04 Excel deferred to Phase 23 / Kathryn | User explicitly deferred on 2026-04-17: "defer, I'll let Kathryn handle that." Plan 22-08 drafted and ready; executes once Excel is placed at fixtures/ |
+| All asset detail fields are String?, not Float/Int | AssetRealEstateDetails/CreditDetails/EquityDetails/FundLPDetails all use String? — Zod schemas must use z.string().optional(), not z.number() |
+
 ### Blockers/Concerns
 
-- **Phase 22 scope expanded significantly** — walkthrough added 21 items beyond the original 4 FIN items. Phase 22 planners should prioritize the three hard blockers (Obs 35 Side Letter crash, Obs 40 Upload Wizard, LP-Obs 2 capital account math) and the asset-correctness cluster (Obs 10, 12, 25) above all else.
 - Watch: Phase 27 (E2E) depends on Phase 24 (RBAC) shipping cleanly; if RBAC slips, E2E tests may need to accommodate a mid-migration auth state.
-- **LP-Obs 2 proves asset-layer cascade** — the $6M distribution reconciliation gap traces back to asset income/expense data quality. Phase 22 must fix both the LP display (FIN-12) AND the root cause in asset data editability (FIN-09, Obs 10, 12).
+- **FIN-04 carry-forward** — Kathryn owns second-fund waterfall validation. Phase 23 backlog. Plan 22-08 drafted and ready once Excel is available.
+- **18 pre-existing vitest failures** — unchanged from Phase 22 start; not regressions. Phase 23+ should triage these.
 
 ### Walkthrough Findings Summary (2026-04-16)
 
@@ -118,7 +128,10 @@ From v2.1:
 - v3.0 Phase 22 plan 22-03: 3 tasks, 5 files modified, ~60 min — LP-Obs 2 closed (15 DLIs + distributionBreakdown API + display rows)
 - v3.0 Phase 22 plan 22-04: 3 tasks, 12 files created/modified, ~90 min, 3 commits — Obs 10, 12, 24, 25 closed (Edit Asset modal expanded, sub-modals for lease/credit/valuation, allocation tooltip, cost-basis fix)
 - v3.0 Phase 22 plan 22-06: 4 tasks, 7 files created/modified, ~90 min, 4 commits — FIN-09 closed (centralized error-messages.ts; ERR taxonomy), FIN-10 closed (asset filter fix, entity sort+search, meetings sort), FIN-11 closed (task rows linked, cap-table confirmed), Obs 7 no-bypass confirmed
+- v3.0 Phase 22 plan 22-05: 3 tasks, 10 files created/modified, 7 min, 3 commits — FIN-01 closed (meeting detail page, 4+ activity feed sites), FIN-12 LP-Obs 3 closed (LP Portfolio Invested + Current Value columns)
+- v3.0 Phase 22 plan 22-06: 4 tasks, 7 files created/modified, ~90 min, 4 commits — FIN-09 closed (centralized error-messages.ts; ERR taxonomy), FIN-10 closed (asset filter fix, entity sort+search, meetings sort), FIN-11 closed (task rows linked, cap-table confirmed), Obs 7 no-bypass confirmed
 - v3.0 Phase 22 plan 22-07: 4 tasks, 2 files modified, ~30 min, 2 commits — FIN-02 closed (waterfall route imports pref math, 102-line reduction), FIN-08 closed (3 bugs formally verified with [CLOSED:] labels; BUG-01 seed gap fixed for deal-9)
+- v3.0 Phase 22 plan 22-09: 3 tasks (docs-only), 5 files modified — Phase 22 SUMMARY, VALIDATION Nyquist flip, STATE/ROADMAP/REQUIREMENTS updated; FIN-04 marked carry-forward to Phase 23
 
 ## Session Continuity
 
@@ -128,7 +141,7 @@ From v2.1:
 - **v2.1 shipped + tagged:** 2026-04-16
 - **v3.0 kickoff:** 2026-04-16
 - **v3.0 roadmap complete:** 2026-04-16
-- **Last session:** 2026-04-17T08:15:00.000Z
+- **Last session:** 2026-04-17T09:00:00.000Z
 - **v3.0 roadmap restructured:** 2026-04-16 (walkthroughs moved to bookend the milestone)
-- **Stopped at:** Completed Phase 22 Plan 06 (FIN-10 list controls, FIN-11 record linkage, FIN-09 error copy, Obs 7 investigation)
+- **Stopped at:** Phase 22 complete — 7/9 plans shipped; FIN-04 deferred to Kathryn (Phase 23)
 - **Resume file:** None
