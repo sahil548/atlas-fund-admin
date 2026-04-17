@@ -310,7 +310,65 @@ export const CloseDealSchema = z.object({
 
 // ── Assets ─────────────────────────────────────────────
 
+// Type-conditional details schemas (one-to-one details records per asset type)
+// Fields stored as String? in schema.prisma — accept string values like "6.7%", "$22M", "94%"
+
+const RealEstateDetailsUpdateSchema = z.object({
+  kind: z.literal("REAL_ESTATE"),
+  propertyType: z.string().optional(),
+  squareFeet: z.string().optional(),
+  occupancy: z.string().optional(),
+  noi: z.string().optional(),
+  capRate: z.string().optional(),
+  rentPerSqft: z.string().optional(),
+  debt: z.string().optional(),
+  debtDscr: z.string().optional(),
+});
+
+const CreditDetailsUpdateSchema = z.object({
+  kind: z.literal("PRIVATE_CREDIT"),
+  instrument: z.string().optional(),
+  principal: z.string().optional(),
+  rate: z.string().optional(),
+  maturity: z.string().optional(),
+  ltv: z.string().optional(),
+  dscr: z.string().optional(),
+  nextPaymentDate: z.string().optional(),
+  accruedInterest: z.string().optional(),
+  spread: z.string().optional(),
+});
+
+const EquityDetailsUpdateSchema = z.object({
+  kind: z.literal("OPERATING"),
+  instrument: z.string().optional(),
+  ownership: z.string().optional(),
+  revenue: z.string().optional(),
+  ebitda: z.string().optional(),
+  growth: z.string().optional(),
+  employees: z.number().int().optional(),
+});
+
+const FundLPDetailsUpdateSchema = z.object({
+  kind: z.literal("LP_INTEREST"),
+  gpName: z.string().optional(),
+  commitment: z.string().optional(),
+  calledAmount: z.string().optional(),
+  uncalledAmount: z.string().optional(),
+  distributions: z.string().optional(),
+  gpNav: z.string().optional(),
+  navDate: z.string().optional(),
+  gpIrr: z.string().optional(),
+  gpTvpi: z.string().optional(),
+  vintage: z.number().int().optional(),
+  strategy: z.string().optional(),
+});
+
 export const UpdateAssetSchema = z.object({
+  // Common scalars — new in Phase 22-04
+  name: z.string().min(1).max(200).optional(),
+  entryDate: z.string().datetime().optional(),
+  costBasis: z.number().nonnegative().optional(),
+  // Existing scalar fields
   fairValue: z.number().positive().optional(),
   status: z.enum(["ACTIVE", "EXITED", "WRITTEN_OFF"]).optional(),
   assetClass: z.enum(ASSET_CLASSES).optional(),
@@ -324,7 +382,17 @@ export const UpdateAssetSchema = z.object({
   projectedMetrics: ProjectedMetricsSchema.optional(),
   // Phase 14-04: review schedule fields
   nextReview: z.string().nullable().optional(),
-});
+  // Phase 22-04: type-conditional one-to-one details update
+  typeDetails: z.discriminatedUnion("kind", [
+    RealEstateDetailsUpdateSchema,
+    CreditDetailsUpdateSchema,
+    EquityDetailsUpdateSchema,
+    FundLPDetailsUpdateSchema,
+  ]).optional(),
+}).refine(
+  (data) => Object.keys(data).length > 0,
+  { message: "At least one field must be provided" }
+);
 
 export const UpdateAssetProjectionsSchema = z.object({
   projectedIRR: z.number().nullable().optional(),
@@ -1208,3 +1276,54 @@ export const DocumentFormDataSchema = z.object({
   associatedEntityId: z.string().optional(),
   associatedAssetId: z.string().optional(),
 });
+
+// ── Leases (Update) ─────────────────────────────────────────────────────────
+// Phase 22-04: sub-modal for editing Lease child rows
+
+export const UpdateLeaseSchema = z.object({
+  tenantName: z.string().min(1).optional(),
+  tenantEntity: z.string().optional(),
+  unitOrSuite: z.string().optional(),
+  squareFootage: z.string().optional(),
+  leaseType: z.enum(["GROSS", "NET", "NNN", "MODIFIED_GROSS", "PERCENTAGE"]).optional(),
+  baseRentMonthly: z.number().nonnegative().optional(),
+  baseRentAnnual: z.number().nonnegative().optional(),
+  camCharges: z.number().nonnegative().optional(),
+  taxPassThrough: z.number().nonnegative().optional(),
+  insurancePassThrough: z.number().nonnegative().optional(),
+  leaseStartDate: z.string().optional(),
+  leaseEndDate: z.string().optional(),
+  securityDeposit: z.number().nonnegative().optional(),
+  freeRentMonths: z.number().int().nonnegative().optional(),
+  tenantImprovementAllowance: z.number().nonnegative().optional(),
+  currentStatus: z.enum(["ACTIVE", "EXPIRED", "MONTH_TO_MONTH", "TERMINATED"]).optional(),
+  rentPercentOfTotal: z.string().optional(),
+  notes: z.string().optional(),
+}).refine((data) => Object.keys(data).length > 0, { message: "At least one field required" });
+
+// ── Credit Agreements (Update) ───────────────────────────────────────────────
+// Phase 22-04: sub-modal for editing CreditAgreement child rows
+
+export const UpdateCreditAgreementSchema = z.object({
+  borrowerName: z.string().min(1).optional(),
+  borrowerEntity: z.string().optional(),
+  agreementType: z.enum(["LOAN_AGREEMENT", "NOTE_PURCHASE", "PARTICIPATION", "CREDIT_FACILITY", "INDENTURE", "BRIDGE_LOAN"]).optional(),
+  originalPrincipal: z.number().nonnegative().optional(),
+  currentPrincipal: z.number().nonnegative().optional(),
+  commitmentAmount: z.number().nonnegative().optional(),
+  drawnAmount: z.number().nonnegative().optional(),
+  interestRateType: z.enum(["FIXED", "FLOATING", "HYBRID", "PIK"]).optional(),
+  fixedRate: z.number().nonnegative().optional(),
+  referenceRate: z.string().optional(),
+  spreadBps: z.number().int().optional(),
+  pikRate: z.number().nonnegative().optional(),
+  floorRate: z.number().nonnegative().optional(),
+  dayCount: z.enum(["THIRTY_360", "ACTUAL_360", "ACTUAL_365"]).optional(),
+  paymentFrequency: z.enum(["MONTHLY", "QUARTERLY", "SEMI_ANNUAL", "ANNUAL"]).optional(),
+  paymentDay: z.number().int().optional(),
+  amortization: z.string().optional(),
+  maturityDate: z.string().optional(),
+  subordination: z.enum(["SENIOR", "MEZZANINE", "SUBORDINATED"]).optional(),
+  intercreditorAgreement: z.boolean().optional(),
+  currentStatus: z.enum(["PERFORMING", "WATCH", "DEFAULT", "WORKOUT"]).optional(),
+}).refine((data) => Object.keys(data).length > 0, { message: "At least one field required" });

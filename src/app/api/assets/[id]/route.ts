@@ -79,7 +79,74 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   const { data, error } = await parseBody(req, UpdateAssetSchema);
   if (error) return error;
-  const { projectedMetrics, nextReview, ...rest } = data!;
+
+  const { projectedMetrics, nextReview, entryDate, typeDetails, ...rest } = data!;
+
+  // Fetch the asset to check existence and determine which details records exist
+  const existing = await prisma.asset.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      realEstateDetails: { select: { id: true } },
+      creditDetails: { select: { id: true } },
+      equityDetails: { select: { id: true } },
+      fundLPDetails: { select: { id: true } },
+    },
+  });
+
+  if (!existing) {
+    return NextResponse.json({ error: "Asset not found" }, { status: 404 });
+  }
+
+  // Type-mismatch validation: if typeDetails is provided, verify the asset has the matching details record
+  if (typeDetails) {
+    const { kind } = typeDetails;
+    const hasRE = !!existing.realEstateDetails;
+    const hasPC = !!existing.creditDetails;
+    const hasOP = !!existing.equityDetails;
+    const hasLP = !!existing.fundLPDetails;
+
+    if (kind === "REAL_ESTATE" && !hasRE) {
+      return NextResponse.json(
+        { error: `Type mismatch: this asset has no Real Estate details record. Ensure the asset has AssetRealEstateDetails before editing.` },
+        { status: 400 },
+      );
+    }
+    if (kind === "PRIVATE_CREDIT" && !hasPC) {
+      return NextResponse.json(
+        { error: `Type mismatch: this asset has no Private Credit details record. Ensure the asset has AssetCreditDetails before editing.` },
+        { status: 400 },
+      );
+    }
+    if (kind === "OPERATING" && !hasOP) {
+      return NextResponse.json(
+        { error: `Type mismatch: this asset has no Equity details record. Ensure the asset has AssetEquityDetails before editing.` },
+        { status: 400 },
+      );
+    }
+    if (kind === "LP_INTEREST" && !hasLP) {
+      return NextResponse.json(
+        { error: `Type mismatch: this asset has no Fund LP details record. Ensure the asset has AssetFundLPDetails before editing.` },
+        { status: 400 },
+      );
+    }
+  }
+
+  // Build the type-specific nested update payload
+  let typeDetailsUpdate: Record<string, unknown> = {};
+  if (typeDetails) {
+    const { kind, ...detailFields } = typeDetails;
+    if (kind === "REAL_ESTATE") {
+      typeDetailsUpdate = { realEstateDetails: { update: detailFields } };
+    } else if (kind === "PRIVATE_CREDIT") {
+      typeDetailsUpdate = { creditDetails: { update: detailFields } };
+    } else if (kind === "OPERATING") {
+      typeDetailsUpdate = { equityDetails: { update: detailFields } };
+    } else if (kind === "LP_INTEREST") {
+      typeDetailsUpdate = { fundLPDetails: { update: detailFields } };
+    }
+  }
+
   const asset = await prisma.asset.update({
     where: { id },
     data: {
@@ -90,6 +157,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       ...(nextReview !== undefined
         ? { nextReview: nextReview ? new Date(nextReview) : null }
         : {}),
+      ...(entryDate !== undefined
+        ? { entryDate: new Date(entryDate) }
+        : {}),
+      ...typeDetailsUpdate,
+    },
+    include: {
+      realEstateDetails: true,
+      creditDetails: true,
+      equityDetails: true,
+      fundLPDetails: true,
     },
   });
   return NextResponse.json(asset);
