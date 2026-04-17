@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: "Phase 22 partial — FIN-04 Excel pending (carry-forward to Phase 23, assigned to Kathryn), ready for Phase 23"
-last_updated: "2026-04-17T09:00:00.000Z"
-last_activity: "2026-04-17 — Phase 22 Fit & Finish (Code) shipped. 7 plans executed (22-01 through 22-07), 7 requirements closed (FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12). All 21 walkthrough obs addressed. FIN-04 second-fund Excel carry-forward to Phase 23, assigned to Kathryn."
+stopped_at: "Phase 22 partial + 22-10 post-deploy gap closure shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
+last_updated: "2026-04-17T21:30:00.000Z"
+last_activity: "2026-04-17 — Phase 22 shipped to production (frontier-labs / d754f14). User flagged two post-deploy gaps: Edit Asset fieldset invisible on existing prod assets (no detail record) + Add Asset form missing the new fields. Folded both fixes into Phase 22 as Plan 22-10: detectAssetKind fallback to assetClass/instrument/participation; PUT upsert of detail records; Add Asset form parity with Edit modal. Browser-verified; build clean; ready to push."
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 17
-  completed_plans: 16
+  total_plans: 18
+  completed_plans: 17
 ---
 
 # Atlas — GSD State
@@ -27,7 +27,7 @@ progress:
 - **Phase:** Phase 23 (Fit & Finish — Docs & Verification Retrofit) — NEXT UP
 - **Plan:** Phase 23 not yet planned. Ready to kick off.
 - **Status:** Phase 22 partial — FIN-04 Excel carry-forward to Phase 23 (Kathryn). All other Phase 22 requirements closed: FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12. All 21 walkthrough obs addressed. 3 hard blockers closed. Asset correctness cluster closed. LP reconciliation closed.
-- **Last activity:** 2026-04-17 — Phase 22 closed with 7/9 plans. 22-09 SUMMARY produced. FIN-04 deferred to Phase 23 / Kathryn.
+- **Last activity:** 2026-04-17 — Phase 22 closed with 7/9 plans + 22-10 gap-closure (post-deploy). 22-10 closed: Edit Asset fallback for legacy assets (detectAssetKind falls back to assetClass/instrument/participation); PUT `/api/assets/[id]` upserts detail records instead of 400 on type mismatch; Add Asset form parity with Edit (Entry Date / Projected IRR/Multiple / type-conditional fieldset). FIN-04 still deferred to Kathryn / Phase 23.
 
 ## v3.0 Phase Overview
 
