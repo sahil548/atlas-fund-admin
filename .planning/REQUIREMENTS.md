@@ -11,14 +11,14 @@
 
 ### Fit & Finish (close v2.0/v2.1 gaps)
 
-- [ ] **FIN-01**: User clicking a meeting in the activity feed lands on a meeting detail page (not 404)
-- [ ] **FIN-02**: The waterfall calculate route imports day-count and segment-walk helpers from `pref-accrual.ts` (no inlined duplicate)
+- [x] **FIN-01**: User clicking a meeting in the activity feed lands on a meeting detail page (not 404)
+- [x] **FIN-02**: The waterfall calculate route imports day-count and segment-walk helpers from `pref-accrual.ts` (no inlined duplicate)
 - [ ] **FIN-03**: `docs/waterfall-conventions.md` exists and documents the 30/360 inclusive convention, ROC effective-date rule, and PIC-weighted inception-to-date pref methodology
 - [ ] **FIN-04**: Waterfall produces correct results for at least one fund other than CG Private Credit Fund II, verified by a second ground-truth Excel reference
 - [ ] **FIN-05**: VERIFICATION.md files exist for v2.0 phases 12, 13, 14, 15, 18, and 20
 - [ ] **FIN-06**: REQUIREMENTS.md traceability is consistent: all TASK-01..05 checkboxes marked complete, Phase 20 INTEG/SCHEMA/UIPOL requirements present, FIN-07/FIN-10 v2.0 notes corrected
 - [ ] **FIN-07**: Plan 20-10 (final human verification checkpoint) has a SUMMARY.md documenting user-facing acceptance of v2.0 polish work
-- [ ] **FIN-08**: The three March-5 bugs (DD tab 0%, pass rate 300%, IC memo spinner) are verified resolved on current main or formally filed if any remain
+- [x] **FIN-08**: The three March-5 bugs (DD tab 0%, pass rate 300%, IC memo spinner) are verified resolved on current main or formally filed if any remain
 - [ ] **FIN-09**: Error copy cleanup — "Unauthorized" / "Not authorized" is not used as a catch-all for non-auth failure modes. Every error message explains the condition and the action to resolve it (e.g., "Can't delete a deal past Screening — move it to Dead first"; "Enable AI access in Settings > AI Config"). Covers at minimum: deal stage-gate rejection (GP Obs 3), document AI summary access (GP Obs 39). *Source: Phase 21 walkthrough, GP Obs 3 + 39.*
 - [ ] **FIN-10**: List sort/filter functional — asset list class filter, entity list column sort, and meetings list sort/filter all work correctly. A broken or non-functional list control does not appear in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 8, 21, 44.*
 - [ ] **FIN-11**: Integrated records — per-surface task lists (on assets and entities) are linked to the central task system via `/tasks/[id]` navigation. Cap-table investor rows link to their CRM/Directory contact record. No orphaned task or investor widget exists in the shipped UI. *Source: Phase 21 walkthrough, GP Obs 18, 22, 27.*
@@ -112,7 +112,7 @@ Which phases cover which requirements.
 |-------------|-------|--------|
 | MAN-01 | Phase 21 | Complete |
 | MAN-02 | Phase 21 | Complete |
-| FIN-01 | Phase 22 | Pending |
+| FIN-01 | Phase 22 | Complete |
 | FIN-02 | Phase 22 | Pending |
 | FIN-04 | Phase 22 | Pending |
 | FIN-08 | Phase 22 | Pending |

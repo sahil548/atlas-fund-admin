@@ -112,7 +112,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   6. List sort/filter: asset class filter, entity column sort, and meetings sort/filter all work — FIN-10
   7. Integrated records: per-asset and per-entity task widgets link to `/tasks/[id]`; cap-table investors link to CRM contact records — FIN-11
   8. LP display quality: capital account statement reconciles; LP portfolio shows invested capital vs. fair value — FIN-12
-**Plans:** 4/9 plans executed
+**Plans:** 7/9 plans executed (22-01 through 22-07 complete; 22-08 SUMMARY pending)
 
 **Additions from Phase 21 walkthrough:**
 - GP Obs 3: Fix "not authorized" error copy on deal stage-gate rejection — explain the rule, not auth failure (FIN-09)
@@ -237,7 +237,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 | 20. Schema Cleanup & UI Polish | v2.0 | 10/10 | Complete | 2026-03-11 |
 | v2.1 (retroactive, off-GSD) | v2.1 | N/A (71 commits) | In Review | 2026-04-09 (last commit) |
 | 21. Initial Manual Walkthrough (Baseline) | v3.0 | 1/1 | Complete | 2026-04-16 |
-| 22. Fit & Finish — Code | 4/9 | In Progress|  | — |
+| 22. Fit & Finish — Code | 6/9 | In Progress|  | — |
 | 23. Fit & Finish — Docs & Verification Retrofit | v3.0 | 0/TBD | Not started | — |
 | 24. RBAC Enforcement | v3.0 | 0/TBD | Not started | — |
 | 25. Pagination | v3.0 | 0/TBD | Not started | — |
