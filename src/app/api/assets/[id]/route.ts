@@ -67,9 +67,29 @@ export async function GET(
 
   // Sanitize high-risk JSON blob field: projectedMetrics
   const safeProjMetrics = ProjectedMetricsSchema.safeParse(asset.projectedMetrics);
+
+  // Phase 22-13: resolve approver display info for each valuation's audit trail.
+  // Valuation.approvedBy is a String? (plain userId, no Prisma relation), so we do
+  // a single findMany across unique approver IDs and attach `approver: {id,name,initials}`.
+  const approverIds = Array.from(
+    new Set(asset.valuations.map((v) => v.approvedBy).filter((id): id is string => !!id))
+  );
+  const approvers = approverIds.length > 0
+    ? await prisma.user.findMany({
+        where: { id: { in: approverIds } },
+        select: { id: true, name: true, initials: true },
+      })
+    : [];
+  const approverById = new Map(approvers.map((u) => [u.id, u]));
+  const valuationsWithApprover = asset.valuations.map((v) => ({
+    ...v,
+    approver: v.approvedBy ? approverById.get(v.approvedBy) ?? null : null,
+  }));
+
   const sanitizedAsset = {
     ...asset,
     projectedMetrics: safeProjMetrics.success ? safeProjMetrics.data : null,
+    valuations: valuationsWithApprover,
   };
 
   return NextResponse.json(sanitizedAsset);

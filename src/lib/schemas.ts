@@ -1262,6 +1262,10 @@ export const UpdateValuationSchema = z.object({
   moic: z.number().optional(),
   notes: z.string().optional(),
   status: z.enum(["DRAFT", "APPROVED"]).optional(),
+  // Phase 22-13: audit-trail stamping. Forms send this when transitioning to
+  // APPROVED so the mock UserProvider (dev) can still record who approved.
+  // Prod with Clerk prefers `authUser.id` server-side.
+  approvedBy: z.string().optional(),
 });
 
 // ── Commitments (Create / Update) ───────────────────────────────────────────

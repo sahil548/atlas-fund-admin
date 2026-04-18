@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { CurrencyInput } from "@/components/ui/currency-input";
 import { Select } from "@/components/ui/select";
 import { useToast } from "@/components/ui/toast";
+import { useUser } from "@/components/providers/user-provider";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -35,6 +36,7 @@ interface Props {
 
 export function EditValuationForm({ valuation, open, onClose, assetId }: Props) {
   const toast = useToast();
+  const { userId } = useUser();
   const [isLoading, setIsLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -78,6 +80,11 @@ export function EditValuationForm({ valuation, open, onClose, assetId }: Props) 
     if (form.moic) payload.moic = Number(form.moic);
     if (form.notes) payload.notes = form.notes;
     if (form.status) payload.status = form.status;
+    // Phase 22-13: when approving, send userId so the server can stamp
+    // approvedBy even without a Clerk session (dev / mock UserProvider).
+    if (form.status === "APPROVED" && valuation?.status !== "APPROVED" && userId) {
+      payload.approvedBy = userId;
+    }
 
     try {
       const res = await fetch(`/api/assets/${assetId}/valuations/${valuation.id}`, {
@@ -123,6 +130,12 @@ export function EditValuationForm({ valuation, open, onClose, assetId }: Props) 
         {!isDraft && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
             This valuation is approved. Only DRAFT valuations can be edited.
+            {(valuation?.approver?.name || valuation?.approvedBy) && valuation?.approvedAt && (
+              <div className="mt-1 text-amber-800 dark:text-amber-200">
+                Approved by <strong>{valuation.approver?.name || valuation.approvedBy}</strong> on{" "}
+                {new Date(valuation.approvedAt).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })}
+              </div>
+            )}
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">

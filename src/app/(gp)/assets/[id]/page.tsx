@@ -273,7 +273,7 @@ export default function AssetDetailPage({
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    {["Date", "Method", "Fair Value", "MOIC", "Status", "Notes", ""].map((h) => (
+                    {["Date", "Method", "Fair Value", "MOIC", "Status", "Approved By", "Approved At", "Notes", ""].map((h) => (
                       <th key={h} className="text-left px-4 py-2.5 font-semibold text-gray-600 dark:text-gray-400">{h}</th>
                     ))}
                   </tr>
@@ -289,6 +289,26 @@ export default function AssetDetailPage({
                         <Badge color={v.status === "APPROVED" ? "green" : "yellow"}>
                           {v.status?.toLowerCase() || "draft"}
                         </Badge>
+                      </td>
+                      {/* Phase 22-13: audit trail — approver + when approved */}
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-300">
+                        {v.approver?.name ? (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold">
+                              {v.approver.initials || v.approver.name.slice(0, 2).toUpperCase()}
+                            </span>
+                            <span>{v.approver.name}</span>
+                          </span>
+                        ) : v.approvedBy ? (
+                          <span className="text-gray-400 italic">{v.approvedBy}</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-500">
+                        {v.approvedAt
+                          ? new Date(v.approvedAt).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })
+                          : "—"}
                       </td>
                       <td className="px-4 py-2.5 text-gray-400 max-w-[180px] truncate">{v.notes || "---"}</td>
                       <td className="px-4 py-2.5">

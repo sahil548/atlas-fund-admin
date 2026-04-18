@@ -30,7 +30,7 @@ export async function GET(_req: Request, { params }: Params) {
 export async function PUT(req: Request, { params }: Params) {
   try {
     const { id, valuationId } = await params;
-    await getAuthUser();
+    const authUser = await getAuthUser();
 
     const { data, error } = await parseBody(req, UpdateValuationSchema);
     if (error) return error;
@@ -53,6 +53,26 @@ export async function PUT(req: Request, { params }: Params) {
       );
     }
 
+    // Phase 22-13: audit-trail stamping on approval transitions.
+    // Prefer the Clerk-authenticated user; fall back to the userId the form sent
+    // (the mock UserProvider in dev doesn't flow through Clerk's session).
+    let approvalUpdate: Record<string, unknown> = {};
+    if (data!.status !== undefined && data!.status !== existing.status) {
+      if (data!.status === "APPROVED") {
+        approvalUpdate = {
+          approvedBy: authUser?.id ?? data!.approvedBy ?? null,
+          approvedAt: new Date(),
+        };
+      } else if (existing.status === "APPROVED") {
+        // APPROVED → DRAFT (revert): clear the approval stamp so re-approval
+        // captures the new approver and timestamp.
+        approvalUpdate = {
+          approvedBy: null,
+          approvedAt: null,
+        };
+      }
+    }
+
     const valuation = await prisma.valuation.update({
       where: { id: valuationId },
       data: {
@@ -62,6 +82,7 @@ export async function PUT(req: Request, { params }: Params) {
         ...(data!.moic !== undefined && { moic: data!.moic }),
         ...(data!.notes !== undefined && { notes: data!.notes }),
         ...(data!.status !== undefined && { status: data!.status }),
+        ...approvalUpdate,
       },
     });
 
