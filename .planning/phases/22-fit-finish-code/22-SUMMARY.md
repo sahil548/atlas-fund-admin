@@ -1,8 +1,8 @@
 ---
 phase: 22-fit-finish-code
-status: partial
+status: complete_with_carry_forward
 completed: 2026-04-17
-plans_shipped: [22-01, 22-02, 22-03, 22-04, 22-05, 22-06, 22-07]
+plans_shipped: [22-01, 22-02, 22-03, 22-04, 22-05, 22-06, 22-07, 22-09, 22-10, 22-11, 22-12, 22-13, 22-14]
 plans_deferred:
   - plan: 22-08
     reason: "Excel-gated; user deferred on 2026-04-17 — Kathryn owns this class of work (second-fund waterfall validation). Carried forward to Phase 23 backlog."
@@ -12,7 +12,18 @@ plans_deferred:
 
 ## Outcome
 
-Phase 22 shipped 7 of 9 plans. All three hard blockers are resolved: the Side Letter form crash (Obs 35, Plan 22-01), the Document Upload Wizard (Obs 40, Plan 22-02), and the LP Capital Account reconciliation gap (LP-Obs 2, Plan 22-03). The asset-correctness cluster closed with edit modals for every asset field including entry date, type-conditional sections, and sub-modals for leases, credit agreements, and valuations (Plan 22-04). The Meeting detail page, activity feed click-through, and LP Portfolio invested/current-value columns shipped in Plan 22-05. List controls, record linkage, and the centralized error copy taxonomy landed in Plan 22-06. The waterfall route refactor and formal FIN-08 bug closeout completed in Plan 22-07. The biggest surprise was the LP-Obs 2 root cause: the $6M distribution gap was a seed data authoring error (entity2 had no per-investor DLIs), not the asset-layer cascade predicted by the Obs 20 strategic thesis. The hardest task was Plan 22-04 — discriminated-union Zod schema, `detectAssetKind()` pattern, and sub-modals for three child record types across two API routes and six components, completed across two context windows. FIN-04 (second-fund Excel validation) is deferred to Phase 23; user explicitly assigned it to Kathryn on 2026-04-17.
+Phase 22 shipped 13 of 14 plans. All three hard blockers are resolved: Side Letter form crash (Obs 35, 22-01), Document Upload Wizard (Obs 40, 22-02), LP Capital Account reconciliation (LP-Obs 2, 22-03). Asset-correctness cluster closed with edit modals for every asset field including entry date, type-conditional sections, and sub-modals for leases, credit agreements, and valuations (22-04). Meeting detail page, activity-feed click-through, and LP Portfolio invested-vs-current-value columns shipped in 22-05. List controls, record linkage, and centralized error-copy taxonomy in 22-06. Waterfall route refactor and formal FIN-08 bug closeout in 22-07.
+
+**Post-deploy punch list (added 2026-04-17 after the user identified gaps during prod verification):**
+- 22-10: Edit-Asset fieldset fallback for legacy assets without child detail records + full Add-Asset parity with Edit (every common scalar + type-conditional section)
+- 22-11: Review schedule (`reviewFrequency` + `nextReview`) and ownership tracking (`ownershipPercent`, `shareCount`, `hasBoardSeat`) editable
+- 22-12: Multi-entity allocation on Create (repeatable rows, sum=100 validation, per-row cost-basis split) + HTML min/max guardrails on structured number fields
+- 22-13: Valuation audit trail — `approvedBy` + `approvedAt` stamped on DRAFT→APPROVED, cleared on revert; approver name/initials resolved in GET; banner + 2 new table columns. Verified end-to-end on production Chrome.
+- 22-14: Projected Metrics JSON blob editable per-kind (RE: cap rate + cash-on-cash; PC: YTM + current yield; OP: revenue multiple + EBITDA multiple). Verified on production Chrome.
+
+The biggest surprise was the LP-Obs 2 root cause: the $6M distribution gap was a seed-data authoring error (entity2 had no per-investor DistributionLineItems), not the asset-layer cascade predicted by the Obs 20 strategic thesis. The hardest task was 22-04 — discriminated-union Zod schema + `detectAssetKind()` + sub-modals for three child record types across two API routes and six components.
+
+FIN-04 (second-fund Excel validation) is deferred to Phase 23; user explicitly assigned it to Kathryn on 2026-04-17.
 
 ---
 

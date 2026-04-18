@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: "Phase 22 partial + 22-10/11/12/13/14 post-deploy gap closures shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
-last_updated: "2026-04-17T23:30:00.000Z"
-last_activity: "2026-04-17 — Plan 22-14 shipped: projected metrics JSON blob (capRate/cashOnCash for RE, YTM/currentYield for PC, revenueMultiple/ebitdaMultiple for OP) now editable in both Add and Edit Asset. Schema/API was already in place; UI wiring was the missing piece. Build clean. 22-13 verified end-to-end on production Chrome earlier in the day (audit trail columns + approver name + banner all confirmed)."
+stopped_at: "Phase 22 WRAPPED — 13/14 plans shipped + verified on production Chrome; FIN-04 carry-forward to Phase 23 (Kathryn). Ready for Phase 23."
+last_updated: "2026-04-17T23:45:00.000Z"
+last_activity: "2026-04-17 — Phase 22 closed (with Kathryn carry-forward). Final plan 22-14 (projected metrics JSON blob) verified end-to-end on production Chrome against SP Charlottesville I: fieldset rendered with Projected Cap Rate + Projected Cash-on-Cash, PUT persisted values (capRate: 6.75, cashOnCash: 8.4), restored to original. Phase 22 shipped 13 of 14 plans total — original 7 (22-01..07) + SUMMARY (22-09) + 5 post-deploy punch-list gap closures (22-10/11/12/13/14). 22-08 second-fund Excel validation carries forward to Phase 23 with Kathryn. Next: /gsd:discuss-phase 23."
 progress:
   total_phases: 8
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 22
   completed_plans: 21
 ---
@@ -23,11 +23,11 @@ progress:
 ## Current Position
 
 - **Milestone:** v3.0 (Consolidation & Scale Readiness) — IN PROGRESS
-- **Previous:** Phase 22 (Fit & Finish — Code) — PARTIAL COMPLETE 2026-04-17 (7/9 plans; FIN-04 deferred to Kathryn)
+- **Previous:** Phase 22 (Fit & Finish — Code) — **WRAPPED 2026-04-17 (13/14 plans; FIN-04 carry-forward to Kathryn/Phase 23)**
 - **Phase:** Phase 23 (Fit & Finish — Docs & Verification Retrofit) — NEXT UP
 - **Plan:** Phase 23 not yet planned. Ready to kick off.
-- **Status:** Phase 22 partial — FIN-04 Excel carry-forward to Phase 23 (Kathryn). All other Phase 22 requirements closed: FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12. All 21 walkthrough obs addressed. 3 hard blockers closed. Asset correctness cluster closed. LP reconciliation closed.
-- **Last activity:** 2026-04-17 — Phase 22 closed with 7/9 plans + 22-10 gap-closure (post-deploy). 22-10 closed: Edit Asset fallback for legacy assets (detectAssetKind falls back to assetClass/instrument/participation); PUT `/api/assets/[id]` upserts detail records instead of 400 on type mismatch; Add Asset form parity with Edit (Entry Date / Projected IRR/Multiple / type-conditional fieldset). FIN-04 still deferred to Kathryn / Phase 23.
+- **Status:** Phase 22 wrapped. Original 7 plans (22-01..07) + SUMMARY (22-09) + 5 post-deploy punch-list plans (22-10/11/12/13/14). All FIN requirements closed except FIN-04: FIN-01, FIN-02, FIN-08, FIN-09, FIN-10, FIN-11, FIN-12 all green. 21 walkthrough obs addressed + 6 gaps from post-deploy punch list closed (#1-#6 of 8). Remaining deferred: FIN-04 (Kathryn), gap #7 (type-conditional string-field range validation — schema refactor), gap #8 (end-to-end integrity loop — Kathryn/Phase 23).
+- **Last activity:** 2026-04-17 — Phase 22 wrapped. 22-14 (projected metrics blob) verified end-to-end on production Chrome. Next: /gsd:discuss-phase 23.
 
 ## v3.0 Phase Overview
 

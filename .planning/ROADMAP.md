@@ -70,7 +70,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 ### Phases
 
 - [x] **Phase 21: Initial Manual Walkthrough (Baseline)** — User-driven GP + LP tours of the current app to capture a fresh baseline of feedback BEFORE any v3.0 changes are made. Output shapes subsequent phase priorities. COMPLETE 2026-04-16 — 52 observations triaged, 19 urgent items folded into Phase 22, 1 item to Phase 28 backlog.
-- [~] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification — **PARTIAL 2026-04-17: 13/14 plans complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 + 22-12 + 22-13 + 22-14 post-deploy gap-closures); Plan 22-08 FIN-04 deferred to Phase 23, assigned to Kathryn**
+- [x] **Phase 22: Fit & Finish — Code** — WRAPPED 2026-04-17 with 13/14 plans shipped (22-01..07 + 22-09 + 5 post-deploy gap-closures 22-10/11/12/13/14). Plan 22-08 FIN-04 second-fund Excel validation is the only carry-forward — deferred to Phase 23, assigned to Kathryn. Post-deploy punch list gap-closures verified end-to-end on production Chrome.
 - [ ] **Phase 23: Fit & Finish — Docs & Verification Retrofit** — Waterfall conventions doc, VERIFICATION.md retrofit for v2.0 phases 12/13/14/15/18/20, traceability sync, Plan 20-10 closeout
 - [ ] **Phase 24: RBAC Enforcement** — API middleware + UI hiding so role boundaries are actually enforced, not just modeled
 - [ ] **Phase 25: Pagination** — Cursor-based pagination helper + apply to list endpoints + "Load more" UI for 30+ record scale
