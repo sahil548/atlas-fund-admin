@@ -70,7 +70,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 ### Phases
 
 - [x] **Phase 21: Initial Manual Walkthrough (Baseline)** — User-driven GP + LP tours of the current app to capture a fresh baseline of feedback BEFORE any v3.0 changes are made. Output shapes subsequent phase priorities. COMPLETE 2026-04-16 — 52 observations triaged, 19 urgent items folded into Phase 22, 1 item to Phase 28 backlog.
-- [~] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification — **PARTIAL 2026-04-17: 11/12 plans complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 + 22-12 post-deploy gap-closures); Plan 22-08 FIN-04 deferred to Phase 23, assigned to Kathryn**
+- [~] **Phase 22: Fit & Finish — Code** — Meeting detail page, waterfall route refactor, second-fund validation, March-5 bug re-verification — **PARTIAL 2026-04-17: 12/13 plans complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 + 22-12 + 22-13 post-deploy gap-closures); Plan 22-08 FIN-04 deferred to Phase 23, assigned to Kathryn**
 - [ ] **Phase 23: Fit & Finish — Docs & Verification Retrofit** — Waterfall conventions doc, VERIFICATION.md retrofit for v2.0 phases 12/13/14/15/18/20, traceability sync, Plan 20-10 closeout
 - [ ] **Phase 24: RBAC Enforcement** — API middleware + UI hiding so role boundaries are actually enforced, not just modeled
 - [ ] **Phase 25: Pagination** — Cursor-based pagination helper + apply to list endpoints + "Load more" UI for 30+ record scale
@@ -112,7 +112,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
   6. List sort/filter: asset class filter, entity column sort, and meetings sort/filter all work — FIN-10
   7. Integrated records: per-asset and per-entity task widgets link to `/tasks/[id]`; cap-table investors link to CRM contact records — FIN-11
   8. LP display quality: capital account statement reconciles; LP portfolio shows invested capital vs. fair value — FIN-12
-**Plans:** 11/12 complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 + 22-12 executed; 22-08 deferred — see below)
+**Plans:** 12/13 complete (22-01 through 22-07 + 22-09 + 22-10 + 22-11 + 22-12 + 22-13 executed; 22-08 deferred — see below)
 
 - [x] 22-01-PLAN.md — Side Letter crash (Obs 35) + seed delete order (Obs 47). COMPLETE 2026-04-17.
 - [x] 22-02-PLAN.md — Document Upload Wizard (Obs 40): FileUpload + FormData + DocumentFormDataSchema. COMPLETE 2026-04-17.
@@ -126,6 +126,7 @@ Phases 11-20 shipped 2026-03-18. 264 commits, 545 files changed, ~91K LOC TypeSc
 - [x] 22-10-PLAN.md — **Post-deploy gap-closure (added 2026-04-17).** User surfaced two gaps after the production deploy: (a) existing prod assets without child detail records silently hid the Edit Asset type-conditional fieldset, (b) Add Asset form was missing every Phase 22 addition (Entry Date, Projected IRR/Multiple, per-type scalar fieldset). Fixed `detectAssetKind` with fallback to assetClass/instrument/participation, switched PUT `/api/assets/[id]` detail writes to `upsert`, and rewrote Add Asset form to match Edit parity. COMPLETE 2026-04-17.
 - [x] 22-11-PLAN.md — **Review schedule + ownership tracking (added 2026-04-17).** User asked "how do I set the asset review schedule" — turned out `reviewFrequency` / `nextReview` + `ownershipPercent` / `shareCount` / `hasBoardSeat` were all on the model but missing from the Add/Edit UI. Added new "Review & Ownership" fieldset to both forms; extended schemas + POST handler. This also makes the existing "Mark Reviewed" button on the Overview tab usable for the first time (previously `reviewFrequency` was only settable via seed). COMPLETE 2026-04-17.
 - [x] 22-12-PLAN.md — **Multi-entity allocation on Create + number-field guardrails (added 2026-04-17).** Add Asset now supports repeatable entity-allocation rows (e.g., 60% Fund I / 40% Fund II) with sum-to-100 validation on both client and server; per-row cost-basis derived as `totalCostBasis × pct/100`. HTML `min`/`max` attrs added to Projected IRR, Projected Multiple, Ownership %, Share Count on both forms. Punch-list gaps #5 and structured-field half of #7 closed. COMPLETE 2026-04-17.
+- [x] 22-13-PLAN.md — **Valuation audit trail (added 2026-04-17).** Schema already had `approvedBy` + `approvedAt` columns but they were never populated. PUT route now stamps them on DRAFT→APPROVED, clears on revert. Asset GET resolves approver's name/initials via in-memory user lookup. Edit Valuation modal shows "Approved by X on DATE" banner. Valuation History table gets two new columns. Punch-list gap #6 closed. COMPLETE 2026-04-17.
 
 **Additions from Phase 21 walkthrough:**
 - [x] GP Obs 3: Fix "not authorized" error copy on deal stage-gate rejection — explain the rule, not auth failure (FIN-09) CONFIRMED 2026-04-17 (22-06): deal delete handler already reads json.error and API returns descriptive 400 stage-gate message; ERR.DEAL_STAGE_GATE added to centralized taxonomy
