@@ -87,6 +87,13 @@ export function CreateAssetForm({ open, onClose }: Props) {
     ownershipPercent: "",
     shareCount: "",
     hasBoardSeat: false,
+    // Phase 22-14: projected metrics blob fields
+    pmCapRate: "",
+    pmCashOnCash: "",
+    pmYieldToMaturity: "",
+    pmCurrentYield: "",
+    pmRevenueMultiple: "",
+    pmEbitdaMultiple: "",
   });
   // Phase 22-12: multi-entity allocation rows. Starts with one row at 100%.
   const [allocations, setAllocations] = useState<Array<{ entityId: string; allocationPercent: string }>>([
@@ -121,6 +128,13 @@ export function CreateAssetForm({ open, onClose }: Props) {
         ownershipPercent: "",
         shareCount: "",
         hasBoardSeat: false,
+        // Phase 22-14 projected metrics reset
+        pmCapRate: "",
+        pmCashOnCash: "",
+        pmYieldToMaturity: "",
+        pmCurrentYield: "",
+        pmRevenueMultiple: "",
+        pmEbitdaMultiple: "",
       });
       setAllocations([{ entityId: "", allocationPercent: "100" }]);
       setReForm({ propertyType: "", squareFeet: "", occupancy: "", noi: "", capRate: "", rentPerSqft: "", debt: "", debtDscr: "" });
@@ -213,6 +227,19 @@ export function CreateAssetForm({ open, onClose }: Props) {
       if (form.ownershipPercent) payload.ownershipPercent = Number(form.ownershipPercent);
       if (form.shareCount) payload.shareCount = Number(form.shareCount);
       if (form.hasBoardSeat) payload.hasBoardSeat = true;
+      // Phase 22-14: projected metrics blob — include only the fields relevant to kind
+      const pm: Record<string, number | null> = {};
+      if (kind === "REAL_ESTATE") {
+        if (form.pmCapRate) pm.capRate = Number(form.pmCapRate);
+        if (form.pmCashOnCash) pm.cashOnCash = Number(form.pmCashOnCash);
+      } else if (kind === "PRIVATE_CREDIT") {
+        if (form.pmYieldToMaturity) pm.yieldToMaturity = Number(form.pmYieldToMaturity);
+        if (form.pmCurrentYield) pm.currentYield = Number(form.pmCurrentYield);
+      } else if (kind === "OPERATING") {
+        if (form.pmRevenueMultiple) pm.revenueMultiple = Number(form.pmRevenueMultiple);
+        if (form.pmEbitdaMultiple) pm.ebitdaMultiple = Number(form.pmEbitdaMultiple);
+      }
+      if (Object.keys(pm).length > 0) payload.projectedMetrics = pm;
       const typeDetails = buildTypeDetailsPayload();
       if (typeDetails) payload.typeDetails = typeDetails;
 
@@ -498,6 +525,46 @@ export function CreateAssetForm({ open, onClose }: Props) {
                 </>
               )}
 
+            </div>
+          </fieldset>
+        )}
+
+        {/* Phase 22-14: Projected Metrics (per-asset-class expectations) */}
+        {kind && (kind === "REAL_ESTATE" || kind === "PRIVATE_CREDIT" || kind === "OPERATING") && (
+          <fieldset className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-2">
+            <legend className="text-xs font-semibold uppercase text-gray-600 dark:text-gray-400 px-1">Projected Metrics</legend>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">Target / expected values at exit or stabilization.</p>
+            <div className="space-y-3">
+              {kind === "REAL_ESTATE" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Projected Cap Rate (%)">
+                    <Input type="number" step="0.01" value={form.pmCapRate} onChange={(e) => set("pmCapRate", e.target.value)} placeholder="e.g. 6.5" />
+                  </FormField>
+                  <FormField label="Projected Cash-on-Cash (%)">
+                    <Input type="number" step="0.01" value={form.pmCashOnCash} onChange={(e) => set("pmCashOnCash", e.target.value)} placeholder="e.g. 9.2" />
+                  </FormField>
+                </div>
+              )}
+              {kind === "PRIVATE_CREDIT" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Projected YTM (%)">
+                    <Input type="number" step="0.01" value={form.pmYieldToMaturity} onChange={(e) => set("pmYieldToMaturity", e.target.value)} placeholder="e.g. 8.5" />
+                  </FormField>
+                  <FormField label="Projected Current Yield (%)">
+                    <Input type="number" step="0.01" value={form.pmCurrentYield} onChange={(e) => set("pmCurrentYield", e.target.value)} placeholder="e.g. 7.8" />
+                  </FormField>
+                </div>
+              )}
+              {kind === "OPERATING" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="Projected Revenue Multiple (x)">
+                    <Input type="number" step="0.01" value={form.pmRevenueMultiple} onChange={(e) => set("pmRevenueMultiple", e.target.value)} placeholder="e.g. 4.5" />
+                  </FormField>
+                  <FormField label="Projected EBITDA Multiple (x)">
+                    <Input type="number" step="0.01" value={form.pmEbitdaMultiple} onChange={(e) => set("pmEbitdaMultiple", e.target.value)} placeholder="e.g. 12.0" />
+                  </FormField>
+                </div>
+              )}
             </div>
           </fieldset>
         )}

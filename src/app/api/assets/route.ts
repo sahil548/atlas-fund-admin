@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       entryDate, projectedIRR, projectedMultiple, typeDetails,
       // Phase 22-11: review schedule + ownership + board seat
       nextReview, reviewFrequency, ownershipPercent, shareCount, hasBoardSeat,
+      // Phase 22-14: projected metrics JSON blob
+      projectedMetrics,
     } = data!;
 
     const cost = Number(costBasis);
@@ -156,6 +158,10 @@ export async function POST(req: NextRequest) {
         ...(ownershipPercent !== undefined ? { ownershipPercent } : {}),
         ...(shareCount !== undefined ? { shareCount } : {}),
         ...(hasBoardSeat !== undefined ? { hasBoardSeat } : {}),
+        // Phase 22-14 projected metrics JSON blob
+        ...(projectedMetrics !== undefined
+          ? { projectedMetrics: projectedMetrics as import("@prisma/client").Prisma.InputJsonValue | import("@prisma/client").Prisma.NullableJsonNullValueInput }
+          : {}),
         entityAllocations: {
           create: entityAllocationsCreate as never,
         },

@@ -1035,6 +1035,10 @@ export const CreateAssetSchema = z.object({
   ownershipPercent: z.number().min(0).max(100).nullable().optional(),
   shareCount: z.number().nonnegative().nullable().optional(),
   hasBoardSeat: z.boolean().optional(),
+  // Phase 22-14: projected metrics blob (per-asset-class expectations — cap rate,
+  // YTM, revenue multiple, etc.). Separate from the scalar projectedIRR /
+  // projectedMultiple added in 22-10.
+  projectedMetrics: ProjectedMetricsSchema.optional(),
 });
 
 // ── Documents (PATCH link) ─────────────────────────────────────
