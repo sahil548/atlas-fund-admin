@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Consolidation & Scale Readiness
 status: in_progress
-stopped_at: "Phase 22 partial + 22-10/11/12/13 post-deploy gap closures shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
-last_updated: "2026-04-17T23:00:00.000Z"
-last_activity: "2026-04-17 — Plan 22-13 shipped: valuation audit trail (approvedBy + approvedAt stamped on DRAFT→APPROVED, cleared on revert; approver name/initials resolved in GET response; audit columns added to History table; Edit modal shows 'Approved by X on DATE' banner). Build clean; API round-trip scripted but preview server died during test; user opted to verify in production Chrome after Vercel deploy."
+stopped_at: "Phase 22 partial + 22-10/11/12/13/14 post-deploy gap closures shipped — FIN-04 Excel pending (carry-forward to Phase 23, Kathryn), ready for Phase 23"
+last_updated: "2026-04-17T23:30:00.000Z"
+last_activity: "2026-04-17 — Plan 22-14 shipped: projected metrics JSON blob (capRate/cashOnCash for RE, YTM/currentYield for PC, revenueMultiple/ebitdaMultiple for OP) now editable in both Add and Edit Asset. Schema/API was already in place; UI wiring was the missing piece. Build clean. 22-13 verified end-to-end on production Chrome earlier in the day (audit trail columns + approver name + banner all confirmed)."
 progress:
   total_phases: 8
   completed_phases: 2
-  total_plans: 21
-  completed_plans: 20
+  total_plans: 22
+  completed_plans: 21
 ---
 
 # Atlas — GSD State
