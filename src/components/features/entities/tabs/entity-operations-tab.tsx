@@ -10,6 +10,7 @@ import { EntityDocumentsSection } from "@/components/features/entities/tabs/oper
 import { EntityMeetingsSection } from "@/components/features/entities/tabs/operations/entity-meetings-section";
 import { EntityReportsSection } from "@/components/features/entities/tabs/operations/entity-reports-section";
 import { EntityActivitySection } from "@/components/features/entities/tabs/operations/entity-activity-section";
+import { EntityFundingSourceSection } from "@/components/features/entities/tabs/operations/entity-funding-source-section";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -23,6 +24,7 @@ interface Props {
 const SUB_TABS = [
   { key: "documents", label: "Documents" },
   { key: "accounting", label: "Accounting" },
+  { key: "banking", label: "Banking" },
   { key: "meetings", label: "Meetings" },
   { key: "tasks", label: "Tasks" },
   { key: "activity", label: "Activity" },
@@ -152,6 +154,10 @@ export function EntityOperationsTab({ entity, entityId }: Props) {
           />
           <PlaidBankAccounts entityId={entityId} />
         </>
+      )}
+
+      {subTab === "banking" && (
+        <EntityFundingSourceSection entityId={entityId} />
       )}
 
       {subTab === "meetings" && (

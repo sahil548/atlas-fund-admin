@@ -445,6 +445,7 @@ model Entity {
   dealEntities         DealEntity[]
   decisionStructureId  String?
   decisionStructure    DecisionStructure? @relation("EntityDecisionStructure", fields: [decisionStructureId], references: [id])
+  fundingSources       EntityFundingSource[]
 
   // Phase 3: NAV proxy configuration
   navProxyConfig       Json?              // { cashPercent, otherAssetsPercent, liabilitiesPercent }
@@ -843,6 +844,8 @@ model Investor {
   metricSnapshots        MetricSnapshot[]
   savedConversations     SavedConversation[]
   ownershipUnits         OwnershipUnit[]
+  dwollaCustomer         InvestorDwollaCustomer?
+  paymentMethods         InvestorPaymentMethod[]
 }
 
 model Commitment {
@@ -993,8 +996,20 @@ model CapitalCallLineItem {
   paidDate      DateTime?
   createdAt     DateTime @default(now())
 
+  // Phase A: payment rail tracking
+  paymentMethod       PaymentMethod? // DWOLLA_ACH | EXTERNAL_WIRE | EXTERNAL_CHECK | EXTERNAL_OTHER
+  paymentStatus       PaymentStatus? // PENDING | PROCESSED | COMPLETED | FAILED | CANCELLED
+  dwollaTransferId    String?        // Dwolla transfer URL id for webhook lookup
+  paymentInitiatedAt  DateTime?
+  paymentCompletedAt  DateTime?
+  failureReason       String?
+  externalReference   String?        // Wire reference, check #, etc. when paid outside portal
+
   capitalCall CapitalCall @relation(fields: [capitalCallId], references: [id])
   investor    Investor    @relation(fields: [investorId], references: [id])
+
+  @@index([dwollaTransferId])
+  @@index([paymentStatus])
 }
 
 model DistributionEvent {
@@ -1038,10 +1053,22 @@ model DistributionLineItem {
   // Phase 3: Distribution type carried through to line items
   distributionType String?
 
+  // Phase A: payment rail tracking
+  paymentMethod       PaymentMethod? // DWOLLA_ACH | EXTERNAL_WIRE | EXTERNAL_CHECK | EXTERNAL_OTHER
+  paymentStatus       PaymentStatus? // PENDING | PROCESSED | COMPLETED | FAILED | CANCELLED
+  dwollaTransferId    String?        // Dwolla transfer URL id for webhook lookup
+  paymentInitiatedAt  DateTime?
+  paymentCompletedAt  DateTime?
+  failureReason       String?
+  externalReference   String?        // Wire reference, check #, etc. when paid outside portal
+
   createdAt        DateTime @default(now())
 
   distribution DistributionEvent @relation(fields: [distributionId], references: [id])
   investor     Investor          @relation(fields: [investorId], references: [id])
+
+  @@index([dwollaTransferId])
+  @@index([paymentStatus])
 }
 
 model IncomeEvent {
@@ -2094,6 +2121,116 @@ model PlaidAccount {
 
   @@unique([connectionId, accountId])
   @@index([connectionId])
+}
+
+// ============================================================
+// PAYMENTS (Phase A — Dwolla + Plaid)
+// ============================================================
+
+/// How a capital call line item or distribution line item was paid.
+enum PaymentMethod {
+  DWOLLA_ACH
+  EXTERNAL_WIRE
+  EXTERNAL_CHECK
+  EXTERNAL_OTHER
+}
+
+/// Lifecycle of a single payment leg.
+/// PENDING      — created locally, not yet submitted to processor
+/// PROCESSED    — accepted by Dwolla and in flight (ACH clearing)
+/// COMPLETED    — settled / funds landed in destination
+/// FAILED       — processor returned a failure (NSF, R01, account closed, etc.)
+/// CANCELLED    — cancelled before processor accepted (user action)
+enum PaymentStatus {
+  PENDING
+  PROCESSED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+/// Status of the Dwolla-side verified customer record for an investor.
+enum DwollaCustomerStatus {
+  UNVERIFIED
+  RETRY
+  DOCUMENT
+  VERIFIED
+  SUSPENDED
+  DEACTIVATED
+}
+
+/// Status of a linked bank account (funding source) in Dwolla.
+enum FundingSourceStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REMOVED
+}
+
+/// An outbound disbursement bank account Atlas uses to fund distributions for a given entity.
+/// Example: PCF II → Citi operating account; Silver Horse → Chase.
+/// Each entity can have multiple funding sources; exactly one is marked isDefault for automatic use.
+model EntityFundingSource {
+  id                    String   @id @default(cuid())
+  entityId              String
+  dwollaFundingSourceId String   @unique // Dwolla funding source URL suffix (the id portion)
+  dwollaCustomerId      String   // The Dwolla Verified Business Customer URL this source hangs off
+  bankName              String
+  accountNickname       String?  // e.g. "Citi Operating" set by Kathryn
+  accountType           String?  // checking | savings
+  last4                 String?
+  status                FundingSourceStatus @default(UNVERIFIED)
+  isDefault             Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@index([entityId])
+  @@index([status])
+}
+
+/// Dwolla "Verified Personal Customer" or "Receive-Only Customer" record per investor.
+/// Required before we can credit the investor via ACH. Created on first bank link attempt.
+model InvestorDwollaCustomer {
+  id                String   @id @default(cuid())
+  investorId        String   @unique
+  dwollaCustomerId  String   @unique // Dwolla customer URL id
+  customerType      String   // "personal" | "business" | "receive-only" | "unverified"
+  status            DwollaCustomerStatus @default(UNVERIFIED)
+  email             String
+  firstName         String?
+  lastName          String?
+  businessName      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  investor Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+/// An investor's linked bank account (funding source) used to receive distributions
+/// and optionally fund capital calls. Never stores the raw routing/account number —
+/// Atlas only holds the Dwolla funding source id; Plaid + Dwolla hold the underlying credentials.
+model InvestorPaymentMethod {
+  id                    String   @id @default(cuid())
+  investorId            String
+  dwollaFundingSourceId String   @unique
+  bankName              String
+  accountNickname       String?  // user-set label
+  accountType           String?  // checking | savings
+  last4                 String?
+  status                FundingSourceStatus @default(UNVERIFIED)
+  isDefault             Boolean  @default(false)
+  plaidAccountId        String?  // Plaid account_id that backs this funding source (for reference)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  investor Investor @relation(fields: [investorId], references: [id], onDelete: Cascade)
+
+  @@index([investorId])
+  @@index([status])
 }
 
 // ============================================================

@@ -44,6 +44,7 @@ export const APP_ROUTES: AppRoute[] = [
   { path: "/lp-portfolio", label: "LP Portfolio", description: "LP portfolio view", keywords: ["lp portfolio", "my investments"], icon: "TrendingUp", sidebarIcon: "\u25C9", portal: "lp", priority: 66 },
   { path: "/lp-activity", label: "Notices & Activity", description: "LP notices and activity feed", keywords: ["notices", "activity", "updates"], icon: "Bell", sidebarIcon: "\u25C7", portal: "lp", priority: 64 },
   { path: "/lp-documents", label: "Documents", description: "LP documents and reports", keywords: ["documents", "reports", "k1", "statements"], icon: "FileText", sidebarIcon: "\u25A5", portal: "lp", priority: 62 },
+  { path: "/lp-banking", label: "Banking", description: "LP bank accounts for receiving distributions via ACH", keywords: ["banking", "bank", "ach", "distributions", "payments", "plaid", "dwolla"], icon: "Landmark", sidebarIcon: "\u25CE", portal: "lp", priority: 60 },
   { path: "/lp-settings", label: "Settings", description: "LP notification preferences and settings", keywords: ["settings", "notifications", "preferences", "email", "sms"], icon: "Settings", sidebarIcon: "\u2699", portal: "lp", priority: 58 },
   { path: "/lp-profile", label: "Profile", description: "LP investor profile and contact information", keywords: ["profile", "contact", "tax id", "address", "identity"], icon: "User", sidebarIcon: "\u25CB", portal: "lp", priority: 56 },
 ];

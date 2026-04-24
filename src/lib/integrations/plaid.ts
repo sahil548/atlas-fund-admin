@@ -7,6 +7,16 @@
 import { PlaidApi, PlaidEnvironments, Configuration, Products, CountryCode } from "plaid";
 import type { IntegrationConnection } from "@prisma/client";
 
+export { Products, CountryCode };
+
+export function isPlaidConfigured(): boolean {
+  return Boolean(process.env.PLAID_CLIENT_ID && process.env.PLAID_SECRET);
+}
+
+export function getPlaidClientExported(): PlaidApi {
+  return getPlaidClient();
+}
+
 function getPlaidClient(): PlaidApi {
   const clientId = process.env.PLAID_CLIENT_ID ?? "";
   const secret = process.env.PLAID_SECRET ?? "";
@@ -142,4 +152,97 @@ export async function getTransactions(
     category: txn.category ?? null,
     pending: txn.pending,
   }));
+}
+
+// ── Investor bank-link flow (Dwolla funding source) ────────────
+
+/**
+ * Create a Plaid Link token for an INVESTOR to link their personal bank
+ * account for receiving distributions. Scoped with the investor id so a
+ * single Plaid institution connection stays distinct per investor.
+ *
+ * Uses only the Auth product (account/routing for ACH) — we don't pull
+ * transactions for investor bank accounts, keeping scope minimal.
+ */
+export async function createInvestorLinkToken(params: {
+  investorId: string;
+  investorName: string;
+}): Promise<string> {
+  const plaid = getPlaidClient();
+  const resp = await plaid.linkTokenCreate({
+    user: {
+      client_user_id: `investor__${params.investorId}`,
+      legal_name: params.investorName,
+    },
+    client_name: "Atlas Fund Administration",
+    products: [Products.Auth],
+    country_codes: [CountryCode.Us],
+    language: "en",
+  });
+  return resp.data.link_token;
+}
+
+/**
+ * Exchange a Plaid public_token received from Plaid Link for a permanent
+ * access_token. Use this before calling createProcessorToken.
+ */
+export async function exchangeInvestorPublicToken(
+  publicToken: string,
+): Promise<{ accessToken: string; itemId: string }> {
+  const plaid = getPlaidClient();
+  const resp = await plaid.itemPublicTokenExchange({ public_token: publicToken });
+  return { accessToken: resp.data.access_token, itemId: resp.data.item_id };
+}
+
+/**
+ * List the bank accounts available on a Plaid Item, so the user can pick
+ * which one to register as a Dwolla funding source (or we can take the first
+ * depository account automatically for single-account items).
+ */
+export async function listAuthAccounts(accessToken: string): Promise<
+  Array<{
+    accountId: string;
+    name: string;
+    officialName: string | null;
+    type: string;
+    subtype: string | null;
+    mask: string | null;
+  }>
+> {
+  const plaid = getPlaidClient();
+  const resp = await plaid.authGet({ access_token: accessToken });
+  return resp.data.accounts.map((a) => ({
+    accountId: a.account_id,
+    name: a.name,
+    officialName: a.official_name ?? null,
+    type: a.type,
+    subtype: a.subtype ?? null,
+    mask: a.mask ?? null,
+  }));
+}
+
+/**
+ * Create a Plaid "processor token" scoped for Dwolla. This token is handed
+ * to Dwolla to create a funding source without Atlas ever holding raw
+ * account/routing numbers.
+ */
+export async function createProcessorTokenForDwolla(params: {
+  accessToken: string;
+  accountId: string;
+}): Promise<string> {
+  const plaid = getPlaidClient();
+  // Plaid SDK types don't expose processorTokenCreate for all processor enums
+  // uniformly across versions — use the loose call shape and cast.
+  const resp = await (plaid as unknown as {
+    processorTokenCreate: (args: {
+      access_token: string;
+      account_id: string;
+      processor: string;
+    }) => Promise<{ data: { processor_token: string } }>;
+  }).processorTokenCreate({
+    access_token: params.accessToken,
+    account_id: params.accountId,
+    processor: "dwolla",
+  });
+  return resp.data.processor_token;
 }
