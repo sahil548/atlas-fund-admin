@@ -36,7 +36,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-organizational-chart": "^2.2.1",
-    "react-plaid-link": "^3.6.1",
+    "react-plaid-link": "^4.0.1",
     "recharts": "^3.7.0",
     "resend": "^6.9.3",
     "svix": "^1.86.0",
