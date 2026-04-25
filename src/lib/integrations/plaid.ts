@@ -178,6 +178,16 @@ export async function createInvestorLinkToken(params: {
     products: [Products.Auth],
     country_codes: [CountryCode.Us],
     language: "en",
+    // Restrict to checking/savings only. Dwolla can't receive ACH into
+    // investment / brokerage / cash-management accounts, so showing them
+    // in the picker would lead to inevitable downstream rejection.
+    // The SDK type for account_subtypes is DepositoryAccountSubtype (enum);
+    // cast through unknown so we don't have to version-track the enum import.
+    account_filters: {
+      depository: {
+        account_subtypes: ["checking", "savings"] as unknown as never[],
+      },
+    },
   });
   return resp.data.link_token;
 }
