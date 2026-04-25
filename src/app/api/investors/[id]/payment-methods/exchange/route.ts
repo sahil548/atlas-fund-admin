@@ -100,41 +100,116 @@ export async function POST(
     // 4. Ensure Dwolla customer exists for this investor
     let dwollaCustomerId = investor.dwollaCustomer?.dwollaCustomerId;
     if (!dwollaCustomerId) {
-      // Best-effort name/email extraction
-      const email = investor.contact?.email
-        ?? authUser.email // fallback to the logged-in user
-        ?? `investor+${investor.id}@atlas.local`;
-      const firstName = investor.contact?.firstName ?? investor.name.split(" ")[0] ?? "Investor";
-      const lastName = investor.contact?.lastName ?? investor.name.split(" ").slice(1).join(" ") ?? "Account";
-      const businessName = investor.company?.name ?? undefined;
+      // Dwolla rejects names with commas, parens, and many other punctuation.
+      // Strip everything except letters/digits/space/period/apostrophe/hyphen
+      // and trim. Limit length to 50 chars to be safe.
+      const cleanName = (s: string) =>
+        s.replace(/[^A-Za-z0-9 .'-]/g, " ").replace(/\s+/g, " ").trim().slice(0, 50);
 
-      const created = await createReceiveOnlyCustomer({
-        firstName,
-        lastName,
-        email,
-        businessName,
-      });
-      dwollaCustomerId = created.customerId;
-      await prisma.investorDwollaCustomer.create({
-        data: {
-          investorId: investor.id,
-          dwollaCustomerId: created.customerId,
-          customerType: businessName ? "receive-only-business" : "receive-only",
-          email,
+      // Determine if this investor looks like a business entity. We treat any
+      // investor with a linked company OR whose name contains LLC/LP/Inc/Trust/etc.
+      // as a business and route the legal name to Dwolla's businessName field.
+      const isBusiness =
+        Boolean(investor.company?.name) ||
+        /\b(LLC|LP|Inc|Corp|Trust|JTWROS|Foundation|Partners|Holdings|Co\.?)\b/i.test(
+          investor.name,
+        );
+
+      const businessName = isBusiness
+        ? cleanName(investor.company?.name ?? investor.name)
+        : undefined;
+
+      // Build firstName/lastName. Prefer Contact data (the controller / individual).
+      // Otherwise parse from investor.name, falling back to safe placeholders for
+      // business entities (Dwolla still requires a controller name on the customer
+      // record even for receive-only).
+      let firstName = cleanName(investor.contact?.firstName ?? "");
+      let lastName = cleanName(investor.contact?.lastName ?? "");
+      if (!firstName || !lastName) {
+        const parts = cleanName(investor.name).split(" ");
+        if (!firstName) firstName = parts[0] || (isBusiness ? "Account" : "Investor");
+        if (!lastName) lastName = parts.slice(1).join(" ") || (isBusiness ? "Holder" : "Profile");
+      }
+
+      // Email must be unique per Dwolla customer. Always derive a unique
+      // address from the investor id so two investors can't collide on Kathryn's
+      // login email or any shared contact email. Investor's own contact email
+      // is preferred when present (probably already unique).
+      const email = investor.contact?.email
+        ?? `investor-${investor.id}@calafiagroup.com`;
+
+      try {
+        const created = await createReceiveOnlyCustomer({
           firstName,
           lastName,
+          email,
           businessName,
-        },
-      });
+        });
+        dwollaCustomerId = created.customerId;
+        await prisma.investorDwollaCustomer.create({
+          data: {
+            investorId: investor.id,
+            dwollaCustomerId: created.customerId,
+            customerType: businessName ? "receive-only-business" : "receive-only",
+            email,
+            firstName,
+            lastName,
+            businessName,
+          },
+        });
+      } catch (dwollaErr) {
+        // Surface Dwolla's actual error body — without this we get an opaque
+        // "Request failed with status code 400" from the SDK and have no idea
+        // what was rejected.
+        const err = dwollaErr as { body?: { message?: string; _embedded?: { errors?: Array<{ message?: string; path?: string }> } }; status?: number };
+        const detail =
+          err.body?._embedded?.errors
+            ?.map((e) => `${e.path ?? "?"}: ${e.message ?? "?"}`)
+            .join("; ") ??
+          err.body?.message ??
+          (dwollaErr instanceof Error ? dwollaErr.message : "Unknown Dwolla error");
+        logger.error("[payment-methods/exchange] Dwolla customer create failed", {
+          status: err.status,
+          detail,
+          attemptedEmail: email,
+          attemptedFirstName: firstName,
+          attemptedLastName: lastName,
+          attemptedBusinessName: businessName,
+        });
+        return NextResponse.json(
+          { error: `Dwolla rejected the customer: ${detail}` },
+          { status: 400 },
+        );
+      }
     }
 
     // 5. Dwolla funding source via processor token
     const nickname = data!.nickname ?? acct.officialName ?? acct.name;
-    const fs = await createFundingSourceFromPlaidToken({
-      customerId: dwollaCustomerId,
-      plaidProcessorToken: processorToken,
-      accountNickname: nickname,
-    });
+    let fs: { fundingSourceUrl: string; fundingSourceId: string };
+    try {
+      fs = await createFundingSourceFromPlaidToken({
+        customerId: dwollaCustomerId,
+        plaidProcessorToken: processorToken,
+        accountNickname: nickname,
+      });
+    } catch (dwollaErr) {
+      const err = dwollaErr as { body?: { message?: string; _embedded?: { errors?: Array<{ message?: string; path?: string }> } }; status?: number };
+      const detail =
+        err.body?._embedded?.errors
+          ?.map((e) => `${e.path ?? "?"}: ${e.message ?? "?"}`)
+          .join("; ") ??
+        err.body?.message ??
+        (dwollaErr instanceof Error ? dwollaErr.message : "Unknown Dwolla error");
+      logger.error("[payment-methods/exchange] Dwolla funding source create failed", {
+        status: err.status,
+        detail,
+        customerId: dwollaCustomerId,
+      });
+      return NextResponse.json(
+        { error: `Dwolla rejected the funding source: ${detail}` },
+        { status: 400 },
+      );
+    }
 
     // Pull status so we can record VERIFIED / PENDING correctly
     let fsStatus = "UNVERIFIED" as ReturnType<typeof mapFundingSourceStatus>;
