@@ -59,7 +59,11 @@ export function EntityFundingSourceSection({ entityId }: { entityId: string }) {
   const [linkModalOpen, setLinkModalOpen] = useState(false);
   const [dwollaCustomerId, setDwollaCustomerId] = useState("");
   const [nickname, setNickname] = useState("");
-  const [pendingLink, setPendingLink] = useState<null | { publicToken: string; accountId: string; institutionName: string | null; accountName: string | null }>(null);
+  const [pendingLink, setPendingLink] = useState<null | {
+    publicToken: string;
+    accounts: { id: string; name: string | null; mask: string | null }[];
+    institutionName: string | null;
+  }>(null);
   const [submitting, setSubmitting] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -68,6 +72,13 @@ export function EntityFundingSourceSection({ entityId }: { entityId: string }) {
       toast.error("Please enter the Dwolla Verified Customer id for this entity.");
       return;
     }
+    if (pendingLink.accounts.length === 0) {
+      toast.error("No account selected in Plaid Link.");
+      return;
+    }
+    // Disbursement bank is typically a single operating account — register
+    // only the first selected account. (Plaid sandbox often pre-selects all.)
+    const account = pendingLink.accounts[0];
     setSubmitting(true);
     try {
       const r = await fetch(listUrl, {
@@ -76,7 +87,7 @@ export function EntityFundingSourceSection({ entityId }: { entityId: string }) {
         body: JSON.stringify({
           dwollaCustomerId: dwollaCustomerId.trim(),
           publicToken: pendingLink.publicToken,
-          accountId: pendingLink.accountId,
+          accountId: account.id,
           accountNickname: nickname.trim() || undefined,
         }),
       });
@@ -221,7 +232,12 @@ export function EntityFundingSourceSection({ entityId }: { entityId: string }) {
           ) : (
             <div className="pt-2 space-y-3">
               <div className="text-sm text-emerald-600 dark:text-emerald-400">
-                ✓ Connected via Plaid: {pendingLink.institutionName ?? "Bank"} — {pendingLink.accountName ?? "Account"}
+                ✓ Connected via Plaid: {pendingLink.institutionName ?? "Bank"} — {pendingLink.accounts[0]?.name ?? "Account"}
+                {pendingLink.accounts.length > 1 && (
+                  <span className="block text-[11px] text-amber-600 mt-1">
+                    {pendingLink.accounts.length} accounts were selected; only the first will be registered as the disbursement bank.
+                  </span>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button variant="primary" onClick={submitLink} disabled={submitting || !dwollaCustomerId.trim()}>

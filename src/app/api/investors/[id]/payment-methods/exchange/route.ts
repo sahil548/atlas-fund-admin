@@ -36,9 +36,17 @@ import { logger } from "@/lib/logger";
 
 const BodySchema = z.object({
   publicToken: z.string().min(1),
-  accountId: z.string().min(1),
+  // Accept either a single accountId (legacy / single-select Plaid Link)
+  // or an array of accountIds (multi-select). Plaid issues ONE public_token
+  // per Link session covering all selected accounts; we can exchange it
+  // once and then mint a processor token per account.
+  accountId: z.string().min(1).optional(),
+  accountIds: z.array(z.string().min(1)).optional(),
   nickname: z.string().optional(),
-});
+}).refine(
+  (d) => Boolean(d.accountId || (d.accountIds && d.accountIds.length > 0)),
+  { message: "accountId or accountIds is required" },
+);
 
 export async function POST(
   req: Request,
@@ -78,52 +86,35 @@ export async function POST(
       return NextResponse.json({ error: "Investor not found" }, { status: 404 });
     }
 
-    // 1. Exchange Plaid public_token → access_token
+    // 1. Exchange Plaid public_token → access_token (one-time per Link session)
     const { accessToken } = await exchangeInvestorPublicToken(data!.publicToken);
 
-    // 2. Fetch account metadata so we can store bank name/last4
-    const accounts = await listAuthAccounts(accessToken);
-    const acct = accounts.find((a) => a.accountId === data!.accountId);
-    if (!acct) {
+    // 2. Fetch account metadata for ALL accounts on the Plaid item so we can
+    // resolve every selected accountId to bank name / last4 / type.
+    const allAccounts = await listAuthAccounts(accessToken);
+
+    // Resolve the list of accountIds the user wants to register. Backwards
+    // compat: a single accountId or an array of accountIds.
+    const requestedAccountIds = data!.accountIds && data!.accountIds.length > 0
+      ? data!.accountIds
+      : data!.accountId ? [data!.accountId] : [];
+
+    // Validate every requested id appears in the Plaid item
+    const resolvedAccounts = requestedAccountIds.map((id) => {
+      const a = allAccounts.find((x) => x.accountId === id);
+      return { id, account: a };
+    });
+    const missing = resolvedAccounts.filter((r) => !r.account).map((r) => r.id);
+    if (missing.length > 0) {
       return NextResponse.json(
-        { error: "Selected account not found on Plaid item" },
+        { error: `Selected accounts not found on Plaid item: ${missing.join(", ")}` },
         { status: 400 },
       );
     }
 
-    // 3. Plaid processor_token for Dwolla
-    // Common failure here: Dwolla isn't enabled as a processor partner in
-    // the Plaid dashboard yet (Team Settings → Integrations → Processors).
-    let processorToken: string;
-    try {
-      processorToken = await createProcessorTokenForDwolla({
-        accessToken,
-        accountId: data!.accountId,
-      });
-    } catch (plaidErr) {
-      // Plaid SDK errors include response.data on AxiosError-shaped objects.
-      const err = plaidErr as { response?: { data?: { error_code?: string; error_message?: string; display_message?: string } }; message?: string };
-      const detail =
-        err.response?.data?.display_message ??
-        err.response?.data?.error_message ??
-        err.response?.data?.error_code ??
-        err.message ??
-        "Unknown Plaid error";
-      logger.error("[payment-methods/exchange] Plaid processor token failed", {
-        detail,
-        errorCode: err.response?.data?.error_code,
-      });
-      // Most common case: PROCESSOR_NOT_ENABLED — surface a friendly hint.
-      const hint = /PROCESSOR/i.test(detail)
-        ? " (Dwolla may not be enabled as a Plaid processor — Plaid dashboard → Team Settings → Integrations → Processors.)"
-        : "";
-      return NextResponse.json(
-        { error: `Plaid processor token failed: ${detail}${hint}` },
-        { status: 400 },
-      );
-    }
-
-    // 4. Ensure Dwolla customer exists for this investor
+    // 3. Ensure Dwolla customer exists for this investor (once, before the
+    // per-account loop below — the customer record is shared across all
+    // funding sources for this investor).
     let dwollaCustomerId = investor.dwollaCustomer?.dwollaCustomerId;
     if (!dwollaCustomerId) {
       // Dwolla rejects names with commas, parens, and many other punctuation.
@@ -209,70 +200,119 @@ export async function POST(
       }
     }
 
-    // 5. Dwolla funding source via processor token
-    const nickname = data!.nickname ?? acct.officialName ?? acct.name;
-    let fs: { fundingSourceUrl: string; fundingSourceId: string };
-    try {
-      fs = await createFundingSourceFromPlaidToken({
-        customerId: dwollaCustomerId,
-        plaidProcessorToken: processorToken,
-        accountNickname: nickname,
-      });
-    } catch (dwollaErr) {
-      const err = dwollaErr as { body?: { message?: string; _embedded?: { errors?: Array<{ message?: string; path?: string }> } }; status?: number };
-      const detail =
-        err.body?._embedded?.errors
-          ?.map((e) => `${e.path ?? "?"}: ${e.message ?? "?"}`)
-          .join("; ") ??
-        err.body?.message ??
-        (dwollaErr instanceof Error ? dwollaErr.message : "Unknown Dwolla error");
-      logger.error("[payment-methods/exchange] Dwolla funding source create failed", {
-        status: err.status,
-        detail,
-        customerId: dwollaCustomerId,
-      });
-      return NextResponse.json(
-        { error: `Dwolla rejected the funding source: ${detail}` },
-        { status: 400 },
-      );
-    }
+    // 4. For each selected account: mint a Plaid processor token, create a
+    // Dwolla funding source, persist the InvestorPaymentMethod row.
+    // Continue on per-account failures so a bad apple doesn't block the rest.
+    const linked: Array<{
+      id: string;
+      bankName: string;
+      last4: string | null;
+      status: ReturnType<typeof mapFundingSourceStatus>;
+      isDefault: boolean;
+    }> = [];
+    const failed: Array<{ accountId: string; bankName: string | null; reason: string }> = [];
 
-    // Pull status so we can record VERIFIED / PENDING correctly
-    let fsStatus = "UNVERIFIED" as ReturnType<typeof mapFundingSourceStatus>;
-    try {
-      const fsRecord = await getFundingSource(fs.fundingSourceId);
-      fsStatus = mapFundingSourceStatus(fsRecord?.status);
-    } catch (e) {
-      logger.warn("[payment-methods/exchange] could not fetch funding source status", {
-        error: e instanceof Error ? e.message : String(e),
-      });
-    }
-
-    // 6. Upsert InvestorPaymentMethod row
-    // If this is the investor's first method, mark isDefault = true.
-    const existingCount = await prisma.investorPaymentMethod.count({
+    // Track existing methods so default-flag logic stays sane across the loop.
+    let existingCount = await prisma.investorPaymentMethod.count({
       where: { investorId: investor.id, status: { not: "REMOVED" } },
     });
-    const pm = await prisma.investorPaymentMethod.create({
-      data: {
-        investorId: investor.id,
-        dwollaFundingSourceId: fs.fundingSourceId,
-        bankName: acct.officialName ?? acct.name,
-        accountNickname: data!.nickname ?? null,
-        accountType: acct.subtype ?? acct.type,
-        last4: acct.mask ?? null,
-        status: fsStatus,
-        isDefault: existingCount === 0,
-        plaidAccountId: acct.accountId,
-      },
-    });
+
+    for (const { id: accountId, account: maybeAcct } of resolvedAccounts) {
+      const acct = maybeAcct!;
+      try {
+        // 4a. Plaid processor token for this account
+        let processorToken: string;
+        try {
+          processorToken = await createProcessorTokenForDwolla({
+            accessToken,
+            accountId,
+          });
+        } catch (plaidErr) {
+          const err = plaidErr as { response?: { data?: { error_code?: string; error_message?: string; display_message?: string } }; message?: string };
+          const detail =
+            err.response?.data?.display_message ??
+            err.response?.data?.error_message ??
+            err.response?.data?.error_code ??
+            err.message ??
+            "Unknown Plaid error";
+          throw new Error(`Plaid processor token failed: ${detail}`);
+        }
+
+        // 4b. Dwolla funding source from the processor token
+        const nickname = data!.nickname ?? acct.officialName ?? acct.name;
+        let fs: { fundingSourceUrl: string; fundingSourceId: string };
+        try {
+          fs = await createFundingSourceFromPlaidToken({
+            customerId: dwollaCustomerId,
+            plaidProcessorToken: processorToken,
+            accountNickname: nickname,
+          });
+        } catch (dwollaErr) {
+          const err = dwollaErr as { body?: { message?: string; _embedded?: { errors?: Array<{ message?: string; path?: string }> } }; status?: number };
+          const detail =
+            err.body?._embedded?.errors
+              ?.map((e) => `${e.path ?? "?"}: ${e.message ?? "?"}`)
+              .join("; ") ??
+            err.body?.message ??
+            (dwollaErr instanceof Error ? dwollaErr.message : "Unknown Dwolla error");
+          throw new Error(`Dwolla rejected the funding source: ${detail}`);
+        }
+
+        // 4c. Status lookup (best-effort)
+        let fsStatus = "UNVERIFIED" as ReturnType<typeof mapFundingSourceStatus>;
+        try {
+          const fsRecord = await getFundingSource(fs.fundingSourceId);
+          fsStatus = mapFundingSourceStatus(fsRecord?.status);
+        } catch (e) {
+          logger.warn("[payment-methods/exchange] could not fetch funding source status", {
+            error: e instanceof Error ? e.message : String(e),
+          });
+        }
+
+        // 4d. Persist InvestorPaymentMethod row. First-ever account marked default.
+        const isDefault = existingCount === 0;
+        const pm = await prisma.investorPaymentMethod.create({
+          data: {
+            investorId: investor.id,
+            dwollaFundingSourceId: fs.fundingSourceId,
+            bankName: acct.officialName ?? acct.name,
+            accountNickname: data!.nickname ?? null,
+            accountType: acct.subtype ?? acct.type,
+            last4: acct.mask ?? null,
+            status: fsStatus,
+            isDefault,
+            plaidAccountId: acct.accountId,
+          },
+        });
+        existingCount += 1;
+        linked.push({
+          id: pm.id,
+          bankName: pm.bankName,
+          last4: pm.last4,
+          status: pm.status as ReturnType<typeof mapFundingSourceStatus>,
+          isDefault: pm.isDefault,
+        });
+      } catch (perAccountErr) {
+        const reason = perAccountErr instanceof Error ? perAccountErr.message : "Unknown";
+        logger.error("[payment-methods/exchange] account link failed", {
+          accountId,
+          accountName: acct.name,
+          reason,
+        });
+        failed.push({
+          accountId,
+          bankName: acct.officialName ?? acct.name,
+          reason,
+        });
+      }
+    }
 
     return NextResponse.json({
-      id: pm.id,
-      bankName: pm.bankName,
-      last4: pm.last4,
-      status: pm.status,
-      isDefault: pm.isDefault,
+      linked,
+      failed,
+      // Backwards-compat: surface a single first-account summary so older
+      // callers that expected { id, bankName, ... } still work.
+      ...(linked[0] ?? {}),
     });
   } catch (err) {
     logger.error("[payment-methods/exchange]", {

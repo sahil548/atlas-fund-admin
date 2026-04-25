@@ -16,9 +16,20 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { Button } from "@/components/ui/button";
 
+/** Single account as returned by Plaid Link's onSuccess metadata. */
+export interface PlaidLinkedAccount {
+  id: string;
+  name: string | null;
+  mask: string | null;
+}
+
 interface PlaidLinkButtonProps {
   linkTokenUrl: string; // POST endpoint that returns { link_token }
-  onLinked: (args: { publicToken: string; accountId: string; institutionName: string | null; accountName: string | null; mask: string | null }) => void | Promise<void>;
+  onLinked: (args: {
+    publicToken: string;
+    accounts: PlaidLinkedAccount[];
+    institutionName: string | null;
+  }) => void | Promise<void>;
   disabled?: boolean;
   label?: string;
   variant?: "primary" | "secondary";
@@ -57,19 +68,19 @@ export function PlaidLinkButton({
   const { open, ready } = usePlaidLink({
     token: linkToken,
     onSuccess: async (publicToken, metadata) => {
-      // metadata.accounts is an array; if user selected exactly one, use it.
-      // If multiple, parent can handle selection, but for Auth typically 1.
-      const acct = metadata.accounts?.[0];
-      if (!acct) {
-        setError("No account selected in Plaid Link");
+      const accounts = (metadata.accounts ?? []).map((a) => ({
+        id: a.id,
+        name: a.name ?? null,
+        mask: a.mask ?? null,
+      }));
+      if (accounts.length === 0) {
+        setError("No accounts selected in Plaid Link");
         return;
       }
       await onLinked({
         publicToken,
-        accountId: acct.id,
+        accounts,
         institutionName: metadata.institution?.name ?? null,
-        accountName: acct.name ?? null,
-        mask: acct.mask ?? null,
       });
       // Refresh token so the user can link another account without page reload
       setLinkToken(null);

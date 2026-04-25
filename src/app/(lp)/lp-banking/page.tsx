@@ -43,7 +43,11 @@ export default function LPBankingPage() {
 
   const methods = data?.paymentMethods ?? [];
 
-  async function handleLinked(args: { publicToken: string; accountId: string; institutionName: string | null; accountName: string | null }) {
+  async function handleLinked(args: {
+    publicToken: string;
+    accounts: { id: string; name: string | null; mask: string | null }[];
+    institutionName: string | null;
+  }) {
     if (!investorId) return;
     try {
       const resp = await fetch(`/api/investors/${investorId}/payment-methods/exchange`, {
@@ -51,13 +55,26 @@ export default function LPBankingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           publicToken: args.publicToken,
-          accountId: args.accountId,
-          nickname: args.accountName ?? undefined,
+          accountIds: args.accounts.map((a) => a.id),
         }),
       });
       const body = await resp.json();
       if (!resp.ok) throw new Error(body?.error ?? "Failed to link account");
-      toast.success(`${args.institutionName ?? "Account"} added.`);
+
+      const linked = (body.linked ?? []) as Array<{ bankName: string }>;
+      const failed = (body.failed ?? []) as Array<{ bankName: string | null; reason: string }>;
+
+      if (linked.length > 0) {
+        const bank = args.institutionName ?? "Bank";
+        toast.success(
+          linked.length === 1
+            ? `${bank}: linked ${linked[0].bankName}`
+            : `${bank}: linked ${linked.length} accounts`,
+        );
+      }
+      for (const f of failed) {
+        toast.error(`${f.bankName ?? "Account"}: ${f.reason}`);
+      }
       mutate();
     } catch (e) {
       toast.error(
