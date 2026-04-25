@@ -92,10 +92,36 @@ export async function POST(
     }
 
     // 3. Plaid processor_token for Dwolla
-    const processorToken = await createProcessorTokenForDwolla({
-      accessToken,
-      accountId: data!.accountId,
-    });
+    // Common failure here: Dwolla isn't enabled as a processor partner in
+    // the Plaid dashboard yet (Team Settings → Integrations → Processors).
+    let processorToken: string;
+    try {
+      processorToken = await createProcessorTokenForDwolla({
+        accessToken,
+        accountId: data!.accountId,
+      });
+    } catch (plaidErr) {
+      // Plaid SDK errors include response.data on AxiosError-shaped objects.
+      const err = plaidErr as { response?: { data?: { error_code?: string; error_message?: string; display_message?: string } }; message?: string };
+      const detail =
+        err.response?.data?.display_message ??
+        err.response?.data?.error_message ??
+        err.response?.data?.error_code ??
+        err.message ??
+        "Unknown Plaid error";
+      logger.error("[payment-methods/exchange] Plaid processor token failed", {
+        detail,
+        errorCode: err.response?.data?.error_code,
+      });
+      // Most common case: PROCESSOR_NOT_ENABLED — surface a friendly hint.
+      const hint = /PROCESSOR/i.test(detail)
+        ? " (Dwolla may not be enabled as a Plaid processor — Plaid dashboard → Team Settings → Integrations → Processors.)"
+        : "";
+      return NextResponse.json(
+        { error: `Plaid processor token failed: ${detail}${hint}` },
+        { status: 400 },
+      );
+    }
 
     // 4. Ensure Dwolla customer exists for this investor
     let dwollaCustomerId = investor.dwollaCustomer?.dwollaCustomerId;
